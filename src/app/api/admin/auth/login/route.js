@@ -43,11 +43,20 @@ export async function POST(req) {
       id: userDocRef.id,
       name: userDoc.name,
       email: userDoc.email,
-      roleId: userDoc.role_id,
+      role_id: userDoc.role_id,
       role: roleData?.name || null,
       permissions: roleData?.permissions || [],
     };
-    return NextResponse.json({ success: true, user: sessionUser });
+
+    const response = NextResponse.json({ success: true, user: sessionUser });
+    
+     response.cookies.set("token", JSON.stringify({ id: sessionUser.id, role: sessionUser.role }), {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60 * 24, // 1 day
+    });
+
+    return response;
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json({ error: "Server error: " + error.message }, { status: 500 });
