@@ -1,10 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "../../../lib/firebase";
+import { db } from "@/lib/firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import Layout from "../components/Layout";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function UsersList() {
   const [users, setUsers] = useState([]);
@@ -20,9 +31,9 @@ export default function UsersList() {
           ...d.data(),
         }));
         setUsers(usersData);
-        setLoading(false);
       } catch (error) {
         console.error("Error fetching users:", error);
+      } finally {
         setLoading(false);
       }
     };
@@ -33,69 +44,75 @@ export default function UsersList() {
     if (!confirm("Are you sure you want to delete this user?")) return;
     try {
       await deleteDoc(doc(db, "users", id));
-      alert("User deleted successfully!");
-      setUsers(users.filter((u) => u.id !== id));
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      alert("✅ User deleted successfully!");
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert("Error deleting user: " + error.message);
+      alert("❌ Error deleting user: " + error.message);
     }
   };
 
-  if (loading) return <p className="text-center mt-5">Loading users...</p>;
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner />
+      </div>
+    );
 
   return (
-    <Layout>
-      <div className="container mt-5">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2>Users</h2>
-          <button
-            className="btn btn-success"
-            onClick={() => router.push("/firebase/users/create")}
-          >
+    <div className="p-6">
+      <Card className="shadow-lg">
+        <CardHeader className="flex flex-row justify-between items-center">
+          <CardTitle className="text-xl font-semibold">Users</CardTitle>
+          <Button onClick={() => router.push("/firebase/users/create")}>
             + Add User
-          </button>
-        </div>
-
-        {users.length === 0 ? (
-          <p>No users found.</p>
-        ) : (
-          <table className="table table-bordered table-striped">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.name}</td>
-                  <td>{user.email}</td>
-                  <td>{user.role_name || "—"}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-primary me-2"
-                      onClick={() =>
-                        router.push(`/firebase/users/${user.id}/edit`)
-                      }
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(user.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </Layout>
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {users.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No users found.</p>
+          ) : (
+            <Table>
+              <TableCaption>A list of all registered users.</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.role_name || "—"}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          router.push(`/firebase/users/${user.id}/edit`)
+                        }
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(user.id)}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

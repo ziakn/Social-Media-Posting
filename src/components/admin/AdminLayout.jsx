@@ -17,9 +17,9 @@ export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const menuItems = [
-    { label: "Dashboard", href: "/firebase/dashboard", icon: <LayoutDashboard size={18} /> },
-    { label: "Users", href: "/firebase/users", icon: <Users size={18} /> },
-    { label: "Settings", href: "/firebase/settings", icon: <Settings size={18} /> },
+    { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
+    { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
+    { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
   ];
 
   const handleToggle = () => setSidebarOpen((prev) => !prev);

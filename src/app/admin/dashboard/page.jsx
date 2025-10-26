@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Layout from "../components/Layout";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -24,16 +24,10 @@ export default function Dashboard() {
   };
 
   if (!user)
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
+    return (<Spinner/>
     );
 
   return (
-    <Layout>
       <div className="container mt-5">
         <div className="text-center mb-5">
           <h1 className="display-5">Welcome, {user.name}</h1>
@@ -88,6 +82,5 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </Layout>
   );
 }
