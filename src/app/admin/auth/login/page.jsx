@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
+import { API_ROUTES } from "@/constants/api";
 
 export default function Login() {
   const [email, setEmail] = useState("admin@gmail.com");
@@ -22,7 +23,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin/auth/login", {
+      const res = await fetch(API_ROUTES.LOGIN, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

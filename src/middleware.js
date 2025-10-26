@@ -2,29 +2,30 @@ import { NextResponse } from "next/server";
 
 export function middleware(req) {
   const tokenCookie = req.cookies.get("token")?.value;
+  const { pathname } = req.nextUrl;
 
-  if (!tokenCookie) {
-    const url = req.nextUrl.clone();
-  url.pathname = "/admin/auth/login";
-  return NextResponse.redirect(url);
+  // ✅ Don't redirect if user is already on the login page
+  if (pathname === "/admin/auth/login") {
+    return NextResponse.next();
   }
 
-  // Parse cookie JSON
-  try {
-    const user = JSON.parse(tokenCookie);
+  // ✅ Redirect unauthenticated users to login
+  if (!tokenCookie) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/admin/auth/login";
+    return NextResponse.redirect(url);
+  }
 
-    // Only allow admin role
-    // if (user.role !== "admin") {
-    //   const url = req.nextUrl.clone();
-    //   url.pathname = "/"; // redirect non-admins to homepage
-    //   return NextResponse.redirect(url);
-    // }
+  // ✅ Validate token structure (optional)
+  try {
+    JSON.parse(tokenCookie);
   } catch {
     const url = req.nextUrl.clone();
     url.pathname = "/admin/auth/login";
     return NextResponse.redirect(url);
   }
 
+  // ✅ Allow access
   return NextResponse.next();
 }
 
