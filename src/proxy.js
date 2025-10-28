@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
 
-export function middleware(req) {
+export function proxy(req) {
   const tokenCookie = req.cookies.get("token")?.value;
   const { pathname } = req.nextUrl;
 
   // ✅ Don't redirect if user is already on the login page
-  if (pathname === "/admin/auth/login") {
+  if (pathname === "/auth/login") {
     return NextResponse.next();
   }
 
   // ✅ Redirect unauthenticated users to login
   if (!tokenCookie) {
     const url = req.nextUrl.clone();
-    url.pathname = "/admin/auth/login";
+    url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
@@ -21,7 +21,7 @@ export function middleware(req) {
     JSON.parse(tokenCookie);
   } catch {
     const url = req.nextUrl.clone();
-    url.pathname = "/admin/auth/login";
+    url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 

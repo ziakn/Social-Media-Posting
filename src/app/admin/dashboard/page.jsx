@@ -5,82 +5,50 @@ import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 
 export default function Dashboard() {
-  const [user, setUser] = useState(null);
-  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // ✅ Load logged-in user from localStorage
-    const storedUser = localStorage.getItem("currentUser");
-    if (!storedUser) {
-      router.replace("/firebase/login");
-    } else {
-      setUser(JSON.parse(storedUser));
-    }
-  }, [router]);
-
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    router.push("/firebase/login");
-  };
-
-  if (!user)
-    return (<Spinner/>
-    );
+  if (!loading) return <Spinner />;
 
   return (
-      <div className="container mt-5">
-        <div className="text-center mb-5">
-          <h1 className="display-5">Welcome, {user.name}</h1>
-          <p className="lead">You are successfully logged in to your dashboard.</p>
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      <div className="text-center mb-10">
+        <h1 className="text-4xl font-bold mb-2">Welcome, </h1>
+        <p className="text-gray-600 text-lg">
+          You are successfully logged in to your dashboard.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Add New Idea */}
+        <div
+          onClick={() => router.push("/firebase/ideas/create")}
+          className="cursor-pointer border-2 border-blue-500 rounded-lg shadow-lg hover:scale-105 transition-transform duration-200 p-6 flex flex-col items-center text-center"
+        >
+          <h2 className="text-xl font-semibold mb-2">Add New Idea</h2>
+          <p className="text-gray-600">
+            Create a new idea to track and manage your projects.
+          </p>
         </div>
 
-        <div className="row g-4">
-          {/* Card 1: Add New Idea */}
-          <div className="col-md-4">
-            <div
-              className="card text-center shadow-sm h-100 border-primary cursor-pointer"
-              onClick={() => router.push("/firebase/ideas/create")}
-            >
-              <div className="card-body d-flex flex-column justify-content-center align-items-center">
-                <i className="bi bi-plus-circle-fill display-4 text-primary mb-3"></i>
-                <h5 className="card-title">Add New Idea</h5>
-                <p className="card-text">
-                  Create a new idea to track and manage your projects.
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* View Ideas */}
+        <div
+          onClick={() => router.push("/firebase/ideas")}
+          className="cursor-pointer border-2 border-green-500 rounded-lg shadow-lg hover:scale-105 transition-transform duration-200 p-6 flex flex-col items-center text-center"
+        >
+          <h2 className="text-xl font-semibold mb-2">View Ideas</h2>
+          <p className="text-gray-600">
+            See all your ideas in one place and manage them efficiently.
+          </p>
+        </div>
 
-          {/* Card 2: View Ideas */}
-          <div className="col-md-4">
-            <div
-              className="card text-center shadow-sm h-100 border-success cursor-pointer"
-              onClick={() => router.push("/firebase/ideas")}
-            >
-              <div className="card-body d-flex flex-column justify-content-center align-items-center">
-                <i className="bi bi-card-list display-4 text-success mb-3"></i>
-                <h5 className="card-title">View Ideas</h5>
-                <p className="card-text">
-                  See all your ideas in one place and manage them efficiently.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Logout */}
-          <div className="col-md-4">
-            <div
-              className="card text-center shadow-sm h-100 border-danger cursor-pointer"
-              onClick={handleLogout}
-            >
-              <div className="card-body d-flex flex-column justify-content-center align-items-center">
-                <i className="bi bi-box-arrow-right display-4 text-danger mb-3"></i>
-                <h5 className="card-title">Logout</h5>
-                <p className="card-text">Sign out from your account securely.</p>
-              </div>
-            </div>
-          </div>
+        {/* Logout */}
+        <div
+          className="cursor-pointer border-2 border-red-500 rounded-lg shadow-lg hover:scale-105 transition-transform duration-200 p-6 flex flex-col items-center text-center"
+        >
+          <h2 className="text-xl font-semibold mb-2">Logout</h2>
+          <p className="text-gray-600">Sign out from your account securely.</p>
         </div>
       </div>
+    </div>
   );
 }

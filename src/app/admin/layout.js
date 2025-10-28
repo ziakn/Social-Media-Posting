@@ -1,3 +1,4 @@
+
 import AdminShell from '@/components/admin/AdminLayout';
 
 export const metadata = {
@@ -7,7 +8,7 @@ export const metadata = {
 export default function AdminLayout({ children }) {
   return (
     <html lang="en">
-      <body className=" min-h-screen">
+      <body className="min-h-screen">
         <AdminShell>
           <main >
             {children}

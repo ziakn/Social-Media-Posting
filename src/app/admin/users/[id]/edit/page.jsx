@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { db } from "../../../../../lib/firebase";
 import { doc, getDoc, updateDoc, getDocs, collection } from "firebase/firestore";
 import { useParams, useRouter } from "next/navigation";
-import Layout from "../../../components/Layout";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function EditUser() {
   const { id } = useParams();
@@ -15,12 +15,31 @@ export default function EditUser() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const userSnap = await getDoc(doc(db, "users", id));
-      const rolesSnap = await getDocs(collection(db, "roles"));
-      const rolesData = rolesSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+       try {
+           const res = await fetch(API_ROUTES.USERS_EDIT, {
+             method: "GET",
+             headers: { "Content-Type": "application/json" },
+             body: JSON.stringify({ email, password }),
+           });
+     
+           const data = await res.json();
+           setLoading(false);
+     
+           if (!res.ok) {
+             setAlert(data.error || "Login failed!");
+             return;
+           }
+     
+           localStorage.setItem("currentUser", JSON.stringify(data.user));
+           setSuccess(true); // Show success notification
+     
+           // Redirect after a short delay to show the success alert
+           setTimeout(() => router.push(ROUTES.ADMIN_DASHBOARD), 1000);
+         } catch (error) {
+           console.error(error);
+           setLoading(false);
+           setAlert("Login failed: " + error.message);
+         }
       setRoles(rolesData);
       if (userSnap.exists()) {
         setForm(userSnap.data());
@@ -48,10 +67,9 @@ export default function EditUser() {
     }
   };
 
-  if (loading) return <p className="text-center mt-5">Loading...</p>;
+   if (loading)return <Spinner/>;
 
   return (
-    <Layout>
       <div className="container mt-5">
         <h2>Edit User</h2>
         <form onSubmit={handleSubmit} className="mt-4">
@@ -96,6 +114,5 @@ export default function EditUser() {
           </button>
         </form>
       </div>
-    </Layout>
   );
 }

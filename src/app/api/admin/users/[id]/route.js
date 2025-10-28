@@ -1,7 +1,5 @@
-import { PrismaClient } from '@/generated/prisma';
-import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+import bcrypt from 'bcryptjs';
 
 function serializeBigInt(obj) {
   return JSON.parse(

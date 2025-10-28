@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { API_ROUTES } from "@/constants/api";
+import { ROUTES } from "@/constants/routes";
 
 export default function Login() {
   const [email, setEmail] = useState("admin@gmail.com");
@@ -41,7 +42,7 @@ export default function Login() {
       setSuccess(true); // Show success notification
 
       // Redirect after a short delay to show the success alert
-      setTimeout(() => router.push("/admin"), 1000);
+      setTimeout(() => router.push(ROUTES.ADMIN_DASHBOARD), 1000);
     } catch (error) {
       console.error(error);
       setLoading(false);

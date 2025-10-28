@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
+import { API_ROUTES } from "@/constants/api";
 
 export default function UsersList() {
   const [users, setUsers] = useState([]);
@@ -23,22 +25,24 @@ export default function UsersList() {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const usersSnap = await getDocs(collection(db, "users"));
-        const usersData = usersSnap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
-        setUsers(usersData);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(API_ROUTES.USERS, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      setUsers(data.users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
@@ -52,25 +56,31 @@ export default function UsersList() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner />
-      </div>
-    );
+  if (loading) return <Spinner />;
 
   return (
     <div className="p-6">
-      <Card className="shadow-lg">
-        <CardHeader className="flex flex-row justify-between items-center">
+      <Card className="shadow-sm">
+        <CardHeader className="flex justify-between items-center">
           <CardTitle className="text-xl font-semibold">Users</CardTitle>
-          <Button onClick={() => router.push("/firebase/users/create")}>
+          <Button
+            variant="secondary"
+            onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
+          >
             + Add User
           </Button>
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">No users found.</p>
+            <div className="text-center py-16 text-gray-500">
+              <p className="mb-4">No users found.</p>
+              <Button
+                size="sm"
+                onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
+              >
+                + Add your first user
+              </Button>
+            </div>
           ) : (
             <Table>
               <TableCaption>A list of all registered users.</TableCaption>
@@ -84,7 +94,7 @@ export default function UsersList() {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.role_name || "—"}</TableCell>
@@ -93,7 +103,9 @@ export default function UsersList() {
                         size="sm"
                         variant="outline"
                         onClick={() =>
-                          router.push(`/firebase/users/${user.id}/edit`)
+                          router.push(
+                            `${ROUTES.ADMIN_USER_EDIT}/${user.id}/edit`
+                          )
                         }
                       >
                         Edit
