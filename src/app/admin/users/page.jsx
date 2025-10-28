@@ -97,7 +97,7 @@ export default function UsersList() {
                   <TableRow key={user.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role_name || "—"}</TableCell>
+                    <TableCell>{user.role_id || "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
                         size="sm"
