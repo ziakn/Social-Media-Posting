@@ -36,7 +36,7 @@ export async function GET(req, { params }) {
 
 export async function DELETE(req, { params }) {
   try {
-    const { id } = params;
+      const { id } = await params;
 
     const userRef = doc(db, "users", id);
     const userSnap = await getDoc(userRef);
@@ -45,7 +45,7 @@ export async function DELETE(req, { params }) {
       return new Response(JSON.stringify({ success: false, message: "User not found" }), { status: 404 });
     }
 
-    await deleteDoc(userRef);
+    // await deleteDoc(userRef);
 
     return new Response(JSON.stringify({ success: true, message: "User deleted" }), { status: 200 });
   } catch (err) {

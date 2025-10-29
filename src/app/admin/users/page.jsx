@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 import { API_ROUTES } from "@/constants/api";
+import { toast } from "sonner";
 
 export default function UsersList() {
   const [users, setUsers] = useState([]);
@@ -44,17 +45,31 @@ export default function UsersList() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
-    try {
-      await deleteDoc(doc(db, "users", id));
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-      alert("✅ User deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      alert("❌ Error deleting user: " + error.message);
-    }
-  };
+const handleDelete = async (id) => {
+  toast("Are you sure you want to delete this user?", {
+    action: {
+      label: "Delete",
+      onClick: async () => {
+        try {
+          const res = await fetch(`${API_ROUTES.USERS}/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || "Failed to delete user");
+
+          setUsers((prev) => prev.filter((u) => u.id !== id));
+          toast.success("User deleted successfully!");
+        } catch (error) {
+          console.error("Error deleting user:", error);
+          toast.error("❌ Error deleting user: " + error.message);
+        }
+      },
+    },
+  });
+};
+
 
   if (loading) return <Spinner />;
 

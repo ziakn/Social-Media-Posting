@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, getDocs, getDoc, doc } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, addDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 export const revalidate = 60;
