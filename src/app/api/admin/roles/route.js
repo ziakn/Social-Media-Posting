@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, getDocs, getDoc, doc } from "firebase/firestore";
+import { addDoc, collection, getDocs } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 export const revalidate = 60;
@@ -14,36 +14,17 @@ function serializeBigInt(obj) {
 
 export const GET = async () => {
   try {
-    const usersSnap = await getDocs(collection(db, "users"));
-
-    // ✅ Use map properly and collect promises
-    const usersPromises = usersSnap.docs.map(async (d) => {
-      const user = d.data();
-      let role = null;
-
-      if (user.role_id) {
-        const roleSnap = await getDoc(doc(db, "roles", user.role_id));
-        if (roleSnap.exists()) {
-          role = { id: roleSnap.id, ...roleSnap.data() }; // ✅ Include role id too
-        }
-      }
-
-      return {
-        id: d.id,
-        ...user,
-        role, // ✅ Attach the role object
-      };
-    });
-
-    // ✅ Resolve all async map promises
-    const users = await Promise.all(usersPromises);
+    const data = await getDocs(collection(db, "roles"));
+    const roles = data.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
 
     return new Response(
-      JSON.stringify({ success: true, users: serializeBigInt(users) }),
+      JSON.stringify({ success: true, roles: serializeBigInt(roles) }),
       { status: 200 }
     );
   } catch (err) {
-    console.error("Error fetching users:", err);
     return new Response(
       JSON.stringify({ success: false, message: err.message }),
       { status: 500 }
@@ -77,7 +58,7 @@ export async function POST(req) {
       name,
       email,
       role_id,
-      password:hash_password,
+      hash_password,
       created_at: new Date(),
     });
 

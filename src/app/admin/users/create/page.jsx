@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
 import { addDoc, collection, getDocs } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
@@ -9,6 +8,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { API_ROUTES } from "@/constants/api";
 import { ROUTES } from "@/constants/routes";
+import { toast } from "sonner";
+import { db } from "@/lib/firebase";
 
 export default function CreateUser() {
   const [form, setForm] = useState({
@@ -19,37 +20,37 @@ export default function CreateUser() {
   });
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [rolesLoading, setRolesLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    const fetchRoles = async () => {
-      try {
-        const rolesSnap = await getDocs(collection(db, "roles"));
-        const rolesData = rolesSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setRoles(rolesData);
-      } catch (error) {
-        console.error("Error fetching roles:", error);
-        alert("Failed to fetch roles");
-      } finally {
-        setRolesLoading(false);
-      }
-    };
     fetchRoles();
   }, []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
 
-    if (!form.name || !form.email || !form.password || !form.role_id) {
-      return alert("Please fill all fields!");
-    }
-
+  const fetchRoles = async () => {
+    try {
     setLoading(true);
 
+      const res = await fetch(API_ROUTES.ROLES, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await res.json();
+      setRoles(data.roles);
+    } catch (error) {
+      toast.error("Some Thing went Wrong !");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.password || !form.role_id) {
+      toast.warning("Fill The Form Correctly");
+      return;
+    }
     try {
       const res = await fetch(API_ROUTES.USERS_CREATE, {
         method: "POST",
@@ -61,22 +62,16 @@ export default function CreateUser() {
 
       if (!res.ok) throw new Error(data.error || "Failed to create user");
 
-      alert("✅ User created successfully!");
+      toast.success("User Created Successfully");
       router.push(ROUTES.ADMIN_USER);
     } catch (error) {
       console.error("Error adding user:", error);
-      alert("❌ Error: " + error.message);
-    } finally {
-      setLoading(false);
-    }
+      toast.error("Some Thing went Wrong !");
+    } 
   };
 
-  if (rolesLoading)
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Spinner />
-      </div>
-    );
+
+  if (loading) return <Spinner />;
 
   return (
     <div className="p-6">

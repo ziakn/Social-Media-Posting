@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
+
 import {
   Table,
   TableBody,
@@ -97,7 +97,7 @@ export default function UsersList() {
                   <TableRow key={user.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role_id || "—"}</TableCell>
+                    <TableCell>{user.role.name || "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button
                         size="sm"

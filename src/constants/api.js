@@ -7,4 +7,7 @@ export const API_ROUTES = {
   USERS: `${API_PREFIX}/users`,
   USERS_CREATE: `${API_PREFIX}/users`,
   USERS_EDIT: `${API_PREFIX}/users`,
+  ROLES: `${API_PREFIX}/roles`,
+  ROLES_CREATE: `${API_PREFIX}/roles`,
+  ROLES_EDIT: `${API_PREFIX}/roles`,
 };

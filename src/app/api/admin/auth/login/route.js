@@ -4,6 +4,8 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import bcrypt from "bcryptjs";
 
 export async function POST(req) {
+
+  
   try {
     const { email, password } = await req.json();
 
@@ -22,8 +24,10 @@ export async function POST(req) {
 
     const userDocRef = snapshot.docs[0];
     const userDoc = userDocRef.data();
+   
+    const passwordMatch = await bcrypt.compare(password, userDoc.hash_password);
 
-    const passwordMatch = await bcrypt.compare(password, userDoc.password);
+    
     if (!passwordMatch) {
       return NextResponse.json({ error: "Incorrect password!" }, { status: 401 });
     }
@@ -39,6 +43,7 @@ export async function POST(req) {
       }
     }
 
+ 
     const sessionUser = {
       id: userDocRef.id,
       name: userDoc.name,
