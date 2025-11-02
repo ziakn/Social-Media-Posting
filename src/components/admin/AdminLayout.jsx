@@ -10,15 +10,18 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  Waypoints
 } from "lucide-react";
 import Navbar from "./Navbar";
+import { ROUTES } from "@/constants/routes";
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const menuItems = [
-    { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
-    { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
+    { label: "Dashboard", href: ROUTES.ADMIN_DASHBOARD, icon: <LayoutDashboard size={18} /> },
+    { label: "Users", href: ROUTES.ADMIN_USER, icon: <Users size={18} /> },
+    { label: "Roles", href: ROUTES.ADMIN_ROLE, icon: <Waypoints size={18} /> },
     { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
   ];
 

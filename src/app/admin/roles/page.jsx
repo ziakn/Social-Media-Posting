@@ -1,12 +1,30 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import { db } from "../../../lib/firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import Link from "next/link";
-import Layout from "../components/Layout";
+import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -16,59 +34,66 @@ export default function RolesPage() {
         ...doc.data(),
       }));
       setRoles(rolesData);
+      setLoading(false);
+
     };
     fetchRoles();
   }, []);
 
   const handleDelete = async (id) => {
     await deleteDoc(doc(db, "roles", id));
-    setRoles(roles.filter((r) => r.id !== id));
+    setRoles((prev) => prev.filter((r) => r.id !== id));
   };
+  if (loading) return <Spinner />;
 
   return (
-    <Layout>
-    <div className="container mt-5">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h2>Roles</h2>
-        <Link href="/firebase/roles/create" className="btn btn-primary">
-          + Add Role
-        </Link>
-      </div>
+      <div className="p-6">
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Roles</CardTitle>
+          <Link href="/firebase/roles/create">
+            <Button>+ Add Role</Button>
+          </Link>
+        </CardHeader>
 
-      <table className="table table-bordered">
-        <thead className="table-light">
-          <tr>
-            <th>Name</th>
-            <th>Description</th>
-            <th>Permissions</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {roles.map((role) => (
-            <tr key={role.id}>
-              <td>{role.name}</td>
-              <td>{role.description}</td>
-              <td>{(role.permissions || []).join(", ")}</td>
-              <td>
-                <Link
-                  href={`/firebase/roles/${role.id}/edit`}
-                  className="btn btn-sm btn-warning me-2"
-                >
-                  Edit
-                </Link>
-                <button
-                  onClick={() => handleDelete(role.id)}
-                  className="btn btn-sm btn-danger"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead>Permissions</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {roles.map((role) => (
+                <TableRow key={role.id}>
+                  <TableCell>{role.name}</TableCell>
+                  <TableCell>{role.description}</TableCell>
+                  <TableCell>
+                    {(role.permissions || []).join(", ")}
+                  </TableCell>
+                  <TableCell className="text-right space-x-2">
+                    <Link href={`/firebase/roles/${role.id}/edit`}>
+                      <Button variant="outline" size="sm">
+                        Edit
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(role.id)}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
-    </Layout>
   );
 }
