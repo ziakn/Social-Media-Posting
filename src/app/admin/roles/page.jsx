@@ -21,30 +21,69 @@ import {
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { ROUTES } from "@/constants/routes";
+import { toast } from "sonner";
+
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
+  const [permissions, setPermissions] = useState([]);
+
   const [loading, setLoading] = useState(true);
 
 
-  useEffect(() => {
-    const fetchRoles = async () => {
-      const querySnapshot = await getDocs(collection(db, "roles"));
-      const rolesData = querySnapshot.docs.map((doc) => ({
+ useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+
+      const [rolesSnap, permsSnap] = await Promise.all([
+        getDocs(collection(db, "roles")),
+        getDocs(collection(db, "permissions")),
+      ]);
+
+      const rolesData = rolesSnap.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
+      const permsData = permsSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
       setRoles(rolesData);
+      setPermissions(permsData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error(`❌ Failed to load data: ${error.message}`);
+    } finally {
       setLoading(false);
-
-    };
-    fetchRoles();
-  }, []);
-
-  const handleDelete = async (id) => {
-    await deleteDoc(doc(db, "roles", id));
-    setRoles((prev) => prev.filter((r) => r.id !== id));
+    }
   };
+
+  fetchData();
+}, []);
+
+
+const handleDelete = async (id) => {
+  toast("Are you sure you want to delete this role?", {
+    action: {
+      label: "Delete",
+      onClick: async () => {
+        try {
+          await deleteDoc(doc(db, "roles", id));
+          setRoles((prev) => prev.filter((r) => r.id !== id));
+          toast.success(" Role deleted successfully!");
+        } catch (error) {
+          console.error("Error deleting role:", error);
+          toast.error(`Failed to delete role: ${error.message}`);
+        }
+      },
+    },
+  });
+};
+
+
   if (loading) return <Spinner />;
 
   return (
@@ -73,7 +112,10 @@ export default function RolesPage() {
                   <TableCell>{role.name}</TableCell>
                   <TableCell>{role.description}</TableCell>
                   <TableCell>
-                    {(role.permissions || []).join(", ")}
+                      {permissions &&permissions.map((perm) => {
+                      const matched = role.permissions.find((selected) => selected === perm.id);
+                      return matched ? perm.name + " |" : null;
+                    })}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Link href={ROUTES.ADMIN_ROLE_EDIT+'/'+role.id+'/edit'}>
