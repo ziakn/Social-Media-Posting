@@ -20,6 +20,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { ROUTES } from "@/constants/routes";
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
@@ -51,7 +52,7 @@ export default function RolesPage() {
       <Card className="shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Roles</CardTitle>
-          <Link href="/firebase/roles/create">
+          <Link href={ROUTES.ADMIN_ROLE_CREATE}>
             <Button>+ Add Role</Button>
           </Link>
         </CardHeader>
@@ -75,7 +76,7 @@ export default function RolesPage() {
                     {(role.permissions || []).join(", ")}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
-                    <Link href={`/firebase/roles/${role.id}/edit`}>
+                    <Link href={ROUTES.ADMIN_ROLE_EDIT+'/'+role.id+'/edit'}>
                       <Button variant="outline" size="sm">
                         Edit
                       </Button>

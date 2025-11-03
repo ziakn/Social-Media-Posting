@@ -10,14 +10,24 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import Layout from "../../../components/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
+import { ROUTES } from "@/constants/routes";
 
 export default function EditRole() {
   const router = useRouter();
   const params = useParams();
   const { id } = params;
 
-  const [role, setRole] = useState(null);
+  const [role, setRole] = useState({
+    name: "",
+    description: "",
+  });
   const [permissions, setPermissions] = useState([]);
   const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,15 +51,18 @@ export default function EditRole() {
 
         if (roleSnap.exists()) {
           const roleData = { id: roleSnap.id, ...roleSnap.data() };
-          setRole(roleData);
+          setRole({
+            name: roleData.name || "",
+            description: roleData.description || "",
+          });
           setSelectedPermissions(roleData.permissions || []);
         } else {
-          alert("Role not found!");
-          router.push("/firebase/roles");
+          toast.error("Role not found!");
+          router.push(ROUTES.ADMIN_ROLE);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
-        alert("Error loading role: " + error.message);
+        toast.error("Error loading role");
       } finally {
         setLoading(false);
       }
@@ -59,17 +72,17 @@ export default function EditRole() {
   }, [id, router]);
 
   const handlePermissionToggle = (permId) => {
-    if (selectedPermissions.includes(permId)) {
-      setSelectedPermissions(selectedPermissions.filter((p) => p !== permId));
-    } else {
-      setSelectedPermissions([...selectedPermissions, permId]);
-    }
+    setSelectedPermissions(prev =>
+      prev.includes(permId)
+        ? prev.filter(p => p !== permId)
+        : [...prev, permId]
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!role.name.trim()) {
-      alert("Role name is required!");
+      toast.warning("Role name is required!");
       return;
     }
 
@@ -82,91 +95,100 @@ export default function EditRole() {
         permissions: selectedPermissions,
         updated_at: new Date(),
       });
-      alert("Role updated successfully!");
-      router.push("/firebase/roles");
+      toast.success("Role updated successfully!");
+      router.push(ROUTES.ADMIN_ROLE);
     } catch (error) {
       console.error("Error updating role:", error);
-      alert("Error updating role: " + error.message);
+      toast.error("Error updating role");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p className="text-center mt-5">Loading role...</p>;
+  if (loading) return (
+    <div className="p-6 flex justify-center items-center min-h-[200px]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-2 text-muted-foreground">Loading role...</p>
+      </div>
+    </div>
+  );
+
   if (!role) return null;
 
   return (
-    <Layout>
-      <div className="container mt-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h3>Edit Role</h3>
-          <button className="btn btn-secondary" onClick={() => router.back()}>
-            ← Back
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="card p-4 shadow-sm">
-          <div className="mb-3">
-            <label className="form-label fw-bold">Role Name</label>
-            <input
-              type="text"
-              className="form-control"
-              value={role.name}
-              onChange={(e) => setRole({ ...role, name: e.target.value })}
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label fw-bold">Description</label>
-            <textarea
-              className="form-control"
-              value={role.description || ""}
-              onChange={(e) =>
-                setRole({ ...role, description: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label fw-bold">Permissions</label>
-            <div className="border rounded p-3">
-              {permissions.length === 0 ? (
-                <p className="text-muted">No permissions available.</p>
-              ) : (
-                <div className="row">
-                  {permissions.map((perm) => (
-                    <div className="col-md-6 mb-2" key={perm.id}>
-                      <div className="form-check">
-                        <input
-                          type="checkbox"
-                          className="form-check-input"
-                          id={`perm-${perm.id}`}
-                          checked={selectedPermissions.includes(perm.id)}
-                          onChange={() => handlePermissionToggle(perm.id)}
-                        />
-                        <label
-                          className="form-check-label"
-                          htmlFor={`perm-${perm.id}`}
-                        >
-                          {perm.name || perm.id}
-                        </label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+    <div className="p-6">
+      <Card className="shadow-sm">
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle className="text-xl font-semibold">Edit Role</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="roleName" className="text-base font-semibold">
+                Role Name
+              </Label>
+              <Input
+                id="roleName"
+                placeholder="Enter role name"
+                value={role.name}
+                onChange={(e) => setRole({ ...role, name: e.target.value })}
+                className="w-full"
+              />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary w-100 mt-3"
-            disabled={saving}
-          >
-            {saving ? "Updating..." : "Update Role"}
-          </button>
-        </form>
-      </div>
-    </Layout>
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-base font-semibold">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Optional description..."
+                value={role.description}
+                onChange={(e) => setRole({ ...role, description: e.target.value })}
+                className="min-h-[100px]"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">Permissions</Label>
+              <Card className="border">
+                <CardContent className="p-4">
+                  {permissions.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-4">
+                      No permissions available.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {permissions.map((perm) => (
+                        <div key={perm.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`perm-${perm.id}`}
+                            checked={selectedPermissions.includes(perm.id)}
+                            onCheckedChange={() => handlePermissionToggle(perm.id)}
+                          />
+                          <Label
+                            htmlFor={`perm-${perm.id}`}
+                            className="text-sm font-normal cursor-pointer"
+                          >
+                            {perm.name || perm.id}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+        
+            <div className="flex justify-end">
+              <Button type="submit" disabled={saving}>
+                {saving ? "Updating..." : "Update Role"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
