@@ -4,12 +4,21 @@ import { useEffect, useState } from "react";
 import { db } from "../../../lib/firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import Layout from "../components/Layout";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash2, Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { ROUTES } from "@/constants/routes";
+import Link from "next/link";
+
 
 export default function PermissionsList() {
   const router = useRouter();
   const [permissions, setPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     const fetchPermissions = async () => {
@@ -22,6 +31,7 @@ export default function PermissionsList() {
         setPermissions(data);
       } catch (error) {
         console.error("Error fetching permissions:", error);
+        toast.error("Failed to load permissions");
       } finally {
         setLoading(false);
       }
@@ -30,69 +40,121 @@ export default function PermissionsList() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this permission?")) return;
-    try {
-      await deleteDoc(doc(db, "permissions", id));
+  toast("Are you sure you want to delete this role?", {
+    action: {
+      label: "Delete",
+      onClick: async () => {
+        try {
+          await deleteDoc(doc(db, "permissions", id));
       setPermissions(permissions.filter((p) => p.id !== id));
-      alert("Permission deleted successfully!");
-    } catch (error) {
-      alert("Error deleting permission: " + error.message);
-    }
-  };
+      toast.success("Permission deleted successfully!");
+        } catch (error) {
+          console.error("Error deleting role:", error);
+          toast.error(`Failed to delete role: ${error.message}`);
+        }
+      },
+    },
+  });
+};
 
-  if (loading) return <p className="text-center mt-5">Loading permissions...</p>;
+
+  if (loading) {
+    return (
+      <div className="p-6 flex justify-center items-center min-h-[200px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="mt-2 text-muted-foreground">Loading permissions...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <Layout>
-      <div className="container mt-5">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2>Permissions</h2>
-          <button
-            className="btn btn-success"
-            onClick={() => router.push("/firebase/permissions/create")}
-          >
-            + Add Permission
-          </button>
-        </div>
-
-        {permissions.length === 0 ? (
-          <p>No permissions found.</p>
-        ) : (
-          <table className="table table-bordered table-striped">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Description</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {permissions.map((perm) => (
-                <tr key={perm.id}>
-                  <td>{perm.name}</td>
-                  <td>{perm.description || "—"}</td>
-                  <td>
-                    <button
-                      className="btn btn-sm btn-primary me-2"
-                      onClick={() =>
-                        router.push(`/firebase/permissions/${perm.id}/edit`)
-                      }
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-sm btn-danger"
-                      onClick={() => handleDelete(perm.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </Layout>
+     <div className="p-6">
+      <Card className="shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Permission</CardTitle>
+          <Link href={ROUTES.ADMIN_PERMISSION_CREATE}>
+            <Button>+ Add Permission</Button>
+          </Link>
+        </CardHeader>
+        
+        <CardContent>
+          {permissions.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No permissions found.</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => router.push(ROUTES.ADMIN_PERMISSION_CREATE)}
+              >
+                Create Your First Permission
+              </Button>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {permissions.map((perm) => (
+                  <TableRow key={perm.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary">
+                          {perm.name}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <p className="text-sm text-muted-foreground max-w-md">
+                        {perm.description || "No description"}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-muted-foreground">
+                        {perm.created_at?.toDate?.().toLocaleDateString() || 'N/A'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`${ROUTES.ADMIN_PERMISSION_EDIT}/${perm.id}/edit`)}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit className="h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(perm.id)}
+                          disabled={deletingId === perm.id}
+                          className="flex items-center gap-2"
+                        >
+                          {deletingId === perm.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                          Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

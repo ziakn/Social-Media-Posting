@@ -22,6 +22,7 @@ export default function AdminLayout({ children }) {
     { label: "Dashboard", href: ROUTES.ADMIN_DASHBOARD, icon: <LayoutDashboard size={18} /> },
     { label: "Users", href: ROUTES.ADMIN_USER, icon: <Users size={18} /> },
     { label: "Roles", href: ROUTES.ADMIN_ROLE, icon: <Waypoints size={18} /> },
+    { label: "Permissions", href: ROUTES.ADMIN_PERMISSION, icon: <Waypoints size={18} /> },
     { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
   ];
 

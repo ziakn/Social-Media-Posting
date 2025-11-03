@@ -4,78 +4,87 @@ import { useState } from "react";
 import { db } from "../../../../lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import Layout from "../../components/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { ROUTES } from "@/constants/routes";
 
 export default function CreatePermission() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert("Permission name is required!");
+      toast.warning("Fill The Form Correctly");
       return;
     }
 
-    setSaving(true);
+    setLoading(true);
     try {
       await addDoc(collection(db, "permissions"), {
         name,
         description: description || "",
         created_at: new Date(),
+        updated_at: new Date(),
       });
-      alert("Permission created successfully!");
-      router.push("/firebase/permissions");
+      toast.success("Permission Created Successfully");
+      router.push(ROUTES.ADMIN_PERMISSION);
     } catch (error) {
-      alert("Error adding permission: " + error.message);
+      console.error("Error creating permission:", error);
+      toast.error("Some Thing went Wrong !");
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
   return (
-    <Layout>
-      <div className="container mt-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h3>Create Permission</h3>
-          <button className="btn btn-secondary" onClick={() => router.back()}>
-            ← Back
-          </button>
-        </div>
+    <div className="p-6">
+      <Card className="shadow-sm">
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle className="text-xl font-semibold">Add New Permission</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-base font-semibold">
+                Permission Name
+              </Label>
+              <Input
+                id="name"
+                placeholder="Enter permission name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full"
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="card p-4 shadow-sm">
-          <div className="mb-3">
-            <label className="form-label fw-bold">Permission Name</label>
-            <input
-              type="text"
-              className="form-control"
-              placeholder="e.g. create_user"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label fw-bold">Description</label>
-            <textarea
-              className="form-control"
-              placeholder="Describe this permission..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary w-100 mt-3"
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Create Permission"}
-          </button>
-        </form>
-      </div>
-    </Layout>
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-base font-semibold">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Optional description..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="min-h-[100px]"
+              />
+            </div>
+        
+            <div className="flex justify-end">
+              <Button variant="secondary" type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Create Permission"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

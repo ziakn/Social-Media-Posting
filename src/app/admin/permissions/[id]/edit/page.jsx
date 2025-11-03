@@ -4,14 +4,23 @@ import { useEffect, useState } from "react";
 import { db } from "../../../../../lib/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useRouter, useParams } from "next/navigation";
-import Layout from "../../../components/Layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { ROUTES } from "@/constants/routes";
 
 export default function EditPermission() {
   const router = useRouter();
   const { id } = useParams();
-  const [permission, setPermission] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [permission, setPermission] = useState({
+    name: "",
+    description: "",
+  });
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchPermission = async () => {
@@ -19,13 +28,18 @@ export default function EditPermission() {
         const docRef = doc(db, "permissions", id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setPermission({ id: docSnap.id, ...docSnap.data() });
+          const permissionData = { id: docSnap.id, ...docSnap.data() };
+          setPermission({
+            name: permissionData.name || "",
+            description: permissionData.description || "",
+          });
         } else {
-          alert("Permission not found!");
-          router.push("/firebase/permissions");
+          toast.error("Permission not found!");
+          router.push(ROUTES.ADMIN_PERMISSION);
         }
       } catch (error) {
-        alert("Error loading permission: " + error.message);
+        console.error("Error loading permission:", error);
+        toast.error("Error loading permission");
       } finally {
         setLoading(false);
       }
@@ -36,7 +50,7 @@ export default function EditPermission() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!permission.name.trim()) {
-      alert("Permission name is required!");
+      toast.warning("Fill The Form Correctly");
       return;
     }
 
@@ -48,61 +62,69 @@ export default function EditPermission() {
         description: permission.description || "",
         updated_at: new Date(),
       });
-      alert("Permission updated successfully!");
-      router.push("/firebase/permissions");
+      toast.success("Permission Updated Successfully");
+      router.push(ROUTES.ADMIN_PERMISSION);
     } catch (error) {
-      alert("Error updating permission: " + error.message);
+      console.error("Error updating permission:", error);
+      toast.error("Some Thing went Wrong !");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p className="text-center mt-5">Loading permission...</p>;
+  if (loading) return (
+    <div className="p-6 flex justify-center items-center min-h-[200px]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+        <p className="mt-2 text-muted-foreground">Loading permission...</p>
+      </div>
+    </div>
+  );
+
   if (!permission) return null;
 
   return (
-    <Layout>
-      <div className="container mt-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h3>Edit Permission</h3>
-          <button className="btn btn-secondary" onClick={() => router.back()}>
-            ← Back
-          </button>
-        </div>
+    <div className="p-6">
+      <Card className="shadow-sm">
+        <CardHeader className="flex justify-between items-center">
+          <CardTitle className="text-xl font-semibold">Edit Permission</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-base font-semibold">
+                Permission Name
+              </Label>
+              <Input
+                id="name"
+                placeholder="Enter permission name"
+                value={permission.name}
+                onChange={(e) => setPermission({ ...permission, name: e.target.value })}
+                className="w-full"
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="card p-4 shadow-sm">
-          <div className="mb-3">
-            <label className="form-label fw-bold">Permission Name</label>
-            <input
-              type="text"
-              className="form-control"
-              value={permission.name}
-              onChange={(e) =>
-                setPermission({ ...permission, name: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label fw-bold">Description</label>
-            <textarea
-              className="form-control"
-              value={permission.description || ""}
-              onChange={(e) =>
-                setPermission({ ...permission, description: e.target.value })
-              }
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary w-100 mt-3"
-            disabled={saving}
-          >
-            {saving ? "Updating..." : "Update Permission"}
-          </button>
-        </form>
-      </div>
-    </Layout>
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-base font-semibold">
+                Description
+              </Label>
+              <Textarea
+                id="description"
+                placeholder="Optional description..."
+                value={permission.description}
+                onChange={(e) => setPermission({ ...permission, description: e.target.value })}
+                className="min-h-[100px]"
+              />
+            </div>
+        
+            <div className="flex justify-end">
+              <Button variant="secondary" type="submit" disabled={saving}>
+                {saving ? "Updating..." : "Update Permission"}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
