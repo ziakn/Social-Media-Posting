@@ -2,37 +2,44 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import bcrypt from "bcryptjs";
+import { createToken } from "@/lib/auth";
 
 export async function POST(req) {
-
-  
   try {
     const { email, password } = await req.json();
 
-    // Check for missing fields
+    // Validation
     if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Email and password are required." },
+        { status: 400 }
+      );
     }
 
-    // Find user in Firestore
-    const q = query(collection(db, "users"), where("email", "==", email));
+    // Find user
+    const q = query(collection(db, "users"), where("email", "==", email.toLowerCase().trim()));
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
-      return NextResponse.json({ error: "Email not found!" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Invalid email or password." },
+        { status: 401 }
+      );
     }
 
     const userDocRef = snapshot.docs[0];
     const userDoc = userDocRef.data();
-   
-    const passwordMatch = await bcrypt.compare(password, userDoc.hash_password);
 
-    
+    // Check password
+    const passwordMatch = await bcrypt.compare(password, userDoc.hash_password);
     if (!passwordMatch) {
-      return NextResponse.json({ error: "Incorrect password!" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Invalid email or password." },
+        { status: 401 }
+      );
     }
 
-    // Fetch Role & Permissions
+    // Fetch role data
     let roleData = null;
     if (userDoc.role_id) {
       const roleSnap = await getDocs(
@@ -43,27 +50,49 @@ export async function POST(req) {
       }
     }
 
- 
-    const sessionUser = {
+    // Create JWT payload
+    const tokenPayload = {
       id: userDocRef.id,
-      name: userDoc.name,
       email: userDoc.email,
-      role_id: userDoc.role_id,
+      name: userDoc.name,
       role: roleData?.name || null,
       permissions: roleData?.permissions || [],
     };
 
-    const response = NextResponse.json({ success: true, user: sessionUser });
-    
-     response.cookies.set("token", JSON.stringify({ id: sessionUser.id, role: sessionUser.role }), {
+    // Create JWT token
+    const token = await createToken(tokenPayload);
+
+    // Prepare user data for response
+    const userData = {
+      id: userDocRef.id,
+      name: userDoc.name,
+      email: userDoc.email,
+      role: roleData?.name || null,
+      permissions: roleData?.permissions || [],
+    };
+
+    const response = NextResponse.json({
+      success: true,
+      user: userData,
+      message: "Login successful"
+    });
+
+    // Set secure cookie
+    response.cookies.set("token", token, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24, // 1 day
+      maxAge: 60 * 60 * 24, // 24 hours
+      sameSite: "strict"
     });
 
     return response;
+
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json({ error: "Server error: " + error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error." },
+      { status: 500 }
+    );
   }
 }

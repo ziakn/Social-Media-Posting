@@ -10,19 +10,23 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Waypoints
+  Waypoints,
+  Spotlight
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { ROUTES } from "@/constants/routes";
+import { PermissionGuard, PermissionButton } from '@/components/PermissionGuard';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export default function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { user, hasPermission } = usePermissions();
 
   const menuItems = [
     { label: "Dashboard", href: ROUTES.ADMIN_DASHBOARD, icon: <LayoutDashboard size={18} /> },
     { label: "Users", href: ROUTES.ADMIN_USER, icon: <Users size={18} /> },
     { label: "Roles", href: ROUTES.ADMIN_ROLE, icon: <Waypoints size={18} /> },
-    { label: "Permissions", href: ROUTES.ADMIN_PERMISSION, icon: <Waypoints size={18} /> },
+    { label: "Permissions", href: ROUTES.ADMIN_PERMISSION, icon: <Spotlight size={18} /> },
     { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
   ];
 
@@ -77,6 +81,8 @@ export default function AdminLayout({ children }) {
         </nav>
 
         {/* Footer */}
+        
+        <PermissionGuard permissions={['create_user']}>
         <div className="p-3 border-t border-gray-200">
           <Button
             variant="outline"
@@ -88,6 +94,7 @@ export default function AdminLayout({ children }) {
             {sidebarOpen && <span className="text-sm font-sm">Logout</span>}
           </Button>
         </div>
+        </PermissionGuard>
       </aside>
 
       {/* Main Content */}

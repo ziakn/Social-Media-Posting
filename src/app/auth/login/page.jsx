@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Alert } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
 import { API_ROUTES } from "@/constants/api";
 import { ROUTES } from "@/constants/routes";
 
@@ -13,8 +14,8 @@ export default function Login() {
   const [email, setEmail] = useState("admin@gmail.com");
   const [password, setPassword] = useState("asdasdasd");
   const [alert, setAlert] = useState("");
-  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e) => {
@@ -34,65 +35,94 @@ export default function Login() {
       setLoading(false);
 
       if (!res.ok) {
-        setAlert(data.error || "Login failed!");
+        setAlert(data.error || "Invalid credentials. Please try again.");
         return;
       }
 
       localStorage.setItem("currentUser", JSON.stringify(data.user));
-      setSuccess(true); // Show success notification
+      setSuccess(true);
 
-      // Redirect after a short delay to show the success alert
-      setTimeout(() => router.push(ROUTES.ADMIN_DASHBOARD), 1000);
+      // Brief success message before redirect
+      setTimeout(() => router.push(ROUTES.ADMIN_DASHBOARD), 800);
     } catch (error) {
       console.error(error);
       setLoading(false);
-      setAlert("Login failed: " + error.message);
+      setAlert("Login failed: " + (error.message || "Unexpected error"));
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md p-6 shadow-lg">
-        <h2 className="text-2xl font-bold text-center mb-4">Login</h2>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100">
+      <Card className="w-full max-w-md shadow-xl border border-gray-200">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-semibold text-gray-800 tracking-tight">
+            Welcome Back 👋
+          </CardTitle>
+          <p className="text-sm text-gray-500 mt-1">Sign in to continue to your dashboard</p>
+        </CardHeader>
 
-        {alert && (
-          <Alert
-            variant="destructive"
-            className="mb-3 w-full text-center whitespace-nowrap overflow-hidden text-ellipsis"
-          >
-            {alert}
-          </Alert>
-        )}
+        <CardContent>
+          {alert && (
+            <Alert variant="destructive" className="mb-3">
+              <AlertDescription>{alert}</AlertDescription>
+            </Alert>
+          )}
 
-        {success && (
-          <Alert
-            variant="success"
-            className="mb-3 w-full text-center whitespace-nowrap overflow-hidden text-ellipsis"
-          >
-            Successfully logged in!
-          </Alert>
-        )}
+          {success && (
+            <Alert variant="default" className="mb-3 bg-green-50 border-green-200 text-green-800">
+              <AlertDescription>Successfully logged in!</AlertDescription>
+            </Alert>
+          )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <Input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-1">
+              <label htmlFor="email" className="text-sm font-medium text-gray-700">
+                Email
+              </label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
-          </Button>
-        </form>
+            <div className="space-y-1">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                Password
+              </label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full mt-2"
+              disabled={loading}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Logging in...
+                </div>
+              ) : (
+                "Login"
+              )}
+            </Button>
+          </form>
+        </CardContent>
+
+        <CardFooter className="text-center text-sm text-gray-500">
+          © {new Date().getFullYear()} Your Company. All rights reserved.
+        </CardFooter>
       </Card>
     </div>
   );
