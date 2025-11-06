@@ -70,8 +70,7 @@ export async function POST(req) {
       email: userDoc.email,
       name: userDoc.name,
       role: roleData?.name || null,
-      permissions: permissionData|| [],
-
+      permissions: permissionData.map(item => item.name) || [],
     };
 
     // Create JWT token
@@ -83,7 +82,7 @@ export async function POST(req) {
       name: userDoc.name,
       email: userDoc.email,
       role: roleData?.name || null,
-      permissions: permissionData || [],
+      permissions: permissionData.map(item => item.name) || [],
 
     };
 

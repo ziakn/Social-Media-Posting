@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import {API_ROUTES} from '@/constants/api'
 
 export function usePermissions() {
   const [permissions, setPermissions] = useState([]);
@@ -8,8 +9,10 @@ export function usePermissions() {
   useEffect(() => {
     const verifyAuth = async () => {
       try {
-        const res = await fetch('/api/auth/verify');
+        const res = await fetch(API_ROUTES.VERIFY_AUTH);
         const data = await res.json();
+
+        console.log(data)
         if (data.valid) {
           setUser(data.user);
           setPermissions(data.user.permissions || []);

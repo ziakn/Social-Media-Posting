@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
+import { usePermissions } from '@/hooks/usePermissions';
 
 import {
   Table,
@@ -21,6 +22,7 @@ import { API_ROUTES } from "@/constants/api";
 import { toast } from "sonner";
 
 export default function UsersList() {
+   const { user, permissions, hasPermission } = usePermissions();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -78,23 +80,27 @@ const handleDelete = async (id) => {
       <Card className="shadow-sm">
         <CardHeader className="flex justify-between items-center">
           <CardTitle className="text-xl font-semibold">Users</CardTitle>
+          {hasPermission('create_user') && 
           <Button
             variant="secondary"
             onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
           >
             + Add User
           </Button>
+}
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <p className="mb-4">No users found.</p>
+              {hasPermission('create_user') && 
               <Button
                 size="sm"
                 onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
               >
                 + Add your first user
               </Button>
+}
             </div>
           ) : (
             <Table>
@@ -114,6 +120,7 @@ const handleDelete = async (id) => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.role.name || "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
+                      {hasPermission('edit_user') && 
                       <Button
                         size="sm"
                         variant="outline"
@@ -124,7 +131,8 @@ const handleDelete = async (id) => {
                         }
                       >
                         Edit
-                      </Button>
+                      </Button>}
+                      {hasPermission('delete_user') && 
                       <Button
                         size="sm"
                         variant="destructive"
@@ -132,6 +140,7 @@ const handleDelete = async (id) => {
                       >
                         Delete
                       </Button>
+}
                     </TableCell>
                   </TableRow>
                 ))}

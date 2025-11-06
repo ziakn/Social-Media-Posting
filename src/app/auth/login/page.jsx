@@ -41,9 +41,9 @@ export default function Login() {
 
       console.log(data.user)
 
-      return;
+      // return;
 
-      localStorage.setItem("currentUser", JSON.stringify(data.user));
+      // localStorage.setItem("currentUser", JSON.stringify(data.user));
       setSuccess(true);
 
       // Brief success message before redirect

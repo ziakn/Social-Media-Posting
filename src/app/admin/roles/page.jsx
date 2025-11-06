@@ -112,10 +112,18 @@ const handleDelete = async (id) => {
                   <TableCell>{role.name}</TableCell>
                   <TableCell>{role.description}</TableCell>
                   <TableCell>
-                      {permissions &&permissions.map((perm) => {
-                      const matched = role.permissions.find((selected) => selected === perm.id);
-                      return matched ? perm.name + " |" : null;
-                    })}
+                    {permissions && (() => {
+                      const matchedPerms = permissions.filter((perm) =>
+                        role.permissions.includes(perm.id)
+                      );
+                      const displayPerms = matchedPerms.slice(0, 3).map((perm) => perm.name);
+                      return (
+                        <>
+                          {displayPerms.join(' | ')}
+                          {matchedPerms.length > 3 && ' ...'}
+                        </>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell className="text-right space-x-2">
                     <Link href={ROUTES.ADMIN_ROLE_EDIT+'/'+role.id+'/edit'}>

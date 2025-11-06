@@ -11,26 +11,30 @@ import {
   ChevronRight,
   LogOut,
   Waypoints,
-  Spotlight
+  Spotlight,
 } from "lucide-react";
 import Navbar from "./Navbar";
+import { usePermissions } from "@/hooks/usePermissions";
 import { ROUTES } from "@/constants/routes";
-import { PermissionGuard, PermissionButton } from '@/components/PermissionGuard';
-import { usePermissions } from '@/hooks/usePermissions';
+import { API_ROUTES } from "@/constants/api";
+import { useRouter } from "next/navigation";
 
 export default function AdminLayout({ children }) {
+  const router = useRouter();
+  const { user, permissions, hasPermission } = usePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const { user, hasPermission } = usePermissions();
-
-  const menuItems = [
-    { label: "Dashboard", href: ROUTES.ADMIN_DASHBOARD, icon: <LayoutDashboard size={18} /> },
-    { label: "Users", href: ROUTES.ADMIN_USER, icon: <Users size={18} /> },
-    { label: "Roles", href: ROUTES.ADMIN_ROLE, icon: <Waypoints size={18} /> },
-    { label: "Permissions", href: ROUTES.ADMIN_PERMISSION, icon: <Spotlight size={18} /> },
-    { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
-  ];
 
   const handleToggle = () => setSidebarOpen((prev) => !prev);
+
+  const handleLogout = async () => {
+    try {
+      await fetch(API_ROUTES.LOGOUT, { method: 'POST' });
+      document.cookie = 'token=; path=/; max-age=0';
+      router.push(ROUTES.ADMIN_LOGIN);
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -62,44 +66,108 @@ export default function AdminLayout({ children }) {
         {/* Menu */}
         <nav className="flex-1 mt-3">
           <ul className="space-y-1">
-            {menuItems.map((item) => (
-              <li key={item.href}>
+            {/* Dashboard is always visible */}
+            {hasPermission('view_dashboard') && (
+
+            <li key={ROUTES.ADMIN_DASHBOARD}>
+              <Link
+                href={ROUTES.ADMIN_DASHBOARD}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
+                  sidebarOpen ? "justify-start" : "justify-center"
+                }`}
+              >
+                <LayoutDashboard size={18} />
+                {sidebarOpen && (
+                  <span className="text-sm font-medium">Dashboard</span>
+                )}
+              </Link>
+            </li>
+)}
+            {/* Users - permission based */}
+            {hasPermission('view_user') && (
+              <li key={ROUTES.ADMIN_USER}>
                 <Link
-                  href={item.href}
+                  href={ROUTES.ADMIN_USER}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
                     sidebarOpen ? "justify-start" : "justify-center"
                   }`}
                 >
-                  {item.icon}
+                  <Users size={18} />
                   {sidebarOpen && (
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-sm font-medium">Users</span>
                   )}
                 </Link>
               </li>
-            ))}
+            )}
+            {/* Roles - permission based */}
+            {hasPermission('view_roles') && (
+              <li key={ROUTES.ADMIN_ROLE}>
+                <Link
+                  href={ROUTES.ADMIN_ROLE}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
+                    sidebarOpen ? "justify-start" : "justify-center"
+                  }`}
+                >
+                  <Waypoints size={18} />
+                  {sidebarOpen && (
+                    <span className="text-sm font-medium">Roles</span>
+                  )}
+                </Link>
+              </li>
+            )}
+            {/* Permissions - permission based */}
+            {hasPermission('view_permissions') && (
+              <li key={ROUTES.ADMIN_PERMISSION}>
+                <Link
+                  href={ROUTES.ADMIN_PERMISSION}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
+                    sidebarOpen ? "justify-start" : "justify-center"
+                  }`}
+                >
+                  <Spotlight size={18} />
+                  {sidebarOpen && (
+                    <span className="text-sm font-medium">Permissions</span>
+                  )}
+                </Link>
+              </li>
+            )}
+            {/* Settings - permission based */}
+            {hasPermission('view_settings') && (
+              <li key="/admin/settings">
+                <Link
+                  href="/admin/settings"
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
+                    sidebarOpen ? "justify-start" : "justify-center"
+                  }`}
+                >
+                  <Settings size={18} />
+                  {sidebarOpen && (
+                    <span className="text-sm font-medium">Settings</span>
+                  )}
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
 
         {/* Footer */}
-        
-        <PermissionGuard permissions={['create_user']}>
         <div className="p-3 border-t border-gray-200">
           <Button
             variant="outline"
             className={`w-full flex items-center gap-2 ${
               sidebarOpen ? "justify-start" : "justify-center"
             }`}
+            onClick={handleLogout}
           >
             <LogOut size={18} />
-            {sidebarOpen && <span className="text-sm font-sm">Logout</span>}
+            {sidebarOpen && <span className="text-sm font-medium">Logout</span>}
           </Button>
         </div>
-        </PermissionGuard>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        <Navbar />
+        <Navbar user={user} />
         <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>
     </div>
