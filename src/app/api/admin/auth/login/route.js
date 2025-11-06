@@ -3,6 +3,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import bcrypt from "bcryptjs";
 import { createToken } from "@/lib/auth";
+const db = getFirestore(app); 
 
 export async function POST(req) {
   try {
@@ -17,7 +18,10 @@ export async function POST(req) {
     }
 
     // Find user
-    const q = query(collection(db, "users"), where("email", "==", email.toLowerCase().trim()));
+    const q = query(
+      collection(db, "users"),
+      where("email", "==", email.toLowerCase().trim())
+    );
     const snapshot = await getDocs(q);
 
     if (snapshot.empty) {
@@ -50,13 +54,24 @@ export async function POST(req) {
       }
     }
 
+    const permissionData = [];
+    if (userDoc.permissions && userDoc.permissions.length > 0) {
+      const q = query(collection(db, "permissions"),where(documentId(), "in", userDoc.permissions));
+
+      const snapshot = await getDocs(q);
+
+      snapshot.forEach((doc) => {
+        permissionData.push({ id: doc.id, ...doc.data() });
+      });
+    }
+
     // Create JWT payload
     const tokenPayload = {
       id: userDocRef.id,
       email: userDoc.email,
       name: userDoc.name,
       role: roleData?.name || null,
-      permissions: roleData?.permissions || [],
+      permissions: permissionData|| [],
     };
 
     // Create JWT token
@@ -68,13 +83,13 @@ export async function POST(req) {
       name: userDoc.name,
       email: userDoc.email,
       role: roleData?.name || null,
-      permissions: roleData?.permissions || [],
+      permissions: snapshot || [],
     };
 
     const response = NextResponse.json({
       success: true,
       user: userData,
-      message: "Login successful"
+      message: "Login successful",
     });
 
     // Set secure cookie
@@ -83,11 +98,10 @@ export async function POST(req) {
       secure: process.env.NODE_ENV === "production",
       path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
-      sameSite: "strict"
+      sameSite: "strict",
     });
 
     return response;
-
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(

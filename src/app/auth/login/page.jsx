@@ -39,6 +39,10 @@ export default function Login() {
         return;
       }
 
+      console.log(data.user)
+
+      return;
+
       localStorage.setItem("currentUser", JSON.stringify(data.user));
       setSuccess(true);
 
