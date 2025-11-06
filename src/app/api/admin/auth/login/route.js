@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import bcrypt from "bcryptjs";
 import { createToken } from "@/lib/auth";
-const db = getFirestore(app); 
+import { collection, query, where, getDocs, documentId } from "firebase/firestore";
+import bcrypt from "bcryptjs";
 
 export async function POST(req) {
   try {
@@ -55,12 +54,12 @@ export async function POST(req) {
     }
 
     const permissionData = [];
-    if (userDoc.permissions && userDoc.permissions.length > 0) {
-      const q = query(collection(db, "permissions"),where(documentId(), "in", userDoc.permissions));
+    if (roleData.permissions && roleData.permissions.length > 0) {
+      const q = query(collection(db, "permissions"),where(documentId(), "in", roleData.permissions));
 
-      const snapshot = await getDocs(q);
+      const permSnap = await getDocs(q);
 
-      snapshot.forEach((doc) => {
+      permSnap.forEach((doc) => {
         permissionData.push({ id: doc.id, ...doc.data() });
       });
     }
@@ -72,6 +71,7 @@ export async function POST(req) {
       name: userDoc.name,
       role: roleData?.name || null,
       permissions: permissionData|| [],
+
     };
 
     // Create JWT token
@@ -83,7 +83,8 @@ export async function POST(req) {
       name: userDoc.name,
       email: userDoc.email,
       role: roleData?.name || null,
-      permissions: snapshot || [],
+      permissions: permissionData || [],
+
     };
 
     const response = NextResponse.json({
