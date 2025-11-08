@@ -271,6 +271,9 @@ export default function Home() {
                 <Link href="/terms-of-service" className="block text-gray-600 hover:text-gray-900">
                   Terms of Service
                 </Link>
+                  <Link href="/data-deletion" className="block text-gray-600 hover:text-gray-900">
+                  Data Deletion
+                </Link>
                 <a href="mailto:ziakn03@gmail.com" className="block text-gray-600 hover:text-gray-900">
                   Contact
                 </a>
