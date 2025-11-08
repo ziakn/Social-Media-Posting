@@ -22,14 +22,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
-        <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
-     <div>
-      <Button>Click me</Button>
-    </div>
       </body>
-      
     </html>
   );
 }
