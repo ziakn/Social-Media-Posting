@@ -12,6 +12,8 @@ import { Edit, Trash2, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 import Link from "next/link";
+import { Spinner } from "@/components/ui/spinner";
+
 
 
 export default function PermissionsList() {
@@ -58,16 +60,7 @@ export default function PermissionsList() {
 };
 
 
-  if (loading) {
-    return (
-      <div className="p-6 flex justify-center items-center min-h-[200px]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="mt-2 text-muted-foreground">Loading permissions...</p>
-        </div>
-      </div>
-    );
-  }
+   if (loading) return <Spinner />;
 
   return (
      <div className="p-6">
