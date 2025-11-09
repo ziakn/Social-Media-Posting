@@ -1,45 +1,10 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
 
-// Endpoint to save user’s Facebook access token after OAuth
-export async function POST(req) {
-  try {
-    const { userId, accessToken, fbUserId, name } = await req.json();
+export async function GET() {
+  const redirect_uri = process.env.FB_REDIRECT_URI;
+  const app_id = process.env.FB_APP_ID;
 
-    if (!userId || !accessToken || !fbUserId) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
-    }
+  const authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${app_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&scope=email,public_profile,instagram_basic,pages_show_list`;
 
-    const accountsRef = db.collection("social_accounts");
-    
-    // Check if already exists
-    const snapshot = await accountsRef
-      .where("userId", "==", userId)
-      .where("provider", "==", "facebook")
-      .where("providerUserId", "==", fbUserId)
-      .get();
-
-    if (!snapshot.empty) {
-      return NextResponse.json({ message: "Facebook account already connected" });
-    }
-
-    // Save new account
-    await accountsRef.add({
-      userId,
-      provider: "facebook",
-      providerUserId: fbUserId,
-      name,
-      accessToken,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-
-    return NextResponse.json({ message: "Facebook account connected successfully" });
-  } catch (error) {
-    console.error("Error connecting Facebook account:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
-  }
+  return NextResponse.redirect(authUrl);
 }
