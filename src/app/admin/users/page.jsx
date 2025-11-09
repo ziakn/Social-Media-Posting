@@ -80,10 +80,10 @@ const handleDelete = async (id) => {
       <Card className="shadow-sm">
         <CardHeader className="flex justify-between items-center">
           <CardTitle className="text-xl font-semibold">Users</CardTitle>
-          {hasPermission('create_user') && 
+          {hasPermission('create_users') && 
           <Button
             variant="secondary"
-            onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
+            onClick={() => router.push(ROUTES.ADMIN_users_CREATE)}
           >
             + Add User
           </Button>
@@ -93,7 +93,7 @@ const handleDelete = async (id) => {
           {users.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <p className="mb-4">No users found.</p>
-              {hasPermission('create_user') && 
+              {hasPermission('create_users') && 
               <Button
                 size="sm"
                 onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
@@ -120,7 +120,7 @@ const handleDelete = async (id) => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.role.name || "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      {hasPermission('edit_user') && 
+                      {hasPermission('edit_users') && 
                       <Button
                         size="sm"
                         variant="outline"
@@ -132,7 +132,7 @@ const handleDelete = async (id) => {
                       >
                         Edit
                       </Button>}
-                      {hasPermission('delete_user') && 
+                      {hasPermission('delete_users') && 
                       <Button
                         size="sm"
                         variant="destructive"

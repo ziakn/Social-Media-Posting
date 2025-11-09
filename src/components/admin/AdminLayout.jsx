@@ -12,6 +12,7 @@ import {
   LogOut,
   Waypoints,
   Spotlight,
+  Link2,
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -84,7 +85,7 @@ export default function AdminLayout({ children }) {
             </li>
 )}
             {/* Users - permission based */}
-            {hasPermission('view_user') && (
+            {hasPermission('view_users') && (
               <li key={ROUTES.ADMIN_USER}>
                 <Link
                   href={ROUTES.ADMIN_USER}
@@ -132,6 +133,22 @@ export default function AdminLayout({ children }) {
               </li>
             )}
             {/* Settings - permission based */}
+
+              {hasPermission('view_connect') && (
+              <li key="/admin/social/connect">
+                <Link
+                  href="/admin/social/connect"
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
+                    sidebarOpen ? "justify-start" : "justify-center"
+                  }`}
+                >
+                  <Link2 size={18} />
+                  {sidebarOpen && (
+                    <span className="text-sm font-medium">Connect</span>
+                  )}
+                </Link>
+              </li>
+            )}
             {hasPermission('view_settings') && (
               <li key="/admin/settings">
                 <Link
