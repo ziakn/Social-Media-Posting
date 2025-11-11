@@ -29,7 +29,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
-
+import { checkFacebookConnection } from "../../../actions/social/facebook/connectAccount";
+import { disconnectFacebookAccount } from "../../../actions/social/facebook/disconnectAccount";
+import { toast } from "sonner";
 
 export default function SocialConnectPage() {
   const [connections, setConnections] = useState({
@@ -44,7 +46,22 @@ export default function SocialConnectPage() {
   });
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const checkConnections = async () => {
+      try {
 
+        const result = await checkFacebookConnection();
+
+        if (result.connected) {
+          setConnections((prev) => ({ ...prev, facebook: true }));
+        }
+      } catch (err) {
+        console.error("Error checking connection:", err);
+      }
+    };
+
+    checkConnections();
+  }, []);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("status") === "success" && params.get("platform")) {
@@ -56,6 +73,8 @@ export default function SocialConnectPage() {
 
   }, []);
 
+
+
   const handleConnect = (platform) => {
     if (platform === "facebook") {
       window.location.href = "/api/admin/facebook/connect";
@@ -64,9 +83,30 @@ export default function SocialConnectPage() {
     }
   };
 
-  const disconnect = (platform) => {
-    setConnections((prev) => ({ ...prev, [platform]: false }));
+
+  const handleDisconnect = async (platform) => {
+    toast("Are you sure you want to Disconnect " + platform + "?", {
+      action: {
+        label: "Disconnect",
+        onClick: async () => {
+          try {
+            if (platform === "facebook") {
+              const result = await disconnectFacebookAccount();
+              if (result.success) {
+                toast.success(result.message);
+                setConnections((prev) => ({ ...prev, facebook: false }));
+              } else {
+                toast.error(error.message)
+              }
+            }
+          } catch (error) {
+            toast.error(error.message)
+          }
+        },
+      },
+    });
   };
+
 
   const socials = [
     {
@@ -158,16 +198,14 @@ export default function SocialConnectPage() {
           return (
             <Card
               key={item.key}
-              className={`transition-all hover:shadow-md ${
-                isConnected ? "border-green-400" : "border-border"
-              }`}
+              className={`transition-all hover:shadow-md ${isConnected ? "border-green-400" : "border-border"
+                }`}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2 rounded-lg ${
-                      isConnected ? "bg-green-50" : "bg-muted"
-                    }`}
+                    className={`p-2 rounded-lg ${isConnected ? "bg-green-50" : "bg-muted"
+                      }`}
                   >
                     {item.icon}
                   </div>
@@ -192,7 +230,7 @@ export default function SocialConnectPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => disconnect(item.key)}>
+                      <DropdownMenuItem onClick={() => handleDisconnect(item.key)}>
                         Disconnect
                       </DropdownMenuItem>
                       <DropdownMenuItem>Manage Settings</DropdownMenuItem>
@@ -214,7 +252,7 @@ export default function SocialConnectPage() {
                       variant="outline"
                       size="sm"
                       className="flex-1"
-                      onClick={() => disconnect(item.key)}
+                      onClick={() => handleDisconnect(item.key)}
                     >
                       Disconnect
                     </Button>

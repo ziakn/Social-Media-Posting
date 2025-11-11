@@ -9,7 +9,6 @@ export async function GET(request) {
 
   const token = request.cookies.get("token")?.value;
     const user = await verifyToken(token);
-    console.log(user);
 
 
   try {
@@ -76,10 +75,12 @@ export async function GET(request) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+return NextResponse.redirect(
+  `${baseUrl}/admin/social/connect?status=success&platform=facebook&name=${encodeURIComponent(fbUser.name)}`
+);
 
-    return NextResponse.redirect(
-      `/admin/social/connect?status=success&platform=facebook&name=${encodeURIComponent(fbUser.name)}`
-    );
+
 
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

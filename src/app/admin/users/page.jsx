@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
 import { usePermissions } from '@/hooks/usePermissions';
