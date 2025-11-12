@@ -22,4 +22,22 @@ export const ROUTES = {
   ADMIN_PERMISSION_CREATE: prefix + "permissions/create",
   ADMIN_PERMISSION_EDIT: prefix + "permissions",
   ADMIN_PERMISSION_DELETE: prefix + "permissions/delete",
+
+
+  // Social Media Posts
+  ADMIN_SOCIAL_CONNECT: prefix + "social/connect",
+  ADMIN_FACEBOOK: prefix + "social/facebook",
+  ADMIN_WHATSAPP: prefix + "social/whatsapp",
+  ADMIN_LINKEDIN: prefix + "social/linkedin",
+  ADMIN_TWITTER: prefix + "social/twitter",
+  ADMIN_BLUESKY: prefix + "social/bluesky",
+  ADMIN_REDDIT: prefix + "social/reddit",
+  ADMIN_TELEGRAM: prefix + "social/telegram", 
+
+
+
+  
+
+  ADMIN_FACEBOOK_POSTS: prefix + "social/facebook/posts",
+  ADMIN_FACEBOOK_POSTS_CREATE: prefix + "social/facebook/posts/create",
 };

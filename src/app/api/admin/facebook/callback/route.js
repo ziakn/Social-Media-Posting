@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, query, where, updateDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth"; // your JWT or session logic
 
 
@@ -55,6 +55,14 @@ export async function GET(request) {
 
     if (!portalUserId) {
       return NextResponse.json({ error: "Missing portal user ID" }, { status: 400 });
+    }
+
+    // Before insertion: deactivate existing active records for this user and platform
+    const socialAccountsRef = collection(db, "socialAccounts");
+    const q = query(socialAccountsRef, where("userId", "==", portalUserId), where("platform", "==", "facebook"), where("status", "==", "active"));
+    const existingAccountsSnap = await getDocs(q);
+    for (const docSnap of existingAccountsSnap.docs) {
+      await updateDoc(docSnap.ref, { status: "inactive", updatedAt: serverTimestamp() });
     }
 
     // Save to socialAccounts collection
