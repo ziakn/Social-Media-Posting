@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc, doc, orderBy, limit } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
@@ -20,7 +20,8 @@ export async function disconnectFacebookAccount() {
     const q = query(
       collection(db, "socialAccounts"),
       where("userId", "==", user.id),
-      where("platform", "==", "facebook")
+      where("platform", "==", "facebook"),
+      where("status", "==", "active")
     );
 
     const snapshot = await getDocs(q);
@@ -29,8 +30,13 @@ export async function disconnectFacebookAccount() {
       return { success: false, message: "Facebook account not connected" };
     }
 
-    // Delete each connected Facebook record
-    await Promise.all(snapshot.docs.map((docSnap) => deleteDoc(doc(db, "socialAccounts", docSnap.id))));
+    // Deactivate each connected Facebook record
+    await Promise.all(
+      snapshot.docs.map(async (docSnap) => {
+        const ref = doc(db, "socialAccounts", docSnap.id);
+        await updateDoc(ref, { status: "inactive" });
+      })
+    );
 
     return { success: true, message: "Facebook disconnected successfully" };
   } catch (err) {

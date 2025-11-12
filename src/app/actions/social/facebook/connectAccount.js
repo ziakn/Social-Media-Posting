@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth"; // your existing verifyToken logic
 import { cookies } from "next/headers";
 
@@ -20,7 +20,8 @@ export async function checkFacebookConnection() {
     const q = query(
       collection(db, "socialAccounts"),
       where("userId", "==", user.id),
-      where("platform", "==", "facebook")
+      where("platform", "==", "facebook"),
+      where("status", "==", "active")
     );
 
     const snapshot = await getDocs(q);
