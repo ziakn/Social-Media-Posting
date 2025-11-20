@@ -1,71 +1,926 @@
 // src/components/admin/instagram/CreatePost.jsx
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useRef, useTransition } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "sonner";
+import { 
+  Image, 
+  Video, 
+  Grid3X3, 
+  Play, 
+  Upload, 
+  Trash2, 
+  X, 
+  Plus,
+  Calendar as CalendarIcon,
+  Music
+} from "lucide-react";
+import { format } from "date-fns";
 
 export default function CreatePost() {
+  const [isPending, startTransition] = useTransition();
   const [postType, setPostType] = useState("feed");
+  const [postContent, setPostContent] = useState({
+    caption: "",
+    images: [],
+    video: null,
+    audio: null,
+    coverImage: null,
+  });
+  const [scheduling, setScheduling] = useState({ 
+    schedule: false, 
+    date: new Date(), 
+    time: "12:00",
+    timezone: "UTC"
+  });
+  
+  const imageInputRef = useRef(null);
+  const videoInputRef = useRef(null);
+  const audioInputRef = useRef(null);
+
+  // Instagram-connected pages
+  const pages = [
+    { id: "1", name: "Fashion Brand", followers: "24.8K" },
+    { id: "2", name: "Coffee Shop", followers: "12.3K" },
+    { id: "3", name: "Travel Blog", followers: "58.7K" },
+  ];
+  const [selectedPage, setSelectedPage] = useState("");
+
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // Validate images for Instagram
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} is not an image file`);
+        return false;
+      }
+      if (!['image/jpeg', 'image/png'].includes(file.type)) {
+        toast.error("Instagram only supports JPEG and PNG images");
+        return false;
+      }
+      if (file.size > 8 * 1024 * 1024) {
+        toast.error(`${file.name} must be under 8MB`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
+    // Check total images limit
+    const totalImages = postContent.images.length + validFiles.length;
+    const maxImages = postType === "carousel" ? 10 : 1;
+    
+    if (totalImages > maxImages) {
+      toast.error(`You can upload maximum ${maxImages} image${maxImages !== 1 ? 's' : ''} for ${postType} posts`);
+      return;
+    }
+
+    const newImages = validFiles.map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type,
+      name: file.name,
+      size: file.size,
+      file: file
+    }));
+
+    setPostContent(prev => ({
+      ...prev,
+      images: [...prev.images, ...newImages].slice(0, maxImages)
+    }));
+
+    toast.success(`Added ${validFiles.length} image(s)`);
+  };
+
+  const handleVideoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("video/")) {
+      toast.error("Please select a video file");
+      return;
+    }
+
+    if (file.type !== 'video/mp4') {
+      toast.error("Instagram only supports MP4 videos");
+      return;
+    }
+
+    // Different size limits for different post types
+    let maxSize = 100 * 1024 * 1024; // 100MB default for feed/story
+    if (postType === "reels") {
+      maxSize = 500 * 1024 * 1024; // 500MB for Reels
+    }
+
+    if (file.size > maxSize) {
+      toast.error(`Video must be under ${maxSize / (1024 * 1024)}MB`);
+      return;
+    }
+
+    // Clear images if video is selected (except for cover images in reels)
+    if (postContent.images.length > 0 && postType !== "reels") {
+      setPostContent(prev => ({ ...prev, images: [] }));
+      toast.info("Images cleared - Instagram doesn't allow mixed image/video in single posts");
+    }
+
+    setPostContent(prev => ({
+      ...prev,
+      video: {
+        url: URL.createObjectURL(file),
+        type: file.type,
+        name: file.name,
+        size: file.size,
+        file: file,
+        duration: 0 // You might want to calculate this
+      }
+    }));
+
+    toast.success("Video added successfully");
+  };
+
+  const handleAudioUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("audio/")) {
+      toast.error("Please select an audio file");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Audio file must be under 10MB");
+      return;
+    }
+
+    setPostContent(prev => ({
+      ...prev,
+      audio: {
+        url: URL.createObjectURL(file),
+        type: file.type,
+        name: file.name,
+        size: file.size,
+        file: file
+      }
+    }));
+
+    toast.success("Audio added successfully");
+  };
+
+  const removeImage = (index) => {
+    setPostContent(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+  const removeVideo = () => {
+    setPostContent(prev => ({ ...prev, video: null }));
+  };
+
+  const removeAudio = () => {
+    setPostContent(prev => ({ ...prev, audio: null }));
+  };
+
+  const setCoverImage = (image) => {
+    setPostContent(prev => ({ ...prev, coverImage: image }));
+  };
+
+  const clearAllImages = () => {
+    setPostContent(prev => ({ ...prev, images: [] }));
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedPage) return toast.error("Please select an Instagram account first");
+    if (!postContent.caption.trim()) return toast.error("Please add a caption for your post");
+
+    // Validation based on post type
+    if (postType === "feed" && postContent.images.length === 0 && !postContent.video) {
+      return toast.error("Please add an image or video");
+    }
+
+    if (postType === "carousel" && postContent.images.length < 2) {
+      return toast.error("Carousel posts require at least 2 images");
+    }
+
+    if (postType === "story" && postContent.images.length === 0 && !postContent.video) {
+      return toast.error("Please add an image or video for your story");
+    }
+
+    if (postType === "reels" && !postContent.video) {
+      return toast.error("Please add a video for your reel");
+    }
+
+    const payload = {
+      pageId: selectedPage,
+      postType,
+      caption: postContent.caption,
+      scheduling: scheduling.schedule ? scheduling : null,
+      images: postContent.images,
+      video: postContent.video,
+      audio: postContent.audio,
+      coverImage: postContent.coverImage,
+    };
+
+    startTransition(async () => {
+      try {
+        let result;
+        switch (postType) {
+          case "feed":
+            const { createInstagramImagePost } = await import("@/app/actions/social/instagram/createPost");
+            result = await createInstagramImagePost(payload);
+            break;
+          case "carousel":
+            const { createInstagramCarouselPost } = await import("@/app/actions/social/instagram/createPost");
+            result = await createInstagramCarouselPost(payload);
+            break;
+          case "story":
+            const { createInstagramStory } = await import("@/app/actions/social/instagram/createPost");
+            const media = postContent.images[0] || postContent.video;
+            result = await createInstagramStory({
+              pageId: selectedPage,
+              media,
+              caption: postContent.caption
+            });
+            break;
+          case "reels":
+            const { createInstagramReel } = await import("@/app/actions/social/instagram/createPost");
+            result = await createInstagramReel(payload);
+            break;
+        }
+
+        if (result.success) {
+          toast.success(
+            scheduling.schedule && postType !== "story" && postType !== "reels"
+              ? `Post scheduled for ${format(scheduling.date, "PPP")} at ${scheduling.time}`
+              : postType === "story" 
+                ? "Story published successfully!"
+                : postType === "reels"
+                  ? "Reel published successfully!"
+                  : "Post published successfully!"
+          );
+
+          // Reset form
+          setPostContent({
+            caption: "",
+            images: [],
+            video: null,
+            audio: null,
+            coverImage: null,
+          });
+          setScheduling({ schedule: false, date: new Date(), time: "12:00", timezone: "UTC" });
+        } else {
+          toast.error(result.error || "Failed to create post");
+        }
+      } catch (error) {
+        toast.error("Failed to create post. Please try again.");
+      }
+    });
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' bytes';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+
+  const characterCount = postContent.caption.length;
+  const maxCharacters = 2200;
 
   return (
     <div className="space-y-6">
+      {/* Account Selection */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span className="text-2xl">📸</span>
-            Create Instagram Post
-          </CardTitle>
+          <CardTitle>Select Instagram Account</CardTitle>
+          <CardDescription>Choose which account to post from</CardDescription>
         </CardHeader>
         <CardContent>
+          <Select value={selectedPage} onValueChange={setSelectedPage}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select an Instagram account" />
+            </SelectTrigger>
+            <SelectContent>
+              {pages.map(page => (
+                <SelectItem key={page.id} value={page.id}>
+                  <div className="flex items-center justify-between w-full">
+                    <span>{page.name}</span>
+                    <Badge variant="secondary">{page.followers}</Badge>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
+
+      {/* Post Creation */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Create Instagram Post</CardTitle>
+          <CardDescription>Choose your post type and add content</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
           <Tabs value={postType} onValueChange={setPostType}>
-            <TabsList className="grid grid-cols-3 mb-6">
-              <TabsTrigger value="feed">Feed Post</TabsTrigger>
-              <TabsTrigger value="carousel">Carousel</TabsTrigger>
-              <TabsTrigger value="story">Story</TabsTrigger>
+            <TabsList className="grid grid-cols-4 w-full">
+              <TabsTrigger value="feed" className="flex items-center gap-2">
+                <Image className="h-4 w-4" />
+                Feed Post
+              </TabsTrigger>
+              <TabsTrigger value="carousel" className="flex items-center gap-2">
+                <Grid3X3 className="h-4 w-4" />
+                Carousel
+              </TabsTrigger>
+              <TabsTrigger value="reels" className="flex items-center gap-2">
+                <Music className="h-4 w-4" />
+                Reels
+              </TabsTrigger>
+              <TabsTrigger value="story" className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                Story
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="feed">
-              <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <p className="text-gray-600 mb-4">Upload single image or video</p>
-                  <Button>Select Media</Button>
+            {/* Caption - Common for all post types */}
+            <div className="pt-6">
+              <div className="space-y-3">
+                <Label htmlFor="caption">Caption</Label>
+                <Textarea
+                  id="caption"
+                  placeholder={
+                    postType === "reels" 
+                      ? "Write an engaging caption for your reel... #reels #viral"
+                      : "Write a caption... Use hashtags to reach more people! #instagram #socialmedia"
+                  }
+                  value={postContent.caption}
+                  onChange={(e) => setPostContent(prev => ({ ...prev, caption: e.target.value }))}
+                  className="min-h-[100px] resize-none"
+                />
+                <div className="flex justify-between text-sm text-gray-500">
+                  <span>{characterCount}/{maxCharacters} characters</span>
+                  {characterCount > 125 && (
+                    <span className="text-green-600">💡 Good caption length!</span>
+                  )}
                 </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Feed Post Content */}
+            <TabsContent value="feed" className="space-y-6">
+              <div className="space-y-4">
+                <Label>Upload Media</Label>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors">
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    accept="image/jpeg,image/png,video/mp4"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      
+                      if (file.type.startsWith('image/')) {
+                        handleImageUpload(e);
+                      } else if (file.type.startsWith('video/')) {
+                        handleVideoUpload(e);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-center">
+                      <Image className="h-12 w-12 text-gray-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Add Photo or Video</h3>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Upload a single image or video for your feed post
+                      </p>
+                      <Button
+                        onClick={() => imageInputRef.current?.click()}
+                        className="bg-gradient-to-r from-pink-600 to-purple-600"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Select Media
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Media Previews */}
+                {(postContent.images.length > 0 || postContent.video) && (
+                  <div className="space-y-3">
+                    <Label>Media Preview</Label>
+                    <div className="grid grid-cols-1 gap-4">
+                      {postContent.images.map((image, index) => (
+                        <div key={index} className="relative group max-w-md">
+                          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                            <img
+                              src={image.url}
+                              alt={`Upload ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      {postContent.video && (
+                        <div className="relative group max-w-md">
+                          <div className="aspect-square bg-gray-900 rounded-lg overflow-hidden">
+                            <video
+                              src={postContent.video.url}
+                              controls
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={removeVideo}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
-                  <Badge variant="secondary">JPEG/PNG</Badge>
-                  <Badge variant="secondary">Max 8MB</Badge>
+                  <Badge variant="secondary">JPEG/PNG/MP4</Badge>
+                  <Badge variant="secondary">Images: 8MB max</Badge>
+                  <Badge variant="secondary">Videos: 100MB max</Badge>
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="carousel">
+            {/* Carousel Post Content */}
+            <TabsContent value="carousel" className="space-y-6">
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <p className="text-gray-600 mb-4">Upload 2-10 images for carousel</p>
-                  <Button>Select Multiple Images</Button>
+                <div className="flex items-center justify-between">
+                  <Label>Upload Carousel Images</Label>
+                  <Badge variant="outline">
+                    {postContent.images.length}/10 images
+                  </Badge>
                 </div>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors">
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    accept="image/jpeg,image/png"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-center">
+                      <Grid3X3 className="h-12 w-12 text-gray-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Add Carousel Photos</h3>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Upload 2-10 images for your carousel post
+                      </p>
+                      <Button
+                        onClick={() => imageInputRef.current?.click()}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Select Images
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Carousel Previews */}
+                {postContent.images.length > 0 && (
+                  <div className="space-y-3">
+                    <Label>Carousel Previews</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {postContent.images.map((image, index) => (
+                        <div key={index} className="relative group">
+                          <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                            <img
+                              src={image.url}
+                              alt={`Upload ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                          <div className="absolute top-1 left-1 bg-black/70 text-white text-xs px-1 rounded">
+                            {index + 1}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {postContent.images.length < 10 && (
+                        <div 
+                          className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors"
+                          onClick={() => imageInputRef.current?.click()}
+                        >
+                          <Plus className="h-6 w-6 text-gray-400 mb-2" />
+                          <span className="text-sm text-gray-600">Add More</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {postContent.images.length > 0 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={clearAllImages}
+                        className="mt-2"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Badge variant="secondary">2-10 Images</Badge>
-                  <Badge variant="secondary">JPEG/PNG</Badge>
+                  <Badge variant="secondary">JPEG/PNG only</Badge>
+                  <Badge variant="secondary">8MB max per image</Badge>
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="story">
+            {/* Reels Post Content */}
+            <TabsContent value="reels" className="space-y-6">
               <div className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                  <p className="text-gray-600 mb-4">Upload image or video for story</p>
-                  <Button>Select Story Media</Button>
+                <Label>Upload Reel Video</Label>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors">
+                  <input
+                    type="file"
+                    ref={videoInputRef}
+                    accept="video/mp4"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                  />
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-center">
+                      <Music className="h-12 w-12 text-gray-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Add Reel Video</h3>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Upload a vertical video for your reel (9:16 aspect ratio recommended)
+                      </p>
+                      <Button
+                        onClick={() => videoInputRef.current?.click()}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Select Video
+                      </Button>
+                    </div>
+                  </div>
                 </div>
+
+                {/* Audio Upload for Reels */}
+                <div className="space-y-3">
+                  <Label>Add Audio (Optional)</Label>
+                  <div className="border rounded-lg p-4">
+                    <input
+                      type="file"
+                      ref={audioInputRef}
+                      accept="audio/*"
+                      onChange={handleAudioUpload}
+                      className="hidden"
+                    />
+                    
+                    {postContent.audio ? (
+                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Music className="h-5 w-5 text-purple-600" />
+                          <div>
+                            <p className="font-medium text-sm">{postContent.audio.name}</p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(postContent.audio.size)}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={removeAudio}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        onClick={() => audioInputRef.current?.click()}
+                        className="w-full"
+                      >
+                        <Music className="h-4 w-4 mr-2" />
+                        Add Audio Track
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Video Preview and Cover Image Selection */}
+                {postContent.video && (
+                  <div className="space-y-4">
+                    <Label>Reel Preview</Label>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <div className="relative bg-black rounded-xl overflow-hidden border-2 border-purple-200 aspect-[9/16] max-w-xs">
+                          <video
+                            src={postContent.video.url}
+                            controls
+                            className="w-full h-full object-cover"
+                          />
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-3 right-3 h-8 w-8"
+                            onClick={removeVideo}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Cover Image Selection */}
+                      <div className="space-y-3">
+                        <Label>Cover Image (Optional)</Label>
+                        <p className="text-sm text-gray-600">
+                          Choose a thumbnail for your reel
+                        </p>
+                        
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                setCoverImage({
+                                  url: URL.createObjectURL(file),
+                                  type: file.type,
+                                  name: file.name,
+                                  size: file.size,
+                                  file: file
+                                });
+                              }
+                            }}
+                            className="hidden"
+                            id="cover-image"
+                          />
+                          
+                          {postContent.coverImage ? (
+                            <div className="space-y-2">
+                              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                                <img
+                                  src={postContent.coverImage.url}
+                                  alt="Cover preview"
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCoverImage(null)}
+                              >
+                                Change Cover
+                              </Button>
+                            </div>
+                          ) : (
+                            <label htmlFor="cover-image" className="cursor-pointer">
+                              <div className="space-y-2">
+                                <Image className="h-8 w-8 text-gray-400 mx-auto" />
+                                <p className="text-sm text-gray-600">Upload cover image</p>
+                              </div>
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="secondary">MP4 Video</Badge>
+                  <Badge variant="secondary">500MB max</Badge>
+                  <Badge variant="secondary">9:16 Recommended</Badge>
+                  <Badge variant="secondary">5-90 seconds</Badge>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Story Post Content */}
+            <TabsContent value="story" className="space-y-6">
+              <div className="space-y-4">
+                <Label>Upload Story Media</Label>
+                
+                <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors">
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    accept="image/jpeg,image/png,video/mp4"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      
+                      if (file.type.startsWith('image/')) {
+                        handleImageUpload(e);
+                      } else if (file.type.startsWith('video/')) {
+                        handleVideoUpload(e);
+                      }
+                    }}
+                    className="hidden"
+                  />
+                  
+                  <div className="space-y-4">
+                    <div className="flex justify-center">
+                      <Play className="h-12 w-12 text-gray-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">Add Story Media</h3>
+                      <p className="text-gray-600 text-sm mb-4">
+                        Upload an image or video for your story
+                      </p>
+                      <Button
+                        onClick={() => imageInputRef.current?.click()}
+                        className="bg-gradient-to-r from-pink-600 to-rose-600"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Select Media
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Story Preview */}
+                {(postContent.images.length > 0 || postContent.video) && (
+                  <div className="space-y-3">
+                    <Label>Story Preview</Label>
+                    <div className="relative bg-gray-900 rounded-xl overflow-hidden border-2 border-pink-200 shadow-lg aspect-[9/16] max-w-xs">
+                      {postContent.images.length > 0 ? (
+                        <img
+                          src={postContent.images[0].url}
+                          alt="Story preview"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : postContent.video ? (
+                        <video
+                          src={postContent.video.url}
+                          controls
+                          className="w-full h-full object-cover"
+                        />
+                      ) : null}
+                      
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-3 right-3 h-8 w-8"
+                        onClick={() => {
+                          if (postContent.images.length > 0) {
+                            removeImage(0);
+                          } else {
+                            removeVideo();
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Badge variant="secondary">9:16 Ratio</Badge>
                   <Badge variant="secondary">24 Hours</Badge>
+                  <Badge variant="secondary">Images & Videos</Badge>
                 </div>
               </div>
             </TabsContent>
           </Tabs>
+
+          <Separator />
+
+          {/* Scheduling */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="schedule-toggle" className="text-sm font-medium">
+                Schedule this post
+              </Label>
+              <Switch
+                id="schedule-toggle"
+                checked={scheduling.schedule}
+                onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))}
+                disabled={postType === "story" || postType === "reels"}
+              />
+            </div>
+
+            {scheduling.schedule && postType !== "story" && postType !== "reels" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border rounded-lg">
+                <div className="space-y-2">
+                  <Label className="text-sm">Date</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        <CalendarIcon className="h-4 w-4 mr-2" />
+                        {format(scheduling.date, "PPP")}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={scheduling.date}
+                        onSelect={(date) => setScheduling(prev => ({ ...prev, date }))}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm">Time</Label>
+                  <Input
+                    type="time"
+                    value={scheduling.time}
+                    onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))}
+                  />
+                </div>
+              </div>
+            )}
+
+            {(postType === "story" || postType === "reels") && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ {postType === "story" 
+                    ? "Stories publish immediately and last for 24 hours"
+                    : "Reels publish immediately for maximum reach"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Publish Button */}
+          <Button
+            size="lg"
+            className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700"
+            onClick={handleSubmit}
+            disabled={isPending || !selectedPage}
+          >
+            {isPending ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                {postType === "story" ? "Publishing Story..." : 
+                 postType === "reels" ? "Publishing Reel..." :
+                 scheduling.schedule ? "Scheduling..." : "Publishing..."}
+              </div>
+            ) : postType === "story" ? (
+              "Publish Story"
+            ) : postType === "reels" ? (
+              "Publish Reel"
+            ) : scheduling.schedule ? (
+              "Schedule Post"
+            ) : (
+              "Publish Now"
+            )}
+          </Button>
         </CardContent>
       </Card>
     </div>
