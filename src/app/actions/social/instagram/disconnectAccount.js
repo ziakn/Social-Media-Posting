@@ -1,0 +1,43 @@
+"use server";
+
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, updateDoc, doc } from "firebase/firestore";
+import { verifyToken } from "@/lib/auth";
+import { cookies } from "next/headers";
+
+export async function disconnectInstagramAccount() {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    const user = await verifyToken(token);
+    if (!user) {
+      return { success: false, message: "Invalid or expired token" };
+    }
+
+    const q = query(
+      collection(db, "socialAccounts"),
+      where("userId", "==", user.id),
+      where("platform", "==", "instagram"),
+      where("status", "==", "active")
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return { success: false, message: "Instagram account not connected" };
+    }
+
+    await Promise.all(
+      snapshot.docs.map(async (docSnap) => {
+        const ref = doc(db, "socialAccounts", docSnap.id);
+        await updateDoc(ref, { status: "inactive", accessToken: "" });
+      })
+    );
+
+    return { success: true, message: "Instagram disconnected successfully" };
+  } catch (err) {
+    console.error("Error disconnecting Instagram:", err);
+    return { success: false, message: err.message };
+  }
+}

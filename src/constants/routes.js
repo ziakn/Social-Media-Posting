@@ -27,6 +27,7 @@ export const ROUTES = {
   // Social Media Posts
   ADMIN_SOCIAL_CONNECT: prefix + "social/connect",
   ADMIN_FACEBOOK: prefix + "social/facebook",
+  ADMIN_INSTAGRAM: prefix + "social/instagram",
   ADMIN_WHATSAPP: prefix + "social/whatsapp",
   ADMIN_LINKEDIN: prefix + "social/linkedin",
   ADMIN_TWITTER: prefix + "social/twitter",
@@ -40,4 +41,8 @@ export const ROUTES = {
 
   ADMIN_FACEBOOK_POSTS: prefix + "social/facebook/posts",
   ADMIN_FACEBOOK_POSTS_CREATE: prefix + "social/facebook/posts/create",
+
+
+  ADMIN_INSTAGRAM_POSTS: prefix + "social/instagram/posts",
+
 };
