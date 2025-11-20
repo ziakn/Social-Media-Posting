@@ -20,27 +20,16 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import {
-  Image, 
-  Video, 
-  CalendarDays, 
-  BarChart, 
-  Link2, 
-  MessageCircle,
-  Users, 
-  Eye, 
-  Globe, 
-  Zap, 
-  X, 
-  Plus, 
-  BarChart3, 
-  Calendar as CalendarIcon,
-  Clock,
-  DollarSign,
-  Upload,
-  Trash2,
-  Play,
-  FileText,
-  Grid3X3
+  createFacebookTextPost,
+  createFacebookImagePost,
+  createFacebookVideoPost,
+  createFacebookLinkPost,
+  createFacebookPollPost
+} from "@/app/actions/social/facebook/createPost";
+import {
+  Image, Video, CalendarDays, BarChart, Link2, MessageCircle,
+  Users, Eye, Globe, Zap, X, Plus, BarChart3, Calendar as CalendarIcon,
+  Clock, DollarSign, Upload, Trash2, Play, FileText, Grid3X3
 } from "lucide-react";
 
 export default function CreateFacebookPost() {
@@ -54,11 +43,11 @@ export default function CreateFacebookPost() {
     link: "",
     poll: { question: "", options: ["", ""], duration: 7 },
   });
-  const [scheduling, setScheduling] = useState({ 
-    schedule: false, 
-    date: new Date(), 
+  const [scheduling, setScheduling] = useState({
+    schedule: false,
+    date: new Date(),
     time: "12:00",
-    timezone: "UTC"
+    timezone: "UTC",
   });
   const [audience, setAudience] = useState("public");
   const [boost, setBoost] = useState(false);
@@ -67,8 +56,10 @@ export default function CreateFacebookPost() {
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
 
+  const accessToken = process.env.NEXT_PUBLIC_FACEBOOK_ACCESS_TOKEN || "YOUR_ACCESS_TOKEN_HERE";
+
   const pages = [
-    { id: "1", name: "Tech Hub", fans: "4.8K", category: "Technology" },
+    { id: "102597611693806", name: "Tech Hub", fans: "4.8K", category: "Technology" },
     { id: "2", name: "Food Lovers", fans: "2.3K", category: "Food & Drink" },
     { id: "3", name: "Travel Diaries", fans: "8.7K", category: "Travel" },
   ];
@@ -79,11 +70,16 @@ export default function CreateFacebookPost() {
     { value: "only_me", label: "Only Me", icon: Eye, description: "Only you can see this post" },
   ];
 
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + " bytes";
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    else return (bytes / 1048576).toFixed(1) + " MB";
+  };
+
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
-    // Validate images
     const validFiles = files.filter(file => {
       if (!file.type.startsWith("image/")) {
         toast.error(`${file.name} is not an image file`);
@@ -98,7 +94,6 @@ export default function CreateFacebookPost() {
 
     if (validFiles.length === 0) return;
 
-    // Check total images limit (Facebook allows up to 10 images per post)
     const totalImages = postContent.images.length + validFiles.length;
     if (totalImages > 10) {
       toast.error("You can upload maximum 10 images");
@@ -110,12 +105,12 @@ export default function CreateFacebookPost() {
       type: file.type,
       name: file.name,
       size: file.size,
-      file: file
+      file: file,
     }));
 
     setPostContent(prev => ({
       ...prev,
-      images: [...prev.images, ...newImages].slice(0, 10)
+      images: [...prev.images, ...newImages].slice(0, 10),
     }));
 
     toast.success(`Added ${validFiles.length} image(s)`);
@@ -129,13 +124,11 @@ export default function CreateFacebookPost() {
       toast.error("Please select a video file");
       return;
     }
-
     if (file.size > 100 * 1024 * 1024) {
       toast.error("Video must be under 100MB");
       return;
     }
 
-    // Clear images if video is selected (Facebook doesn't allow mixed media)
     if (postContent.images.length > 0) {
       setPostContent(prev => ({ ...prev, images: [] }));
       toast.info("Images cleared - Facebook doesn't allow mixed image/video posts");
@@ -143,13 +136,7 @@ export default function CreateFacebookPost() {
 
     setPostContent(prev => ({
       ...prev,
-      video: {
-        url: URL.createObjectURL(file),
-        type: file.type,
-        name: file.name,
-        size: file.size,
-        file: file
-      }
+      video: { url: URL.createObjectURL(file), type: file.type, name: file.name, size: file.size, file },
     }));
 
     toast.success("Video added successfully");
@@ -158,7 +145,7 @@ export default function CreateFacebookPost() {
   const removeImage = (index) => {
     setPostContent(prev => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index)
+      images: prev.images.filter((_, i) => i !== index),
     }));
   };
 
@@ -170,7 +157,7 @@ export default function CreateFacebookPost() {
     if (postContent.poll.options.length < 4)
       setPostContent(prev => ({
         ...prev,
-        poll: { ...prev.poll, options: [...prev.poll.options, ""] }
+        poll: { ...prev.poll, options: [...prev.poll.options, ""] },
       }));
   };
 
@@ -178,83 +165,68 @@ export default function CreateFacebookPost() {
     if (postContent.poll.options.length > 2) {
       setPostContent(prev => ({
         ...prev,
-        poll: { 
-          ...prev.poll, 
-          options: prev.poll.options.filter((_, i) => i !== index) 
-        }
+        poll: { ...prev.poll, options: prev.poll.options.filter((_, i) => i !== index) },
       }));
     }
   };
 
   const handleSubmit = async () => {
-    if (!selectedPage) return toast.error("Please select a Facebook page first");
+    if (!selectedPage) return toast.error("Please select a Facebook page");
+    if (!accessToken || accessToken === "YOUR_ACCESS_TOKEN_HERE") return toast.error("Access token not configured");
 
-    // Validation based on post type
-    if (postType === "text" && !postContent.text.trim()) {
-      return toast.error("Please enter some text for your post");
-    }
+    // Validation
+    if (postType === "text" && !postContent.text.trim()) return toast.error("Enter some text");
+    if ((postType === "images" || postType === "video") && !postContent.text.trim()) return toast.error("Add a caption for your media post");
+    if (postType === "images" && postContent.images.length === 0) return toast.error("Add at least one image");
+    if (postType === "video" && !postContent.video) return toast.error("Add a video");
+    if (postType === "link" && !postContent.link) return toast.error("Enter a link URL");
+    if (postType === "poll" && (!postContent.poll.question || postContent.poll.options.some(opt => !opt.trim()))) return toast.error("Fill in poll question and options");
 
-    if ((postType === "images" || postType === "video") && !postContent.text.trim()) {
-      return toast.error("Please add a caption for your media post");
-    }
-
-    if (postType === "images" && postContent.images.length === 0) {
-      return toast.error("Please add at least one image");
-    }
-
-    if (postType === "video" && !postContent.video) {
-      return toast.error("Please add a video");
-    }
-
-    if (postType === "link" && !postContent.link) {
-      return toast.error("Please enter a link URL");
-    }
-
-    if (postType === "poll" && (!postContent.poll.question || postContent.poll.options.some(opt => !opt.trim()))) {
-      return toast.error("Please fill in the poll question and all options");
-    }
-
-    const payload = {
-      pageId: selectedPage,
-      postType,
-      content: postContent,
-      scheduling: scheduling.schedule ? scheduling : null,
-      audience,
-      boost: boost ? { budget: budget[0], duration: duration[0] } : null,
-    };
+    const scheduledTime = scheduling.schedule ? new Date(`${format(scheduling.date, "yyyy-MM-dd")}T${scheduling.time}`) : null;
+    const boostData = boost ? { budget: budget[0], duration: duration[0] } : null;
 
     startTransition(async () => {
       try {
-        // Simulate API call
-        console.log("Posting:", payload);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        toast.success(scheduling.schedule
-          ? `Post scheduled for ${format(scheduling.date, "PPP")} at ${scheduling.time}`
-          : "Post published successfully!"
-        );
+        let result;
 
-        // Reset form
-        setPostContent({
-          text: "",
-          images: [],
-          video: null,
-          link: "",
-          poll: { question: "", options: ["", ""], duration: 7 },
-        });
-        setScheduling({ schedule: false, date: new Date(), time: "12:00", timezone: "UTC" });
-        setBoost(false);
-        
+        switch (postType) {
+          case "text":
+            result = await createFacebookTextPost({ pageId: selectedPage, accessToken, message: postContent.text, scheduledTime, audience, boost: boostData });
+            break;
+          case "images":
+            result = await createFacebookImagePost({ pageId: selectedPage, accessToken, message: postContent.text, images: postContent.images, scheduledTime, audience, boost: boostData });
+            break;
+          case "video":
+            result = await createFacebookVideoPost({ pageId: selectedPage, accessToken, message: postContent.text, video: postContent.video, scheduledTime, audience, boost: boostData });
+            break;
+          case "link":
+            result = await createFacebookLinkPost({ pageId: selectedPage, accessToken, message: postContent.text, link: postContent.link, scheduledTime, audience, boost: boostData });
+            break;
+          case "poll":
+            result = await createFacebookPollPost({ pageId: selectedPage, accessToken, message: postContent.text, question: postContent.poll.question, options: postContent.poll.options, duration: postContent.poll.duration, scheduledTime, audience, boost: boostData });
+            break;
+          default:
+            throw new Error("Invalid post type");
+        }
+
+        if (result.success) {
+          toast.success(scheduledTime
+            ? `Post scheduled for ${format(scheduling.date, "PPP")} at ${scheduling.time}`
+            : "Post published successfully!"
+          );
+
+          // Reset form
+          setPostContent({ text: "", images: [], video: null, link: "", poll: { question: "", options: ["", ""], duration: 7 } });
+          setScheduling({ schedule: false, date: new Date(), time: "12:00", timezone: "UTC" });
+          setBoost(false);
+        } else {
+          toast.error(result.message || "Failed to post. Try again.");
+        }
       } catch (e) {
-        toast.error("Failed to post. Please try again.");
+        console.error("Post error:", e);
+        toast.error("Failed to post. Try again.");
       }
     });
-  };
-
-  const formatFileSize = (bytes) => {
-    if (bytes < 1024) return bytes + ' bytes';
-    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
-    else return (bytes / 1048576).toFixed(1) + ' MB';
   };
 
   const characterCount = postContent.text.length;
@@ -264,27 +236,18 @@ export default function CreateFacebookPost() {
     <div className="max-w-6xl mx-auto space-y-8 p-6">
       {/* Header */}
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Create Facebook Post
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Design, schedule, and boost engaging posts across your Facebook pages
-        </p>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Create Facebook Post</h1>
+        <p className="text-xl text-gray-600 max-w-2xl mx-auto">Design, schedule, and boost engaging posts across your Facebook pages</p>
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
-        {/* Main Content Area - 3/4 width */}
+        {/* Main Content */}
         <div className="lg:col-span-3 space-y-6">
           {/* Page Selection */}
           <Card className="border-0 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-xl">
-                <Users className="h-5 w-5 text-blue-600" />
-                Select Facebook Page
-              </CardTitle>
-              <CardDescription>
-                Choose which page you want to post from
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2 text-xl"><Users className="h-5 w-5 text-blue-600" />Select Facebook Page</CardTitle>
+              <CardDescription>Choose which page you want to post from</CardDescription>
             </CardHeader>
             <CardContent>
               <Select value={selectedPage} onValueChange={setSelectedPage}>
@@ -296,17 +259,13 @@ export default function CreateFacebookPost() {
                     <SelectItem key={page.id} value={page.id}>
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                            {page.name.charAt(0)}
-                          </div>
+                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">{page.name.charAt(0)}</div>
                           <div>
                             <div className="font-medium">{page.name}</div>
                             <div className="text-sm text-gray-500">{page.category}</div>
                           </div>
                         </div>
-                        <Badge variant="secondary" className="ml-2">
-                          {page.fans} fans
-                        </Badge>
+                        <Badge variant="secondary" className="ml-2">{page.fans} fans</Badge>
                       </div>
                     </SelectItem>
                   ))}

@@ -17,7 +17,7 @@ import ExpiringPosts from "@/components/admin/facebook/ExpiringPosts";
 import ExpiredPosts from "@/components/admin/facebook/ExpiredPosts";
 
 export default function ManageFacebookPosts() {
-  const [status, setStatus] = useState("published");
+  const [status, setStatus] = useState("create");
 
   return (
     <div className="p-8 max-w-7xl mx-auto">
