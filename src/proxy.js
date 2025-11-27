@@ -8,7 +8,7 @@ export async function proxy(req) {
   // Public routes - no authentication needed
   const publicRoutes = [
     "/auth/login",
-    "/auth/register", 
+    "/auth/register",
     "/api/auth/login",
     "/api/auth/register"
   ];
@@ -33,7 +33,7 @@ export async function proxy(req) {
   // Validate JWT token
   try {
     const payload = await verifyToken(token);
-    
+
     if (!payload) {
       return redirectToLogin(req, pathname);
     }
@@ -50,11 +50,18 @@ export async function proxy(req) {
       requestHeaders.set('x-user-role', payload.role);
       requestHeaders.set('x-user-email', payload.email);
 
-      return NextResponse.next({
+      const response = NextResponse.next({
         request: {
           headers: requestHeaders,
         },
       });
+
+      // Add CORS headers
+      response.headers.set('Access-Control-Allow-Origin', '*');
+      response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+      return response;
     }
 
     return NextResponse.next();
@@ -68,12 +75,12 @@ export async function proxy(req) {
 function redirectToLogin(req, pathname) {
   const url = req.nextUrl.clone();
   url.pathname = "/auth/login";
-  
+
   // Save intended destination for redirect after login
   if (pathname !== "/" && !pathname.startsWith("/auth")) {
     url.searchParams.set("redirect", pathname);
   }
-  
+
   const response = NextResponse.redirect(url);
   response.cookies.delete("token");
   return response;

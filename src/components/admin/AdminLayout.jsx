@@ -13,6 +13,7 @@ import {
   Waypoints,
   Spotlight,
   Link2,
+  Image,
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -41,9 +42,8 @@ export default function AdminLayout({ children }) {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
       <aside
-        className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col ${
-          sidebarOpen ? "w-64" : "w-16"
-        }`}
+        className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col ${sidebarOpen ? "w-64" : "w-16"
+          }`}
       >
         {/* Header */}
         <div className="flex items-center justify-between h-16 px-3 border-b border-gray-200">
@@ -70,28 +70,26 @@ export default function AdminLayout({ children }) {
             {/* Dashboard is always visible */}
             {hasPermission('view_dashboard') && (
 
-            <li key={ROUTES.ADMIN_DASHBOARD}>
-              <Link
-                href={ROUTES.ADMIN_DASHBOARD}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
-                  sidebarOpen ? "justify-start" : "justify-center"
-                }`}
-              >
-                <LayoutDashboard size={18} />
-                {sidebarOpen && (
-                  <span className="text-sm font-medium">Dashboard</span>
-                )}
-              </Link>
-            </li>
-)}
+              <li key={ROUTES.ADMIN_DASHBOARD}>
+                <Link
+                  href={ROUTES.ADMIN_DASHBOARD}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
+                >
+                  <LayoutDashboard size={18} />
+                  {sidebarOpen && (
+                    <span className="text-sm font-medium">Dashboard</span>
+                  )}
+                </Link>
+              </li>
+            )}
             {/* Users - permission based */}
             {hasPermission('view_users') && (
               <li key={ROUTES.ADMIN_USER}>
                 <Link
                   href={ROUTES.ADMIN_USER}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
                 >
                   <Users size={18} />
                   {sidebarOpen && (
@@ -105,9 +103,8 @@ export default function AdminLayout({ children }) {
               <li key={ROUTES.ADMIN_ROLE}>
                 <Link
                   href={ROUTES.ADMIN_ROLE}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
                 >
                   <Waypoints size={18} />
                   {sidebarOpen && (
@@ -121,9 +118,8 @@ export default function AdminLayout({ children }) {
               <li key={ROUTES.ADMIN_PERMISSION}>
                 <Link
                   href={ROUTES.ADMIN_PERMISSION}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
                 >
                   <Spotlight size={18} />
                   {sidebarOpen && (
@@ -132,15 +128,33 @@ export default function AdminLayout({ children }) {
                 </Link>
               </li>
             )}
+
+
+
+            {/* Gallery */}
+            {hasPermission('view_gallery') && (
+              <li key={ROUTES.ADMIN_GALLERY}>
+                <Link
+                  href={ROUTES.ADMIN_GALLERY}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
+                >
+                  <Image size={18} />
+                  {sidebarOpen && (
+                    <span className="text-sm font-medium">Gallery</span>
+                  )}
+                </Link>
+              </li>
+            )}
+
             {/* Settings - permission based */}
 
-              {hasPermission('view_connect') && (
+            {hasPermission('view_connect') && (
               <li key="/admin/social/connect">
                 <Link
                   href="/admin/social/connect"
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
                 >
                   <Link2 size={18} />
                   {sidebarOpen && (
@@ -153,9 +167,8 @@ export default function AdminLayout({ children }) {
               <li key="/admin/settings">
                 <Link
                   href="/admin/settings"
-                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${
-                    sidebarOpen ? "justify-start" : "justify-center"
-                  }`}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
                 >
                   <Settings size={18} />
                   {sidebarOpen && (
@@ -171,9 +184,8 @@ export default function AdminLayout({ children }) {
         <div className="p-3 border-t border-gray-200">
           <Button
             variant="outline"
-            className={`w-full flex items-center gap-2 ${
-              sidebarOpen ? "justify-start" : "justify-center"
-            }`}
+            className={`w-full flex items-center gap-2 ${sidebarOpen ? "justify-start" : "justify-center"
+              }`}
             onClick={handleLogout}
           >
             <LogOut size={18} />

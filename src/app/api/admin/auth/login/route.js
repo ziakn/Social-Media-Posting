@@ -55,12 +55,26 @@ export async function POST(req) {
 
     const permissionData = [];
     if (roleData.permissions && roleData.permissions.length > 0) {
-      const q = query(collection(db, "permissions"),where(documentId(), "in", roleData.permissions));
+      // Chunk permissions into batches of 30 (Firestore limit for 'in' operator)
+      const chunkSize = 30;
+      const permissionChunks = [];
 
-      const permSnap = await getDocs(q);
+      for (let i = 0; i < roleData.permissions.length; i += chunkSize) {
+        permissionChunks.push(roleData.permissions.slice(i, i + chunkSize));
+      }
 
-      permSnap.forEach((doc) => {
-        permissionData.push({ id: doc.id, ...doc.data() });
+      // Execute queries in parallel
+      const queryPromises = permissionChunks.map(chunk => {
+        const q = query(collection(db, "permissions"), where(documentId(), "in", chunk));
+        return getDocs(q);
+      });
+
+      const snapshots = await Promise.all(queryPromises);
+
+      snapshots.forEach(permSnap => {
+        permSnap.forEach((doc) => {
+          permissionData.push({ id: doc.id, ...doc.data() });
+        });
       });
     }
 
@@ -85,6 +99,7 @@ export async function POST(req) {
       permissions: permissionData.map(item => item.name) || [],
 
     };
+
 
     const response = NextResponse.json({
       success: true,

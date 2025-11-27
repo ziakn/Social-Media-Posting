@@ -1,6 +1,7 @@
+// components/social/facebook/CreateFacebookPost.jsx
 "use client";
 
-import { useState, useRef, useTransition } from "react";
+import { useState, useRef, useTransition, useEffect } from "react";
 import { format } from "date-fns";
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter
@@ -31,6 +32,49 @@ import {
   Users, Eye, Globe, Zap, X, Plus, BarChart3, Calendar as CalendarIcon,
   Clock, DollarSign, Upload, Trash2, Play, FileText, Grid3X3
 } from "lucide-react";
+import { fetchFacebookPages } from "@/app/actions/social/facebook/getPages";
+
+// Custom hook for file uploads
+function useFileUpload() {
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const uploadFiles = async (files) => {
+    if (!files.length) return [];
+
+    setUploading(true);
+    setProgress(0);
+
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('files', file);
+      });
+
+      const response = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+      setProgress(100);
+      return result.files;
+    } catch (error) {
+      console.error('Upload error:', error);
+      throw error;
+    } finally {
+      setUploading(false);
+      setTimeout(() => setProgress(0), 1000);
+    }
+  };
+
+  return { uploadFiles, uploading, progress };
+}
 
 export default function CreateFacebookPost() {
   const [isPending, startTransition] = useTransition();
@@ -55,14 +99,26 @@ export default function CreateFacebookPost() {
   const [duration, setDuration] = useState([7]);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
+  const [pages, setPages] = useState([]);
+  
+  const { uploadFiles, uploading, progress } = useFileUpload();
 
-  const accessToken = process.env.NEXT_PUBLIC_FACEBOOK_ACCESS_TOKEN || "YOUR_ACCESS_TOKEN_HERE";
-
-  const pages = [
-    { id: "102597611693806", name: "Tech Hub", fans: "4.8K", category: "Technology" },
-    { id: "2", name: "Food Lovers", fans: "2.3K", category: "Food & Drink" },
-    { id: "3", name: "Travel Diaries", fans: "8.7K", category: "Travel" },
-  ];
+  useEffect(() => {
+    async function loadPages() {
+      const res = await fetchFacebookPages();
+      if (res.success) {
+        setPages(
+          res.pages.map((p) => ({
+            id: p.pageId,
+            name: p.pageName,
+            fans: p.fans,
+            category: p.category,
+          }))
+        );
+      }
+    }
+    loadPages();
+  }, []);
 
   const audienceOptions = [
     { value: "public", label: "Public", icon: Globe, description: "Anyone on or off Facebook" },
@@ -76,7 +132,7 @@ export default function CreateFacebookPost() {
     else return (bytes / 1048576).toFixed(1) + " MB";
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -100,23 +156,27 @@ export default function CreateFacebookPost() {
       return;
     }
 
-    const newImages = validFiles.map(file => ({
-      url: URL.createObjectURL(file),
-      type: file.type,
-      name: file.name,
-      size: file.size,
-      file: file,
-    }));
+    try {
+      // Upload files first
+      const uploadedFiles = await uploadFiles(validFiles);
+      
+      const newImages = validFiles.map((file, index) => ({
+        ...uploadedFiles[index],
+        file: file, // Keep file reference for preview
+      }));
 
-    setPostContent(prev => ({
-      ...prev,
-      images: [...prev.images, ...newImages].slice(0, 10),
-    }));
+      setPostContent(prev => ({
+        ...prev,
+        images: [...prev.images, ...newImages].slice(0, 10),
+      }));
 
-    toast.success(`Added ${validFiles.length} image(s)`);
+      toast.success(`Added ${validFiles.length} image(s)`);
+    } catch (error) {
+      toast.error(`Failed to upload images: ${error.message}`);
+    }
   };
 
-  const handleVideoUpload = (e) => {
+  const handleVideoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
@@ -134,12 +194,18 @@ export default function CreateFacebookPost() {
       toast.info("Images cleared - Facebook doesn't allow mixed image/video posts");
     }
 
-    setPostContent(prev => ({
-      ...prev,
-      video: { url: URL.createObjectURL(file), type: file.type, name: file.name, size: file.size, file },
-    }));
+    try {
+      const uploadedFiles = await uploadFiles([file]);
+      
+      setPostContent(prev => ({
+        ...prev,
+        video: { ...uploadedFiles[0], file },
+      }));
 
-    toast.success("Video added successfully");
+      toast.success("Video added successfully");
+    } catch (error) {
+      toast.error(`Failed to upload video: ${error.message}`);
+    }
   };
 
   const removeImage = (index) => {
@@ -170,40 +236,105 @@ export default function CreateFacebookPost() {
     }
   };
 
+  const validateForm = () => {
+    if (!selectedPage) {
+      toast.error("Please select a Facebook page");
+      return false;
+    }
+
+    switch (postType) {
+      case "text":
+        if (!postContent.text.trim()) {
+          toast.error("Enter some text");
+          return false;
+        }
+        break;
+      case "images":
+        if (!postContent.text.trim()) {
+          toast.error("Add a caption for your images");
+          return false;
+        }
+        if (postContent.images.length === 0) {
+          toast.error("Add at least one image");
+          return false;
+        }
+        break;
+      case "video":
+        if (!postContent.text.trim()) {
+          toast.error("Add a caption for your video");
+          return false;
+        }
+        if (!postContent.video) {
+          toast.error("Add a video");
+          return false;
+        }
+        break;
+      case "link":
+        if (!postContent.link) {
+          toast.error("Enter a link URL");
+          return false;
+        }
+        break;
+      case "poll":
+        if (!postContent.poll.question.trim() || postContent.poll.options.some(opt => !opt.trim())) {
+          toast.error("Fill in poll question and options");
+          return false;
+        }
+        break;
+    }
+
+    return true;
+  };
+
   const handleSubmit = async () => {
-    if (!selectedPage) return toast.error("Please select a Facebook page");
-    if (!accessToken || accessToken === "YOUR_ACCESS_TOKEN_HERE") return toast.error("Access token not configured");
+    if (!validateForm()) return;
 
-    // Validation
-    if (postType === "text" && !postContent.text.trim()) return toast.error("Enter some text");
-    if ((postType === "images" || postType === "video") && !postContent.text.trim()) return toast.error("Add a caption for your media post");
-    if (postType === "images" && postContent.images.length === 0) return toast.error("Add at least one image");
-    if (postType === "video" && !postContent.video) return toast.error("Add a video");
-    if (postType === "link" && !postContent.link) return toast.error("Enter a link URL");
-    if (postType === "poll" && (!postContent.poll.question || postContent.poll.options.some(opt => !opt.trim()))) return toast.error("Fill in poll question and options");
-
-    const scheduledTime = scheduling.schedule ? new Date(`${format(scheduling.date, "yyyy-MM-dd")}T${scheduling.time}`) : null;
+    const scheduledTime = scheduling.schedule 
+      ? new Date(`${format(scheduling.date, "yyyy-MM-dd")}T${scheduling.time}`) 
+      : null;
+    
     const boostData = boost ? { budget: budget[0], duration: duration[0] } : null;
 
     startTransition(async () => {
       try {
         let result;
+        const commonProps = {
+          pageId: selectedPage,
+          message: postContent.text,
+          scheduledTime,
+          additionalData: {
+            audience,
+            boost: boostData,
+            ...(postType === 'link' && { link: postContent.link }),
+            ...(postType === 'poll' && { 
+              question: postContent.poll.question,
+              options: postContent.poll.options,
+              duration: postContent.poll.duration 
+            }),
+          },
+        };
 
         switch (postType) {
           case "text":
-            result = await createFacebookTextPost({ pageId: selectedPage, accessToken, message: postContent.text, scheduledTime, audience, boost: boostData });
+            result = await createFacebookTextPost(commonProps);
             break;
           case "images":
-            result = await createFacebookImagePost({ pageId: selectedPage, accessToken, message: postContent.text, images: postContent.images, scheduledTime, audience, boost: boostData });
+            result = await createFacebookImagePost({
+              ...commonProps,
+              mediaUrls: postContent.images,
+            });
             break;
           case "video":
-            result = await createFacebookVideoPost({ pageId: selectedPage, accessToken, message: postContent.text, video: postContent.video, scheduledTime, audience, boost: boostData });
+            result = await createFacebookVideoPost({
+              ...commonProps,
+              mediaUrls: postContent.video ? [postContent.video] : [],
+            });
             break;
           case "link":
-            result = await createFacebookLinkPost({ pageId: selectedPage, accessToken, message: postContent.text, link: postContent.link, scheduledTime, audience, boost: boostData });
+            result = await createFacebookLinkPost(commonProps);
             break;
           case "poll":
-            result = await createFacebookPollPost({ pageId: selectedPage, accessToken, message: postContent.text, question: postContent.poll.question, options: postContent.poll.options, duration: postContent.poll.duration, scheduledTime, audience, boost: boostData });
+            result = await createFacebookPollPost(commonProps);
             break;
           default:
             throw new Error("Invalid post type");
@@ -216,8 +347,19 @@ export default function CreateFacebookPost() {
           );
 
           // Reset form
-          setPostContent({ text: "", images: [], video: null, link: "", poll: { question: "", options: ["", ""], duration: 7 } });
-          setScheduling({ schedule: false, date: new Date(), time: "12:00", timezone: "UTC" });
+          setPostContent({ 
+            text: "", 
+            images: [], 
+            video: null, 
+            link: "", 
+            poll: { question: "", options: ["", ""], duration: 7 } 
+          });
+          setScheduling({ 
+            schedule: false, 
+            date: new Date(), 
+            time: "12:00", 
+            timezone: "UTC" 
+          });
           setBoost(false);
         } else {
           toast.error(result.message || "Failed to post. Try again.");
@@ -236,8 +378,12 @@ export default function CreateFacebookPost() {
     <div className="max-w-6xl mx-auto space-y-8 p-6">
       {/* Header */}
       <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Create Facebook Post</h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">Design, schedule, and boost engaging posts across your Facebook pages</p>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Create Facebook Post
+        </h1>
+        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          Design, schedule, and boost engaging posts across your Facebook pages
+        </p>
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
@@ -246,7 +392,10 @@ export default function CreateFacebookPost() {
           {/* Page Selection */}
           <Card className="border-0 shadow-lg">
             <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-xl"><Users className="h-5 w-5 text-blue-600" />Select Facebook Page</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Users className="h-5 w-5 text-blue-600" />
+                Select Facebook Page
+              </CardTitle>
               <CardDescription>Choose which page you want to post from</CardDescription>
             </CardHeader>
             <CardContent>
@@ -259,13 +408,17 @@ export default function CreateFacebookPost() {
                     <SelectItem key={page.id} value={page.id}>
                       <div className="flex items-center justify-between w-full">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">{page.name.charAt(0)}</div>
+                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {page.name.charAt(0)}
+                          </div>
                           <div>
                             <div className="font-medium">{page.name}</div>
                             <div className="text-sm text-gray-500">{page.category}</div>
                           </div>
                         </div>
-                        <Badge variant="secondary" className="ml-2">{page.fans} fans</Badge>
+                        <Badge variant="secondary" className="ml-2">
+                          {page.fans} fans
+                        </Badge>
                       </div>
                     </SelectItem>
                   ))}
@@ -319,24 +472,15 @@ export default function CreateFacebookPost() {
                       className="min-h-[140px] resize-none text-base leading-relaxed"
                     />
                     <div className="flex justify-between items-center text-sm">
-                      <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Image className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Video className="h-4 w-4" />
-                        </Button>
+                      <div className="text-gray-500">
+                        {characterCount}/{maxCharacters} characters
                       </div>
-                      <span className={`${characterCount > maxCharacters * 0.9 ? 'text-amber-600' : 'text-gray-500'}`}>
-                        {characterCount}/{maxCharacters}
-                      </span>
                     </div>
                   </div>
                 </TabsContent>
 
                 {/* Images Post */}
                 <TabsContent value="images" className="space-y-6 pt-6">
-                  {/* Text Content */}
                   <div className="space-y-3">
                     <Label htmlFor="images-caption" className="text-base">Caption</Label>
                     <Textarea
@@ -350,7 +494,6 @@ export default function CreateFacebookPost() {
 
                   <Separator />
 
-                  {/* Image Upload Section */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -379,6 +522,7 @@ export default function CreateFacebookPost() {
                         multiple
                         onChange={handleImageUpload}
                         className="hidden"
+                        disabled={uploading}
                       />
                       
                       <div className="space-y-4">
@@ -388,17 +532,23 @@ export default function CreateFacebookPost() {
                           </div>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 mb-2 text-lg">Add Photos</h3>
+                          <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+                            {uploading ? 'Uploading...' : 'Add Photos'}
+                          </h3>
                           <p className="text-gray-600 text-sm mb-4 max-w-md mx-auto">
                             Upload up to 10 images. Supported formats: JPG, PNG, GIF. Maximum 10MB per image.
                           </p>
+                          {uploading && (
+                            <Progress value={progress} className="w-full mb-4" />
+                          )}
                           <Button
                             onClick={() => imageInputRef.current?.click()}
                             className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg"
                             size="lg"
+                            disabled={uploading}
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            Select Images
+                            {uploading ? 'Uploading...' : 'Select Images'}
                           </Button>
                         </div>
                       </div>
@@ -407,16 +557,6 @@ export default function CreateFacebookPost() {
                     {/* Image Previews */}
                     {postContent.images.length > 0 && (
                       <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-base flex items-center gap-2">
-                            <Grid3X3 className="h-4 w-4" />
-                            Image Previews
-                          </Label>
-                          <span className="text-sm text-gray-500">
-                            {postContent.images.length} image{postContent.images.length !== 1 ? 's' : ''} selected
-                          </span>
-                        </div>
-                        
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                           {postContent.images.map((image, index) => (
                             <div key={index} className="relative group">
@@ -426,7 +566,6 @@ export default function CreateFacebookPost() {
                                   alt={`Upload ${index + 1}`}
                                   className="w-full h-full object-cover"
                                 />
-                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                               </div>
                               <Button
                                 variant="destructive"
@@ -440,15 +579,9 @@ export default function CreateFacebookPost() {
                                 <p className="text-white text-xs truncate">{image.name}</p>
                                 <p className="text-white/80 text-xs">{formatFileSize(image.size)}</p>
                               </div>
-                              
-                              {/* Image Number Badge */}
-                              <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-1.5 py-0.5 rounded">
-                                {index + 1}
-                              </div>
                             </div>
                           ))}
                           
-                          {/* Add More Button */}
                           {postContent.images.length < 10 && (
                             <div 
                               className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
@@ -466,7 +599,6 @@ export default function CreateFacebookPost() {
 
                 {/* Video Post */}
                 <TabsContent value="video" className="space-y-6 pt-6">
-                  {/* Text Content */}
                   <div className="space-y-3">
                     <Label htmlFor="video-caption" className="text-base">Caption</Label>
                     <Textarea
@@ -480,7 +612,6 @@ export default function CreateFacebookPost() {
 
                   <Separator />
 
-                  {/* Video Upload Section */}
                   <div className="space-y-4">
                     <Label className="text-base">Upload Video</Label>
                     
@@ -491,6 +622,7 @@ export default function CreateFacebookPost() {
                         accept="video/*"
                         onChange={handleVideoUpload}
                         className="hidden"
+                        disabled={uploading}
                       />
                       
                       <div className="space-y-4">
@@ -500,24 +632,29 @@ export default function CreateFacebookPost() {
                           </div>
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900 mb-2 text-lg">Add Video</h3>
+                          <h3 className="font-semibold text-gray-900 mb-2 text-lg">
+                            {uploading ? 'Uploading...' : 'Add Video'}
+                          </h3>
                           <p className="text-gray-600 text-sm mb-4 max-w-md mx-auto">
                             Upload a single video file. Supported formats: MP4, MOV. Maximum 100MB.
                           </p>
+                          {uploading && (
+                            <Progress value={progress} className="w-full mb-4" />
+                          )}
                           <Button
                             onClick={() => videoInputRef.current?.click()}
                             variant="outline"
                             className="border-purple-200 text-purple-700 hover:bg-purple-50 shadow-lg"
                             size="lg"
+                            disabled={uploading}
                           >
                             <Upload className="h-4 w-4 mr-2" />
-                            Select Video
+                            {uploading ? 'Uploading...' : 'Select Video'}
                           </Button>
                         </div>
                       </div>
                     </div>
 
-                    {/* Video Preview */}
                     {postContent.video && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -585,27 +722,6 @@ export default function CreateFacebookPost() {
                       className="h-12 text-base"
                     />
                   </div>
-
-                  {postContent.link && (
-                    <Card className="border-2 border-blue-200 bg-blue-50">
-                      <CardContent className="p-4">
-                        <div className="flex gap-4">
-                          <div className="w-16 h-16 bg-white rounded-lg border flex items-center justify-center flex-shrink-0">
-                            <Link2 className="h-6 w-6 text-gray-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 truncate">Website Preview</h4>
-                            <p className="text-sm text-gray-600 mt-1 truncate">
-                              {postContent.link}
-                            </p>
-                            <p className="text-xs text-gray-500 mt-2">
-                              Facebook will generate a preview when you publish
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
                 </TabsContent>
 
                 {/* Poll Post */}
@@ -687,7 +803,7 @@ export default function CreateFacebookPost() {
           </Card>
         </div>
 
-        {/* Sidebar - 1/4 width */}
+        {/* Sidebar */}
         <div className="space-y-6">
           {/* Scheduling Card */}
           <Card className="border-0 shadow-lg">
@@ -724,7 +840,7 @@ export default function CreateFacebookPost() {
                         <Calendar
                           mode="single"
                           selected={scheduling.date}
-                          onSelect={(date) => setScheduling(prev => ({ ...prev, date }))}
+                          onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))}
                           initialFocus
                         />
                       </PopoverContent>
@@ -738,20 +854,6 @@ export default function CreateFacebookPost() {
                       value={scheduling.time}
                       onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))}
                     />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm">Timezone</Label>
-                    <Select value={scheduling.timezone} onValueChange={(value) => setScheduling(prev => ({ ...prev, timezone: value }))}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="UTC">UTC</SelectItem>
-                        <SelectItem value="EST">Eastern Time</SelectItem>
-                        <SelectItem value="PST">Pacific Time</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </div>
               )}
@@ -841,13 +943,6 @@ export default function CreateFacebookPost() {
                       <span>30 days</span>
                     </div>
                   </div>
-
-                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <div className="flex items-center gap-2 text-sm text-blue-800">
-                      <BarChart3 className="h-4 w-4" />
-                      Estimated reach: {(budget[0] * 50).toLocaleString()} people
-                    </div>
-                  </div>
                 </div>
               )}
             </CardContent>
@@ -858,7 +953,7 @@ export default function CreateFacebookPost() {
             size="lg"
             className="w-full h-14 text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg"
             onClick={handleSubmit}
-            disabled={isPending || !selectedPage}
+            disabled={isPending || uploading || !selectedPage}
           >
             {isPending ? (
               <div className="flex items-center gap-2">

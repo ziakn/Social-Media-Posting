@@ -23,6 +23,12 @@ export const ROUTES = {
   ADMIN_PERMISSION_EDIT: prefix + "permissions",
   ADMIN_PERMISSION_DELETE: prefix + "permissions/delete",
 
+  // Gallery
+  ADMIN_GALLERY: prefix + "gallery",
+  ADMIN_GALLERY_CREATE: prefix + "gallery/create",
+  ADMIN_GALLERY_EDIT: prefix + "gallery",
+  ADMIN_GALLERY_DELETE: prefix + "gallery/delete",
+
 
   // Social Media Posts
   ADMIN_SOCIAL_CONNECT: prefix + "social/connect",
@@ -33,11 +39,11 @@ export const ROUTES = {
   ADMIN_TWITTER: prefix + "social/twitter",
   ADMIN_BLUESKY: prefix + "social/bluesky",
   ADMIN_REDDIT: prefix + "social/reddit",
-  ADMIN_TELEGRAM: prefix + "social/telegram", 
+  ADMIN_TELEGRAM: prefix + "social/telegram",
 
 
 
-  
+
 
   ADMIN_FACEBOOK_POSTS: prefix + "social/facebook/posts",
   ADMIN_FACEBOOK_POSTS_CREATE: prefix + "social/facebook/posts/create",
