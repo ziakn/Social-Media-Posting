@@ -77,7 +77,7 @@ export async function POST(req) {
       name,
       email,
       role_id,
-      password:hash_password,
+      password: hash_password,
       created_at: new Date(),
     });
 

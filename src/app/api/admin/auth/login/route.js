@@ -34,7 +34,7 @@ export async function POST(req) {
     const userDoc = userDocRef.data();
 
     // Check password
-    const passwordMatch = await bcrypt.compare(password, userDoc.hash_password);
+    const passwordMatch = await bcrypt.compare(password, userDoc.password);
     if (!passwordMatch) {
       return NextResponse.json(
         { error: "Invalid email or password." },
