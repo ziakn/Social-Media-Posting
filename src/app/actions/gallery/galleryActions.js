@@ -13,9 +13,13 @@ import {
   where,
   orderBy,
   getDoc,
-  serverTimestamp
+  serverTimestamp,
+  limit,
+  startAfter
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { unlink } from 'fs/promises';
+import path from 'path';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 
@@ -54,6 +58,7 @@ export async function createGalleryItem(fileData) {
       fileSize,
       storagePath,
       description = '',
+      title = fileName,
       tags = [],
       category = 'general'
     } = fileData;
@@ -67,6 +72,7 @@ export async function createGalleryItem(fileData) {
     const galleryItem = {
       userId: user.id,
       fileName,
+      title,
       fileUrl,
       fileType,
       mediaType,
@@ -85,7 +91,9 @@ export async function createGalleryItem(fileData) {
     return {
       success: true,
       id: docRef.id,
-      ...galleryItem
+      ...galleryItem,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
   } catch (error) {
@@ -102,8 +110,8 @@ export async function getUserGallery(options = {}) {
     const {
       category = '',
       mediaType = '',
-      limit = 50,
-      page = 1
+      limit: limitCount = 10,
+      lastCreatedAt = null
     } = options;
 
     let q = query(
@@ -120,6 +128,16 @@ export async function getUserGallery(options = {}) {
       q = query(q, where('mediaType', '==', mediaType));
     }
 
+    // Apply pagination
+    if (lastCreatedAt) {
+      // Convert string back to Date if needed, or use as is if it's a timestamp
+      // Since we pass it from client, it might be a string or number
+      const cursor = new Date(lastCreatedAt);
+      q = query(q, startAfter(cursor));
+    }
+
+    q = query(q, limit(limitCount));
+
     const querySnapshot = await getDocs(q);
     const items = [];
 
@@ -134,10 +152,15 @@ export async function getUserGallery(options = {}) {
       });
     });
 
+    // Get the last item's createdAt for the next cursor
+    const lastItem = items.length > 0 ? items[items.length - 1] : null;
+    const nextCursor = lastItem ? lastItem.createdAt : null;
+
     return {
       success: true,
       items,
-      total: items.length
+      nextCursor,
+      hasMore: items.length === limitCount
     };
 
   } catch (error) {
@@ -167,8 +190,24 @@ export async function deleteGalleryItem(itemId) {
     }
 
     // Delete from storage
-    const storageRef = ref(storage, item.storagePath);
-    await deleteObject(storageRef);
+    if (item.storagePath.startsWith('public/uploads')) {
+      // Local file deletion
+      try {
+        const absolutePath = path.join(process.cwd(), item.storagePath);
+        await unlink(absolutePath);
+      } catch (err) {
+        console.error('Error deleting local file:', err);
+        // Continue to delete from Firestore even if file delete fails (e.g. file already gone)
+      }
+    } else {
+      // Firebase Storage deletion
+      try {
+        const storageRef = ref(storage, item.storagePath);
+        await deleteObject(storageRef);
+      } catch (err) {
+        console.error('Error deleting from Firebase Storage:', err);
+      }
+    }
 
     // Delete from Firestore
     await deleteDoc(itemRef);
