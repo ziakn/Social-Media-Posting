@@ -5,6 +5,11 @@ import { db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { fetchFacebookPages } from "./getPages";
 
+import { readFile } from 'fs/promises';
+import path from 'path';
+
+// ... existing imports
+
 /**
  * Enhanced base function to create a Facebook post
  */
@@ -18,7 +23,7 @@ async function createFacebookPostBase({
 }) {
   try {
     const { pages } = await fetchFacebookPages();
-    
+
     const page = pages.find((p) => String(p.pageId) === String(pageId));
     if (!page) {
       return { success: false, message: "Facebook page not found" };
@@ -120,16 +125,30 @@ async function handleImagePost(pageId, message, mediaUrls, accessToken, baseBody
 
   // Upload each image to Facebook
   for (const media of mediaUrls) {
+    const formData = new FormData();
+    formData.append('access_token', accessToken);
+    formData.append('published', 'false');
+
+    let fileBuffer;
+    if (media.url.startsWith('http')) {
+      const response = await fetch(media.url);
+      fileBuffer = await response.arrayBuffer();
+    } else {
+      // Assume local file in public directory
+      // Remove leading slash if present to join correctly
+      const relativePath = media.url.startsWith('/') ? media.url.slice(1) : media.url;
+      const filePath = path.join(process.cwd(), 'public', relativePath);
+      fileBuffer = await readFile(filePath);
+    }
+
+    const blob = new Blob([fileBuffer], { type: media.type || 'image/jpeg' });
+    formData.append('source', blob, media.name || 'image.jpg');
+
     const uploadRes = await fetch(
       `https://graph.facebook.com/${pageId}/photos`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: media.url,
-          published: false,
-          access_token: accessToken,
-        }),
+        body: formData,
       }
     );
 
@@ -154,13 +173,26 @@ async function handleImagePost(pageId, message, mediaUrls, accessToken, baseBody
 async function handleVideoPost(pageId, message, video, accessToken, baseBody) {
   const formData = new FormData();
   formData.append("description", message || '');
-  formData.append("file_url", video.url);
   formData.append("access_token", accessToken);
   formData.append("published", baseBody.published.toString());
-  
+
   if (baseBody.scheduled_publish_time) {
     formData.append("scheduled_publish_time", baseBody.scheduled_publish_time.toString());
   }
+
+  let fileBuffer;
+  if (video.url.startsWith('http')) {
+    const response = await fetch(video.url);
+    fileBuffer = await response.arrayBuffer();
+  } else {
+    // Assume local file in public directory
+    const relativePath = video.url.startsWith('/') ? video.url.slice(1) : video.url;
+    const filePath = path.join(process.cwd(), 'public', relativePath);
+    fileBuffer = await readFile(filePath);
+  }
+
+  const blob = new Blob([fileBuffer], { type: video.type || 'video/mp4' });
+  formData.append("source", blob, video.name || 'video.mp4');
 
   const fbResponse = await fetch(
     `https://graph.facebook.com/${pageId}/videos`,
@@ -172,7 +204,7 @@ async function handleVideoPost(pageId, message, video, accessToken, baseBody) {
 
 async function handlePollPost(pageId, message, additionalData, baseBody) {
   const pollOptions = additionalData.options?.filter((o) => o.trim() !== "") || [];
-  
+
   const pollMessage = `${message || ''}
   
 ${additionalData.question || 'Poll'}

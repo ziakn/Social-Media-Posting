@@ -21,7 +21,7 @@ import { API_ROUTES } from "@/constants/api";
 import { toast } from "sonner";
 
 export default function UsersList() {
-   const { user, permissions, hasPermission } = usePermissions();
+  const { user, permissions, hasPermission } = usePermissions();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -46,30 +46,30 @@ export default function UsersList() {
     }
   };
 
-const handleDelete = async (id) => {
-  toast("Are you sure you want to delete this user?", {
-    action: {
-      label: "Delete",
-      onClick: async () => {
-        try {
-          const res = await fetch(`${API_ROUTES.USERS}/${id}`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" },
-          });
+  const handleDelete = async (id) => {
+    toast("Are you sure you want to delete this user?", {
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            const res = await fetch(`${API_ROUTES.USERS}/${id}`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+            });
 
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.message || "Failed to delete user");
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to delete user");
 
-          setUsers((prev) => prev.filter((u) => u.id !== id));
-          toast.success("User deleted successfully!");
-        } catch (error) {
-          console.error("Error deleting user:", error);
-          toast.error("❌ Error deleting user: " + error.message);
-        }
+            setUsers((prev) => prev.filter((u) => u.id !== id));
+            toast.success("User deleted successfully!");
+          } catch (error) {
+            console.error("Error deleting user:", error);
+            toast.error("❌ Error deleting user: " + error.message);
+          }
+        },
       },
-    },
-  });
-};
+    });
+  };
 
 
   if (loading) return <Spinner />;
@@ -79,27 +79,27 @@ const handleDelete = async (id) => {
       <Card className="shadow-sm">
         <CardHeader className="flex justify-between items-center">
           <CardTitle className="text-xl font-semibold">Users</CardTitle>
-          {hasPermission('create_users') && 
-          <Button
-            variant="secondary"
-            onClick={() => router.push(ROUTES.ADMIN_users_CREATE)}
-          >
-            + Add User
-          </Button>
-}
+          {hasPermission('create_users') &&
+            <Button
+              variant="secondary"
+              onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
+            >
+              + Add User
+            </Button>
+          }
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <p className="mb-4">No users found.</p>
-              {hasPermission('create_users') && 
-              <Button
-                size="sm"
-                onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
-              >
-                + Add your first user
-              </Button>
-}
+              {hasPermission('create_users') &&
+                <Button
+                  size="sm"
+                  onClick={() => router.push(ROUTES.ADMIN_USER_CREATE)}
+                >
+                  + Add your first user
+                </Button>
+              }
             </div>
           ) : (
             <Table>
@@ -119,27 +119,27 @@ const handleDelete = async (id) => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.role.name || "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      {hasPermission('edit_users') && 
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          router.push(
-                            `${ROUTES.ADMIN_USER_EDIT}/${user.id}/edit`
-                          )
-                        }
-                      >
-                        Edit
-                      </Button>}
-                      {hasPermission('delete_users') && 
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => handleDelete(user.id)}
-                      >
-                        Delete
-                      </Button>
-}
+                      {hasPermission('edit_users') &&
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            router.push(
+                              `${ROUTES.ADMIN_USER_EDIT}/${user.id}/edit`
+                            )
+                          }
+                        >
+                          Edit
+                        </Button>}
+                      {hasPermission('delete_users') &&
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(user.id)}
+                        >
+                          Delete
+                        </Button>
+                      }
                     </TableCell>
                   </TableRow>
                 ))}

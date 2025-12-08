@@ -50,7 +50,7 @@ export default function FacebookPagesDashboard() {
     loadPages();
   }, []);
 
-   if (loading) return <Spinner />;
+  if (loading) return <Spinner />;
 
 
   if (pages.length === 0)
@@ -147,7 +147,7 @@ export default function FacebookPagesDashboard() {
               <Button
                 size="sm"
                 className="bg-neutral-800 hover:bg-neutral-900 text-white flex items-center gap-1 rounded-lg shadow"
-                onClick={() => router.push(`/admin/social/facebook/posts/${page.pageId}`)}
+                onClick={() => router.push(`/admin/social/facebook/posts`)}
               >
                 Manage Page
                 <ArrowRight className="w-4 h-4" />

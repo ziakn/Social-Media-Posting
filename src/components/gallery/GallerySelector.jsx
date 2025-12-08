@@ -37,7 +37,140 @@ export default function GallerySelector({
     allowedTypes = ["image", "video"], // 'image', 'video', 'document'
     className,
 }) {
-    // ... (state and functions)
+    const [activeTab, setActiveTab] = useState("library");
+    const [items, setItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        fetchGallery();
+    }, []);
+
+    const fetchGallery = async () => {
+        setLoading(true);
+        try {
+            const res = await getUserGallery();
+            if (res.success) {
+                setItems(res.items);
+            } else {
+                toast.error("Failed to load gallery");
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error("Error loading gallery");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        setUploading(true);
+        setUploadProgress(0);
+
+        try {
+            for (const file of files) {
+                const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "document";
+
+                if (!allowedTypes.includes(type)) {
+                    toast.error(`File type ${type} not allowed`);
+                    continue;
+                }
+
+                const storageRef = ref(storage, `gallery/${Date.now()}_${file.name}`);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+
+                await new Promise((resolve, reject) => {
+                    uploadTask.on(
+                        "state_changed",
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            setUploadProgress(Math.round(progress));
+                        },
+                        (error) => reject(error),
+                        async () => {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+                            await createGalleryItem({
+                                fileName: file.name,
+                                fileUrl: downloadURL,
+                                fileType: file.type,
+                                fileSize: file.size,
+                                mediaType: type,
+                                storagePath: uploadTask.snapshot.ref.fullPath,
+                            });
+                            resolve();
+                        }
+                    );
+                });
+            }
+
+            toast.success("Files uploaded successfully");
+            setActiveTab("library");
+            fetchGallery();
+        } catch (error) {
+            console.error(error);
+            toast.error("Upload failed");
+        } finally {
+            setUploading(false);
+            setUploadProgress(0);
+            if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+    };
+
+    const handleDelete = async (e, id) => {
+        e.stopPropagation();
+        if (!confirm("Are you sure you want to delete this item?")) return;
+
+        try {
+            const res = await deleteGalleryItem(id);
+            if (res.success) {
+                toast.success("Item deleted");
+                setItems(prev => prev.filter(item => item.id !== id));
+                setSelectedItems(prev => prev.filter(item => item.id !== id));
+            } else {
+                toast.error(res.error || "Failed to delete");
+            }
+        } catch (error) {
+            toast.error("Error deleting item");
+        }
+    };
+
+    const handleSelect = (item) => {
+        if (allowMultiple) {
+            setSelectedItems(prev => {
+                const isSelected = prev.some(i => i.id === item.id);
+                if (isSelected) {
+                    return prev.filter(i => i.id !== item.id);
+                } else {
+                    return [...prev, item];
+                }
+            });
+        } else {
+            setSelectedItems([item]);
+        }
+    };
+
+    const handleConfirmSelection = () => {
+        if (allowMultiple) {
+            onSelect(selectedItems);
+        } else {
+            onSelect(selectedItems[0]);
+        }
+    };
+
+    const filteredItems = items.filter(item => {
+        const matchesSearch = item.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.title && item.title.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesType = allowedTypes.includes(item.mediaType);
+        return matchesSearch && matchesType;
+    });
 
     const getMediaIcon = (mediaType) => {
         switch (mediaType) {
