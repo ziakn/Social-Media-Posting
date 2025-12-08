@@ -22,6 +22,7 @@ import { unlink } from 'fs/promises';
 import path from 'path';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
+import { Timestamp } from "firebase/firestore";
 
 // Helper function to get authenticated user
 async function getAuthenticatedUser() {
@@ -111,13 +112,14 @@ export async function getUserGallery(options = {}) {
       category = '',
       mediaType = '',
       limit: limitCount = 10,
-      lastCreatedAt = null
+      cursor = null // Changed from lastCreatedAt to cursor object { createdAt, id }
     } = options;
 
     let q = query(
       collection(db, 'gallery'),
       where('userId', '==', user.id),
-      orderBy('createdAt', 'desc')
+      orderBy('createdAt', 'desc'),
+      orderBy('__name__', 'desc') // Secondary sort for stable pagination
     );
 
     // Apply filters
@@ -129,11 +131,9 @@ export async function getUserGallery(options = {}) {
     }
 
     // Apply pagination
-    if (lastCreatedAt) {
-      // Convert string back to Date if needed, or use as is if it's a timestamp
-      // Since we pass it from client, it might be a string or number
-      const cursor = new Date(lastCreatedAt);
-      q = query(q, startAfter(cursor));
+    if (cursor) {
+      const cursorTime = Timestamp.fromDate(new Date(cursor.createdAt));
+      q = query(q, startAfter(cursorTime, cursor.id));
     }
 
     q = query(q, limit(limitCount));
@@ -152,9 +152,12 @@ export async function getUserGallery(options = {}) {
       });
     });
 
-    // Get the last item's createdAt for the next cursor
+    // Get the last item's cursor data
     const lastItem = items.length > 0 ? items[items.length - 1] : null;
-    const nextCursor = lastItem ? lastItem.createdAt : null;
+    const nextCursor = lastItem ? {
+      createdAt: lastItem.createdAt,
+      id: lastItem.id
+    } : null;
 
     return {
       success: true,
