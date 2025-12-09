@@ -16,7 +16,7 @@ export async function getFacebookPosts() {
     }
 
     const q = query(
-      collection(db, "facebookPosts"),
+      collection(db, "facebook_posts"),
       where("userId", "==", user.id),
       orderBy("createdAt", "desc")
     );

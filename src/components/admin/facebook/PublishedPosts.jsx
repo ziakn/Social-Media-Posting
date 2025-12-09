@@ -4,150 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Eye, 
-  Heart, 
-  MessageCircle, 
-  Share2, 
-  BarChart3, 
+import {
+  Eye,
+  Heart,
+  MessageCircle,
+  Share2,
+  BarChart3,
   Calendar,
   MoreHorizontal,
   TrendingUp,
   Users,
   Clock,
   Filter,
-  Download
+  Download,
+  Loader2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getFacebookPosts } from "@/app/actions/social/facebook/getPosts";
+import { toast } from "sonner";
 
-// Dummy data for published posts
-const dummyPosts = [
-  {
-    id: 1,
-    type: "photo",
-    platform: "facebook",
-    caption: "Just launched our new product line! 🚀 So excited to share this with our community. What do you think? #NewProduct #Innovation",
-    image: "/api/placeholder/400/300",
-    publishedAt: "2024-12-15T14:30:00Z",
-    status: "published",
-    metrics: {
-      reach: 12500,
-      engagements: 842,
-      likes: 567,
-      comments: 89,
-      shares: 43,
-      clicks: 234
-    },
-    page: "My Business Page",
-    scheduled: false
-  },
-  {
-    id: 2,
-    type: "video",
-    platform: "facebook",
-    caption: "Behind the scenes of our latest campaign! Watch how we bring ideas to life. 🎬",
-    image: "/api/placeholder/400/300",
-    publishedAt: "2024-12-14T10:15:00Z",
-    status: "published",
-    metrics: {
-      reach: 28700,
-      engagements: 1567,
-      likes: 1023,
-      comments: 234,
-      shares: 156,
-      clicks: 567,
-      videoViews: 12400
-    },
-    page: "Tech Reviews",
-    scheduled: false
-  },
-  {
-    id: 3,
-    type: "link",
-    platform: "facebook",
-    caption: "Check out our latest blog post about social media trends in 2024!",
-    image: "/api/placeholder/400/300",
-    publishedAt: "2024-12-13T16:45:00Z",
-    status: "published",
-    metrics: {
-      reach: 8900,
-      engagements: 456,
-      likes: 289,
-      comments: 67,
-      shares: 34,
-      clicks: 789
-    },
-    page: "Travel Diaries",
-    scheduled: false
-  },
-  {
-    id: 4,
-    type: "carousel",
-    platform: "facebook",
-    caption: "Swipe through our top 5 destinations for 2024! ✈️ Which one is your favorite?",
-    image: "/api/placeholder/400/300",
-    publishedAt: "2024-12-12T09:20:00Z",
-    status: "published",
-    metrics: {
-      reach: 15600,
-      engagements: 923,
-      likes: 645,
-      comments: 178,
-      shares: 67,
-      clicks: 456
-    },
-    page: "Travel Diaries",
-    scheduled: false
-  },
-  {
-    id: 5,
-    type: "event",
-    platform: "facebook",
-    caption: "Join us for our annual conference next month! Early bird tickets available now.",
-    image: "/api/placeholder/400/300",
-    publishedAt: "2024-12-11T11:00:00Z",
-    status: "published",
-    metrics: {
-      reach: 20300,
-      engagements: 1345,
-      likes: 890,
-      comments: 256,
-      shares: 123,
-      clicks: 678,
-      rsvps: 345
-    },
-    page: "My Business Page",
-    scheduled: false
-  },
-  {
-    id: 6,
-    type: "poll",
-    platform: "facebook",
-    caption: "What's your favorite social media platform for business?",
-    image: "/api/placeholder/400/300",
-    publishedAt: "2024-12-10T13:15:00Z",
-    status: "published",
-    metrics: {
-      reach: 11200,
-      engagements: 1789,
-      likes: 456,
-      comments: 89,
-      shares: 45,
-      clicks: 234,
-      votes: 1234
-    },
-    page: "Tech Reviews",
-    scheduled: true
-  }
-];
 
 const postTypeColors = {
-  photo: "bg-blue-100 text-blue-800 border-blue-200",
+  text: "bg-gray-100 text-gray-800 border-gray-200",
+  images: "bg-blue-100 text-blue-800 border-blue-200",
   video: "bg-purple-100 text-purple-800 border-purple-200",
   link: "bg-green-100 text-green-800 border-green-200",
-  carousel: "bg-orange-100 text-orange-800 border-orange-200",
-  event: "bg-red-100 text-red-800 border-red-200",
-  poll: "bg-indigo-100 text-indigo-800 border-indigo-200"
 };
 
 const platformIcons = {
@@ -157,23 +38,51 @@ const platformIcons = {
   linkedin: "💼"
 };
 
-export default function PublishedPosts({ posts = dummyPosts }) {
+export default function PublishedPosts() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  const loadPosts = async () => {
+    try {
+      setLoading(true);
+      const result = await getFacebookPosts();
+
+      if (result.success) {
+        setPosts(result.posts);
+      } else {
+        toast.error("Failed to load posts");
+      }
+    } catch (error) {
+      console.error("Error loading posts:", error);
+      toast.error("Error loading posts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredPosts = posts.filter(post => {
     if (filter === "all") return true;
-    if (filter === "scheduled") return post.scheduled;
-    return post.type === filter;
+    if (filter === "scheduled") return post.scheduledTime && new Date(post.scheduledTime) > new Date();
+    return post.postType === filter;
   });
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === "newest") {
-      return new Date(b.publishedAt) - new Date(a.publishedAt);
+      const dateA = new Date(a.createdAt?.seconds * 1000 || a.createdAt);
+      const dateB = new Date(b.createdAt?.seconds * 1000 || b.createdAt);
+      return dateB - dateA;
     } else if (sortBy === "engagement") {
-      return b.metrics.engagements - a.metrics.engagements;
+      const engA = (a.metrics?.likes || 0) + (a.metrics?.comments || 0) + (a.metrics?.shares || 0);
+      const engB = (b.metrics?.likes || 0) + (b.metrics?.comments || 0) + (b.metrics?.shares || 0);
+      return engB - engA;
     } else if (sortBy === "reach") {
-      return b.metrics.reach - a.metrics.reach;
+      return (b.metrics?.reach || 0) - (a.metrics?.reach || 0);
     }
     return 0;
   });
@@ -188,8 +97,14 @@ export default function PublishedPosts({ posts = dummyPosts }) {
     return num.toString();
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (timestamp) => {
+    let date;
+    if (timestamp?.seconds) {
+      date = new Date(timestamp.seconds * 1000);
+    } else {
+      date = new Date(timestamp);
+    }
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -201,6 +116,16 @@ export default function PublishedPosts({ posts = dummyPosts }) {
   const getEngagementRate = (post) => {
     return ((post.metrics.engagements / post.metrics.reach) * 100).toFixed(1);
   };
+
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading posts...</span>
+      </div>
+    );
+  }
 
   if (sortedPosts.length === 0) {
     return (
@@ -299,10 +224,10 @@ export default function PublishedPosts({ posts = dummyPosts }) {
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className={postTypeColors[post.type]}>
-                    {post.type.charAt(0).toUpperCase() + post.type.slice(1)}
+                  <Badge variant="outline" className={postTypeColors[post.postType || 'text']}>
+                    {(post.postType || 'text').charAt(0).toUpperCase() + (post.postType || 'text').slice(1)}
                   </Badge>
-                  {post.scheduled && (
+                  {post.scheduledTime && new Date(post.scheduledTime) > new Date() && (
                     <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-200">
                       <Clock className="h-3 w-3 mr-1" />
                       Scheduled
@@ -313,14 +238,14 @@ export default function PublishedPosts({ posts = dummyPosts }) {
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </div>
-              
+
               <div className="flex items-center justify-between mt-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">{platformIcons[post.platform]}</span>
-                  <span className="text-sm font-medium text-gray-900">{post.page}</span>
+                  <span className="text-lg">{platformIcons['facebook']}</span>
+                  <span className="text-sm font-medium text-gray-900">{post.pageName || 'Facebook Page'}</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {formatDate(post.publishedAt)}
+                  {formatDate(post.createdAt)}
                 </div>
               </div>
             </CardHeader>
@@ -329,13 +254,13 @@ export default function PublishedPosts({ posts = dummyPosts }) {
               {/* Post Content */}
               <div className="space-y-3">
                 <p className="text-sm text-gray-700 line-clamp-3">
-                  {post.caption}
+                  {post.message || post.caption || 'No caption'}
                 </p>
-                
-                {post.image && (
+
+                {post.mediaUrls && post.mediaUrls.length > 0 && (
                   <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
                     <img
-                      src={post.image}
+                      src={post.mediaUrls[0].url}
                       alt="Post content"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -365,7 +290,7 @@ export default function PublishedPosts({ posts = dummyPosts }) {
                       <span>{formatNumber(post.metrics.shares)}</span>
                     </div>
                   </div>
-                  
+
                   {post.metrics.votes && (
                     <div className="flex items-center space-x-1">
                       <Users className="h-3 w-3" />
@@ -389,10 +314,10 @@ export default function PublishedPosts({ posts = dummyPosts }) {
 
                 {/* Progress Bar */}
                 <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className="bg-green-600 h-1.5 rounded-full transition-all duration-500" 
-                    style={{ 
-                      width: `${Math.min(parseFloat(getEngagementRate(post)) * 2, 100)}%` 
+                  <div
+                    className="bg-green-600 h-1.5 rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(parseFloat(getEngagementRate(post)) * 2, 100)}%`
                     }}
                   />
                 </div>

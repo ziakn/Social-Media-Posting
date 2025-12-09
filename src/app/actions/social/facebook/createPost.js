@@ -34,6 +34,11 @@ async function createFacebookPostBase({
       return { success: false, message: "Missing Facebook Page Access Token" };
     }
 
+    const userId = page.userId
+    if (!userId) {
+      return { success: false, message: "Missing Facebook Page User ID" };
+    }
+
     // Scheduled time calculation
     const publishTime = scheduledTime
       ? Math.floor(new Date(scheduledTime).getTime() / 1000)
@@ -90,6 +95,7 @@ async function createFacebookPostBase({
     const postId = fbData.id || `facebook_${Date.now()}`;
     await savePostToFirestore({
       postId,
+      userId,
       pageId,
       message,
       mediaUrls,
@@ -260,6 +266,7 @@ async function handleTextPost(pageId, baseBody) {
 async function savePostToFirestore({
   postId,
   pageId,
+  userId,
   message,
   mediaUrls,
   postType,
@@ -271,6 +278,7 @@ async function savePostToFirestore({
   await setDoc(doc(db, "facebook_posts", postId), {
     platform: "facebook",
     pageId,
+    userId,
     message: message?.trim() || '',
     mediaUrls: mediaUrls.length ? mediaUrls : null,
     postType,
