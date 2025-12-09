@@ -46,11 +46,29 @@ export function UploadModal({ isOpen, onClose, onUpload }) {
     };
 
     const processFile = (selectedFile) => {
+        // Validate file size for social media compatibility
+        const fileSizeMB = selectedFile.size / (1024 * 1024);
+        const MAX_VIDEO_SIZE_MB = 100; // Facebook: 4GB, Instagram: 100MB, Twitter: 512MB - using conservative limit
+        const MAX_IMAGE_SIZE_MB = 10; // Most platforms support up to 10MB for images
+
+        const isVideo = selectedFile.type.startsWith('video/');
+        const isImage = selectedFile.type.startsWith('image/');
+
+        if (isVideo && fileSizeMB > MAX_VIDEO_SIZE_MB) {
+            alert(`Video file is too large (${fileSizeMB.toFixed(1)}MB).\n\nMaximum size for social media: ${MAX_VIDEO_SIZE_MB}MB\n\nPlease compress your video before uploading.`);
+            return;
+        }
+
+        if (isImage && fileSizeMB > MAX_IMAGE_SIZE_MB) {
+            alert(`Image file is too large (${fileSizeMB.toFixed(1)}MB).\n\nMaximum size: ${MAX_IMAGE_SIZE_MB}MB\n\nPlease compress your image before uploading.`);
+            return;
+        }
+
         setFile(selectedFile);
         setTitle(selectedFile.name.split('.')[0]); // Default title from filename
 
         // Create preview
-        if (selectedFile.type.startsWith('image/')) {
+        if (isImage) {
             const reader = new FileReader();
             reader.onloadend = () => {
                 setPreview(reader.result);

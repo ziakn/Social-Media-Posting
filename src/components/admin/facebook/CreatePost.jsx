@@ -953,8 +953,8 @@ export default function CreateFacebookPost() {
                 <div
                   key={option.value}
                   className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${audience === option.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:bg-gray-50'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:bg-gray-50'
                     }`}
                   onClick={() => setAudience(option.value)}
                 >

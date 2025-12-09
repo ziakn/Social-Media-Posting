@@ -7,8 +7,6 @@ import {
     deleteGalleryItem,
 } from "@/app/actions/gallery/galleryActions";
 import { MEDIA_TYPES } from "@/constants/galleryConstants";
-import { storage } from "@/lib/firebase";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,32 +81,55 @@ export default function GallerySelector({
                     continue;
                 }
 
-                const storageRef = ref(storage, `gallery/${Date.now()}_${file.name}`);
-                const uploadTask = uploadBytesResumable(storageRef, file);
+                // Validate file size for social media compatibility
+                const fileSizeMB = file.size / (1024 * 1024);
+                const MAX_VIDEO_SIZE_MB = 100; // Facebook: 4GB, Instagram: 100MB, Twitter: 512MB - using conservative limit
+                const MAX_IMAGE_SIZE_MB = 10; // Most platforms support up to 10MB for images
 
-                await new Promise((resolve, reject) => {
-                    uploadTask.on(
-                        "state_changed",
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            setUploadProgress(Math.round(progress));
-                        },
-                        (error) => reject(error),
-                        async () => {
-                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                if (type === "video" && fileSizeMB > MAX_VIDEO_SIZE_MB) {
+                    toast.error(`Video file "${file.name}" is too large (${fileSizeMB.toFixed(1)}MB). Maximum size for social media is ${MAX_VIDEO_SIZE_MB}MB.`, {
+                        duration: 5000,
+                    });
+                    continue;
+                }
 
-                            await createGalleryItem({
-                                fileName: file.name,
-                                fileUrl: downloadURL,
-                                fileType: file.type,
-                                fileSize: file.size,
-                                mediaType: type,
-                                storagePath: uploadTask.snapshot.ref.fullPath,
-                            });
-                            resolve();
-                        }
-                    );
+                if (type === "image" && fileSizeMB > MAX_IMAGE_SIZE_MB) {
+                    toast.error(`Image file "${file.name}" is too large (${fileSizeMB.toFixed(1)}MB). Maximum size is ${MAX_IMAGE_SIZE_MB}MB.`, {
+                        duration: 5000,
+                    });
+                    continue;
+                }
+
+                // Upload file to server using the working API endpoint
+                const formData = new FormData();
+                formData.append("file", file);
+
+                setUploadProgress(20);
+
+                const response = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData,
                 });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || "Upload failed");
+                }
+
+                const data = await response.json();
+                setUploadProgress(70);
+
+                // Create database record
+                await createGalleryItem({
+                    fileName: file.name,
+                    fileUrl: data.url,
+                    fileType: file.type,
+                    fileSize: file.size,
+                    mediaType: type,
+                    storagePath: data.storagePath,
+                });
+
+                setUploadProgress(100);
             }
 
             toast.success("Files uploaded successfully");
@@ -116,7 +137,7 @@ export default function GallerySelector({
             fetchGallery();
         } catch (error) {
             console.error(error);
-            toast.error("Upload failed");
+            toast.error("Upload failed: " + error.message);
         } finally {
             setUploading(false);
             setUploadProgress(0);
