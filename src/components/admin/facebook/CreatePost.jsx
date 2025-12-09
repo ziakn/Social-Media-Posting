@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { fetchFacebookPages } from "@/app/actions/social/facebook/getPages";
 import GalleryModal from "@/components/gallery/GalleryModal";
+import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
 
 // Custom hook for file uploads
 function useFileUpload() {
@@ -422,8 +423,6 @@ export default function CreateFacebookPost() {
     });
   };
 
-  const characterCount = postContent.text.length;
-  const maxCharacters = 5000;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 p-6">
@@ -515,18 +514,13 @@ export default function CreateFacebookPost() {
                 <TabsContent value="text" className="space-y-4 pt-6">
                   <div className="space-y-3">
                     <Label htmlFor="post-text" className="text-base">Post Content</Label>
-                    <Textarea
-                      id="post-text"
-                      placeholder="What's on your mind? Share your thoughts with your audience..."
+                    <SocialCaptionEditor
                       value={postContent.text}
                       onChange={(e) => setPostContent(prev => ({ ...prev, text: e.target.value }))}
-                      className="min-h-[140px] resize-none text-base leading-relaxed"
+                      placeholder="What's on your mind? Share your thoughts with your audience..."
+                      platform="facebook"
+                      minHeight="140px"
                     />
-                    <div className="flex justify-between items-center text-sm">
-                      <div className="text-gray-500">
-                        {characterCount}/{maxCharacters} characters
-                      </div>
-                    </div>
                   </div>
                 </TabsContent>
 
@@ -534,12 +528,12 @@ export default function CreateFacebookPost() {
                 <TabsContent value="images" className="space-y-6 pt-6">
                   <div className="space-y-3">
                     <Label htmlFor="images-caption" className="text-base">Caption</Label>
-                    <Textarea
-                      id="images-caption"
-                      placeholder="Add a caption for your images..."
+                    <SocialCaptionEditor
                       value={postContent.text}
                       onChange={(e) => setPostContent(prev => ({ ...prev, text: e.target.value }))}
-                      className="min-h-[100px] resize-none"
+                      placeholder="Add a caption for your images..."
+                      platform="facebook"
+                      minHeight="100px"
                     />
                   </div>
 
@@ -667,12 +661,12 @@ export default function CreateFacebookPost() {
                 <TabsContent value="video" className="space-y-6 pt-6">
                   <div className="space-y-3">
                     <Label htmlFor="video-caption" className="text-base">Caption</Label>
-                    <Textarea
-                      id="video-caption"
-                      placeholder="Add a caption for your video..."
+                    <SocialCaptionEditor
                       value={postContent.text}
                       onChange={(e) => setPostContent(prev => ({ ...prev, text: e.target.value }))}
-                      className="min-h-[100px] resize-none"
+                      placeholder="Add a caption for your video..."
+                      platform="facebook"
+                      minHeight="100px"
                     />
                   </div>
 
@@ -783,12 +777,12 @@ export default function CreateFacebookPost() {
                 <TabsContent value="link" className="space-y-6 pt-6">
                   <div className="space-y-3">
                     <Label htmlFor="link-caption" className="text-base">Caption</Label>
-                    <Textarea
-                      id="link-caption"
-                      placeholder="Add a comment about this link..."
+                    <SocialCaptionEditor
                       value={postContent.text}
                       onChange={(e) => setPostContent(prev => ({ ...prev, text: e.target.value }))}
-                      className="min-h-[100px] resize-none"
+                      placeholder="Add a comment about this link..."
+                      platform="facebook"
+                      minHeight="100px"
                     />
                   </div>
 
@@ -1053,24 +1047,7 @@ export default function CreateFacebookPost() {
           </Button>
 
           {/* Character Progress */}
-          {(postType === "text" || postType === "images" || postType === "video" || postType === "link") && (
-            <Card className="border-0 shadow-lg">
-              <CardContent className="p-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">Character Count</span>
-                    <span className={characterCount > maxCharacters * 0.9 ? 'text-amber-600' : 'text-gray-600'}>
-                      {characterCount}/{maxCharacters}
-                    </span>
-                  </div>
-                  <Progress
-                    value={(characterCount / maxCharacters) * 100}
-                    className={`h-2 ${characterCount > maxCharacters * 0.9 ? 'bg-amber-200' : ''}`}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
         </div>
       </div>
 
