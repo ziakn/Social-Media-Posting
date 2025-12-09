@@ -87,7 +87,6 @@ export default function CreateFacebookPost() {
     images: [],
     video: null,
     link: "",
-    poll: { question: "", options: ["", ""], duration: 7 },
   });
   const [scheduling, setScheduling] = useState({
     schedule: false,
@@ -96,9 +95,6 @@ export default function CreateFacebookPost() {
     timezone: "UTC",
   });
   const [audience, setAudience] = useState("public");
-  const [boost, setBoost] = useState(false);
-  const [budget, setBudget] = useState([100]);
-  const [duration, setDuration] = useState([7]);
   const imageInputRef = useRef(null);
   const videoInputRef = useRef(null);
   const [pages, setPages] = useState([]);
@@ -126,8 +122,6 @@ export default function CreateFacebookPost() {
 
   const audienceOptions = [
     { value: "public", label: "Public", icon: Globe, description: "Anyone on or off Facebook" },
-    { value: "friends", label: "Friends", icon: Users, description: "Your friends on Facebook" },
-    { value: "only_me", label: "Only Me", icon: Eye, description: "Only you can see this post" },
   ];
 
   const formatFileSize = (bytes) => {
@@ -223,22 +217,7 @@ export default function CreateFacebookPost() {
     setPostContent(prev => ({ ...prev, video: null }));
   };
 
-  const addPollOption = () => {
-    if (postContent.poll.options.length < 4)
-      setPostContent(prev => ({
-        ...prev,
-        poll: { ...prev.poll, options: [...prev.poll.options, ""] },
-      }));
-  };
 
-  const removePollOption = (index) => {
-    if (postContent.poll.options.length > 2) {
-      setPostContent(prev => ({
-        ...prev,
-        poll: { ...prev.poll, options: prev.poll.options.filter((_, i) => i !== index) },
-      }));
-    }
-  };
 
   const handleGallerySelect = (selectedItems) => {
     const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
@@ -327,12 +306,7 @@ export default function CreateFacebookPost() {
           return false;
         }
         break;
-      case "poll":
-        if (!postContent.poll.question.trim() || postContent.poll.options.some(opt => !opt.trim())) {
-          toast.error("Fill in poll question and options");
-          return false;
-        }
-        break;
+
     }
 
     return true;
@@ -345,7 +319,7 @@ export default function CreateFacebookPost() {
       ? new Date(`${format(scheduling.date, "yyyy-MM-dd")}T${scheduling.time}`)
       : null;
 
-    const boostData = boost ? { budget: budget[0], duration: duration[0] } : null;
+
 
     startTransition(async () => {
       try {
@@ -356,13 +330,7 @@ export default function CreateFacebookPost() {
           scheduledTime,
           additionalData: {
             audience,
-            boost: boostData,
             ...(postType === 'link' && { link: postContent.link }),
-            ...(postType === 'poll' && {
-              question: postContent.poll.question,
-              options: postContent.poll.options,
-              duration: postContent.poll.duration
-            }),
           },
         };
 
@@ -385,9 +353,7 @@ export default function CreateFacebookPost() {
           case "link":
             result = await createFacebookLinkPost(commonProps);
             break;
-          case "poll":
-            result = await createFacebookPollPost(commonProps);
-            break;
+
           default:
             throw new Error("Invalid post type");
         }
@@ -404,7 +370,6 @@ export default function CreateFacebookPost() {
             images: [],
             video: null,
             link: "",
-            poll: { question: "", options: ["", ""], duration: 7 }
           });
           setScheduling({
             schedule: false,
@@ -412,7 +377,6 @@ export default function CreateFacebookPost() {
             time: "12:00",
             timezone: "UTC"
           });
-          setBoost(false);
         } else {
           toast.error(result.message || "Failed to post. Try again.");
         }
@@ -487,7 +451,7 @@ export default function CreateFacebookPost() {
             </CardHeader>
             <CardContent className="space-y-6">
               <Tabs value={postType} onValueChange={setPostType} className="w-full">
-                <TabsList className="grid grid-cols-5 w-full">
+                <TabsList className="grid grid-cols-4 w-full">
                   <TabsTrigger value="text" className="flex items-center gap-2">
                     <MessageCircle className="h-4 w-4" />
                     Text
@@ -503,10 +467,6 @@ export default function CreateFacebookPost() {
                   <TabsTrigger value="link" className="flex items-center gap-2">
                     <Link2 className="h-4 w-4" />
                     Link
-                  </TabsTrigger>
-                  <TabsTrigger value="poll" className="flex items-center gap-2">
-                    <BarChart className="h-4 w-4" />
-                    Poll
                   </TabsTrigger>
                 </TabsList>
 
@@ -559,59 +519,13 @@ export default function CreateFacebookPost() {
                       )}
                     </div>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors bg-gradient-to-br from-blue-50 to-indigo-50">
-                      <input
-                        type="file"
-                        ref={imageInputRef}
-                        accept="image/*"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-
-                      <div className="space-y-4">
-                        <div className="flex justify-center">
-                          <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center">
-                            <Image className="h-8 w-8 text-blue-600" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-2 text-lg">
-                            {uploading ? 'Uploading...' : 'Add Photos'}
-                          </h3>
-                          <p className="text-gray-600 text-sm mb-4 max-w-md mx-auto">
-                            Upload up to 10 images. Supported formats: JPG, PNG, GIF. Maximum 10MB per image.
-                          </p>
-                          {uploading && (
-                            <Progress value={progress} className="w-full mb-4" />
-                          )}
-                          <Button
-                            onClick={() => imageInputRef.current?.click()}
-                            className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg"
-                            size="lg"
-                            disabled={uploading}
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {uploading ? 'Uploading...' : 'Select Images'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-4">
-                      <div className="h-px bg-gray-200 flex-1"></div>
-                      <span className="text-sm text-gray-500 font-medium">OR</span>
-                      <div className="h-px bg-gray-200 flex-1"></div>
-                    </div>
-
                     <Button
                       variant="outline"
                       onClick={() => openGallery("image")}
-                      className="w-full h-12 border-dashed border-2 hover:border-blue-500 hover:bg-blue-50"
+                      className="w-full h-16 border-dashed border-2 hover:border-blue-500 hover:bg-blue-50"
                     >
-                      <ImageIcon className="h-4 w-4 mr-2" />
-                      Select from Gallery
+                      <ImageIcon className="h-5 w-5 mr-2" />
+                      Select Images from Gallery
                     </Button>
 
                     {/* Image Previews */}
@@ -642,15 +556,7 @@ export default function CreateFacebookPost() {
                             </div>
                           ))}
 
-                          {postContent.images.length < 10 && (
-                            <div
-                              className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors"
-                              onClick={() => imageInputRef.current?.click()}
-                            >
-                              <Plus className="h-6 w-6 text-gray-400 mb-2" />
-                              <span className="text-sm text-gray-600 text-center">Add More</span>
-                            </div>
-                          )}
+
                         </div>
                       </div>
                     )}
@@ -675,59 +581,13 @@ export default function CreateFacebookPost() {
                   <div className="space-y-4">
                     <Label className="text-base">Upload Video</Label>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors bg-gradient-to-br from-purple-50 to-pink-50">
-                      <input
-                        type="file"
-                        ref={videoInputRef}
-                        accept="video/*"
-                        onChange={handleVideoUpload}
-                        className="hidden"
-                        disabled={uploading}
-                      />
-
-                      <div className="space-y-4">
-                        <div className="flex justify-center">
-                          <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center">
-                            <Video className="h-8 w-8 text-purple-600" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-2 text-lg">
-                            {uploading ? 'Uploading...' : 'Add Video'}
-                          </h3>
-                          <p className="text-gray-600 text-sm mb-4 max-w-md mx-auto">
-                            Upload a single video file. Supported formats: MP4, MOV. Maximum 100MB.
-                          </p>
-                          {uploading && (
-                            <Progress value={progress} className="w-full mb-4" />
-                          )}
-                          <Button
-                            onClick={() => videoInputRef.current?.click()}
-                            variant="outline"
-                            className="border-purple-200 text-purple-700 hover:bg-purple-50 shadow-lg"
-                            size="lg"
-                            disabled={uploading}
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {uploading ? 'Uploading...' : 'Select Video'}
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-4">
-                      <div className="h-px bg-gray-200 flex-1"></div>
-                      <span className="text-sm text-gray-500 font-medium">OR</span>
-                      <div className="h-px bg-gray-200 flex-1"></div>
-                    </div>
-
                     <Button
                       variant="outline"
                       onClick={() => openGallery("video")}
-                      className="w-full h-12 border-dashed border-2 hover:border-purple-500 hover:bg-purple-50"
+                      className="w-full h-16 border-dashed border-2 hover:border-purple-500 hover:bg-purple-50"
                     >
-                      <Video className="h-4 w-4 mr-2" />
-                      Select from Gallery
+                      <Video className="h-5 w-5 mr-2" />
+                      Select Video from Gallery
                     </Button>
 
                     {postContent.video && (
@@ -799,80 +659,7 @@ export default function CreateFacebookPost() {
                   </div>
                 </TabsContent>
 
-                {/* Poll Post */}
-                <TabsContent value="poll" className="space-y-6 pt-6">
-                  <div className="space-y-3">
-                    <Label htmlFor="poll-question" className="text-base">Poll Question</Label>
-                    <Input
-                      id="poll-question"
-                      placeholder="Ask a question..."
-                      value={postContent.poll.question}
-                      onChange={(e) => setPostContent(prev => ({
-                        ...prev,
-                        poll: { ...prev.poll, question: e.target.value }
-                      }))}
-                      className="h-12 text-base"
-                    />
-                  </div>
 
-                  <div className="space-y-3">
-                    <Label className="text-base">Poll Options</Label>
-                    <div className="space-y-3">
-                      {postContent.poll.options.map((option, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            placeholder={`Option ${index + 1}`}
-                            value={option}
-                            onChange={(e) => {
-                              const newOptions = [...postContent.poll.options];
-                              newOptions[index] = e.target.value;
-                              setPostContent(prev => ({
-                                ...prev,
-                                poll: { ...prev.poll, options: newOptions }
-                              }));
-                            }}
-                            className="flex-1"
-                          />
-                          {postContent.poll.options.length > 2 && (
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => removePollOption(index)}
-                              className="flex-shrink-0"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-
-                    {postContent.poll.options.length < 4 && (
-                      <Button variant="outline" onClick={addPollOption} className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Option
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-3">
-                    <Label>Poll Duration: {postContent.poll.duration} days</Label>
-                    <Slider
-                      value={[postContent.poll.duration]}
-                      onValueChange={(value) => setPostContent(prev => ({
-                        ...prev,
-                        poll: { ...prev.poll, duration: value[0] }
-                      }))}
-                      max={30}
-                      min={1}
-                      step={1}
-                    />
-                    <div className="flex justify-between text-sm text-gray-500">
-                      <span>1 day</span>
-                      <span>30 days</span>
-                    </div>
-                  </div>
-                </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
@@ -965,61 +752,7 @@ export default function CreateFacebookPost() {
             </CardContent>
           </Card>
 
-          {/* Boost Card */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-amber-600" />
-                Boost Post
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="boost-toggle" className="text-sm font-medium">
-                  Boost this post
-                </Label>
-                <Switch
-                  id="boost-toggle"
-                  checked={boost}
-                  onCheckedChange={setBoost}
-                />
-              </div>
 
-              {boost && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm">Budget: ${budget[0]}</Label>
-                    <Slider
-                      value={budget}
-                      onValueChange={setBudget}
-                      max={1000}
-                      min={10}
-                      step={10}
-                    />
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>$10</span>
-                      <span>$1000</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-sm">Duration: {duration[0]} days</Label>
-                    <Slider
-                      value={duration}
-                      onValueChange={setDuration}
-                      max={30}
-                      min={1}
-                      step={1}
-                    />
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>1 day</span>
-                      <span>30 days</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           {/* Publish Button */}
           <Button
