@@ -164,10 +164,10 @@ export default function AdminLayout({ children }) {
                 </Link>
               </li>
             )}
-            {hasPermission('view_connect') && (
-              <li key="/admin/social/platforms/create ">
+            {hasPermission('view_platforms') && (
+              <li key="/admin/social/platforms ">
                 <Link
-                  href="/admin/social/platforms/create"
+                  href="/admin/social/platforms"
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
                     }`}
                 >
