@@ -151,9 +151,9 @@ export default function AdminLayout({ children }) {
             {/* Settings - permission based */}
 
             {hasPermission('view_connect') && (
-              <li key="/admin/social/connect">
+              <li key={ROUTES.ADMIN_SOCIAL_CONNECT}>
                 <Link
-                  href="/admin/social/connect"
+                  href={ROUTES.ADMIN_SOCIAL_CONNECT}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
                     }`}
                 >
@@ -164,10 +164,10 @@ export default function AdminLayout({ children }) {
                 </Link>
               </li>
             )}
-            {hasPermission('view_platforms') && (
-              <li key="/admin/social/platforms ">
+            {hasPermission('view_plateforms') && (
+              <li key={ROUTES.ADMIN_PLATFORMS}>
                 <Link
-                  href="/admin/social/platforms"
+                  href={ROUTES.ADMIN_PLATFORMS}ß
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
                     }`}
                 >

@@ -29,6 +29,13 @@ export const ROUTES = {
   ADMIN_GALLERY_EDIT: prefix + "gallery",
   ADMIN_GALLERY_DELETE: prefix + "gallery/delete",
 
+  // Platforms
+  ADMIN_PLATFORMS: prefix + "platforms",
+  ADMIN_PLATFORM_CREATE: prefix + "platforms/create",
+  ADMIN_PLATFORM_EDIT: prefix + "platforms",
+  ADMIN_PLATFORM_DELETE: prefix + "platforms/delete",
+  //
+
   // Social Media Posts
   ADMIN_SOCIAL_CONNECT: prefix + "social/connect",
   ADMIN_FACEBOOK: prefix + "social/facebook",

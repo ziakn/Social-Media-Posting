@@ -42,7 +42,8 @@ export default function EditUser() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to fetch user");
 
-      setForm(data.user);
+      // Always set password to empty string on load
+      setForm({ ...data.user, password: "" });
     } catch (error) {
       console.error("Error fetching user:", error);
     } finally {
