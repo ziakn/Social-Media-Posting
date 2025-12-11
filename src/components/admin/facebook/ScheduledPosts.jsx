@@ -325,6 +325,9 @@ export default function ScheduledPosts() {
     );
   }
 
+  // Only show scheduled posts
+  const filteredPosts = posts.filter(post => post.status === 'scheduled');
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -345,16 +348,6 @@ export default function ScheduledPosts() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-4">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-gray-900">{posts.length}</div>
-                  <div className="text-sm text-gray-600">Total</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-xl font-bold text-gray-900">{scheduledCount}</div>
-                  <div className="text-sm text-gray-600">Active</div>
-                </div>
-              </div>
               <Button className="bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600">
                 <Plus className="h-4 w-4 mr-2" />
                 Schedule New Post
@@ -364,45 +357,8 @@ export default function ScheduledPosts() {
         </CardContent>
       </Card>
 
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <Tabs value={filter} onValueChange={setFilter} className="w-full">
-            <TabsList className="grid grid-cols-4">
-              <TabsTrigger value="all" className="flex items-center gap-2">
-                All Posts
-                <Badge variant="secondary" className="ml-1">
-                  {posts.length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="scheduled" className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Scheduled
-                <Badge variant="secondary" className="ml-1">
-                  {scheduledCount}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="paused" className="flex items-center gap-2">
-                <Pause className="h-4 w-4" />
-                Paused
-                <Badge variant="secondary" className="ml-1">
-                  {pausedCount}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="draft" className="flex items-center gap-2">
-                <Edit3 className="h-4 w-4" />
-                Drafts
-                <Badge variant="secondary" className="ml-1">
-                  {draftCount}
-                </Badge>
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </CardContent>
-      </Card>
-
       {/* Posts Grid */}
-      {posts.length === 0 ? (
+      {filteredPosts.length === 0 ? (
         <Card className="p-16 text-center border-dashed border-2 border-muted">
           <CardContent className="space-y-4">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
@@ -429,7 +385,7 @@ export default function ScheduledPosts() {
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {posts.map((post) => (
+            {filteredPosts.map((post) => (
               <Card key={post.id} className="hover:shadow-lg transition-all duration-300">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -438,19 +394,6 @@ export default function ScheduledPosts() {
                       <StatusBadge status={post.status} />
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleToggleStatus(post.id, post.status)}
-                        title={post.status === 'scheduled' ? 'Pause' : 'Resume'}
-                      >
-                        {post.status === 'scheduled' ? (
-                          <Pause className="h-3 w-3" />
-                        ) : (
-                          <Play className="h-3 w-3" />
-                        )}
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

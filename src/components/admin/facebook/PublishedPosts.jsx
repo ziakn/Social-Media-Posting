@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -218,7 +218,7 @@ export default function PublishedPosts() {
         (post.pageName?.toLowerCase().includes(query))
       );
     }
-    return true;
+    return post.status === "published";
   });
 
   // Helper functions
@@ -509,92 +509,15 @@ export default function PublishedPosts() {
                   <X className="h-4 w-4" />
                   Clear Filters
                 </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  disabled={exporting || posts.length === 0}
-                  className="gap-2"
-                >
-                  {exporting ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <DownloadIcon className="h-4 w-4" />
-                  )}
-                  Export CSV
-                </Button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <Filter className="h-4 w-4" />
-                      More Filters
-                      <ChevronDown className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <div className="p-2 space-y-2">
-                      <div className="space-y-1">
-                        <Label className="text-xs">Engagement Rate</Label>
-                        <Select
-                          value={filters.minEngagementRate}
-                          onValueChange={(value) => handleFilterChange("minEngagementRate", value)}
-                        >
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Min Engagement %" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="">Any</SelectItem>
-                            <SelectItem value="5">5%+</SelectItem>
-                            <SelectItem value="10">10%+</SelectItem>
-                            <SelectItem value="15">15%+</SelectItem>
-                            <SelectItem value="20">20%+</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs">Date Range</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            type="date"
-                            value={filters.startDate}
-                            onChange={(e) => handleFilterChange("startDate", e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                          <Input
-                            type="date"
-                            value={filters.endDate}
-                            onChange={(e) => handleFilterChange("endDate", e.target.value)}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {/* Removed Export and More Filters dropdown */}
               </div>
             </div>
 
             {/* Filter Tabs and Controls */}
+            {/* Removed status tabs, only showing published posts */}
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-              <Tabs value={filters.status} onValueChange={(value) => handleFilterChange("status", value)} className="w-full lg:w-auto">
-                <TabsList className="flex-wrap h-auto">
-                  <TabsTrigger value="all">All Posts</TabsTrigger>
-                  <TabsTrigger value="published" className="flex items-center gap-1">
-                    <EyeOn className="h-3 w-3" /> Published
-                  </TabsTrigger>
-                  <TabsTrigger value="scheduled" className="flex items-center gap-1">
-                    <CalendarDays className="h-3 w-3" /> Scheduled
-                  </TabsTrigger>
-                  <TabsTrigger value="draft" className="flex items-center gap-1">
-                    <FileText className="h-3 w-3" /> Drafts
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
+              {/* Only show published posts, no tabs */}
+              <div className="hidden" />
               <div className="flex-1 flex flex-wrap gap-3">
                 <Select value={filters.postType} onValueChange={(value) => handleFilterChange("postType", value)}>
                   <SelectTrigger className="w-full lg:w-[150px]">
