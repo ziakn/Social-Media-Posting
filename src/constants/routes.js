@@ -29,7 +29,6 @@ export const ROUTES = {
   ADMIN_GALLERY_EDIT: prefix + "gallery",
   ADMIN_GALLERY_DELETE: prefix + "gallery/delete",
 
-
   // Social Media Posts
   ADMIN_SOCIAL_CONNECT: prefix + "social/connect",
   ADMIN_FACEBOOK: prefix + "social/facebook",
@@ -41,14 +40,9 @@ export const ROUTES = {
   ADMIN_REDDIT: prefix + "social/reddit",
   ADMIN_TELEGRAM: prefix + "social/telegram",
 
-
-
-
-
+  // Social Media Posts
   ADMIN_FACEBOOK_POSTS: prefix + "social/facebook/posts",
   ADMIN_FACEBOOK_POSTS_CREATE: prefix + "social/facebook/posts/create",
-
-
   ADMIN_INSTAGRAM_POSTS: prefix + "social/instagram/posts",
 
 };
