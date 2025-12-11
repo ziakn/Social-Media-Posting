@@ -33,6 +33,7 @@ export async function fetchFacebookPages() {
             pageId: p.pageId,
             pageName: p.pageName,
             accessToken: p.pageAccessToken,
+            userId: data.userId,
           });
         });
       }

@@ -1,261 +1,326 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Calendar, 
-  Clock, 
-  Edit3, 
-  Trash2, 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Calendar,
+  Clock,
+  Edit3,
+  Trash2,
   MoreHorizontal,
   Play,
   Pause,
   Users,
   BarChart3,
-  Filter,
   Plus,
   AlertTriangle,
   CheckCircle2,
-  X
+  FileText,
+  Video,
+  Image as ImageIcon,
+  Link2,
+  Eye,
+  RefreshCw,
+  X,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { getScheduledPosts, togglePostStatus, deleteScheduledPost, reschedulePost } from "@/app/actions/social/facebook/getScheduledPosts";
 
-// Dummy data for scheduled posts
-const dummyScheduledPosts = [
-  {
-    id: 1,
-    type: "photo",
-    platform: "facebook",
-    caption: "Flash sale starts tomorrow! 🎉 Get ready for amazing discounts on our entire collection. Don't miss out! #FlashSale #Discount",
-    image: "/api/placeholder/400/300",
-    scheduledAt: "2024-12-17T09:00:00Z",
-    status: "scheduled",
-    page: "My Business Page",
-    platforms: ["facebook", "instagram"],
-    metrics: {
-      expectedReach: 15000,
-      previousEngagement: 4.2
-    }
-  },
-  {
-    id: 2,
-    type: "video",
-    platform: "facebook",
-    caption: "Product tutorial coming your way! Learn how to get the most out of our latest feature. Full video drops tomorrow! 👇",
-    image: "/api/placeholder/400/300",
-    scheduledAt: "2024-12-16T14:30:00Z",
-    status: "scheduled",
-    page: "Tech Reviews",
-    platforms: ["facebook", "twitter"],
-    metrics: {
-      expectedReach: 22000,
-      previousEngagement: 6.8
-    }
-  },
-  {
-    id: 3,
-    type: "carousel",
-    platform: "facebook",
-    caption: "Swipe to see our team's favorite workspace setups! Which one inspires you the most? 🖥️✨",
-    image: "/api/placeholder/400/300",
-    scheduledAt: "2024-12-18T11:15:00Z",
-    status: "scheduled",
-    page: "Travel Diaries",
-    platforms: ["facebook", "instagram", "linkedin"],
-    metrics: {
-      expectedReach: 18000,
-      previousEngagement: 5.1
-    }
-  },
-  {
-    id: 4,
-    type: "poll",
-    platform: "facebook",
-    caption: "Weekly poll: What's your favorite productivity tool? We'll share the results on Friday!",
-    image: "/api/placeholder/400/300",
-    scheduledAt: "2024-12-15T16:45:00Z",
-    status: "scheduled",
-    page: "Tech Reviews",
-    platforms: ["facebook"],
-    metrics: {
-      expectedReach: 12000,
-      previousEngagement: 8.3
-    }
-  },
-  {
-    id: 5,
-    type: "event",
-    platform: "facebook",
-    caption: "Mark your calendars! Our annual webinar is coming up next week. Topic: Future of Social Media Marketing.",
-    image: "/api/placeholder/400/300",
-    scheduledAt: "2024-12-19T10:00:00Z",
-    status: "scheduled",
-    page: "My Business Page",
-    platforms: ["facebook", "linkedin"],
-    metrics: {
-      expectedReach: 25000,
-      previousEngagement: 7.2
-    }
-  },
-  {
-    id: 6,
-    type: "link",
-    platform: "facebook",
-    caption: "New blog post alert! Learn how to optimize your social media strategy for 2024. Link goes live tomorrow!",
-    image: "/api/placeholder/400/300",
-    scheduledAt: "2024-12-20T13:20:00Z",
-    status: "paused",
-    page: "Travel Diaries",
-    platforms: ["facebook", "twitter"],
-    metrics: {
-      expectedReach: 14000,
-      previousEngagement: 3.9
-    }
-  }
-];
-
-const postTypeColors = {
-  photo: "bg-blue-100 text-blue-800 border-blue-200",
-  video: "bg-purple-100 text-purple-800 border-purple-200",
-  link: "bg-green-100 text-green-800 border-green-200",
-  carousel: "bg-orange-100 text-orange-800 border-orange-200",
-  event: "bg-red-100 text-red-800 border-red-200",
-  poll: "bg-indigo-100 text-indigo-800 border-indigo-200"
+const postTypeConfig = {
+  text: { icon: FileText, color: "bg-blue-100 text-blue-800 border-blue-200", label: "Text" },
+  photo: { icon: ImageIcon, color: "bg-green-100 text-green-800 border-green-200", label: "Photo" },
+  video: { icon: Video, color: "bg-purple-100 text-purple-800 border-purple-200", label: "Video" },
+  link: { icon: Link2, color: "bg-amber-100 text-amber-800 border-amber-200", label: "Link" },
+  carousel: { icon: ImageIcon, color: "bg-orange-100 text-orange-800 border-orange-200", label: "Carousel" },
 };
 
-const platformIcons = {
-  facebook: "🔵",
-  instagram: "🌈",
-  twitter: "🐦",
-  linkedin: "💼"
+const statusConfig = {
+  scheduled: { icon: CheckCircle2, color: "bg-green-100 text-green-800 border-green-200", label: "Scheduled" },
+  paused: { icon: Pause, color: "bg-yellow-100 text-yellow-800 border-yellow-200", label: "Paused" },
+  draft: { icon: Edit3, color: "bg-gray-100 text-gray-800 border-gray-200", label: "Draft" },
 };
 
-const statusColors = {
-  scheduled: "bg-blue-100 text-blue-800 border-blue-200",
-  paused: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  draft: "bg-gray-100 text-gray-800 border-gray-200"
-};
-
-export default function ScheduledPosts({ posts = dummyScheduledPosts }) {
+export default function ScheduledPosts() {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [timeRemaining, setTimeRemaining] = useState({});
+  const [pagination, setPagination] = useState({
+    hasMore: false,
+    lastVisible: null,
+    pageSize: 12,
+  });
+
+  // Dialog states
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+  const [rescheduleDialog, setRescheduleDialog] = useState({ open: false, postId: null, newDate: "", newTime: "" });
+
+  // Load scheduled posts
+  const loadPosts = async (reset = false, lastDocId = null) => {
+    try {
+      setLoading(true);
+      const result = await getScheduledPosts({
+        pageSize: pagination.pageSize,
+        lastDocId: reset ? null : lastDocId,
+        status: filter === "all" ? undefined : filter,
+      });
+
+      if (result.success) {
+        if (reset || !lastDocId) {
+          setPosts(result.posts || []);
+        } else {
+          setPosts(prev => [...prev, ...result.posts]);
+        }
+
+        setPagination(prev => ({
+          ...prev,
+          hasMore: result.pagination?.hasMore || false,
+          lastVisible: result.pagination?.lastVisible || null,
+        }));
+      } else {
+        toast.error(result.message || "Failed to load scheduled posts");
+      }
+    } catch (error) {
+      console.error("Error loading posts:", error);
+      toast.error("Error loading scheduled posts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPosts(true);
+  }, [filter]);
 
   // Calculate time remaining for each post
   useEffect(() => {
     const calculateTimeRemaining = () => {
       const now = new Date();
       const newTimeRemaining = {};
-      
+
       posts.forEach(post => {
+        if (!post.scheduledAt) return;
+
         const scheduledTime = new Date(post.scheduledAt);
         const diff = scheduledTime - now;
-        
+
         if (diff > 0) {
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
           const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-          
-          newTimeRemaining[post.id] = { days, hours, minutes };
+          const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+          newTimeRemaining[post.id] = { days, hours, minutes, seconds };
         } else {
-          newTimeRemaining[post.id] = { days: 0, hours: 0, minutes: 0 };
+          newTimeRemaining[post.id] = { days: 0, hours: 0, minutes: 0, seconds: 0 };
         }
       });
-      
+
       setTimeRemaining(newTimeRemaining);
     };
 
     calculateTimeRemaining();
-    const interval = setInterval(calculateTimeRemaining, 60000); // Update every minute
+    const interval = setInterval(calculateTimeRemaining, 1000);
 
     return () => clearInterval(interval);
   }, [posts]);
 
-  const filteredPosts = posts.filter(post => {
-    if (filter === "all") return true;
-    return post.status === filter;
-  });
-
+  // Format date and time
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    if (!dateString) return "No date set";
+    try {
+      const date = new Date(dateString);
+      return format(date, "MMM dd, yyyy 'at' h:mm a");
+    } catch {
+      return "Invalid date";
+    }
   };
 
   const formatNumber = (num) => {
+    if (!num && num !== 0) return "0";
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + 'K';
     }
     return num.toString();
   };
 
-  const handleEdit = (postId) => {
-    console.log("Edit post:", postId);
-    // Implement edit functionality
+  // Post actions
+  const handleToggleStatus = async (postId, currentStatus) => {
+    try {
+      const result = await togglePostStatus(postId, currentStatus);
+      if (result.success) {
+        toast.success(result.message);
+        // Update local state
+        setPosts(prev =>
+          prev.map(post =>
+            post.id === postId
+              ? { ...post, status: result.newStatus }
+              : post
+          )
+        );
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error toggling status:", error);
+      toast.error("Failed to update post status");
+    }
   };
 
-  const handleDelete = (postId) => {
-    console.log("Delete post:", postId);
-    // Implement delete functionality
+  const handleDelete = async (postId) => {
+    try {
+      const result = await deleteScheduledPost(postId);
+      if (result.success) {
+        toast.success(result.message);
+        // Remove from local state
+        setPosts(prev => prev.filter(post => post.id !== postId));
+        setDeleteDialog({ open: false, postId: null });
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      toast.error("Failed to delete post");
+    }
   };
 
-  const handlePauseResume = (postId, currentStatus) => {
-    console.log("Toggle pause/resume:", postId, currentStatus);
-    // Implement pause/resume functionality
+  const handleReschedule = async (postId, newScheduledAt) => {
+    try {
+      const result = await reschedulePost(postId, newScheduledAt);
+      if (result.success) {
+        toast.success(result.message);
+        // Update local state
+        setPosts(prev =>
+          prev.map(post =>
+            post.id === postId
+              ? { ...post, scheduledAt: newScheduledAt }
+              : post
+          )
+        );
+        setRescheduleDialog({ open: false, postId: null, newDate: "", newTime: "" });
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error rescheduling post:", error);
+      toast.error("Failed to reschedule post");
+    }
   };
 
-  if (filteredPosts.length === 0) {
+  const handleLoadMore = () => {
+    if (pagination.hasMore && pagination.lastVisible) {
+      loadPosts(false, pagination.lastVisible);
+    }
+  };
+
+  const PostTypeBadge = ({ type }) => {
+    const config = postTypeConfig[type] || postTypeConfig.text;
+    const Icon = config.icon;
+
+    return (
+      <Badge variant="outline" className={`${config.color} flex items-center gap-1`}>
+        <Icon className="h-3 w-3" />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const StatusBadge = ({ status }) => {
+    const config = statusConfig[status] || statusConfig.draft;
+    const Icon = config.icon;
+
+    return (
+      <Badge variant="outline" className={`${config.color} flex items-center gap-1`}>
+        <Icon className="h-3 w-3" />
+        {config.label}
+      </Badge>
+    );
+  };
+
+  // Count scheduled posts by status
+  const scheduledCount = posts.filter(p => p.status === 'scheduled').length;
+  const pausedCount = posts.filter(p => p.status === 'paused').length;
+  const draftCount = posts.filter(p => p.status === 'draft').length;
+
+  if (loading && posts.length === 0) {
     return (
       <div className="space-y-6">
-        {/* Header */}
-        <Card className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+        {/* Loading Header */}
+        <Card className="bg-gradient-to-r from-amber-50 via-white to-orange-50 border border-gray-200 shadow-sm">
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold mb-2">Scheduled Posts</h2>
-                <p className="text-orange-100">
-                  Manage your upcoming content and publishing schedule
-                </p>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
+                    <Calendar className="h-5 w-5 text-white" />
+                  </div>
+                  <CardTitle className="text-2xl font-bold text-gray-900">
+                    Scheduled Posts
+                  </CardTitle>
+                </div>
+                <CardDescription className="text-gray-600 pl-13">
+                  Loading scheduled posts...
+                </CardDescription>
               </div>
-              <div className="flex items-center space-x-4 mt-4 md:mt-0">
-                <Button className="bg-white text-orange-600 hover:bg-orange-50">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Schedule New Post
-                </Button>
-              </div>
+              <Button disabled className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                Schedule New Post
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Empty State */}
-        <Card className="p-16 text-center border-dashed border-2 border-muted bg-gradient-to-br from-slate-50 to-orange-50">
-          <CardContent className="space-y-4">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-              <Clock className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <div className="text-2xl font-bold text-gray-900">
-              No scheduled posts
-            </div>
-            <p className="text-muted-foreground text-lg max-w-md mx-auto">
-              Your scheduled posts will appear here with countdown timers and management options.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
-              <Button className="bg-gradient-to-r from-orange-600 to-amber-600">
-                <Plus className="h-4 w-4 mr-2" />
-                Schedule Your First Post
-              </Button>
-              <Button variant="outline">
-                Learn About Scheduling
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Loading Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex justify-between">
+                  <div className="h-6 w-20 bg-gray-200 rounded"></div>
+                  <div className="h-6 w-20 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-4 w-full bg-gray-200 rounded"></div>
+                <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                <div className="h-40 bg-gray-200 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
@@ -263,27 +328,34 @@ export default function ScheduledPosts({ posts = dummyScheduledPosts }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card className="bg-gradient-to-r from-orange-500 to-amber-500 text-white">
+      <Card className="bg-gradient-to-r from-amber-50 via-white to-orange-50 border border-gray-200 shadow-sm">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold mb-2">Scheduled Posts</h2>
-              <p className="text-orange-100">
-                Manage your upcoming content and publishing schedule
-              </p>
-            </div>
-            <div className="flex items-center space-x-4 mt-4 md:mt-0">
-              <div className="text-center">
-                <div className="text-2xl font-bold">{posts.length}</div>
-                <div className="text-orange-200 text-sm">Total Scheduled</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">
-                  {posts.filter(p => p.status === 'scheduled').length}
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
+                  <Calendar className="h-5 w-5 text-white" />
                 </div>
-                <div className="text-orange-200 text-sm">Active</div>
+                <CardTitle className="text-2xl font-bold text-gray-900">
+                  Scheduled Posts
+                </CardTitle>
               </div>
-              <Button className="bg-white text-orange-600 hover:bg-orange-50">
+              <CardDescription className="text-gray-600 pl-13">
+                Manage your upcoming content and publishing schedule
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-4">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-900">{posts.length}</div>
+                  <div className="text-sm text-gray-600">Total</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-gray-900">{scheduledCount}</div>
+                  <div className="text-sm text-gray-600">Active</div>
+                </div>
+              </div>
+              <Button className="bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600">
                 <Plus className="h-4 w-4 mr-2" />
                 Schedule New Post
               </Button>
@@ -307,21 +379,21 @@ export default function ScheduledPosts({ posts = dummyScheduledPosts }) {
                 <CheckCircle2 className="h-4 w-4" />
                 Scheduled
                 <Badge variant="secondary" className="ml-1">
-                  {posts.filter(p => p.status === 'scheduled').length}
+                  {scheduledCount}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="paused" className="flex items-center gap-2">
                 <Pause className="h-4 w-4" />
                 Paused
                 <Badge variant="secondary" className="ml-1">
-                  {posts.filter(p => p.status === 'paused').length}
+                  {pausedCount}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="draft" className="flex items-center gap-2">
                 <Edit3 className="h-4 w-4" />
                 Drafts
                 <Badge variant="secondary" className="ml-1">
-                  {posts.filter(p => p.status === 'draft').length}
+                  {draftCount}
                 </Badge>
               </TabsTrigger>
             </TabsList>
@@ -329,160 +401,287 @@ export default function ScheduledPosts({ posts = dummyScheduledPosts }) {
         </CardContent>
       </Card>
 
-      {/* Scheduled Posts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {filteredPosts.map((post) => (
-          <Card key={post.id} className="group hover:shadow-lg transition-all duration-300 border-0 shadow-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-2">
-                  <Badge variant="outline" className={postTypeColors[post.type]}>
-                    {post.type.charAt(0).toUpperCase() + post.type.slice(1)}
-                  </Badge>
-                  <Badge variant="outline" className={statusColors[post.status]}>
-                    {post.status.charAt(0).toUpperCase() + post.status.slice(1)}
-                  </Badge>
-                </div>
-                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => handlePauseResume(post.id, post.status)}
-                  >
-                    {post.status === 'paused' ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0"
-                    onClick={() => handleEdit(post.id)}
-                  >
-                    <Edit3 className="h-3 w-3" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={() => handleDelete(post.id)}
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg">{platformIcons[post.platform]}</span>
-                  <span className="text-sm font-medium text-gray-900">{post.page}</span>
-                </div>
-                {post.platforms.length > 1 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{post.platforms.length - 1} more
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-4">
-              {/* Post Content */}
-              <div className="space-y-3">
-                <p className="text-sm text-gray-700 line-clamp-3">
-                  {post.caption}
-                </p>
-                
-                {post.image && (
-                  <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
-                    <img
-                      src={post.image}
-                      alt="Scheduled post content"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                  </div>
-                )}
-              </div>
-
-              {/* Countdown Timer */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-900">Publishing in</span>
-                  </div>
-                  <div className="text-xs text-blue-700">
-                    {formatDate(post.scheduledAt)}
-                  </div>
-                </div>
-                
-                {timeRemaining[post.id] && (
-                  <div className="flex items-center justify-between">
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-blue-900">
-                        {timeRemaining[post.id].days}
-                      </div>
-                      <div className="text-xs text-blue-700">Days</div>
-                    </div>
-                    <div className="text-blue-300">:</div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-blue-900">
-                        {timeRemaining[post.id].hours.toString().padStart(2, '0')}
-                      </div>
-                      <div className="text-xs text-blue-700">Hours</div>
-                    </div>
-                    <div className="text-blue-300">:</div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-blue-900">
-                        {timeRemaining[post.id].minutes.toString().padStart(2, '0')}
-                      </div>
-                      <div className="text-xs text-blue-700">Minutes</div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Performance Metrics */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Users className="h-3 w-3 text-gray-500" />
-                    <span>Expected Reach</span>
-                  </div>
-                  <span className="font-medium">{formatNumber(post.metrics.expectedReach)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <BarChart3 className="h-3 w-3 text-gray-500" />
-                    <span>Previous Engagement</span>
-                  </div>
-                  <span className="font-medium text-green-600">{post.metrics.previousEngagement}%</span>
-                </div>
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex items-center justify-between pt-4 border-t">
-              <Button variant="outline" size="sm" className="text-xs">
-                Edit Schedule
+      {/* Posts Grid */}
+      {posts.length === 0 ? (
+        <Card className="p-16 text-center border-dashed border-2 border-muted">
+          <CardContent className="space-y-4">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+              <Clock className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="text-2xl font-bold text-gray-900">
+              No scheduled posts
+            </div>
+            <p className="text-muted-foreground text-lg max-w-md mx-auto">
+              Schedule your first post to see it appear here with countdown timers.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+              <Button className="bg-gradient-to-r from-amber-600 to-orange-600">
+                <Plus className="h-4 w-4 mr-2" />
+                Schedule Your First Post
               </Button>
-              <div className="flex items-center space-x-2">
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <BarChart3 className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
-              </div>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+              <Button variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {posts.map((post) => (
+              <Card key={post.id} className="hover:shadow-lg transition-all duration-300">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <PostTypeBadge type={post.postType} />
+                      <StatusBadge status={post.status} />
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => handleToggleStatus(post.id, post.status)}
+                        title={post.status === 'scheduled' ? 'Pause' : 'Resume'}
+                      >
+                        {post.status === 'scheduled' ? (
+                          <Pause className="h-3 w-3" />
+                        ) : (
+                          <Play className="h-3 w-3" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => setRescheduleDialog({
+                          open: true,
+                          postId: post.id,
+                          newDate: post.scheduledAt ? format(new Date(post.scheduledAt), "yyyy-MM-dd") : "",
+                          newTime: post.scheduledAt ? format(new Date(post.scheduledAt), "HH:mm") : "12:00",
+                        })}
+                        title="Reschedule"
+                      >
+                        <Calendar className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => setDeleteDialog({ open: true, postId: post.id })}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
 
-      {/* Load More */}
-      <div className="text-center">
-        <Button variant="outline" className="px-8">
-          Load More Scheduled Posts
-        </Button>
-      </div>
+                  <div className="mt-4">
+                    <div className="text-sm font-medium text-gray-900">{post.pageName}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formatDate(post.scheduledAt)}
+                    </div>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-4">
+                  {/* Post Content */}
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-700 line-clamp-3">
+                      {post.message || post.caption || "No caption provided"}
+                    </p>
+
+                    {post.mediaUrls?.[0]?.url && (
+                      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+                        <img
+                          src={post.mediaUrls[0].url}
+                          alt="Scheduled post content"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Countdown Timer */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-900">
+                          Publishing in
+                        </span>
+                      </div>
+                    </div>
+
+                    {timeRemaining[post.id] && (
+                      <div className="grid grid-cols-4 gap-2">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-blue-900">
+                            {timeRemaining[post.id].days}
+                          </div>
+                          <div className="text-xs text-blue-700">Days</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-blue-900">
+                            {timeRemaining[post.id].hours.toString().padStart(2, "0")}
+                          </div>
+                          <div className="text-xs text-blue-700">Hours</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-blue-900">
+                            {timeRemaining[post.id].minutes.toString().padStart(2, "0")}
+                          </div>
+                          <div className="text-xs text-blue-700">Minutes</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-blue-900">
+                            {timeRemaining[post.id].seconds.toString().padStart(2, "0")}
+                          </div>
+                          <div className="text-xs text-blue-700">Seconds</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Performance Metrics */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3 w-3 text-gray-500" />
+                        <span>Expected Reach</span>
+                      </div>
+                      <span className="font-medium">
+                        {formatNumber(post.metrics?.expectedReach || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="h-3 w-3 text-gray-500" />
+                        <span>Avg. Engagement</span>
+                      </div>
+                      <span className="font-medium text-green-600">
+                        {(post.metrics?.previousEngagement || 0)}%
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="flex items-center justify-between pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Navigate to edit page or open edit modal
+                      console.log("Edit post:", post.id);
+                    }}
+                  >
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                  <Button variant="ghost" size="sm" title="Preview">
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+
+          {/* Load More */}
+          {pagination.hasMore && (
+            <div className="text-center">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={loading}
+                className="px-8"
+              >
+                {loading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  "Load More Scheduled Posts"
+                )}
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Scheduled Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this scheduled post? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(deleteDialog.postId)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleDialog.open} onOpenChange={(open) => setRescheduleDialog({ ...rescheduleDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reschedule Post</DialogTitle>
+            <DialogDescription>
+              Select a new date and time for this post.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={rescheduleDialog.newDate}
+                onChange={(e) => setRescheduleDialog({ ...rescheduleDialog, newDate: e.target.value })}
+                min={format(new Date(), "yyyy-MM-dd")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="time">Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={rescheduleDialog.newTime}
+                onChange={(e) => setRescheduleDialog({ ...rescheduleDialog, newTime: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRescheduleDialog({ open: false, postId: null, newDate: "", newTime: "" })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (rescheduleDialog.newDate && rescheduleDialog.newTime) {
+                  const newScheduledAt = `${rescheduleDialog.newDate}T${rescheduleDialog.newTime}`;
+                  handleReschedule(rescheduleDialog.postId, newScheduledAt);
+                }
+              }}
+              disabled={!rescheduleDialog.newDate || !rescheduleDialog.newTime}
+            >
+              Reschedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

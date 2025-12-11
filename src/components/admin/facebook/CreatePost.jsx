@@ -30,7 +30,10 @@ import {
 import {
   Image, Video, CalendarDays, BarChart, Link2, MessageCircle,
   Users, Eye, Globe, Zap, X, Plus, BarChart3, Calendar as CalendarIcon,
-  Clock, DollarSign, Upload, Trash2, Play, FileText, Grid3X3, ImageIcon
+  Clock, DollarSign, Upload, Trash2, Play, FileText, Grid3X3, ImageIcon,
+  Facebook,
+  Check,
+  Sparkles
 } from "lucide-react";
 import { fetchFacebookPages } from "@/app/actions/social/facebook/getPages";
 import GalleryModal from "@/components/gallery/GalleryModal";
@@ -389,16 +392,31 @@ export default function CreateFacebookPost() {
 
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="text-center space-y-4">
-        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          Create Facebook Post
-        </h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Design, schedule, and boost engaging posts across your Facebook pages
-        </p>
-      </div>
+      <Card className="bg-gradient-to-r from-blue-50 via-white to-purple-50 border border-gray-200 shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
+                  <Facebook className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-2xl font-bold text-gray-900">
+                  Create Facebook Post
+                </CardTitle>
+              </div>
+              <CardDescription className="text-gray-600 pl-13">
+                Craft engaging content, schedule for optimal times, and reach your audience effectively
+              </CardDescription>
+            </div>
+            <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
+              <Zap className="mr-1 h-3 w-3" />
+              Pro Feature
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Main Content */}

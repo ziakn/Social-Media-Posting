@@ -51,9 +51,6 @@ export function GalleryItem({ item, onView, onDelete }) {
                                     <Play className="h-12 w-12 text-slate-900/50" />
                                 </div>
                             )}
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 transition-opacity group-hover:opacity-100">
-                                <Play className="h-12 w-12 fill-white text-white drop-shadow-lg" />
-                            </div>
                         </div>
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-muted">
