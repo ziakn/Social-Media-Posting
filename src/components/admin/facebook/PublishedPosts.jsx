@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -88,7 +89,8 @@ import {
   duplicateFacebookPost,
   exportPostsToCSV,
   getPostsStatistics,
-  getUserFacebookPages
+  getUserFacebookPages,
+  updateFacebookPost
 } from "@/app/actions/social/facebook/facebookPostsActions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -129,6 +131,7 @@ export default function PublishedPosts() {
 
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+  const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
   const [scheduleDialog, setScheduleDialog] = useState({ open: false, postId: null, date: new Date(), time: "12:00" });
   const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
 
@@ -305,6 +308,26 @@ export default function PublishedPosts() {
     } catch (error) {
       console.error("Error scheduling post:", error);
       toast.error("Failed to schedule post");
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      const { postId, message } = editDialog;
+      if (!postId || !message.trim()) return;
+
+      const result = await updateFacebookPost(postId, message);
+      if (result.success) {
+        toast.success(result.message);
+        // Update local state
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, message: message } : p));
+        setEditDialog({ open: false, postId: null, message: "" });
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error updating post:", error);
+      toast.error("Failed to update post");
     }
   };
 
@@ -625,57 +648,98 @@ export default function PublishedPosts() {
         </CardContent>
       </Card>
 
+
+
       {/* Posts Grid */}
-      {filteredAndSortedPosts.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">
-              {searchQuery ? "No matching posts found" : "No posts available"}
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              {searchQuery ? "Try adjusting your search or filters" : "Create your first post to get started"}
-            </p>
-            <Button onClick={clearFilters} variant="outline">
-              Clear All Filters
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAndSortedPosts.map((post) => (
-              <Card
-                key={post.id}
-                className="group hover:shadow-lg transition-all duration-300 border"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <PostTypeBadge type={post.postType} />
-                      <StatusBadge status={post.status} />
-                    </div>
+      {
+        filteredAndSortedPosts.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="p-12 text-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">
+                {searchQuery ? "No matching posts found" : "No posts available"}
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                {searchQuery ? "Try adjusting your search or filters" : "Create your first post to get started"}
+              </p>
+              <Button onClick={clearFilters} variant="outline">
+                Clear All Filters
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+              {filteredAndSortedPosts.map((post) => (
+                <Card
+                  key={post.id}
+                  className="group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col"
+                >
+                  {/* Full Card Media/Background */}
+                  <div className="absolute inset-0 z-0 bg-gray-50 cursor-pointer" onClick={() => handlePostClick(post)}>
+                    {post.mediaUrls?.[0]?.url ? (
+                      <>
+                        {post.mediaUrls[0].type?.startsWith('video/') ? (
+                          <div className="w-full h-full bg-black relative">
+                            <video src={post.mediaUrls[0].url} className="w-full h-full object-cover opacity-90" />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="bg-white/30 backdrop-blur-md p-3 rounded-full shadow-lg group-hover:scale-110 transition-transform">
+                                <Play className="h-6 w-6 text-white fill-white" />
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <img
+                            src={post.mediaUrls[0].url}
+                            alt="Post media"
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            onError={(e) => {
+                              e.currentTarget.src = "https://via.placeholder.com/400x225?text=No+Image";
+                            }}
+                          />
+                        )}
+
+                        {/* Subtle Gradient Overlay for Content Readability */}
+                        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                      </>
+                    ) : (
+                      // Text Post - Clean Light Style
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-100 p-6 text-center">
+                        <FileText className="h-8 w-8 mb-2 text-gray-300" />
+                        <p className="text-xs font-medium line-clamp-4 text-gray-600">
+                          {post.message || "No content"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Top Actions (Floating - Invisible until hover) */}
+                  <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50 text-gray-700 border border-gray-100">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handlePostClick(post)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          View Details
+                          View
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditDialog({
+                          open: true,
+                          postId: post.id,
+                          message: post.message || post.caption || ""
+                        })}>
                           <Edit className="mr-2 h-4 w-4" />
-                          Edit Post
+                          Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDuplicate(post.id)}>
+                        {/* <DropdownMenuItem onClick={() => handleDuplicate(post.id)}>
                           <Copy className="mr-2 h-4 w-4" />
                           Duplicate
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         {post.status === 'published' && (
                           <DropdownMenuItem onClick={() => setScheduleDialog({
                             open: true,
@@ -683,15 +747,12 @@ export default function PublishedPosts() {
                             date: new Date(),
                             time: "12:00"
                           })}>
-                            <CalendarDays className="mr-2 h-4 w-4" />
+                            <CalendarIcon className="mr-2 h-4 w-4" />
                             Reschedule
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setDeleteDialog({ open: true, postId: post.id })}
-                          className="text-red-600"
-                        >
+                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, postId: post.id })} className="text-destructive focus:text-destructive">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>
@@ -699,176 +760,88 @@ export default function PublishedPosts() {
                     </DropdownMenu>
                   </div>
 
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={post.pageProfilePicture} />
-                        <AvatarFallback>{post.pageName?.[0]}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium truncate block">
-                          {post.pageName || 'Facebook Page'}
-                        </span>
-                        <span className="text-xs text-gray-500 truncate block">
-                          {post.pageCategory || 'Business Page'} • {formatNumber(post.pageFans || 0)} fans
+                  {/* Status Flag (Minimal) */}
+                  <div className="absolute top-3 left-3 z-20 pointer-events-none flex flex-col items-start gap-1">
+                    {post.status !== 'published' && (
+                      <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5">
+                        <Clock className="h-3 w-3 text-yellow-600" />
+                        <span className="text-[10px] font-semibold text-gray-700 capitalize">
+                          {post.status}
                         </span>
                       </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {post.status === 'scheduled' ? (
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Scheduled: {formatDate(post.scheduledAt)}
-                        </div>
-                      ) : (
-                        `Posted: ${formatDate(post.createdAt)}`
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Post Content Preview */}
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-700 line-clamp-3">
-                      {post.message || post.caption || 'No caption provided'}
-                    </p>
-
-                    {post.mediaUrls?.[0]?.url && (
-                      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden cursor-pointer" onClick={() => handlePostClick(post)}>
-                        <img
-                          src={post.mediaUrls[0].url}
-                          alt="Post content"
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          onError={(e) => {
-                            e.target.src = "https://via.placeholder.com/400x225?text=No+Image";
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                        {post.mediaUrls.length > 1 && (
-                          <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">
-                            +{post.mediaUrls.length - 1}
-                          </div>
-                        )}
+                    )}
+                    {post.metrics?.engagementRate > 0 && (
+                      <div className="bg-emerald-500/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-0.5 text-white flex items-center gap-1">
+                        <span className="text-[9px] font-bold">
+                          {post.metrics.engagementRate.toFixed(1)}%
+                        </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Metrics Summary */}
-                  <div className="space-y-3 pt-3 border-t">
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center gap-1 text-sm">
-                          <Eye className="h-3 w-3 text-blue-600" />
-                          <span className="font-semibold">{formatNumber(post.metrics?.reach || 0)}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">Reach</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center gap-1 text-sm">
-                          <Heart className="h-3 w-3 text-red-500" />
-                          <span className="font-semibold">{formatNumber(post.metrics?.likes || 0)}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">Likes</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center gap-1 text-sm">
-                          <MessageCircle className="h-3 w-3 text-green-600" />
-                          <span className="font-semibold">{formatNumber(post.metrics?.comments || 0)}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">Comments</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-center gap-1 text-sm">
-                          <Share2 className="h-3 w-3 text-purple-600" />
-                          <span className="font-semibold">{formatNumber(post.metrics?.shares || 0)}</span>
-                        </div>
-                        <div className="text-xs text-muted-foreground">Shares</div>
-                      </div>
-                    </div>
-
-                    {/* Engagement Rate */}
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <BarChart3 className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium">Engagement Rate</span>
-                        </div>
-                        <span className="text-sm font-semibold">
-                          {getEngagementRate(post)}%
+                  {/* Bottom Content Overlay */}
+                  <div className="absolute inset-x-0 bottom-0 p-3 z-10 pointer-events-none text-white">
+                    <div className="flex flex-col gap-1">
+                      {/* Page Name */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[11px] font-bold tracking-wide drop-shadow-sm">
+                          {post.pageName || "Page Name"}
                         </span>
+                        {post.mediaUrls?.length > 1 && (
+                          <span className="text-[10px] bg-black/40 px-1.5 rounded-full backdrop-blur-sm flex items-center gap-0.5">
+                            <Layers className="h-3 w-3" /> +{post.mediaUrls.length - 1}
+                          </span>
+                        )}
                       </div>
-                      <Progress
-                        value={Math.min(parseFloat(getEngagementRate(post)) * 10, 100)}
-                        className="h-1.5"
-                      />
+
+                      {/* Caption */}
+                      {post.mediaUrls?.[0]?.url && (
+                        <p className="text-xs line-clamp-2 leading-snug font-medium text-gray-100 drop-shadow-md">
+                          {post.message || "No caption"}
+                        </p>
+                      )}
+
+                      {/* Footer Metadata */}
+                      <div className="flex items-center justify-between text-[10px] text-gray-300 font-medium pt-1">
+                        <div className="flex gap-2.5">
+                          <span className="flex items-center gap-1"><Heart className="h-3 w-3 text-white" /> {formatNumber(post.metrics?.likes || 0)}</span>
+                          <span className="flex items-center gap-1"><Eye className="h-3 w-3 text-white" /> {formatNumber(post.metrics?.reach || 0)}</span>
+                        </div>
+                        <span>{formatDate(post.createdAt || post.scheduledAt).split(' at')[0]}</span>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-
-                <CardFooter className="flex items-center justify-between pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs"
-                    onClick={() => handlePostClick(post)}
-                  >
-                    View Analytics
-                  </Button>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => {
-                        if (post.postId) {
-                          window.open(`https://facebook.com/${post.postId}`, '_blank');
-                        }
-                      }}
-                      disabled={!post.postId}
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => handleDuplicate(post.id)}
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-
-          {/* Pagination Controls */}
-          <div className="flex items-center justify-between pt-6 border-t">
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredAndSortedPosts.length} of {pagination.totalCount} posts
+                </Card>
+              ))}
             </div>
 
-            {pagination.hasMore && (
-              <Button
-                onClick={handleLoadMore}
-                variant="outline"
-                disabled={loading}
-                className="gap-2"
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    Load More
-                    <ChevronRight className="h-4 w-4" />
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </>
-      )}
+            {/* Pagination Controls */}
+            <div className="flex items-center justify-between pt-6 border-t font-medium text-sm text-gray-500">
+              <div>
+                Showing {filteredAndSortedPosts.length} of {pagination.totalCount} posts
+              </div>
+
+              {pagination.hasMore && (
+                <Button
+                  onClick={handleLoadMore}
+                  variant="outline"
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      Load More
+                      <ChevronRight className="h-4 w-4" />
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </>
+        )
+      }
 
       {/* Post Detail Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -1123,6 +1096,44 @@ export default function PublishedPosts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog({ ...editDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+            <DialogDescription>
+              Update the content of your post.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                value={editDialog.message}
+                onChange={(e) => setEditDialog({ ...editDialog, message: e.target.value })}
+                placeholder="What's on your mind?"
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialog({ open: false, postId: null, message: "" })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={!editDialog.message.trim()}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div >
   );
 }

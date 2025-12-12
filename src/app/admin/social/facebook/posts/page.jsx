@@ -26,9 +26,9 @@ export default function ManageFacebookPosts() {
           <TabsTrigger value="create">Create</TabsTrigger>
           <TabsTrigger value="published">Published</TabsTrigger>
           <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-          <TabsTrigger value="draft">Drafts</TabsTrigger>
+          {/* <TabsTrigger value="draft">Drafts</TabsTrigger>
           <TabsTrigger value="expiring">Expiring</TabsTrigger>
-          <TabsTrigger value="expired">Expired</TabsTrigger>
+          <TabsTrigger value="expired">Expired</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="create">

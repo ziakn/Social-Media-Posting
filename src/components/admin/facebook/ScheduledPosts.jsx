@@ -32,7 +32,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Calendar,
@@ -54,9 +63,10 @@ import {
   Eye,
   RefreshCw,
   X,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
-import { getScheduledPosts, togglePostStatus, deleteScheduledPost, reschedulePost } from "@/app/actions/social/facebook/getScheduledPosts";
+import { getScheduledPosts, togglePostStatus, deleteScheduledPost, reschedulePost, updateScheduledPost } from "@/app/actions/social/facebook/getScheduledPosts";
 
 const postTypeConfig = {
   text: { icon: FileText, color: "bg-blue-100 text-blue-800 border-blue-200", label: "Text" },
@@ -86,6 +96,7 @@ export default function ScheduledPosts() {
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
   const [rescheduleDialog, setRescheduleDialog] = useState({ open: false, postId: null, newDate: "", newTime: "" });
+  const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
 
   // Load scheduled posts
   const loadPosts = async (reset = false, lastDocId = null) => {
@@ -242,6 +253,26 @@ export default function ScheduledPosts() {
     }
   };
 
+  const handleUpdate = async () => {
+    try {
+      const { postId, message } = editDialog;
+      if (!postId || !message.trim()) return;
+
+      const result = await updateScheduledPost(postId, { message });
+      if (result.success) {
+        toast.success(result.message);
+        // Update local state
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, message: message } : p));
+        setEditDialog({ open: false, postId: null, message: "" });
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Error updating scheduled post:", error);
+      toast.error("Failed to update post");
+    }
+  };
+
   const handleLoadMore = () => {
     if (pagination.hasMore && pagination.lastVisible) {
       loadPosts(false, pagination.lastVisible);
@@ -384,148 +415,129 @@ export default function ScheduledPosts() {
         </Card>
       ) : (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
             {filteredPosts.map((post) => (
-              <Card key={post.id} className="hover:shadow-lg transition-all duration-300">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <PostTypeBadge type={post.postType} />
-                      <StatusBadge status={post.status} />
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={() => setRescheduleDialog({
-                          open: true,
-                          postId: post.id,
-                          newDate: post.scheduledAt ? format(new Date(post.scheduledAt), "yyyy-MM-dd") : "",
-                          newTime: post.scheduledAt ? format(new Date(post.scheduledAt), "HH:mm") : "12:00",
-                        })}
-                        title="Reschedule"
-                      >
-                        <Calendar className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => setDeleteDialog({ open: true, postId: post.id })}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="text-sm font-medium text-gray-900">{post.pageName}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {formatDate(post.scheduledAt)}
-                    </div>
-                  </div>
-                </CardHeader>
-
-                <CardContent className="space-y-4">
-                  {/* Post Content */}
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-700 line-clamp-3">
-                      {post.message || post.caption || "No caption provided"}
-                    </p>
-
-                    {post.mediaUrls?.[0]?.url && (
-                      <div className="relative aspect-video bg-muted rounded-lg overflow-hidden">
+              <Card
+                key={post.id}
+                className="group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col"
+              >
+                {/* Full Card Media/Background */}
+                <div className="absolute inset-0 z-0 bg-gray-50 cursor-pointer" onClick={() => {
+                  setEditDialog({
+                    open: true,
+                    postId: post.id,
+                    message: post.message || post.caption || ""
+                  });
+                }}>
+                  {post.mediaUrls?.[0]?.url ? (
+                    <>
+                      {post.mediaUrls[0].type?.startsWith('video/') ? (
+                        <div className="w-full h-full bg-black relative">
+                          <video src={post.mediaUrls[0].url} className="w-full h-full object-cover opacity-90" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="bg-white/30 backdrop-blur-md p-3 rounded-full shadow-lg group-hover:scale-110 transition-transform">
+                              <Play className="h-6 w-6 text-white fill-white" />
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
                         <img
                           src={post.mediaUrls[0].url}
-                          alt="Scheduled post content"
-                          className="w-full h-full object-cover"
+                          alt="Post media"
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                         />
-                      </div>
-                    )}
-                  </div>
+                      )}
 
-                  {/* Countdown Timer */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm font-medium text-blue-900">
-                          Publishing in
+                      {/* Subtle Gradient Overlay for Content Readability */}
+                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                    </>
+                  ) : (
+                    // Text Post - Clean Light Style
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-100 p-6 text-center">
+                      <FileText className="h-8 w-8 mb-2 text-gray-300" />
+                      <p className="text-xs font-medium line-clamp-4 text-gray-600">
+                        {post.message || "No content"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Top Actions (Floating - Invisible until hover) */}
+                <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50 text-gray-700 border border-gray-100">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditDialog({
+                        open: true,
+                        postId: post.id,
+                        message: post.message || post.caption || ""
+                      })}>
+                        <Edit3 className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setRescheduleDialog({
+                        open: true,
+                        postId: post.id,
+                        newDate: post.scheduledAt ? format(new Date(post.scheduledAt), "yyyy-MM-dd") : "",
+                        newTime: post.scheduledAt ? format(new Date(post.scheduledAt), "HH:mm") : "12:00",
+                      })}>
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Reschedule
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, postId: post.id })} className="text-destructive focus:text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                {/* Status Flag (Minimal) */}
+                <div className="absolute top-3 left-3 z-20 pointer-events-none">
+                  <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5">
+                    <Clock className="h-3 w-3 text-blue-600" />
+                    <span className="text-[10px] font-semibold text-gray-700">
+                      {timeRemaining[post.id] ? (
+                        timeRemaining[post.id].days > 0 ? `${timeRemaining[post.id].days}d` : `${timeRemaining[post.id].hours}h`
+                      ) : "Scheduled"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Bottom Content Overlay */}
+                <div className="absolute inset-x-0 bottom-0 p-3 z-10 pointer-events-none text-white">
+                  <div className="flex flex-col gap-1">
+                    {/* Page Name */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-bold tracking-wide drop-shadow-sm">
+                        {post.pageName || "Page Name"}
+                      </span>
+                      {post.mediaUrls?.length > 1 && (
+                        <span className="text-[10px] bg-black/40 px-1.5 rounded-full backdrop-blur-sm flex items-center gap-0.5">
+                          <Layers className="h-3 w-3" /> +{post.mediaUrls.length - 1}
                         </span>
-                      </div>
+                      )}
                     </div>
 
-                    {timeRemaining[post.id] && (
-                      <div className="grid grid-cols-4 gap-2">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-900">
-                            {timeRemaining[post.id].days}
-                          </div>
-                          <div className="text-xs text-blue-700">Days</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-900">
-                            {timeRemaining[post.id].hours.toString().padStart(2, "0")}
-                          </div>
-                          <div className="text-xs text-blue-700">Hours</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-900">
-                            {timeRemaining[post.id].minutes.toString().padStart(2, "0")}
-                          </div>
-                          <div className="text-xs text-blue-700">Minutes</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-blue-900">
-                            {timeRemaining[post.id].seconds.toString().padStart(2, "0")}
-                          </div>
-                          <div className="text-xs text-blue-700">Seconds</div>
-                        </div>
-                      </div>
+                    {/* Caption */}
+                    {post.mediaUrls?.[0]?.url && (
+                      <p className="text-xs line-clamp-2 leading-snug font-medium text-gray-100 drop-shadow-md">
+                        {post.message || "No caption"}
+                      </p>
                     )}
-                  </div>
 
-                  {/* Performance Metrics */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-3 w-3 text-gray-500" />
-                        <span>Expected Reach</span>
-                      </div>
-                      <span className="font-medium">
-                        {formatNumber(post.metrics?.expectedReach || 0)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <BarChart3 className="h-3 w-3 text-gray-500" />
-                        <span>Avg. Engagement</span>
-                      </div>
-                      <span className="font-medium text-green-600">
-                        {(post.metrics?.previousEngagement || 0)}%
-                      </span>
+                    {/* Scheduled Date Footer */}
+                    <div className="flex items-center gap-1 text-[10px] text-gray-300 font-medium pt-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{formatDate(post.scheduledAt)}</span>
                     </div>
                   </div>
-                </CardContent>
-
-                <CardFooter className="flex items-center justify-between pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      // Navigate to edit page or open edit modal
-                      console.log("Edit post:", post.id);
-                    }}
-                  >
-                    <Edit3 className="h-3 w-3 mr-1" />
-                    Edit
-                  </Button>
-                  <Button variant="ghost" size="sm" title="Preview">
-                    <Eye className="h-3 w-3" />
-                  </Button>
-                </CardFooter>
+                </div>
               </Card>
             ))}
           </div>
@@ -621,6 +633,44 @@ export default function ScheduledPosts() {
               disabled={!rescheduleDialog.newDate || !rescheduleDialog.newTime}
             >
               Reschedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog({ ...editDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Scheduled Post</DialogTitle>
+            <DialogDescription>
+              Update the content of your scheduled post.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                value={editDialog.message}
+                onChange={(e) => setEditDialog({ ...editDialog, message: e.target.value })}
+                placeholder="What's on your mind?"
+                className="min-h-[100px]"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialog({ open: false, postId: null, message: "" })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdate}
+              disabled={!editDialog.message.trim()}
+            >
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

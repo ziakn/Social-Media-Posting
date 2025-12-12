@@ -167,7 +167,7 @@ export default function AdminLayout({ children }) {
             {hasPermission('view_plateforms') && (
               <li key={ROUTES.ADMIN_PLATFORMS}>
                 <Link
-                  href={ROUTES.ADMIN_PLATFORMS}ß
+                  href={ROUTES.ADMIN_PLATFORMS}
                   className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
                     }`}
                 >

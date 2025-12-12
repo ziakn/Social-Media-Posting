@@ -18,6 +18,7 @@ import {
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { fetchFacebookPages } from "./getPages";
 
 // Get user's Facebook pages for filtering
 export async function getUserFacebookPages() {
@@ -140,10 +141,19 @@ export async function getFacebookPosts({
       constraints.unshift(where("pageId", "==", filters.pageId));
     }
 
-    // Engagement rate filter
     if (filters.minEngagementRate) {
       constraints.unshift(where("metrics.engagementRate", ">=", parseFloat(filters.minEngagementRate)));
     }
+
+    // Filter out deleted posts logic (application level or if possible query level)
+    // Since existing posts might not have 'deleted' field, we can't easily query using != 1 without an index or backfill.
+    // We will filter efficiently in memory after fetching or try to use a constraint if possible.
+    // For now, let's just fetch and filter in memory as it's safer without migration.
+    // However, to avoid messing up pagination, we should ideally use a query.
+    // Let's rely on the client side not showing them or filter here. 
+    // To be safe with pagination, we'll try to filter here but it might affect page size.
+    // Better approach: Since 'deleted' is a new field, we can't query on it for old docs.
+    // So we will filter in the map loop.
 
     let q = query(collection(db, "facebook_posts"), ...constraints);
 
@@ -245,8 +255,12 @@ export async function getFacebookPosts({
         createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
         scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
+        deleted: data.deleted || 0
       };
     }));
+
+    // Filter out deleted posts
+    const activePosts = posts.filter(p => p.deleted !== 1);
 
     const lastVisible = posts.length > 0 ? posts[posts.length - 1].id : null;
 
@@ -259,17 +273,18 @@ export async function getFacebookPosts({
 
     return {
       success: true,
-      posts,
+      success: true,
+      posts: activePosts,
       statistics: {
-        totalPosts: posts.length,
+        totalPosts: activePosts.length,
         totalReach,
         totalEngagements,
         avgEngagementRate
       },
       pagination: {
         hasMore,
-        lastVisible,
-        count: posts.length,
+        lastVisible, // This might be slightly off if the last item was deleted, but acceptable for now
+        count: activePosts.length,
         total: snapshot.size
       }
     };
@@ -303,16 +318,118 @@ export async function deleteFacebookPost(postId) {
       return { success: false, message: "Post not found" };
     }
 
-    if (postSnap.data().userId !== user.id) {
+    const postData = postSnap.data();
+
+    if (postData.userId !== user.id) {
       return { success: false, message: "Unauthorized" };
     }
 
-    await deleteDoc(postRef);
+    // Call Facebook API to delete if it has a Facebook ID
+    if (postData.facebookPostId && postData.pageId) {
+      try {
+        console.log(`Attempting to delete post from Facebook: ${postData.facebookPostId} (Page: ${postData.pageId})`);
+
+        // Get Access Token
+        const { pages } = await fetchFacebookPages();
+        // Use String() for safe comparison
+        const page = pages.find(p => String(p.pageId) === String(postData.pageId));
+
+        if (page && page.accessToken) {
+          const response = await fetch(`https://graph.facebook.com/${postData.facebookPostId}?access_token=${page.accessToken}`, {
+            method: 'DELETE',
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            console.log("Successfully deleted from Facebook API");
+          } else if (data.error) {
+            console.warn("Error deleting from Facebook:", data.error);
+            // We continue to soft delete even if FB delete fails, but log it
+          }
+        } else {
+          console.warn(`Page not found or no access token for pageId: ${postData.pageId}`);
+        }
+      } catch (fbError) {
+        console.error("Failed to delete from Facebook:", fbError);
+      }
+    } else {
+      console.log("Skipping Facebook API delete: Missing facebookPostId or pageId in post data");
+    }
+
+    // Soft delete
+    await updateDoc(postRef, {
+      deleted: 1,
+      updatedAt: new Date()
+    });
+
     revalidatePath("/admin/social/facebook/posts");
 
     return { success: true, message: "Post deleted successfully" };
   } catch (error) {
     console.error("Error deleting post:", error);
+    return { success: false, message: error.message };
+  }
+}
+
+// Update a post
+export async function updateFacebookPost(postId, message) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    const user = await verifyToken(token);
+    if (!user) {
+      return { success: false, message: "Invalid token" };
+    }
+
+    const postRef = doc(db, "facebook_posts", postId);
+    const postSnap = await getDoc(postRef);
+
+    if (!postSnap.exists()) {
+      return { success: false, message: "Post not found" };
+    }
+
+    const postData = postSnap.data();
+
+    if (postData.userId !== user.id) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    // Update on Facebook if it has an ID
+    if (postData.facebookPostId && postData.pageId) {
+      const { pages } = await fetchFacebookPages();
+      const page = pages.find(p => p.pageId === postData.pageId);
+
+      if (!page || !page.accessToken) {
+        return { success: false, message: "Page access token not found" };
+      }
+
+      const response = await fetch(`https://graph.facebook.com/${postData.facebookPostId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: message,
+          access_token: page.accessToken
+        })
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+    }
+
+    // Update in Firestore
+    await updateDoc(postRef, {
+      message: message,
+      updatedAt: new Date()
+    });
+
+    revalidatePath("/admin/social/facebook/posts");
+
+    return { success: true, message: "Post updated successfully" };
+  } catch (error) {
+    console.error("Error updating post:", error);
     return { success: false, message: error.message };
   }
 }

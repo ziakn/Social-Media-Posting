@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, orderBy, getDocs, limit, startAfter, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
-
+import { fetchFacebookPages } from "./getPages";
 export async function getScheduledPosts({
     pageSize = 12,
     lastDocId = null,
@@ -125,18 +125,24 @@ export async function getScheduledPosts({
                 scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
                 createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
                 updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+                createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+                updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+                deleted: data.deleted || 0
             };
         }));
+
+        // Filter out deleted posts
+        const activePosts = posts.filter(p => p.deleted !== 1);
 
         const lastVisible = posts.length > 0 ? posts[posts.length - 1].id : null;
 
         return {
             success: true,
-            posts,
+            posts: activePosts,
             pagination: {
                 hasMore,
                 lastVisible,
-                count: posts.length,
+                count: activePosts.length,
                 total: snapshot.size
             }
         };
@@ -171,6 +177,33 @@ export async function updateScheduledPost(postId, updates) {
             return { success: false, message: "Post not found or unauthorized" };
         }
 
+        const postData = postSnap.data();
+        if (postData.deleted === 1) {
+            return { success: false, message: "Cannot edit deleted post" };
+        }
+
+        // If message is being updated and post is scheduled on Facebook, update it there too
+        if (updates.message && postData.facebookPostId && postData.pageId) {
+            try {
+                const { pages } = await fetchFacebookPages();
+                const page = pages.find(p => p.pageId === postData.pageId);
+
+                if (page && page.accessToken) {
+                    await fetch(`https://graph.facebook.com/${postData.facebookPostId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: updates.message,
+                            access_token: page.accessToken
+                        })
+                    });
+                }
+            } catch (fbError) {
+                console.error("Failed to update scheduled post on Facebook:", fbError);
+                // Continue to update local DB
+            }
+        }
+
         await updateDoc(postRef, {
             ...updates,
             updatedAt: new Date()
@@ -201,7 +234,30 @@ export async function deleteScheduledPost(postId) {
             return { success: false, message: "Post not found or unauthorized" };
         }
 
-        await deleteDoc(postRef);
+        // If it sends a facebookPostId, delete from Facebook
+        const postData = postSnap.data();
+        if (postData.facebookPostId && postData.pageId) {
+            try {
+                const { pages } = await fetchFacebookPages();
+                const page = pages.find(p => p.pageId === postData.pageId);
+
+                if (page && page.accessToken) {
+                    await fetch(`https://graph.facebook.com/${postData.facebookPostId}?access_token=${page.accessToken}`, {
+                        method: 'DELETE',
+                    });
+                }
+            } catch (fbError) {
+                console.error("Failed to delete scheduled post from Facebook:", fbError);
+            }
+        }
+
+        // Soft delete
+        await updateDoc(postRef, {
+            deleted: 1,
+            updatedAt: new Date()
+        });
+
+        // await deleteDoc(postRef); // OLD HARD DELETE
 
         return { success: true, message: "Post deleted successfully" };
     } catch (error) {
