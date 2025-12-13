@@ -19,6 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 import { API_ROUTES } from "@/constants/api";
 import { toast } from "sonner";
+import Link from "next/link";
 
 export default function UsersList() {
   const { user, permissions, hasPermission } = usePermissions();
@@ -79,7 +80,7 @@ export default function UsersList() {
       <Card className="shadow-sm">
         <CardHeader className="flex justify-between items-center">
           <CardTitle className="text-xl font-semibold">Platforms</CardTitle>
-          {hasPermission('create_platforms') &&
+          {hasPermission('create_plateforms') &&
             <Button
               variant="secondary"
               onClick={() => router.push(ROUTES.ADMIN_PLATFORM_CREATE)}
@@ -116,8 +117,8 @@ export default function UsersList() {
                 {platforms.map((platform) => (
                   <TableRow key={platform.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{platform.platform_name}</TableCell>
-                    <TableCell>{platform.description}</TableCell>
-                    <TableCell>{platform.icon_url}</TableCell>
+                    <TableCell className="text-wrap"><div dangerouslySetInnerHTML={{ __html: platform.description }} /></TableCell>
+                    <TableCell> <Link href={platform.icon_url}>{platform.icon_url}</Link></TableCell>
                     <TableCell className="text-right space-x-2">
                       {hasPermission('edit_plateforms') &&
                         <Button
