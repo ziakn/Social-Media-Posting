@@ -53,9 +53,9 @@ export const GET = async () => {
 export async function POST(req) {
   try {
     console.log(req.body);
-    const { platform_name, platform_type, client_id, client_secret, icon_url, status } = await req.json();
+    const { platform_name,description, icon_url, status } = await req.json();
 
-    if (!platform_name || !platform_type || !client_id || !client_secret || !icon_url || !status) {
+    if (!platform_name || !description || !icon_url || !status) {
       return new Response(
         JSON.stringify({ success: false, message: "All fields are required" }),
         { status: 400 }
@@ -74,9 +74,7 @@ export async function POST(req) {
 
     const platform = await addDoc(collection(db, "platforms"), {
       platform_name,
-      platform_type,
-      client_id,
-      client_secret,
+      description,
       icon_url,
       status,
       created_at: new Date(),
@@ -86,7 +84,7 @@ export async function POST(req) {
     return new Response(
       JSON.stringify({
         success: true,
-        platform: { id: platform.id, platform_name, platform_type, client_id, client_secret, icon_url, status },
+        platform: { id: platform.id, platform_name, description, icon_url, status },
       }),
       { status: 201 }
     );

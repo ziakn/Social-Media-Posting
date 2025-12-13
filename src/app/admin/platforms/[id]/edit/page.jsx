@@ -1,20 +1,24 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
+import Quill from "quill";
+import "quill/dist/quill.snow.css";
 import { Spinner } from "@/components/ui/spinner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { API_ROUTES } from "@/constants/api";
 import { ROUTES } from "@/constants/routes";
 import { toast } from "sonner";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
 
-export default function CreatePlatform() {
+export default function EditPlatform() {
+  const { id } = useParams();
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const editorRef = useRef(null);
+  const quillRef = useRef(null);
 
-  const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     platform_name: "",
     description: "",
@@ -22,52 +26,79 @@ export default function CreatePlatform() {
     status: "active",
   });
 
-  const editorRef = useRef(null);
-  const quillRef = useRef(null); // 🔑 important
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchPlatform = async () => {
+      try {
+        const res = await fetch(`${API_ROUTES.PLATFORMS_EDIT}/${id}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message);
+
+        setForm({
+          platform_name: data.platform.platform_name,
+          description: data.platform.description || "",
+          icon_url: data.platform.icon_url,
+          status: data.platform.status,
+        });
+      } catch {
+        toast.error("Failed to load platform");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlatform();
+  }, [id]);
 
   useEffect(() => {
-    if (!editorRef.current || quillRef.current) return;
+    if (loading) return;
+    if (!editorRef.current) return;
+    if (quillRef.current) return;
 
-    quillRef.current = new Quill(editorRef.current, {
+    const quill = new Quill(editorRef.current, {
       theme: "snow",
       placeholder: "Enter platform description...",
     });
 
-    quillRef.current.on("text-change", () => {
+    quill.on("text-change", () => {
       setForm((prev) => ({
         ...prev,
-        description: quillRef.current.root.innerHTML,
+        description: quill.root.innerHTML,
       }));
     });
-  }, []);
-  
+
+    quill.root.innerHTML = form.description || "";
+    quillRef.current = quill;
+
+  }, [loading]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!form.platform_name || !form.description || !form.icon_url || !form.status) {
-      toast.warning("Fill the form correctly");
+    if (!form.platform_name || !form.description || !form.icon_url) {
+      toast.warning("Please fill all fields");
       return;
     }
 
     try {
+      setSubmitting(true);
 
-      setLoading(true);
-
-      const res = await fetch(API_ROUTES.PLATFORMS_CREATE, {
-        method: "POST",
+      const res = await fetch(`${API_ROUTES.PLATFORMS_EDIT}/${id}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) throw new Error(data.message);
 
-      toast.success("Platform Created Successfully");
+      toast.success("Platform Updated Successfully");
       router.push(ROUTES.ADMIN_PLATFORMS);
-    } catch (err) {
+    } catch {
       toast.error("Something went wrong");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -77,12 +108,11 @@ export default function CreatePlatform() {
     <div className="p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Add New Platform</CardTitle>
+          <CardTitle>Edit Platform</CardTitle>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Platform Name */}
             <div>
               <label className="block text-sm mb-1">Platform Name</label>
               <input
@@ -95,17 +125,15 @@ export default function CreatePlatform() {
               />
             </div>
 
-            {/* Description */}
             <div>
               <label className="block text-sm mb-1">Description</label>
               <div
                 ref={editorRef}
-                className="bg-white"
+                className="bg-white border rounded"
                 style={{ height: "200px" }}
               />
             </div>
 
-            {/* Icon URL */}
             <div>
               <label className="block text-sm mb-1">Icon URL</label>
               <input
@@ -118,7 +146,6 @@ export default function CreatePlatform() {
               />
             </div>
 
-            {/* Status */}
             <div>
               <label className="block text-sm mb-1">Status</label>
               <select
@@ -134,8 +161,8 @@ export default function CreatePlatform() {
             </div>
 
             <div className="flex justify-end pt-4">
-              <Button type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Create Platform"}
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "Saving..." : "Update Platform"}
               </Button>
             </div>
           </form>

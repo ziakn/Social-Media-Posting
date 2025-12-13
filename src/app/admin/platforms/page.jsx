@@ -3,71 +3,72 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { usePermissions } from '@/hooks/usePermissions';
+
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { API_ROUTES } from "@/constants/api";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
+import { API_ROUTES } from "@/constants/api";
 import { toast } from "sonner";
 
-export default function CreatePlatform() {
-  const [form, setForm] = useState({
-    platform_name: "",
-    platform_type: "",
-    client_id: "",
-    client_secret: "",
-    icon_url: "",
-    status: "",
-  });
-  const [loading, setLoading] = useState(false);
+export default function UsersList() {
+  const { user, permissions, hasPermission } = usePermissions();
+  const [platforms, setPlatforms] = useState([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    fetchRoles();
+    fetchPlatforms();
   }, []);
 
-
-  const fetchRoles = async () => {
+  const fetchPlatforms = async () => {
     try {
-    setLoading(true);
-
-      const res = await fetch(API_ROUTES.ROLES, {
+      const res = await fetch(API_ROUTES.PLATFORMS, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
 
       const data = await res.json();
-      setRoles(data.roles);
+      setPlatforms(data.platforms);
     } catch (error) {
-      toast.error("Some Thing went Wrong !");
+      console.error("Error fetching platforms:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log(form)
-    if (!form.platform_name || !form.platform_type || !form.client_id || !form.client_secret || !form.icon_url || !form.status) {
-      toast.warning("Fill The Form Correctly");
-      return;
-    }
-    try {
-      const res = await fetch(API_ROUTES.PLATFORMS_CREATE, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+  const handleDelete = async (id) => {
+    toast("Are you sure you want to delete this user?", {
+      action: {
+        label: "Delete",
+        onClick: async () => {
+          try {
+            const res = await fetch(`${API_ROUTES.PLATFORMS}/${id}`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+            });
 
-      const data = await res.json();
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to delete user");
 
-      if (!res.ok) throw new Error(data.error || "Failed to create platform");
-
-      toast.success("Platform Created Successfully");
-      router.push(ROUTES.ADMIN_PLATFORMS);
-    } catch (error) {
-      console.error("Error adding platform:", error);
-      toast.error("Some Thing went Wrong !");
-    } 
+            setPlatforms((prev) => prev.filter((p) => p.id !== id));
+            toast.success("Platform deleted successfully!");
+          } catch (error) {
+            console.error("Error deleting platform:", error);
+            toast.error("❌ Error deleting platform: " + error.message);
+          }
+        },
+      },
+    });
   };
 
 
@@ -77,88 +78,74 @@ export default function CreatePlatform() {
     <div className="p-6">
       <Card className="shadow-sm">
         <CardHeader className="flex justify-between items-center">
-          <CardTitle className="text-xl font-semibold">Add New Platform</CardTitle>
+          <CardTitle className="text-xl font-semibold">Platforms</CardTitle>
+          {hasPermission('create_platforms') &&
+            <Button
+              variant="secondary"
+              onClick={() => router.push(ROUTES.ADMIN_PLATFORM_CREATE)}
+            >
+              + Add Platform
+            </Button>
+          }
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
-            <div>
-              <label className="block text-sm font-medium mb-1">Platform Name</label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.platform_name}
-                onChange={(e) => setForm({ ...form, platform_name: e.target.value })}
-              />
+          {platforms.length === 0 ? (
+            <div className="text-center py-16 text-gray-500">
+              <p className="mb-4">No platforms found.</p>
+              {hasPermission('create_platforms') &&
+                <Button
+                  size="sm"
+                  onClick={() => router.push(ROUTES.ADMIN_PLATFORM_CREATE)}
+                >
+                  + Add your first platform
+                </Button>
+              }
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Platform Type</label>
-              <select
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.platform_type}
-                onChange={(e) => setForm({ ...form, platform_type: e.target.value })}
-              >
-                <option value="">Select Platform Type</option>
-                <option value="facebook">Facebook</option>
-                <option value="instagram">Instagram</option>
-                <option value="twitter">Twitter</option>
-                <option value="linkedin">LinkedIn</option>
-                <option value="youtube">YouTube</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Client ID</label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.client_id}
-                onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Client Secret</label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.client_secret}
-                onChange={(e) => setForm({ ...form, client_secret: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Icon URL </label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.icon_url}
-                onChange={(e) => setForm({ ...form, icon_url: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Status</label>
-              <select
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={form.status}
-                 onChange={(e) => setForm({ ...form, status: e.target.value })}
-              >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
-
-    
-
-            <div className="md:col-span-2 flex justify-end">
-              <Button variant="secondary" type="submit" disabled={loading}>
-                {loading ? "Saving..." : "Create Platform"}
-              </Button>
-            </div>
-          </form>
+          ) : (
+            <Table>
+              <TableCaption>A list of all registered platforms.</TableCaption>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Icon URL</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {platforms.map((platform) => (
+                  <TableRow key={platform.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">{platform.platform_name}</TableCell>
+                    <TableCell>{platform.description}</TableCell>
+                    <TableCell>{platform.icon_url}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      {hasPermission('edit_plateforms') &&
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            router.push(
+                              `${ROUTES.ADMIN_PLATFORM_EDIT}/${platform.id}/edit`
+                            )
+                          }
+                        >
+                          Edit
+                        </Button>}
+                      {hasPermission('delete_plateforms') &&
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(platform.id)}
+                        >
+                          Delete
+                        </Button>
+                      }
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
