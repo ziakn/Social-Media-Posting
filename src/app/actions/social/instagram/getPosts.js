@@ -17,7 +17,7 @@ export async function fetchInstagramPosts(igUserId) {
     }
 
     const q = query(
-      collection(db, "instagramPosts"),
+      collection(db, "instagram_posts"),
       where("userId", "==", user.id),
       where("igUserId", "==", igUserId)
     );
