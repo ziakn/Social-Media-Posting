@@ -19,25 +19,27 @@ export default function InstagramAccountsDashboard() {
 
   const loadAccounts = async () => {
     setLoading(true);
-    const res = await fetchInstagramAccounts();
-    if (!res.success) {
-      toast.error(res.message || "Failed to load Instagram accounts");
-      setAccounts([]);
-    } else {
+    try {
+      const res = await fetchInstagramAccounts();
+      if (!res.success) throw new Error(res.message || "Failed to load accounts");
       setAccounts(res.accounts || []);
+    } catch (err) {
+      toast.error(err.message);
+      setAccounts([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     loadAccounts();
   }, []);
 
-  if (loading) return <Spinner />;
+  if (loading) return <Spinner className="mx-auto mt-20" />;
 
   if (accounts.length === 0)
     return (
-      <div className="container mx-auto py-10 text-center max-w-xl">
+      <div className="container mx-auto py-20 text-center max-w-xl">
         <div className="bg-neutral-100 rounded-full p-8 mb-6 inline-block shadow-lg">
           <Instagram className="h-16 w-16 text-neutral-700" />
         </div>
@@ -46,22 +48,22 @@ export default function InstagramAccountsDashboard() {
           Connect an Instagram Business account to manage posts, Reels, and analytics.
         </p>
         <Button
-          className="bg-neutral-800 hover:bg-neutral-900 text-white px-8 py-3 text-lg font-semibold shadow-lg rounded-xl"
+          className="bg-neutral-800 hover:bg-neutral-900 text-white px-8 py-3 text-lg font-semibold shadow-lg rounded-xl flex items-center justify-center gap-2 mx-auto"
           size="lg"
           onClick={() => router.push("/admin/social/connect")}
         >
-          <Instagram className="h-6 w-6 mr-2 text-white" /> Connect Account
+          <Instagram className="h-6 w-6 text-white" /> Connect Account
         </Button>
       </div>
     );
 
   return (
     <div className="container mx-auto py-10 px-4 max-w-7xl">
-      {/* --- Header --- */}
+      {/* Header */}
       <header className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-neutral-800 mb-2">Instagram Account Manager</h1>
-          <p className="text-muted-foreground mt-1 text-base">
+          <p className="text-muted-foreground text-base">
             Select an account to manage posts, Reels, and analytics.
           </p>
         </div>
@@ -74,14 +76,14 @@ export default function InstagramAccountsDashboard() {
         </Button>
       </header>
 
-      {/* --- Account Cards --- */}
+      {/* Account Cards */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {accounts.map((account) => (
           <Card
             key={account.igUserId}
             className="border border-neutral-200 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-br from-white via-neutral-50 to-neutral-100 group"
           >
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardHeader className="flex items-center justify-between pb-2">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-neutral-100 rounded-lg">
                   <Instagram className="w-6 h-6 text-neutral-700" />
@@ -95,6 +97,7 @@ export default function InstagramAccountsDashboard() {
                   </Badge>
                 </div>
               </div>
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="text-neutral-500">
@@ -102,9 +105,7 @@ export default function InstagramAccountsDashboard() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => router.push(`${ROUTES.ADMIN_INSTAGRAM_POSTS}`)}
-                  >
+                  <DropdownMenuItem onClick={() => router.push(`${ROUTES.ADMIN_INSTAGRAM_POSTS}`)}>
                     Manage Posts
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => toast.info("Insights feature coming soon!")}>
@@ -137,7 +138,7 @@ export default function InstagramAccountsDashboard() {
         ))}
       </section>
 
-      {/* --- Info Card --- */}
+      {/* Info Card */}
       <Card className="mt-12">
         <CardContent className="p-6 flex items-start gap-3">
           <div className="bg-neutral-100 p-2 rounded-lg">
