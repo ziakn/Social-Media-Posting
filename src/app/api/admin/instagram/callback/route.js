@@ -4,105 +4,88 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 
 export async function GET(request) {
-  const token = request.cookies.get("token")?.value;
-  const user = await verifyToken(token);
+  const sessionToken = request.cookies.get("token")?.value;
+  const portalUser = await verifyToken(sessionToken);
+
+  if (!portalUser) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
 
     if (!code) {
-      return NextResponse.json({ error: "Missing code" }, { status: 400 });
+      return NextResponse.json({ error: "Missing OAuth code" }, { status: 400 });
     }
 
-    // 1. Exchange code for short-lived token
-    const tokenResponse = await fetch(
-      `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${
-        process.env.FB_APP_ID
-      }&redirect_uri=${encodeURIComponent(
-        process.env.IG_REDIRECT_URI
-      )}&client_secret=${process.env.FB_APP_SECRET}&code=${code}`
+    // 1. Exchange code → USER token (temporary)
+    const tokenRes = await fetch(
+      `https://graph.facebook.com/v24.0/oauth/access_token` +
+      `?client_id=${process.env.FB_APP_ID}` +
+      `&redirect_uri=${encodeURIComponent(process.env.IG_REDIRECT_URI)}` +
+      `&client_secret=${process.env.FB_APP_SECRET}` +
+      `&code=${code}`
     );
 
-    const tokenData = await tokenResponse.json();
+    const tokenData = await tokenRes.json();
     if (tokenData.error) {
-      return NextResponse.json(
-        { error: tokenData.error.message },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: tokenData.error.message }, { status: 400 });
     }
 
-    const accessToken = tokenData.access_token;
+    const userAccessToken = tokenData.access_token;
 
-    // 2. Fetch FB user info
-    const userRes = await fetch(
-      `https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`
-    );
-    const fbUser = await userRes.json();
-
-    // 3. Get pages the user manages
+    // 2. Get pages user manages
     const pagesRes = await fetch(
-      `https://graph.facebook.com/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/v24.0/me/accounts?access_token=${userAccessToken}`
     );
     const pagesData = await pagesRes.json();
 
-    if (!user) {
-      return NextResponse.json(
-        { valid: false, message: "Invalid token" },
-        { status: 403 }
-      );
+    if (!Array.isArray(pagesData.data)) {
+      return NextResponse.json({ error: "No pages found" }, { status: 400 });
     }
 
-    const portalUserId = user.id;
-    if (!portalUserId) {
-      return NextResponse.json(
-        { error: "Missing portal user ID" },
-        { status: 400 }
-      );
-    }
+    let connectedCount = 0;
 
-    // 4. Find IG business accounts linked to pages
-    const instagramAccounts = [];
-    for (const page of pagesData.data || []) {
+    // 3. For EACH page → check Instagram
+    for (const page of pagesData.data) {
+      if (!page.access_token) continue;
+
       const igRes = await fetch(
-        `https://graph.facebook.com/v24.0/${page.id}?fields=instagram_business_account&access_token=${page.access_token}`
+        `https://graph.facebook.com/v24.0/${page.id}` +
+        `?fields=instagram_business_account,username` +
+        `&access_token=${page.access_token}`
       );
+
       const igData = await igRes.json();
 
-      if (igData.instagram_business_account?.id) {
-        instagramAccounts.push({
-          igUserId: igData.instagram_business_account.id,
-          pageId: page.id,
-          pageName: page.name,
-        });
-      }
-    }
-    const expiresIn = tokenData.expires_in || 60 * 24 * 60 * 60; // fallback 60 days
-    const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
-    // 5. Save to Firestore
-    await addDoc(collection(db, "socialAccounts"), {
-      userId: portalUserId,
-      platform: "instagram",
-      platformUserId: fbUser.id,
-      displayName: fbUser.name,
-      accessToken: accessToken,
-      refreshToken: "",
-      tokenExpiresAt,
-      accounts: instagramAccounts,
-      status: "active",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      if (!igData.instagram_business_account?.id) continue;
 
-    // 6. Redirect back to dashboard
+      // 4. Save ONE document per IG account
+      await addDoc(collection(db, "socialAccounts"), {
+        userId: portalUser.id,
+        platform: "instagram",
+        accountId: igData.instagram_business_account.id,
+        username: igData.username || null,
+        pageId: page.id,
+        pageName: page.name,
+        accessToken: page.access_token, // ✅ CORRECT TOKEN
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      connectedCount++;
+    }
+
+    // 5. Redirect back
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
     return NextResponse.redirect(
-      `${baseUrl}/admin/social/connect?status=success&platform=instagram&name=${encodeURIComponent(
-        fbUser.name
-      )}`
+      `${baseUrl}/admin/social/connect?platform=instagram&connected=${connectedCount}`
     );
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
+  } catch (err) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

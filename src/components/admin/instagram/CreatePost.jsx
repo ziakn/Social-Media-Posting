@@ -29,10 +29,12 @@ import {
   Instagram,
   Zap,
   Clock,
-  Users
+  Users,
+  ImageIcon
 } from "lucide-react";
 import { format } from "date-fns";
 import { fetchInstagramAccounts } from "@/app/actions/social/instagram/getPages";
+import GalleryModal from "@/components/gallery/GalleryModal";
 
 export default function CreatePost() {
   const [isPending, startTransition] = useTransition();
@@ -58,6 +60,10 @@ export default function CreatePost() {
   // Instagram-connected pages
   const [pages, setPages] = useState([]);
   const [selectedPage, setSelectedPage] = useState("");
+
+  // Gallery state
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryMediaType, setGalleryMediaType] = useState("image"); // 'image' or 'video'
 
   useEffect(() => {
     async function loadPages() {
@@ -216,6 +222,61 @@ export default function CreatePost() {
     setPostContent(prev => ({ ...prev, images: [] }));
   };
 
+  const handleGallerySelect = (selectedItems) => {
+    const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
+
+    if (galleryMediaType === "image") {
+      const newImages = items.map(item => ({
+        url: item.fileUrl,
+        name: item.fileName,
+        size: item.fileSize,
+        type: item.fileType,
+        file: null // No file object for gallery items
+      }));
+
+      const maxImages = postType === "carousel" ? 10 : 1;
+      const totalImages = postContent.images.length + newImages.length;
+
+      if (totalImages > maxImages) {
+        toast.error(`You can upload maximum ${maxImages} image${maxImages !== 1 ? 's' : ''} for ${postType} posts`);
+        return;
+      }
+
+      // Clear video if adding images (except for reels cover which is handled separately)
+      if (postContent.video && postType !== "reels") {
+        setPostContent(prev => ({ ...prev, video: null }));
+      }
+
+      setPostContent(prev => ({
+        ...prev,
+        images: [...prev.images, ...newImages].slice(0, maxImages)
+      }));
+      toast.success(`Added ${newImages.length} image(s) from gallery`);
+    } else if (galleryMediaType === "video") {
+      if (items.length > 0) {
+        const item = items[0];
+        setPostContent(prev => ({
+          ...prev,
+          images: [], // Clear images as most types don't allow mixed
+          video: {
+            url: item.fileUrl,
+            name: item.fileName,
+            size: item.fileSize,
+            type: item.fileType,
+            file: null
+          }
+        }));
+        toast.success("Video added from gallery");
+      }
+    }
+    setGalleryOpen(false);
+  };
+
+  const openGallery = (type) => {
+    setGalleryMediaType(type);
+    setGalleryOpen(true);
+  };
+
   const handleSubmit = async () => {
     if (!selectedPage) return toast.error("Please select an Instagram account first");
     if (!postContent.caption.trim()) return toast.error("Please add a caption for your post");
@@ -254,7 +315,10 @@ export default function CreatePost() {
         switch (postType) {
           case "feed":
             const { createInstagramImagePost } = await import("@/app/actions/social/instagram/createPost");
-            result = await createInstagramImagePost(payload);
+            result = await createInstagramImagePost({
+              ...payload,
+              image: postContent.images[0]
+            });
             break;
           case "carousel":
             const { createInstagramCarouselPost } = await import("@/app/actions/social/instagram/createPost");
@@ -434,45 +498,26 @@ export default function CreatePost() {
                   <div className="space-y-4">
                     <Label className="text-base">Upload Media</Label>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors bg-gray-50/50">
-                      <input
-                        type="file"
-                        ref={imageInputRef}
-                        accept="image/jpeg,image/png,video/mp4"
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (!file) return;
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => openGallery("image")}
+                        className="h-24 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
+                      >
+                        <ImageIcon className="h-6 w-6 text-pink-500" />
+                        <span>Select Image from Gallery</span>
+                      </Button>
 
-                          if (file.type.startsWith('image/')) {
-                            handleImageUpload(e);
-                          } else if (file.type.startsWith('video/')) {
-                            handleVideoUpload(e);
-                          }
-                        }}
-                        className="hidden"
-                      />
-
-                      <div className="space-y-4">
-                        <div className="flex justify-center">
-                          <div className="h-16 w-16 bg-white rounded-full shadow-sm flex items-center justify-center">
-                            <Image className="h-8 w-8 text-pink-500" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-2">Add Photo or Video</h3>
-                          <p className="text-gray-600 text-sm mb-4">
-                            Upload a single image or video for your feed post
-                          </p>
-                          <Button
-                            onClick={() => imageInputRef.current?.click()}
-                            className="bg-gradient-to-r from-pink-600 to-purple-600"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Select Media
-                          </Button>
-                        </div>
-                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => openGallery("video")}
+                        className="h-24 border-dashed border-2 hover:border-purple-500 hover:bg-purple-50 flex flex-col gap-2"
+                      >
+                        <Video className="h-6 w-6 text-purple-500" />
+                        <span>Select Video from Gallery</span>
+                      </Button>
                     </div>
+
 
                     {/* Media Previews */}
                     {(postContent.images.length > 0 || postContent.video) && (
@@ -540,37 +585,15 @@ export default function CreatePost() {
                       </Badge>
                     </div>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-purple-400 transition-colors bg-gray-50/50">
-                      <input
-                        type="file"
-                        ref={imageInputRef}
-                        accept="image/jpeg,image/png"
-                        multiple
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
+                    <Button
+                      variant="outline"
+                      onClick={() => openGallery("image")}
+                      className="w-full h-16 border-dashed border-2 hover:border-purple-500 hover:bg-purple-50"
+                    >
+                      <ImageIcon className="h-5 w-5 mr-2" />
+                      Select Images from Gallery
+                    </Button>
 
-                      <div className="space-y-4">
-                        <div className="flex justify-center">
-                          <div className="h-16 w-16 bg-white rounded-full shadow-sm flex items-center justify-center">
-                            <Grid3X3 className="h-8 w-8 text-purple-500" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-2">Add Carousel Photos</h3>
-                          <p className="text-gray-600 text-sm mb-4">
-                            Upload 2-10 images for your carousel post
-                          </p>
-                          <Button
-                            onClick={() => imageInputRef.current?.click()}
-                            className="bg-gradient-to-r from-purple-600 to-blue-600"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Select Images
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
 
                     {/* Carousel Previews */}
                     {postContent.images.length > 0 && (
@@ -603,7 +626,7 @@ export default function CreatePost() {
                           {postContent.images.length < 10 && (
                             <div
                               className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-purple-400 hover:bg-purple-50 transition-colors"
-                              onClick={() => imageInputRef.current?.click()}
+                              onClick={() => openGallery("image")}
                             >
                               <Plus className="h-6 w-6 text-gray-400 mb-2" />
                               <span className="text-sm text-gray-600">Add More</span>
@@ -638,36 +661,15 @@ export default function CreatePost() {
                   <div className="space-y-4">
                     <Label className="text-base">Upload Reel Video</Label>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors bg-gray-50/50">
-                      <input
-                        type="file"
-                        ref={videoInputRef}
-                        accept="video/mp4"
-                        onChange={handleVideoUpload}
-                        className="hidden"
-                      />
+                    <Button
+                      variant="outline"
+                      onClick={() => openGallery("video")}
+                      className="w-full h-16 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50"
+                    >
+                      <Video className="h-5 w-5 mr-2" />
+                      Select Video from Gallery
+                    </Button>
 
-                      <div className="space-y-4">
-                        <div className="flex justify-center">
-                          <div className="h-16 w-16 bg-white rounded-full shadow-sm flex items-center justify-center">
-                            <Music className="h-8 w-8 text-pink-500" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-2">Add Reel Video</h3>
-                          <p className="text-gray-600 text-sm mb-4">
-                            Upload a vertical video for your reel (9:16 aspect ratio recommended)
-                          </p>
-                          <Button
-                            onClick={() => videoInputRef.current?.click()}
-                            className="bg-gradient-to-r from-purple-600 to-pink-600"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Select Video
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
 
                     {/* Audio Upload for Reels */}
                     <div className="space-y-3">
@@ -812,45 +814,26 @@ export default function CreatePost() {
                   <div className="space-y-4">
                     <Label className="text-base">Upload Story Media</Label>
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors bg-gray-50/50">
-                      <input
-                        type="file"
-                        ref={imageInputRef}
-                        accept="image/jpeg,image/png,video/mp4"
-                        onChange={(e) => {
-                          const file = e.target.files[0];
-                          if (!file) return;
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => openGallery("image")}
+                        className="h-24 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
+                      >
+                        <ImageIcon className="h-6 w-6 text-pink-500" />
+                        <span>Select Image from Gallery</span>
+                      </Button>
 
-                          if (file.type.startsWith('image/')) {
-                            handleImageUpload(e);
-                          } else if (file.type.startsWith('video/')) {
-                            handleVideoUpload(e);
-                          }
-                        }}
-                        className="hidden"
-                      />
-
-                      <div className="space-y-4">
-                        <div className="flex justify-center">
-                          <div className="h-16 w-16 bg-white rounded-full shadow-sm flex items-center justify-center">
-                            <Play className="h-8 w-8 text-rose-500" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900 mb-2">Add Story Media</h3>
-                          <p className="text-gray-600 text-sm mb-4">
-                            Upload an image or video for your story
-                          </p>
-                          <Button
-                            onClick={() => imageInputRef.current?.click()}
-                            className="bg-gradient-to-r from-pink-600 to-rose-600"
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Select Media
-                          </Button>
-                        </div>
-                      </div>
+                      <Button
+                        variant="outline"
+                        onClick={() => openGallery("video")}
+                        className="h-24 border-dashed border-2 hover:border-rose-500 hover:bg-rose-50 flex flex-col gap-2"
+                      >
+                        <Video className="h-6 w-6 text-rose-500" />
+                        <span>Select Video from Gallery</span>
+                      </Button>
                     </div>
+
 
                     {/* Story Preview */}
                     {(postContent.images.length > 0 || postContent.video) && (
@@ -974,6 +957,15 @@ export default function CreatePost() {
           </Button>
         </div>
       </div>
+
+      <GalleryModal
+        open={galleryOpen}
+        onOpenChange={setGalleryOpen}
+        onSelect={handleGallerySelect}
+        allowMultiple={postType === "carousel"}
+        allowedTypes={[galleryMediaType]}
+        title={galleryMediaType === "image" ? "Select Images" : "Select Video"}
+      />
     </div>
   );
 }

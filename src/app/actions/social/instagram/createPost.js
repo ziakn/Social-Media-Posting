@@ -4,27 +4,29 @@
 
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { doc, setDoc, serverTimestamp, collection, addDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, collection, addDoc, getDoc } from "firebase/firestore";
+import { fetchInstagramAccounts } from "./getPages";
 
 /**
  * Get Instagram Business Account ID and access token
  */
 async function getInstagramAccount(pageId) {
   try {
-    // Instagram requires a linked Facebook Page first
-    const pageDoc = await getDoc(doc(db, "facebook_pages", pageId));
-    if (!pageDoc.exists()) {
-      throw new Error("Linked Facebook page not found");
+    const result = await fetchInstagramAccounts();
+
+    if (!result.success) {
+      throw new Error(result.message || "Failed to fetch Instagram accounts");
     }
-    
-    const pageData = pageDoc.data();
-    if (!pageData.instagram_business_account) {
-      throw new Error("No Instagram Business Account linked to this page");
+
+    const account = result.accounts.find(acc => acc.igUserId === pageId);
+
+    if (!account) {
+      throw new Error("Instagram account not found or not connected");
     }
-    
+
     return {
-      instagramId: pageData.instagram_business_account.id,
-      accessToken: pageData.access_token
+      instagramId: account.igUserId,
+      accessToken: account.accessToken
     };
   } catch (error) {
     throw new Error(`Failed to get Instagram account: ${error.message}`);
@@ -51,7 +53,7 @@ async function uploadToFirebaseForInstagram(file, folder = "instagram") {
         throw new Error("Video must be smaller than 100MB");
       }
     }
-    
+
     const storageRef = ref(storage, `${folder}/${Date.now()}-${file.name}`);
     await uploadBytes(storageRef, file);
     return await getDownloadURL(storageRef);
@@ -65,13 +67,13 @@ async function uploadToFirebaseForInstagram(file, folder = "instagram") {
  */
 async function makeInstagramRequest(endpoint, formData, accessToken) {
   try {
-    const response = await fetch(`https://graph.facebook.com/v18.0${endpoint}`, {
+    const response = await fetch(`https://graph.facebook.com/v24.0${endpoint}`, {
       method: "POST",
       body: formData,
     });
 
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.error?.message || `Instagram API error: ${response.status}`);
     }
@@ -88,21 +90,21 @@ async function makeInstagramRequest(endpoint, formData, accessToken) {
 async function createMediaContainer(instagramId, mediaData, accessToken, isCarousel = false) {
   try {
     const formData = new FormData();
-    
+
     if (mediaData.image_url) {
       formData.append("image_url", mediaData.image_url);
     } else if (mediaData.video_url) {
       formData.append("video_url", mediaData.video_url);
       formData.append("media_type", "VIDEO");
     }
-    
+
     formData.append("caption", mediaData.caption || "");
-    
+
     if (isCarousel && mediaData.children) {
       formData.append("children", mediaData.children.join(','));
       formData.append("media_type", "CAROUSEL");
     }
-    
+
     // Check if scheduled
     if (mediaData.scheduled_publish_time) {
       formData.append("published", "false");
@@ -112,8 +114,8 @@ async function createMediaContainer(instagramId, mediaData, accessToken, isCarou
     }
 
     const containerResponse = await makeInstagramRequest(
-      `/${instagramId}/media`, 
-      formData, 
+      `/${instagramId}/media`,
+      formData,
       accessToken
     );
 
@@ -132,8 +134,8 @@ async function publishMediaContainer(instagramId, containerId, accessToken) {
     formData.append("creation_id", containerId);
 
     const publishResponse = await makeInstagramRequest(
-      `/${instagramId}/media_publish`, 
-      formData, 
+      `/${instagramId}/media_publish`,
+      formData,
       accessToken
     );
 
@@ -149,9 +151,9 @@ async function publishMediaContainer(instagramId, containerId, accessToken) {
 async function checkMediaStatus(instagramId, containerId, accessToken) {
   try {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
+      `https://graph.facebook.com/v24.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
     );
-    
+
     const data = await response.json();
     return data;
   } catch (error) {
@@ -162,20 +164,25 @@ async function checkMediaStatus(instagramId, containerId, accessToken) {
 /**
  * Create Single Image Post for Instagram
  */
-export async function createInstagramImagePost({ 
-  pageId, 
-  image, 
-  caption, 
-  scheduling 
+export async function createInstagramImagePost({
+  pageId,
+  image,
+  caption,
+  scheduling
 }) {
   try {
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-    // Upload image to Firebase
-    const imageUrl = await uploadToFirebaseForInstagram(image.file, "instagram/images");
+    // Upload image to Firebase if it's a file, otherwise use existing URL
+    let imageUrl;
+    if (image.file) {
+      imageUrl = await uploadToFirebaseForInstagram(image.file, "instagram/images");
+    } else {
+      imageUrl = image.url;
+    }
 
     // Prepare scheduling
-    const scheduledTime = scheduling?.schedule 
+    const scheduledTime = scheduling?.schedule
       ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
       : null;
 
@@ -187,15 +194,15 @@ export async function createInstagramImagePost({
     }, accessToken);
 
     let publishResult = null;
-    
+
     // Step 2: Publish immediately if not scheduled
     if (!scheduling?.schedule) {
       // Wait a moment for container processing
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Check container status before publishing
       const status = await checkMediaStatus(instagramId, containerId, accessToken);
-      
+
       if (status.status_code === 'FINISHED') {
         publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
       } else {
@@ -230,14 +237,14 @@ export async function createInstagramImagePost({
       }
     });
 
-    return { 
-      success: true, 
-      data: { 
+    return {
+      success: true,
+      data: {
         containerId,
         instagramId: publishResult?.id,
         firestoreId,
         scheduled: !!scheduling?.schedule
-      } 
+      }
     };
 
   } catch (error) {
@@ -249,11 +256,11 @@ export async function createInstagramImagePost({
 /**
  * Create Carousel Post for Instagram (Multiple Images)
  */
-export async function createInstagramCarouselPost({ 
-  pageId, 
-  images, 
-  caption, 
-  scheduling 
+export async function createInstagramCarouselPost({
+  pageId,
+  images,
+  caption,
+  scheduling
 }) {
   try {
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
@@ -264,24 +271,29 @@ export async function createInstagramCarouselPost({
 
     // Upload all images to Firebase and create individual containers
     const childContainers = [];
-    
+
     for (const image of images) {
-      const imageUrl = await uploadToFirebaseForInstagram(image.file, "instagram/carousel");
-      
+      let imageUrl;
+      if (image.file) {
+        imageUrl = await uploadToFirebaseForInstagram(image.file, "instagram/carousel");
+      } else {
+        imageUrl = image.url;
+      }
+
       // Create container for each image (without caption - only main container gets caption)
       const childContainerId = await createMediaContainer(instagramId, {
         image_url: imageUrl,
         caption: "" // No caption for child items
       }, accessToken);
-      
+
       childContainers.push(childContainerId);
-      
+
       // Wait between requests to avoid rate limiting
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     // Prepare scheduling
-    const scheduledTime = scheduling?.schedule 
+    const scheduledTime = scheduling?.schedule
       ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
       : null;
 
@@ -293,13 +305,13 @@ export async function createInstagramCarouselPost({
     }, accessToken, true);
 
     let publishResult = null;
-    
+
     // Publish immediately if not scheduled
     if (!scheduling?.schedule) {
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       const status = await checkMediaStatus(instagramId, carouselContainerId, accessToken);
-      
+
       if (status.status_code === 'FINISHED') {
         publishResult = await publishMediaContainer(instagramId, carouselContainerId, accessToken);
       } else {
@@ -316,7 +328,7 @@ export async function createInstagramCarouselPost({
       content: {
         caption,
         images: await Promise.all(images.map(async (image, index) => ({
-          url: await uploadToFirebaseForInstagram(image.file, "instagram/carousel"),
+          url: image.file ? await uploadToFirebaseForInstagram(image.file, "instagram/carousel") : image.url,
           name: image.name,
           type: image.type,
           size: image.size,
@@ -336,15 +348,15 @@ export async function createInstagramCarouselPost({
       }
     });
 
-    return { 
-      success: true, 
-      data: { 
+    return {
+      success: true,
+      data: {
         containerId: carouselContainerId,
         instagramId: publishResult?.id,
         firestoreId,
         scheduled: !!scheduling?.schedule,
         imageCount: images.length
-      } 
+      }
     };
 
   } catch (error) {
@@ -356,20 +368,25 @@ export async function createInstagramCarouselPost({
 /**
  * Create Video Post for Instagram
  */
-export async function createInstagramVideoPost({ 
-  pageId, 
-  video, 
-  caption, 
-  scheduling 
+export async function createInstagramVideoPost({
+  pageId,
+  video,
+  caption,
+  scheduling
 }) {
   try {
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-    // Upload video to Firebase
-    const videoUrl = await uploadToFirebaseForInstagram(video.file, "instagram/videos");
+    // Upload video to Firebase if it's a file, otherwise use existing URL
+    let videoUrl;
+    if (video.file) {
+      videoUrl = await uploadToFirebaseForInstagram(video.file, "instagram/videos");
+    } else {
+      videoUrl = video.url;
+    }
 
     // Prepare scheduling
-    const scheduledTime = scheduling?.schedule 
+    const scheduledTime = scheduling?.schedule
       ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
       : null;
 
@@ -382,28 +399,28 @@ export async function createInstagramVideoPost({
     }, accessToken);
 
     let publishResult = null;
-    
+
     // Videos take longer to process - wait more time
     if (!scheduling?.schedule) {
       await new Promise(resolve => setTimeout(resolve, 10000)); // 10 seconds for video processing
-      
+
       let status;
       let attempts = 0;
-      
+
       // Poll for video processing status
       do {
         status = await checkMediaStatus(instagramId, containerId, accessToken);
         attempts++;
-        
+
         if (status.status_code === 'FINISHED') {
           break;
         } else if (status.status_code === 'ERROR') {
           throw new Error(`Video processing failed: ${status.status}`);
         }
-        
+
         await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds between checks
       } while (attempts < 12); // Max 1 minute wait
-      
+
       if (status.status_code === 'FINISHED') {
         publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
       } else {
@@ -440,14 +457,14 @@ export async function createInstagramVideoPost({
       }
     });
 
-    return { 
-      success: true, 
-      data: { 
+    return {
+      success: true,
+      data: {
         containerId,
         instagramId: publishResult?.id,
         firestoreId,
         scheduled: !!scheduling?.schedule
-      } 
+      }
     };
 
   } catch (error) {
@@ -459,22 +476,27 @@ export async function createInstagramVideoPost({
 /**
  * Create Story Post for Instagram
  */
-export async function createInstagramStory({ 
-  pageId, 
-  media, 
-  caption 
+export async function createInstagramStory({
+  pageId,
+  media,
+  caption
 }) {
   try {
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // Stories cannot be scheduled - they publish immediately
-    const mediaUrl = await uploadToFirebaseForInstagram(
-      media.file, 
-      media.type.startsWith('image/') ? "instagram/stories/images" : "instagram/stories/videos"
-    );
+    let mediaUrl;
+    if (media.file) {
+      mediaUrl = await uploadToFirebaseForInstagram(
+        media.file,
+        media.type.startsWith('image/') ? "instagram/stories/images" : "instagram/stories/videos"
+      );
+    } else {
+      mediaUrl = media.url;
+    }
 
     // Create story container
-    const containerData = media.type.startsWith('image/') 
+    const containerData = media.type.startsWith('image/')
       ? { image_url: mediaUrl }
       : { video_url: mediaUrl, media_type: "VIDEO" };
 
@@ -486,9 +508,9 @@ export async function createInstagramStory({
 
     // Wait for processing
     await new Promise(resolve => setTimeout(resolve, 3000));
-    
+
     const status = await checkMediaStatus(instagramId, containerId, accessToken);
-    
+
     if (status.status_code === 'FINISHED') {
       const publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
 
@@ -518,13 +540,13 @@ export async function createInstagramStory({
         }
       });
 
-      return { 
-        success: true, 
-        data: { 
+      return {
+        success: true,
+        data: {
           containerId,
           instagramId: publishResult.id,
           firestoreId
-        } 
+        }
       };
     } else {
       throw new Error(`Story not ready for publishing. Status: ${status.status}`);
@@ -564,7 +586,7 @@ export async function getInstagramInsights(postId) {
     }
 
     const postData = postDoc.data();
-    
+
     if (!postData.instagramPostId) {
       throw new Error("No Instagram post ID available");
     }
@@ -572,13 +594,22 @@ export async function getInstagramInsights(postId) {
     const { accessToken } = await getInstagramAccount(postData.pageId);
 
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/${postData.instagramPostId}/insights?metric=impressions,reach,engagement,saved&access_token=${accessToken}`
+      `https://graph.facebook.com/v24.0/${postData.instagramPostId}/insights?metric=impressions,reach,engagement,saved&access_token=${accessToken}`
     );
 
     const insights = await response.json();
-    
+
     return { success: true, data: insights };
   } catch (error) {
     return { success: false, error: error.message };
   }
+}
+
+/**
+ * Create Reel Post for Instagram
+ */
+export async function createInstagramReel(params) {
+  // Reels are essentially video posts with specific requirements
+  // The createInstagramVideoPost function handles the video container creation which is compatible with Reels
+  return createInstagramVideoPost(params);
 }

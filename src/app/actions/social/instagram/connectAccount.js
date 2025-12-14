@@ -25,17 +25,26 @@ export async function checkInstagramConnection() {
 
     const snapshot = await getDocs(q);
 
-    let displayName = "";
-    let tokenExpiresAt = null;
+    const accounts = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      accounts.push({
+        displayName: data.pageName || data.username || data.displayName || "Instagram Account",
+        username: data.username,
+        tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null
+      });
+    });
 
-    if (!snapshot.empty) {
-      const data = snapshot.docs[0].data();
-      displayName = data.displayName || "";
-      tokenExpiresAt = data.tokenExpiresAt?.toDate?.() || null;
-    }
+    const isConnected = accounts.length > 0;
 
-    const isConnected = !snapshot.empty;
-    return { connected: isConnected, displayName, tokenExpiresAt };
+    return {
+      connected: isConnected,
+      count: accounts.length,
+      accounts: accounts,
+      // Fallback for UI components expecting single values
+      displayName: accounts[0]?.displayName || "",
+      tokenExpiresAt: accounts[0]?.tokenExpiresAt || null
+    };
   } catch (err) {
     console.error("Error checking Instagram connection:", err);
     return { connected: false, message: err.message };

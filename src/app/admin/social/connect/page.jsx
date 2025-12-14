@@ -120,7 +120,13 @@ export default function SocialConnectPage() {
           try {
             const result = await platform.checkConnection();
             conn[platform.key] = result.connected
-              ? { connected: true, displayName: result.displayName, tokenExpiresAt: result.tokenExpiresAt }
+              ? {
+                connected: true,
+                displayName: result.displayName,
+                tokenExpiresAt: result.tokenExpiresAt,
+                count: result.count,
+                accounts: result.accounts
+              }
               : false;
           } catch {
             conn[platform.key] = false;
@@ -267,7 +273,19 @@ export default function SocialConnectPage() {
               <CardFooter>
                 {isConnected ? (
                   <div className="text-xs text-muted-foreground">
-                    {status.displayName && <div>Name: {status.displayName}</div>}
+                    {status.count > 1 ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium">{status.count} Accounts Connected:</span>
+                        <ul className="list-disc list-inside pl-1">
+                          {status.accounts.slice(0, 3).map((acc, i) => (
+                            <li key={i} className="truncate">{acc.displayName}</li>
+                          ))}
+                          {status.count > 3 && <li>+ {status.count - 3} more</li>}
+                        </ul>
+                      </div>
+                    ) : (
+                      status.displayName && <div>Name: {status.displayName}</div>
+                    )}
                   </div>
                 ) : (
                   <Button className="w-full" size="sm" onClick={() => handleConnect(item.key)}>

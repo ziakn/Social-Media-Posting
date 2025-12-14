@@ -29,30 +29,34 @@ export async function fetchInstagramAccounts() {
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
 
-      // Each record might have multiple pages/accounts
-      if (data.pages?.length) {
-        data.pages.forEach((p) => {
-          accounts.push({
-            igUserId: p.pageId, // unique key for this Instagram account
-            displayName: p.pageName || data.displayName || "Instagram Account",
-            username: p.username || "", // optional if saved in Firestore
-            accessToken: p.pageAccessToken || data.accessToken,
-            tokenExpiresAt: data.tokenExpiresAt?.toMillis
-              ? new Date(data.tokenExpiresAt.toMillis())
-              : data.tokenExpiresAt || null,
-          });
-        });
-      } else {
-        // If no separate pages, add the account itself
+      // New structure: One document per account (accountId is the IG Business ID)
+      if (data.accountId) {
         accounts.push({
-          igUserId: data.platformUserId,
-          displayName: data.displayName || "Instagram Account",
+          igUserId: data.accountId,
+          displayName: data.pageName || data.username || "Instagram Account",
           username: data.username || "",
           accessToken: data.accessToken,
           tokenExpiresAt: data.tokenExpiresAt?.toMillis
             ? new Date(data.tokenExpiresAt.toMillis())
             : data.tokenExpiresAt || null,
         });
+      }
+      // Legacy structure: Nested accounts/pages array
+      else {
+        const linkedAccounts = data.accounts || data.pages || [];
+        if (linkedAccounts.length > 0) {
+          linkedAccounts.forEach((p) => {
+            accounts.push({
+              igUserId: p.igUserId || p.pageId,
+              displayName: p.pageName || data.displayName || "Instagram Account",
+              username: p.username || "",
+              accessToken: p.pageAccessToken || data.accessToken,
+              tokenExpiresAt: data.tokenExpiresAt?.toMillis
+                ? new Date(data.tokenExpiresAt.toMillis())
+                : data.tokenExpiresAt || null,
+            });
+          });
+        }
       }
     });
 
