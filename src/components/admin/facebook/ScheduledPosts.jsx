@@ -64,9 +64,12 @@ import {
   RefreshCw,
   X,
   Layers,
+  Facebook,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getScheduledPosts, togglePostStatus, deleteScheduledPost, reschedulePost, updateScheduledPost } from "@/app/actions/social/facebook/getScheduledPosts";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const postTypeConfig = {
   text: { icon: FileText, color: "bg-blue-100 text-blue-800 border-blue-200", label: "Text" },
@@ -97,6 +100,7 @@ export default function ScheduledPosts() {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
   const [rescheduleDialog, setRescheduleDialog] = useState({ open: false, postId: null, newDate: "", newTime: "" });
   const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
+  const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 });
 
   // Load scheduled posts
   const loadPosts = async (reset = false, lastDocId = null) => {
@@ -423,11 +427,7 @@ export default function ScheduledPosts() {
               >
                 {/* Full Card Media/Background */}
                 <div className="absolute inset-0 z-0 bg-gray-50 cursor-pointer" onClick={() => {
-                  setEditDialog({
-                    open: true,
-                    postId: post.id,
-                    message: post.message || post.caption || ""
-                  });
+                  setViewDialog({ open: true, post, currentSlide: 0 });
                 }}>
                   {post.mediaUrls?.[0]?.url ? (
                     <>
@@ -564,6 +564,166 @@ export default function ScheduledPosts() {
           )}
         </>
       )}
+
+      {/* View Post Dialog (Professional Split View) */}
+      <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-[1100px] p-0 overflow-hidden bg-white" showCloseButton={false}>
+          <div className="flex flex-col md:flex-row h-[85vh] md:h-[650px]">
+            {/* Media Section (Left - 65%) */}
+            <div className="w-full md:w-[65%] bg-black flex items-center justify-center relative bg-gray-950">
+              {/* Media Renderer */}
+              {(() => {
+                const post = viewDialog.post;
+                if (!post) return null;
+
+                const media = post.mediaUrls || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.postType }] : []);
+                const currentMedia = media[viewDialog.currentSlide || 0];
+
+                if (!currentMedia) {
+                  // Fallback for text-only
+                  return (
+                    <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500">
+                      <FileText className="h-16 w-16 mb-4 opacity-50" />
+                      <p>No media available</p>
+                    </div>
+                  );
+                }
+
+                const isVideo = currentMedia.type?.includes('video') || post.postType === 'video';
+
+                return (
+                  <div className="relative w-full h-full flex items-center justify-center group">
+                    {isVideo ? (
+                      <video
+                        src={currentMedia.url}
+                        controls
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <img
+                        src={currentMedia.url}
+                        alt={`Slide ${viewDialog.currentSlide + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+
+                    {/* Navigation Controls (if multiple) */}
+                    {media.length > 1 && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewDialog(prev => ({
+                              ...prev,
+                              currentSlide: Math.max(0, (prev.currentSlide || 0) - 1)
+                            }));
+                          }}
+                          disabled={(viewDialog.currentSlide || 0) === 0}
+                        >
+                          <ChevronRight className="h-8 w-8 rotate-180 bg-white/20 rounded-full p-1" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewDialog(prev => ({
+                              ...prev,
+                              currentSlide: Math.min(media.length - 1, (prev.currentSlide || 0) + 1)
+                            }));
+                          }}
+                          disabled={(viewDialog.currentSlide || 0) === media.length - 1}
+                        >
+                          <ChevronRight className="h-8 w-8 bg-white/20 rounded-full p-1" />
+                        </Button>
+
+                        {/* Slide Counter */}
+                        <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded-md backdrop-blur-md">
+                          {(viewDialog.currentSlide || 0) + 1} / {media.length}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Details Section (Right - 35%) */}
+            <div className="w-full md:w-[35%] flex flex-col h-full bg-white border-l border-gray-100">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full border border-gray-200 p-0.5">
+                    <Avatar className="h-full w-full">
+                      <AvatarImage src={viewDialog.post?.pageProfilePicture} />
+                      <AvatarFallback>{viewDialog.post?.pageName?.[0]}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">{viewDialog.post?.pageName || "Facebook Page"}</div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-amber-600" />
+                      <span className="font-medium text-amber-600">Scheduled for {viewDialog.post && formatDate(viewDialog.post.scheduledAt)}</span>
+                    </div>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setViewDialog({ open: false, post: null })}>
+                  <X className="h-5 w-5 text-gray-500" />
+                </Button>
+              </div>
+
+              {/* Caption Area (Scrollable) */}
+              <div className="flex-1 p-5 overflow-y-auto">
+                <p className="text-[15px] text-gray-800 whitespace-pre-wrap leading-relaxed">
+                  {viewDialog.post?.message || viewDialog.post?.caption || "No caption"}
+                </p>
+              </div>
+
+              {/* Actions (Fixed Bottom) */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50 space-y-3 shrink-0">
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="flex-1 bg-amber-600 hover:bg-amber-700 text-white"
+                    onClick={() => {
+                      setViewDialog({ open: false, post: null });
+                      setRescheduleDialog({
+                        open: true,
+                        postId: viewDialog.post?.id,
+                        newDate: viewDialog.post?.scheduledAt ? format(new Date(viewDialog.post.scheduledAt), "yyyy-MM-dd") : "",
+                        newTime: viewDialog.post?.scheduledAt ? format(new Date(viewDialog.post.scheduledAt), "HH:mm") : "12:00",
+                      });
+                    }}
+                  >
+                    <Calendar className="h-3 w-3 mr-2" />
+                    Reschedule
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setViewDialog({ open: false, post: null });
+                      setEditDialog({
+                        open: true,
+                        postId: viewDialog.post?.id,
+                        message: viewDialog.post?.message || viewDialog.post?.caption || ""
+                      });
+                    }}
+                  >
+                    <Edit3 className="h-3 w-3 mr-2" />
+                    Edit Content
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>

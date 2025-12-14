@@ -132,6 +132,7 @@ export default function PublishedPosts() {
   // Dialog states
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
   const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
+  const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 }); // Added viewDialog
   const [scheduleDialog, setScheduleDialog] = useState({ open: false, postId: null, date: new Date(), time: "12:00" });
   const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
 
@@ -258,8 +259,7 @@ export default function PublishedPosts() {
   };
 
   const handlePostClick = (post) => {
-    setSelectedPost(post);
-    setDialogOpen(true);
+    setViewDialog({ open: true, post, currentSlide: 0 });
   };
 
   // Post actions
@@ -843,172 +843,158 @@ export default function PublishedPosts() {
         )
       }
 
-      {/* Post Detail Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          {selectedPost && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={selectedPost.pageProfilePicture} />
-                    <AvatarFallback>{selectedPost.pageName?.[0]}</AvatarFallback>
-                  </Avatar>
-                  Post Details
-                </DialogTitle>
-                <DialogDescription>
-                  {selectedPost.status === 'scheduled'
-                    ? `Scheduled for ${formatDate(selectedPost.scheduledAt)}`
-                    : `Posted ${formatDate(selectedPost.createdAt)}`
-                  }
-                </DialogDescription>
-              </DialogHeader>
+      {/* Post Detail Dialog (Professional Split View) */}
+      <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-[1100px] p-0 overflow-hidden bg-white" showCloseButton={false}>
+          <div className="flex flex-col md:flex-row h-[85vh] md:h-[650px]">
+            {/* Media Section (Left - 65%) */}
+            <div className="w-full md:w-[65%] bg-black flex items-center justify-center relative bg-gray-950">
+              {/* Media Renderer */}
+              {(() => {
+                const post = viewDialog.post;
+                if (!post) return null;
 
-              <div className="space-y-6">
-                {/* Post Content */}
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div>
-                        <div className="font-semibold">{selectedPost.pageName}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {selectedPost.pageCategory || 'Business Page'} • {formatNumber(selectedPost.pageFans || 0)} fans
-                        </div>
-                      </div>
+                const media = post.mediaUrls || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.postType }] : []);
+                const currentMedia = media[viewDialog.currentSlide || 0];
+
+                if (!currentMedia) {
+                  // Fallback for text-only
+                  return (
+                    <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500">
+                      <FileText className="h-16 w-16 mb-4 opacity-50" />
+                      <p>No media available</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <PostTypeBadge type={selectedPost.postType} />
-                      <StatusBadge status={selectedPost.status} />
+                  );
+                }
+
+                const isVideo = currentMedia.type?.includes('video') || post.postType === 'video';
+
+                return (
+                  <div className="relative w-full h-full flex items-center justify-center group">
+                    {isVideo ? (
+                      <video
+                        src={currentMedia.url}
+                        controls
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <img
+                        src={currentMedia.url}
+                        alt={`Slide ${viewDialog.currentSlide + 1}`}
+                        className="w-full h-full object-contain"
+                      />
+                    )}
+
+                    {/* Navigation Controls (if multiple) */}
+                    {media.length > 1 && (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewDialog(prev => ({
+                              ...prev,
+                              currentSlide: Math.max(0, (prev.currentSlide || 0) - 1)
+                            }));
+                          }}
+                          disabled={(viewDialog.currentSlide || 0) === 0}
+                        >
+                          <ChevronRight className="h-8 w-8 rotate-180" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewDialog(prev => ({
+                              ...prev,
+                              currentSlide: Math.min(media.length - 1, (prev.currentSlide || 0) + 1)
+                            }));
+                          }}
+                          disabled={(viewDialog.currentSlide || 0) === media.length - 1}
+                        >
+                          <ChevronRight className="h-8 w-8" />
+                        </Button>
+
+                        {/* Slide Counter */}
+                        <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded-md backdrop-blur-md">
+                          {(viewDialog.currentSlide || 0) + 1} / {media.length}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Details Section (Right - 35%) */}
+            <div className="w-full md:w-[35%] flex flex-col h-full bg-white border-l border-gray-100">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full border border-gray-200 p-0.5">
+                    <Avatar className="h-full w-full">
+                      <AvatarImage src={viewDialog.post?.pageProfilePicture} />
+                      <AvatarFallback>{viewDialog.post?.pageName?.[0]}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">{viewDialog.post?.pageName || "Facebook Page"}</div>
+                    <div className="text-xs text-gray-500 flex items-center gap-1">
+                      {viewDialog.post && formatDate(viewDialog.post.createdAt || viewDialog.post.scheduledAt)}
+                      <span>•</span>
+                      <Facebook className="h-3 w-3 text-blue-600" />
                     </div>
                   </div>
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setViewDialog({ open: false, post: null })}>
+                  <X className="h-5 w-5 text-gray-500" />
+                </Button>
+              </div>
 
-                  <p className="text-base">{selectedPost.message || selectedPost.caption}</p>
+              {/* Caption Area (Scrollable) */}
+              <div className="flex-1 p-5 overflow-y-auto">
+                <p className="text-[15px] text-gray-800 whitespace-pre-wrap leading-relaxed">
+                  {viewDialog.post?.message || viewDialog.post?.caption || "No caption"}
+                </p>
+              </div>
 
-                  {selectedPost.mediaUrls && selectedPost.mediaUrls.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {selectedPost.mediaUrls.slice(0, 6).map((media, index) => (
-                          <div key={index} className="aspect-square rounded-lg overflow-hidden border">
-                            <img
-                              src={media.url}
-                              alt={`Media ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      {selectedPost.mediaUrls.length > 6 && (
-                        <div className="text-sm text-muted-foreground">
-                          +{selectedPost.mediaUrls.length - 6} more media files
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {/* Metrics & Actions (Fixed Bottom) */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50 space-y-4 shrink-0">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+                    <div className="text-lg font-bold text-blue-600">{formatNumber(viewDialog.post?.metrics?.reach || 0)}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Reach</div>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+                    <div className="text-lg font-bold text-red-500">{formatNumber(viewDialog.post?.metrics?.likes || 0)}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Likes</div>
+                  </div>
+                  <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
+                    <div className="text-lg font-bold text-green-500">{formatNumber(viewDialog.post?.metrics?.comments || 0)}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Comments</div>
+                  </div>
                 </div>
 
-                {/* Metrics Grid */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-blue-600">
-                        {formatNumber(selectedPost.metrics?.reach || 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Eye className="h-3 w-3" /> Reach
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-red-600">
-                        {formatNumber(selectedPost.metrics?.likes || 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Heart className="h-3 w-3" /> Likes
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-green-600">
-                        {formatNumber(selectedPost.metrics?.comments || 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3" /> Comments
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {formatNumber(selectedPost.metrics?.shares || 0)}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Share2 className="h-3 w-3" /> Shares
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Engagement Rate */}
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <div className="font-semibold">Engagement Rate</div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatNumber((selectedPost.metrics?.likes || 0) + (selectedPost.metrics?.comments || 0) + (selectedPost.metrics?.shares || 0))} engagements
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold text-primary">
-                        {getEngagementRate(selectedPost)}%
-                      </div>
-                    </div>
-                    <Progress
-                      value={Math.min(parseFloat(getEngagementRate(selectedPost)) * 10, 100)}
-                      className="h-2"
-                    />
-                  </CardContent>
-                </Card>
-
-                {/* Actions */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button variant="outline" className="flex-1" asChild>
-                    <a
-                      href={`https://facebook.com/${selectedPost.facebookPostId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      disabled={!selectedPost.facebookPostId}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    asChild
+                  >
+                    <a href={`https://facebook.com/${viewDialog.post?.facebookPostId}`} target="_blank" rel="noreferrer">
+                      <ExternalLink className="h-3 w-3 mr-2" />
                       View on Facebook
                     </a>
                   </Button>
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => handleDuplicate(selectedPost.id)}
-                    >
-                      <Copy className="h-4 w-4 mr-2" />
-                      Duplicate
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setScheduleDialog({
-                        open: true,
-                        postId: selectedPost.id,
-                        date: new Date(selectedPost.scheduledAt || selectedPost.createdAt || new Date()),
-                        time: format(new Date(selectedPost.scheduledAt || selectedPost.createdAt || new Date()), "HH:mm")
-                      })}
-                    >
-                      <CalendarDays className="h-4 w-4 mr-2" />
-                      Reschedule
-                    </Button>
-                  </div>
                 </div>
               </div>
-            </>
-          )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

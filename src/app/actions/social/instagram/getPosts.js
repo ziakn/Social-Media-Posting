@@ -343,3 +343,123 @@ function getMediaUrl(data) {
   }
   return null;
 }
+
+/**
+ * Get scheduled Instagram posts
+ */
+export async function getScheduledInstagramPosts({
+  pageId,
+  filters = {},
+  pagination = {},
+  sorting = {}
+}) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    const user = await verifyToken(token);
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Invalid or expired token",
+        posts: [],
+        hasMore: false
+      };
+    }
+
+    // Build base query
+    let constraints = [
+      where("platform", "==", "instagram"),
+      where("status", "==", "scheduled")
+    ];
+
+    // Add pageId filter if provided
+    if (pageId) {
+      constraints.push(where("pageId", "==", pageId));
+    }
+
+    // Add post type filter
+    if (filters.postType && filters.postType !== "all") {
+      constraints.push(where("postType", "==", filters.postType));
+    }
+
+    // Determine sort field and order
+    const sortOrder = sorting.sortOrder || "asc"; // Default to ASC for scheduled (soonest first)
+
+    // Sort by scheduledAt
+    constraints.push(orderBy("scheduledAt", sortOrder));
+
+    // Add pagination
+    const pageSize = pagination.pageSize || 12;
+
+    // Fetch all matching posts
+    const q = query(collection(db, "instagram_posts"), ...constraints);
+    const snapshot = await getDocs(q);
+
+    // Process all results
+    let allPosts = [];
+
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+
+      // Apply client-side search filter if provided
+      if (filters.searchQuery) {
+        const caption = data.content?.caption || "";
+        if (!caption.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
+          return; // Skip this post
+        }
+      }
+
+      allPosts.push({
+        id: docSnap.id,
+        postType: data.postType,
+        caption: data.content?.caption || "",
+        mediaUrl: getMediaUrl(data),
+        carouselMedia: data.postType === "carousel" ? data.content?.images : [],
+        mediaType: data.postType,
+        createdAt: data.createdAt?.toDate?.() || new Date(),
+        scheduledAt: data.scheduledAt?.toDate?.() || null,
+        instagramPostId: data.instagramPostId,
+        metrics: {
+          likes: data.metrics?.likes || 0,
+          comments: data.metrics?.comments || 0,
+          reach: data.metrics?.reach || 0,
+          engagement: data.metrics?.engagement || 0,
+          views: data.metrics?.views || 0
+        },
+        status: data.status,
+        pageName: data.pageName,
+        pageProfilePicture: data.pageProfilePicture
+      });
+    });
+
+    // Find the starting index for pagination
+    let startIndex = 0;
+    if (pagination.lastPostId) {
+      const lastIndex = allPosts.findIndex(post => post.id === pagination.lastPostId);
+      if (lastIndex !== -1) {
+        startIndex = lastIndex + 1;
+      }
+    }
+
+    // Get the page of posts
+    const posts = allPosts.slice(startIndex, startIndex + pageSize);
+    const hasMore = startIndex + pageSize < allPosts.length;
+    const lastPostId = posts.length > 0 ? posts[posts.length - 1].id : null;
+
+    return {
+      success: true,
+      posts,
+      hasMore,
+      lastPostId
+    };
+  } catch (err) {
+    console.error("Error fetching scheduled Instagram posts:", err);
+    return {
+      success: false,
+      message: err.message,
+      posts: [],
+      hasMore: false
+    };
+  }
+}
