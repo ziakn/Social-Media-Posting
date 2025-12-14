@@ -103,7 +103,7 @@ export default function InstagramAccountsDashboard() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
-                    onClick={() => router.push(`${ROUTES.ADMIN_INSTAGRAM_POSTS}/${account.igUserId}`)}
+                    onClick={() => router.push(`${ROUTES.ADMIN_INSTAGRAM_POSTS}`)}
                   >
                     Manage Posts
                   </DropdownMenuItem>
@@ -127,7 +127,7 @@ export default function InstagramAccountsDashboard() {
               <Button
                 size="sm"
                 className="bg-neutral-800 hover:bg-neutral-900 text-white flex items-center gap-1 rounded-lg shadow"
-                onClick={() => router.push(`${ROUTES.ADMIN_INSTAGRAM_POSTS}/${account.igUserId}`)}
+                onClick={() => router.push(`${ROUTES.ADMIN_INSTAGRAM_POSTS}`)}
               >
                 Manage Account
                 <ArrowRight className="w-4 h-4" />
