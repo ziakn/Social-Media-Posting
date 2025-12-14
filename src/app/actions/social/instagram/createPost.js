@@ -6,6 +6,8 @@ import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { fetchInstagramAccounts } from "./getPages";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
 
 /**
  * Upload local file or File object to Firebase and return public URL
@@ -111,9 +113,10 @@ async function getInstagramAccount(pageId) {
 /**
  * Save post to Firestore
  */
-async function saveToFirestore(postData) {
+async function saveToFirestore(postData, userId) {
   const postRef = await addDoc(collection(db, "instagram_posts"), {
     ...postData,
+    userId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -121,9 +124,25 @@ async function saveToFirestore(postData) {
 }
 
 /**
+ * Get authenticated user
+ */
+async function getAuthenticatedUser() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  const user = await verifyToken(token);
+
+  if (!user) {
+    throw new Error("Invalid or expired token. Please log in again.");
+  }
+
+  return user;
+}
+
+/**
  * Create single image post
  */
 export async function createInstagramImagePost({ pageId, image, caption, scheduling }) {
+  const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
   // TEST MODE: Use hardcoded public URL instead of uploading
@@ -161,7 +180,7 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
     instagramContainerId: containerId,
     instagramPostId: publishResult?.id || null,
     metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
-  });
+  }, user.id);
 
   return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
 }
@@ -170,6 +189,7 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
  * Create carousel post (TEST MODE)
  */
 export async function createInstagramCarouselPost({ pageId, images, caption, scheduling }) {
+  const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
   // TEST MODE: Hardcoded images
@@ -210,7 +230,7 @@ export async function createInstagramCarouselPost({ pageId, images, caption, sch
     instagramContainerId: carouselContainerId,
     instagramPostId: publishResult?.id || null,
     metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
-  });
+  }, user.id);
 
   return { success: true, containerId: carouselContainerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
 }
@@ -219,6 +239,7 @@ export async function createInstagramCarouselPost({ pageId, images, caption, sch
  * Create video post (TEST MODE)
  */
 export async function createInstagramVideoPost({ pageId, video, caption, scheduling }) {
+  const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
   // TEST MODE: Smaller sample video
@@ -257,7 +278,7 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
     instagramContainerId: containerId,
     instagramPostId: publishResult?.id || null,
     metrics: { reach: 0, engagement: 0, likes: 0, comments: 0, views: 0 },
-  });
+  }, user.id);
 
   return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
 }
@@ -266,6 +287,7 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
  * Create story post (TEST MODE)
  */
 export async function createInstagramStory({ pageId, media, caption }) {
+  const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
   // TEST MODE
@@ -289,7 +311,7 @@ export async function createInstagramStory({ pageId, media, caption }) {
     instagramContainerId: containerId,
     instagramPostId: publishResult.id,
     metrics: { reach: 0, impressions: 0, replies: 0, exits: 0 },
-  });
+  }, user.id);
 
   return { success: true, containerId, instagramPostId: publishResult.id, firestoreId };
 }

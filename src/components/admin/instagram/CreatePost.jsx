@@ -4,7 +4,6 @@
 import { useState, useRef, useTransition, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
+import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
 import {
   Image,
   Video,
@@ -471,23 +471,17 @@ export default function CreatePost() {
                 <div className="pt-6">
                   <div className="space-y-3">
                     <Label htmlFor="caption" className="text-base">Caption</Label>
-                    <Textarea
-                      id="caption"
+                    <SocialCaptionEditor
+                      value={postContent.caption}
+                      onChange={(e) => setPostContent(prev => ({ ...prev, caption: e.target.value }))}
                       placeholder={
                         postType === "reels"
                           ? "Write an engaging caption for your reel... #reels #viral"
                           : "Write a caption... Use hashtags to reach more people! #instagram #socialmedia"
                       }
-                      value={postContent.caption}
-                      onChange={(e) => setPostContent(prev => ({ ...prev, caption: e.target.value }))}
-                      className="min-h-[140px] resize-none text-base"
+                      platform="instagram"
+                      minHeight="140px"
                     />
-                    <div className="flex justify-between text-sm text-gray-500">
-                      <span>{characterCount}/{maxCharacters} characters</span>
-                      {characterCount > 125 && (
-                        <span className="text-green-600">💡 Good caption length!</span>
-                      )}
-                    </div>
                   </div>
                 </div>
 
@@ -523,47 +517,59 @@ export default function CreatePost() {
                     {(postContent.images.length > 0 || postContent.video) && (
                       <div className="space-y-3">
                         <Label>Media Preview</Label>
-                        <div className="grid grid-cols-1 gap-4">
-                          {postContent.images.map((image, index) => (
-                            <div key={index} className="relative group max-w-md">
-                              <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img
-                                  src={image.url}
-                                  alt={`Upload ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                                onClick={() => removeImage(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
 
-                          {postContent.video && (
-                            <div className="relative group max-w-md">
-                              <div className="aspect-square bg-gray-900 rounded-lg overflow-hidden border border-gray-200">
-                                <video
-                                  src={postContent.video.url}
-                                  controls
-                                  className="w-full h-full object-cover"
-                                />
+                        {/* Images Grid */}
+                        {postContent.images.length > 0 && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            {postContent.images.map((image, index) => (
+                              <div key={index} className="relative group">
+                                <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                  <img
+                                    src={image.url}
+                                    alt={`Upload ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                  onClick={() => removeImage(index)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
                               </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Video Preview - Large */}
+                        {postContent.video && (
+                          <div className="relative group max-w-2xl">
+                            <div className="aspect-video bg-gray-900 rounded-xl overflow-hidden border-2 border-purple-100 shadow-sm">
+                              <video
+                                src={postContent.video.url}
+                                controls
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                            <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <Button
                                 variant="destructive"
-                                size="icon"
-                                className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                size="sm"
+                                className="shadow-lg"
                                 onClick={removeVideo}
                               >
-                                <X className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove Video
                               </Button>
                             </div>
-                          )}
-                        </div>
+                            <div className="mt-2 flex items-center justify-between text-xs text-gray-500 px-1">
+                              <span>{postContent.video.name}</span>
+                              <span>{formatFileSize(postContent.video.size)}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -599,7 +605,7 @@ export default function CreatePost() {
                     {postContent.images.length > 0 && (
                       <div className="space-y-3">
                         <Label>Carousel Previews</Label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                           {postContent.images.map((image, index) => (
                             <div key={index} className="relative group">
                               <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
