@@ -17,6 +17,7 @@ import {
   Check,
   Link,
   MoreVertical,
+  AtSign,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
@@ -100,6 +101,13 @@ export default function SocialConnectPage() {
       icon: <MessageSquare className="w-5 h-5 text-orange-600" />,
       description: "Connect Reddit to schedule posts and track performance.",
       url: ROUTES.ADMIN_REDDIT,
+    },
+    {
+      name: "Threads",
+      key: "threads",
+      icon: <AtSign className="w-5 h-5 text-black" />,
+      description: "Share text updates and join public conversations.",
+      url: ROUTES.ADMIN_THREADS,
     },
     {
       name: "Telegram",
