@@ -139,6 +139,27 @@ async function getAuthenticatedUser() {
 }
 
 /**
+ * Helper to construct Date object correctly from date string/object and time string
+ * Ensures we get YYYY-MM-DD from the date and combine it with the time
+ */
+function getDateTime(date, time) {
+  if (!date || !time) return null;
+  let dateStr;
+
+  // Handle Date object or ISO string (which Date object becomes when serialized)
+  if (typeof date === 'object' && date instanceof Date) {
+    dateStr = date.toISOString().split('T')[0];
+  } else if (typeof date === 'string') {
+    // Handle both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss..."
+    dateStr = date.split('T')[0];
+  } else {
+    return null;
+  }
+
+  return new Date(`${dateStr}T${time}:00`);
+}
+
+/**
  * Create single image post
  */
 export async function createInstagramImagePost({ pageId, image, caption, scheduling }) {
@@ -176,7 +197,7 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
     postType: "image",
     content: { caption, image: { url: imageUrl, name: image.name, type: image.type, size: image.size } },
     status: scheduling?.schedule ? "scheduled" : "published",
-    scheduledAt: scheduling?.schedule ? new Date(`${scheduling.date}T${scheduling.time}`) : null,
+    scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
     instagramContainerId: containerId,
     instagramPostId: publishResult?.id || null,
     metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
@@ -226,7 +247,7 @@ export async function createInstagramCarouselPost({ pageId, images, caption, sch
     postType: "carousel",
     content: { caption, images: testImages.map(url => ({ url })) },
     status: scheduling?.schedule ? "scheduled" : "published",
-    scheduledAt: scheduling?.schedule ? new Date(`${scheduling.date}T${scheduling.time}`) : null,
+    scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
     instagramContainerId: carouselContainerId,
     instagramPostId: publishResult?.id || null,
     metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
@@ -242,8 +263,8 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
   const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  // TEST MODE: Smaller sample video
-  const videoUrl = "https://cdn.coverr.co/videos/coverr-a-puffin-standing-on-a-rock-5553/1080p.mp4"; // Lighter file
+  // TEST MODE: Standard sample video (known to work with Instagram processing)
+  const videoUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
   console.log("Creating Instagram Video Post with TEST URL:", videoUrl);
 
   const scheduledTime = scheduling?.schedule
@@ -274,7 +295,7 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
     postType: "video",
     content: { caption, video: { url: videoUrl, name: "test_video.mp4" } },
     status: scheduling?.schedule ? "scheduled" : "published",
-    scheduledAt: scheduling?.schedule ? new Date(`${scheduling.date}T${scheduling.time}`) : null,
+    scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
     instagramContainerId: containerId,
     instagramPostId: publishResult?.id || null,
     metrics: { reach: 0, engagement: 0, likes: 0, comments: 0, views: 0 },

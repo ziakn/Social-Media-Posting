@@ -52,26 +52,11 @@ export async function updateInstagramPost(postId, newCaption) {
         }
 
         // 4. Update on Instagram
-        // https://developers.facebook.com/docs/instagram-api/reference/ig-media
-        // POST /{ig-media-id}?caption={caption}&access_token={access-token}
+        // verified: Instagram API DOES NOT support updating captions for published media.
+        // verified: The endpoint POST /{media-id} only supports comment_enabled.
+        // We will only update Firestore locally and warn the user.
+        console.warn("Skipping Instagram API call: Caption update not supported by Instagram API.");
 
-        // Note: We need to use URLSearchParams to properly encode the caption
-        const params = new URLSearchParams({
-            caption: newCaption,
-            access_token: account.accessToken
-        });
-
-        const response = await fetch(
-            `https://graph.facebook.com/v19.0/${post.instagramPostId}?${params.toString()}`,
-            { method: "POST" }
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error("Instagram API Error:", data);
-            throw new Error(data.error?.message || "Failed to update post on Instagram");
-        }
 
         // 5. Update Firestore
         await updateDoc(postRef, {
@@ -80,7 +65,11 @@ export async function updateInstagramPost(postId, newCaption) {
             updatedAt: serverTimestamp()
         });
 
-        return { success: true, message: "Post updated successfully" };
+        return {
+            success: true,
+            message: "Post updated locally (Instagram does not support editing captions via API)",
+            warning: true
+        };
 
     } catch (error) {
         console.error("Error updating Instagram post:", error);
