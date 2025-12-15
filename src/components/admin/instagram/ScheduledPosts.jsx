@@ -20,6 +20,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -49,6 +59,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getScheduledInstagramPosts } from "@/app/actions/social/instagram/getPosts";
+import { deleteInstagramPost } from "@/app/actions/social/instagram/deletePost";
 
 const postTypeConfig = {
   image: { icon: ImageIcon, color: "bg-pink-100 text-pink-800 border-pink-200", label: "Image" },
@@ -69,11 +80,29 @@ export default function ScheduledPosts() {
 
   // Dialog states
   const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
 
   // Placeholder handlers for actions not yet implemented in backend for Instagram specifically (Edit/Reschedule/Delete)
   // We will wire these up if the actions exist, or leave placeholders.
   // Assuming delete/reschedule might need specific Instagram actions or generic ones.
   // For now, I'll keep the logic simple, focusing on Display and Preview as requested.
+
+  const handleDelete = async (postId) => {
+    try {
+      const result = await deleteInstagramPost(postId);
+
+      if (result.success) {
+        toast.success(result.message);
+        // Remove from local state
+        setPosts(prev => prev.filter(p => p.id !== postId));
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete post");
+    }
+  };
 
   const loadPosts = async (reset = false, lastDocId = null) => {
     try {
@@ -250,6 +279,23 @@ export default function ScheduledPosts() {
                   )}
                 </div>
 
+                {/* Top Actions (Hover) */}
+                <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50 text-gray-700 border border-gray-100">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="text-red-600" onClick={() => setDeleteDialog({ open: true, postId: post.id })}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
                 {/* Status Badge */}
                 <div className="absolute top-3 left-3 z-20 pointer-events-none">
                   <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5">
@@ -409,6 +455,33 @@ export default function ScheduledPosts() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Scheduled Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this scheduled post? This action cannot be undone.
+              The post will be removed from the schedule and will not be published.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteDialog.postId) {
+                  handleDelete(deleteDialog.postId);
+                  setDeleteDialog({ open: false, postId: null });
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Post
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

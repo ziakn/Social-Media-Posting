@@ -23,11 +23,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   getPublishedPosts,
   getPublishedPostsStats
 } from "@/app/actions/social/instagram/getPosts";
 import { fetchInstagramAccounts } from "@/app/actions/social/instagram/getPages";
 import { updateInstagramPost } from "@/app/actions/social/instagram/updatePost";
+import { deleteInstagramPost } from "@/app/actions/social/instagram/deletePost";
 import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
 import {
   Search,
@@ -42,7 +53,7 @@ import {
   X,
   Filter,
   Layers,
-  Image as ImageIcon,
+  ImageIcon,
   Film,
   Play,
   Edit
@@ -63,17 +74,12 @@ export default function PublishedPosts({ pageId: initialPageId }) {
   const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState([]);
 
-  // View Dialog State
-  const [viewDialog, setViewDialog] = useState({
-    open: false,
-    post: null
-  });
-
-
-  // Edit Dialog State
+  // Dialog states
+  const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
   const [editDialog, setEditDialog] = useState({
     open: false,
-    postId: null,
+    post: null,
     caption: "",
     updating: false
   });
@@ -255,6 +261,24 @@ export default function PublishedPosts({ pageId: initialPageId }) {
       toast.error("Failed to update post");
     } finally {
       setEditDialog(prev => ({ ...prev, updating: false }));
+    }
+  };
+
+  // Handle Delete
+  const handleDelete = async (postId) => {
+    try {
+      const result = await deleteInstagramPost(postId);
+
+      if (result.success) {
+        toast.success(result.message);
+        // Remove from local state
+        setPosts(prev => prev.filter(p => p.id !== postId));
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete post");
     }
   };
 
@@ -568,7 +592,7 @@ export default function PublishedPosts({ pageId: initialPageId }) {
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem className="text-red-600" onClick={() => setDeleteDialog({ open: true, postId: post.id })}>
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
@@ -805,6 +829,33 @@ export default function PublishedPosts({ pageId: initialPageId }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+              The post will be permanently removed from Instagram as well.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteDialog.postId) {
+                  handleDelete(deleteDialog.postId);
+                  setDeleteDialog({ open: false, postId: null });
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete Post
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

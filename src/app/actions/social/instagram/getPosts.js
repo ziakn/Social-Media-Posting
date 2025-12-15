@@ -143,6 +143,11 @@ export async function getPublishedPosts({
         }
       }
 
+      // Skip soft-deleted posts
+      if (data.delete === 1) {
+        return;
+      }
+
       allPosts.push({
         id: docSnap.id,
         postType: data.postType,
@@ -408,6 +413,11 @@ export async function getScheduledInstagramPosts({
         if (!caption.toLowerCase().includes(filters.searchQuery.toLowerCase())) {
           return; // Skip this post
         }
+      }
+
+      // Skip soft-deleted posts
+      if (data.delete === 1) {
+        return;
       }
 
       allPosts.push({
