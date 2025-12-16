@@ -27,7 +27,10 @@ import { ROUTES } from "@/constants/routes";
 import { checkFacebookConnection } from "../../../actions/social/facebook/connectAccount";
 import { disconnectFacebookAccount } from "../../../actions/social/facebook/disconnectAccount";
 import { checkInstagramConnection } from "../../../actions/social/instagram/connectAccount";
+import { checkInstagramConnection } from "../../../actions/social/instagram/connectAccount";
 import { disconnectInstagramAccount } from "../../../actions/social/instagram/disconnectAccount";
+import { checkThreadsConnection } from "../../../actions/social/threads/connectAccount";
+import { disconnectThreadsAccount } from "../../../actions/social/threads/disconnectAccount";
 
 // Future: WhatsApp, LinkedIn, Twitter, etc.
 
@@ -108,6 +111,8 @@ export default function SocialConnectPage() {
       icon: <AtSign className="w-5 h-5 text-black" />,
       description: "Share text updates and join public conversations.",
       url: ROUTES.ADMIN_THREADS,
+      checkConnection: checkThreadsConnection,
+      disconnect: disconnectThreadsAccount,
     },
     {
       name: "Telegram",
