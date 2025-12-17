@@ -27,7 +27,6 @@ import { ROUTES } from "@/constants/routes";
 import { checkFacebookConnection } from "../../../actions/social/facebook/connectAccount";
 import { disconnectFacebookAccount } from "../../../actions/social/facebook/disconnectAccount";
 import { checkInstagramConnection } from "../../../actions/social/instagram/connectAccount";
-import { checkInstagramConnection } from "../../../actions/social/instagram/connectAccount";
 import { disconnectInstagramAccount } from "../../../actions/social/instagram/disconnectAccount";
 import { checkThreadsConnection } from "../../../actions/social/threads/connectAccount";
 import { disconnectThreadsAccount } from "../../../actions/social/threads/disconnectAccount";
@@ -247,7 +246,7 @@ export default function SocialConnectPage() {
 
           return (
             <Card key={item.key} className={`transition-all hover:shadow-md ${isConnected ? "border-green-400" : "border-border"}`}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 relative">
                 <div className="flex items-center gap-3">
                   <div className={`p-2 rounded-lg ${isConnected ? "bg-green-50" : "bg-muted"}`}>{item.icon}</div>
                   <div>
@@ -259,10 +258,20 @@ export default function SocialConnectPage() {
                     )}
                   </div>
                 </div>
+
+                {/* Expiry Badge in Corner */}
+                {isConnected && status.tokenExpiresAt && (
+                  <div className="absolute top-2 right-2 flex flex-col items-end">
+                    <span className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                      Exp: {new Date(status.tokenExpiresAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+
                 {isConnected && item.disconnect && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" className="ml-auto mt-6">
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -273,14 +282,9 @@ export default function SocialConnectPage() {
                   </DropdownMenu>
                 )}
               </CardHeader>
-
               <CardContent>
                 <p className="text-xs text-muted-foreground leading-snug">{item.description}</p>
-                {isConnected && status.tokenExpiresAt && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}
-                  </p>
-                )}
+                {/* Removed old expiry text */}
               </CardContent>
 
               <CardFooter>

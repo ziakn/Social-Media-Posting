@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 
 /**
@@ -24,87 +24,50 @@ export async function GET(request) {
       return NextResponse.json({ error: "Missing OAuth code" }, { status: 400 });
     }
 
-    // 1. Exchange code → short-lived user access token
-    const tokenRes = await fetch(
-      `https://graph.facebook.com/v24.0/oauth/access_token` +
-      `?client_id=${process.env.FB_APP_ID}` +
-      `&redirect_uri=${encodeURIComponent(process.env.IG_REDIRECT_URI)}` +
-      `&client_secret=${process.env.FB_APP_SECRET}` +
-      `&code=${code}`
+    // --- 1. Deactivate existing Instagram accounts for this user ---
+    const q = query(
+      collection(db, "socialAccounts"),
+      where("userId", "==", portalUser.id),
+      where("platform", "==", "instagram"),
+      where("status", "==", "active")
+    );
+    const existingSnapshot = await getDocs(q);
+
+    // Run in parallel
+    await Promise.all(
+      existingSnapshot.docs.map((doc) =>
+        updateDoc(doc.ref, {
+          status: "inactive",
+          updatedAt: serverTimestamp(),
+        })
+      )
     );
 
-    const tokenData = await tokenRes.json();
-    if (tokenData.error) {
-      return NextResponse.json({ error: tokenData.error.message }, { status: 400 });
-    }
+    // --- 2. Exchange code for access token ---
+    const shortLivedToken = await exchangeCodeForToken(code);
+    const userAccessToken = await exchangeForLongLivedToken(shortLivedToken);
 
-    const shortLivedUserToken = tokenData.access_token;
+    // --- 3. Fetch Pages and Instagram Accounts ---
+    const pages = await getPages(userAccessToken);
 
-    // 2. Exchange for long-lived token (~60 days)
-    const longLivedRes = await fetch(
-      `https://graph.facebook.com/v24.0/oauth/access_token?` +
-      `grant_type=fb_exchange_token&` +
-      `client_id=${process.env.FB_APP_ID}&` +
-      `client_secret=${process.env.FB_APP_SECRET}&` +
-      `fb_exchange_token=${shortLivedUserToken}`
-    );
-
-    const longLivedData = await longLivedRes.json();
-    if (longLivedData.error) {
-      return NextResponse.json({ error: longLivedData.error.message }, { status: 400 });
-    }
-
-    const userAccessToken = longLivedData.access_token;
-
-    // 3. Fetch Facebook Pages the user manages
-    const pagesRes = await fetch(
-      `https://graph.facebook.com/v24.0/me/accounts?access_token=${userAccessToken}`
-    );
-    const pagesData = await pagesRes.json();
-
-    if (!Array.isArray(pagesData.data) || pagesData.data.length === 0) {
+    if (!Array.isArray(pages) || pages.length === 0) {
       return NextResponse.json({ error: "No Facebook Pages found" }, { status: 400 });
     }
 
     let connectedCount = 0;
 
-    for (const page of pagesData.data) {
+    for (const page of pages) {
       try {
         if (!page.access_token) continue;
 
-        // 4. Fetch Instagram Business/Creator account linked to the Page
-        const igRes = await fetch(
-          `https://graph.facebook.com/v24.0/${page.id}?fields=instagram_business_account,username&access_token=${page.access_token}`
-        );
-        const igData = await igRes.json();
-
+        const igData = await getInstagramBusinessAccount(page.id, page.access_token);
         if (!igData.instagram_business_account?.id) continue;
 
         const igId = igData.instagram_business_account.id;
 
-        // 5. Check if account already exists
-        const existingQuery = query(
-          collection(db, "socialAccounts"),
-          where("userId", "==", portalUser.id),
-          where("accountId", "==", igId)
-        );
-        const existingSnapshot = await getDocs(existingQuery);
-
-        if (!existingSnapshot.empty) {
-          // If the account exists but inactive, reactivate it
-          const docRef = existingSnapshot.docs[0].ref;
-          await docRef.update({
-            status: "active",
-            accessToken: page.access_token,
-            tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
-            updatedAt: serverTimestamp(),
-          });
-          connectedCount++;
-          continue; // Skip creating a new doc
-        }
-
-
-        // 6. Save to Firestore
+        // --- 4. Insert NEW document (Active) ---
+        // We do not check for existing; we just insert a fresh record.
+        // Previous active records are already deactivated.
         await addDoc(collection(db, "socialAccounts"), {
           userId: portalUser.id,
           platform: "instagram",
@@ -113,7 +76,7 @@ export async function GET(request) {
           pageId: page.id,
           pageName: page.name,
           accessToken: page.access_token,
-          tokenExpiresAt: new Date(Date.now() + (60 * 24 * 60 * 60 * 1000)), // 60 days
+          tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
           status: "active",
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -122,16 +85,75 @@ export async function GET(request) {
         connectedCount++;
       } catch (errPage) {
         console.error(`Failed to connect page ${page.name}:`, errPage.message);
-        continue; // Continue with other pages
+        continue;
       }
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    return NextResponse.redirect(
-      `${baseUrl}/admin/social/connect?platform=instagram&connected=${connectedCount}`
-    );
+
+    if (connectedCount > 0) {
+      return NextResponse.redirect(
+        `${baseUrl}/admin/social/connect?platform=instagram&status=success&connected=${connectedCount}`
+      );
+    } else {
+      return NextResponse.redirect(
+        `${baseUrl}/admin/social/connect?platform=instagram&status=failed&message=No%20Instagram%20accounts%20found`
+      );
+    }
+
   } catch (err) {
     console.error("Instagram OAuth callback error:", err);
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    return NextResponse.redirect(
+      `${baseUrl}/admin/social/connect?platform=instagram&status=failed&message=${encodeURIComponent(
+        err.message
+      )}`
+    );
   }
+}
+
+// --- Helper Functions ---
+
+async function exchangeCodeForToken(code) {
+  const res = await fetch(
+    `https://graph.facebook.com/v24.0/oauth/access_token` +
+    `?client_id=${process.env.FB_APP_ID}` +
+    `&redirect_uri=${encodeURIComponent(process.env.IG_REDIRECT_URI)}` +
+    `&client_secret=${process.env.FB_APP_SECRET}` +
+    `&code=${code}`
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.access_token;
+}
+
+async function exchangeForLongLivedToken(shortLivedToken) {
+  const res = await fetch(
+    `https://graph.facebook.com/v24.0/oauth/access_token?` +
+    `grant_type=fb_exchange_token&` +
+    `client_id=${process.env.FB_APP_ID}&` +
+    `client_secret=${process.env.FB_APP_SECRET}&` +
+    `fb_exchange_token=${shortLivedToken}`
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.access_token;
+}
+
+async function getPages(userAccessToken) {
+  const res = await fetch(
+    `https://graph.facebook.com/v24.0/me/accounts?access_token=${userAccessToken}`
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.data || [];
+}
+
+async function getInstagramBusinessAccount(pageId, pageAccessToken) {
+  const res = await fetch(
+    `https://graph.facebook.com/v24.0/${pageId}?fields=instagram_business_account,username&access_token=${pageAccessToken}`
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data;
 }
