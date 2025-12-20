@@ -2,7 +2,7 @@
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 
 /**
@@ -33,10 +33,10 @@ export async function GET(request) {
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
                 body: new URLSearchParams({
-                    client_id: process.env.THREADS_APP_ID,
-                    client_secret: process.env.THREADS_APP_SECRET,
+                    client_id: process.env.TH_APP_ID,
+                    client_secret: process.env.TH_APP_SECRET,
                     grant_type: "authorization_code",
-                    redirect_uri: process.env.THREADS_REDIRECT_URI,
+                    redirect_uri: process.env.TH_REDIRECT_URI,
                     code: code,
                 }),
             }
@@ -54,7 +54,7 @@ export async function GET(request) {
         const longLivedRes = await fetch(
             `https://graph.threads.net/access_token?` +
             `grant_type=th_exchange_token&` +
-            `client_secret=${process.env.THREADS_APP_SECRET}&` +
+            `client_secret=${process.env.TH_APP_SECRET}&` +
             `access_token=${shortLivedUserToken}`
         );
 
@@ -88,7 +88,7 @@ export async function GET(request) {
         if (!existingSnapshot.empty) {
             // Reactivate if exists
             const docRef = existingSnapshot.docs[0].ref;
-            await docRef.update({
+            await updateDoc(docRef, {
                 status: "active",
                 accessToken: accessToken,
                 username: profileData.username,

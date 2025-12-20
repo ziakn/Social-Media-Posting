@@ -52,5 +52,6 @@ export const ROUTES = {
   ADMIN_FACEBOOK_POSTS: prefix + "social/facebook/posts",
   ADMIN_FACEBOOK_POSTS_CREATE: prefix + "social/facebook/posts/create",
   ADMIN_INSTAGRAM_POSTS: prefix + "social/instagram/posts",
-
+  ADMIN_THREADS_POSTS: prefix + "social/threads/posts",
+  ADMIN_THREADS_POSTS_CREATE: prefix + "social/threads/posts/new",
 };

@@ -70,6 +70,15 @@ export default function SocialConnectPage() {
       disconnect: disconnectInstagramAccount,
     },
     {
+      name: "Threads",
+      key: "threads",
+      icon: <AtSign className="w-5 h-5 text-black" />,
+      description: "Share text updates and join public conversations.",
+      url: ROUTES.ADMIN_THREADS,
+      checkConnection: checkThreadsConnection,
+      disconnect: disconnectThreadsAccount,
+    },
+    {
       name: "WhatsApp",
       key: "whatsapp",
       icon: <MessageCircle className="w-5 h-5 text-green-600" />,
@@ -104,15 +113,7 @@ export default function SocialConnectPage() {
       description: "Connect Reddit to schedule posts and track performance.",
       url: ROUTES.ADMIN_REDDIT,
     },
-    {
-      name: "Threads",
-      key: "threads",
-      icon: <AtSign className="w-5 h-5 text-black" />,
-      description: "Share text updates and join public conversations.",
-      url: ROUTES.ADMIN_THREADS,
-      checkConnection: checkThreadsConnection,
-      disconnect: disconnectThreadsAccount,
-    },
+
     {
       name: "Telegram",
       key: "telegram",

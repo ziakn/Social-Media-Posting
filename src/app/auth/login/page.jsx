@@ -11,8 +11,8 @@ import { API_ROUTES } from "@/constants/api";
 import { ROUTES } from "@/constants/routes";
 
 export default function Login() {
-  const [email, setEmail] = useState("admin@gmail.com");
-  const [password, setPassword] = useState("asdasdzxc");
+  const [email, setEmail] = useState("zia@gmail.com");
+  const [password, setPassword] = useState("asdasdasd");
   const [alert, setAlert] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
