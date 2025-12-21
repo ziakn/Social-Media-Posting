@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
+import { API_ROUTES } from "@/constants/api";
 import {
   Facebook,
   Instagram,
@@ -23,137 +24,127 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 
+const ICONS = {
+  facebook: Facebook,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  whatsapp: MessageCircle,
+  twitter: Twitter,
+  telegram: Send,
+  bluesky: Globe,
+  reddit: MessageSquare,
+  threads: AtSign,
+};
 // Platform-specific actions
 import { checkFacebookConnection } from "../../../actions/social/facebook/connectAccount";
 import { disconnectFacebookAccount } from "../../../actions/social/facebook/disconnectAccount";
-import { checkInstagramConnection } from "../../../actions/social/instagram/connectAccount";
 import { checkInstagramConnection } from "../../../actions/social/instagram/connectAccount";
 import { disconnectInstagramAccount } from "../../../actions/social/instagram/disconnectAccount";
 import { checkThreadsConnection } from "../../../actions/social/threads/connectAccount";
 import { disconnectThreadsAccount } from "../../../actions/social/threads/disconnectAccount";
 
-// Future: WhatsApp, LinkedIn, Twitter, etc.
+const CONNECTION_FUNCTIONS = {
+  facebook: checkFacebookConnection,
+  instagram: checkInstagramConnection,
+  threads: checkThreadsConnection,
+};
+
+// Map platform keys to disconnect functions
+const DISCONNECT_FUNCTIONS = {
+  facebook: disconnectFacebookAccount,
+  instagram: disconnectInstagramAccount,
+  threads: disconnectThreadsAccount,
+};
 
 export default function SocialConnectPage() {
-  const [connections, setConnections] = useState({
-    facebook: false,
-    instagram: false,
-    whatsapp: false,
-    linkedin: false,
-    twitter: false,
-    bluesky: false,
-    reddit: false,
-    telegram: false,
-  });
+  const [platforms, setPlatforms] = useState([]);
+  const [connections, setConnections] = useState({});
   const [loading, setLoading] = useState(true);
-
   const [callbackStatus, setCallbackStatus] = useState(null);
   const [callbackPlatform, setCallbackPlatform] = useState(null);
   const [callbackName, setCallbackName] = useState(null);
 
-  const socials = [
-    {
-      name: "Facebook",
-      key: "facebook",
-      icon: <Facebook className="w-5 h-5 text-blue-600" />,
-      description: "Connect your Facebook Page to enable publishing and analytics.",
-      url: ROUTES.ADMIN_FACEBOOK,
-      checkConnection: checkFacebookConnection,
-      disconnect: disconnectFacebookAccount,
-    },
-    {
-      name: "Instagram",
-      key: "instagram",
-      icon: <Instagram className="w-5 h-5 text-pink-500" />,
-      description: "Link Instagram to manage Reels, Stories, and analytics.",
-      url: ROUTES.ADMIN_INSTAGRAM,
-      checkConnection: checkInstagramConnection,
-      disconnect: disconnectInstagramAccount,
-    },
-    {
-      name: "WhatsApp",
-      key: "whatsapp",
-      icon: <MessageCircle className="w-5 h-5 text-green-600" />,
-      description: "Integrate WhatsApp Business for customer messaging.",
-      url: ROUTES.ADMIN_WHATSAPP,
-    },
-    {
-      name: "LinkedIn",
-      key: "linkedin",
-      icon: <Linkedin className="w-5 h-5 text-blue-500" />,
-      description: "Connect LinkedIn to share updates and gather engagement.",
-      url: ROUTES.ADMIN_LINKEDIN,
-    },
-    {
-      name: "Twitter",
-      key: "twitter",
-      icon: <Twitter className="w-5 h-5 text-black" />,
-      description: "Post tweets and fetch analytics.",
-      url: ROUTES.ADMIN_TWITTER,
-    },
-    {
-      name: "Bluesky",
-      key: "bluesky",
-      icon: <Globe className="w-5 h-5 text-sky-600" />,
-      description: "Manage posts and engagement from Bluesky.",
-      url: ROUTES.ADMIN_BLUESKY,
-    },
-    {
-      name: "Reddit",
-      key: "reddit",
-      icon: <MessageSquare className="w-5 h-5 text-orange-600" />,
-      description: "Connect Reddit to schedule posts and track performance.",
-      url: ROUTES.ADMIN_REDDIT,
-    },
-    {
-      name: "Threads",
-      key: "threads",
-      icon: <AtSign className="w-5 h-5 text-black" />,
-      description: "Share text updates and join public conversations.",
-      url: ROUTES.ADMIN_THREADS,
-      checkConnection: checkThreadsConnection,
-      disconnect: disconnectThreadsAccount,
-    },
-    {
-      name: "Telegram",
-      key: "telegram",
-      icon: <Send className="w-5 h-5 text-sky-500" />,
-      description: "Integrate Telegram bots for community management.",
-      url: ROUTES.ADMIN_TELEGRAM,
-    },
-  ];
+  // Merge Firestore active platforms with master socials
+ const socials = platforms
+  .filter(p => p.status === "active").map(p => {
+  const IconComponent = ICONS[p.platform_name.toLowerCase()] || null; 
+  const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
+  const checkConnection = CONNECTION_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+  const disconnect = DISCONNECT_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+  return {
+  key: p.platform_name.toLowerCase(),
+  name: p.platform_name,
+  icon: IconComponent ? <IconComponent className="w-5 h-5 text-blue-600" /> : null,
+  description: p.description,
+  url: url,
+  checkConnection:  checkConnection,
+  disconnect: disconnect,
+  ...p, // keep other fields like id, created_at, status
+}
+});
 
-  // Fetch connections for all platforms
-  useEffect(() => {
-    const fetchConnections = async () => {
-      const conn = { ...connections };
+  // Fetch active platforms from API
+  const fetchPlatforms = async () => {
+    try {
+      const res = await fetch(API_ROUTES.PLATFORMS, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      setPlatforms(data.platforms || []);
+    } catch (error) {
+      console.error("Error fetching platforms:", error);
+    }
+  };
 
-      for (const platform of socials) {
-        if (platform.checkConnection) {
-          try {
-            const result = await platform.checkConnection();
-            conn[platform.key] = result.connected
-              ? {
+  // Fetch connection status for active platforms
+  const fetchConnections = async () => {
+    const conn = {};
+    for (const platform of socials) {
+      if (platform.checkConnection) {
+        try {
+          const result = await platform.checkConnection();
+          conn[platform.key] = result.connected
+            ? {
                 connected: true,
                 displayName: result.displayName,
                 tokenExpiresAt: result.tokenExpiresAt,
                 count: result.count,
-                accounts: result.accounts
+                accounts: result.accounts,
               }
-              : false;
-          } catch {
-            conn[platform.key] = false;
-          }
+            : false;
+        } catch {
+          conn[platform.key] = false;
         }
+      } else {
+        conn[platform.key] = false;
       }
+    }
+    setConnections(conn);
+  };
 
-      setConnections(conn);
-      setLoading(false);
-    };
+  // Load platforms and connections
+  useEffect(() => {
+  let intervalId;
 
-    fetchConnections();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const init = async () => {
+    setLoading(true);
+    await fetchPlatforms(); // your API call
+    setLoading(false);
+  };
+
+  init();
+  intervalId = setInterval(() => {
+    init();
+  }, 10000);
+  return () => clearInterval(intervalId);
+}, []);
+
+  useEffect(() => {
+    if (socials.length > 0) {
+      fetchConnections().finally(() => setLoading(false));
+    }
+  }, [socials]);
 
   // Handle OAuth callback query params
   useEffect(() => {
@@ -169,9 +160,11 @@ export default function SocialConnectPage() {
 
       if (status === "success") {
         toast.success(
-          `${platform.charAt(0).toUpperCase() + platform.slice(1)} account connected successfully${name ? `: ${decodeURIComponent(name)}` : ""}`
+          `${platform.charAt(0).toUpperCase() + platform.slice(1)} account connected successfully${
+            name ? `: ${decodeURIComponent(name)}` : ""
+          }`
         );
-        setConnections((prev) => ({
+        setConnections(prev => ({
           ...prev,
           [platform]: { connected: true, displayName: decodeURIComponent(name) },
         }));
@@ -188,16 +181,17 @@ export default function SocialConnectPage() {
     }
   }, []);
 
-  const handleConnect = (platformKey) => {
-    const platform = socials.find((p) => p.key === platformKey);
-    if (!platform || !platform.url) {
+  // Connect / Disconnect handlers
+  const handleConnect = platformKey => {
+    const platform = socials.find(p => p.key === platformKey);
+    if (!platform) {
       toast.warning(`Integration for ${platformKey} is coming soon!`);
       return;
     }
-    window.location.href = `/api/admin/${platformKey}/connect`;
+    window.location.href = platform.url || `/api/admin/${platformKey}/connect`;
   };
 
-  const handleDisconnect = async (platformKey, disconnectFn) => {
+  const handleDisconnect = (platformKey, disconnectFn) => {
     if (!disconnectFn) {
       toast.warning(`Disconnect not implemented for ${platformKey}`);
       return;
@@ -208,14 +202,14 @@ export default function SocialConnectPage() {
         onClick: async () => {
           try {
             const result = await disconnectFn();
-            if (result.success) {
-              toast.success(result.message);
-              setConnections((prev) => ({ ...prev, [platformKey]: false }));
+            if (result?.success) {
+              toast.success(result.message || "Disconnected successfully");
+              setConnections(prev => ({ ...prev, [platformKey]: false }));
             } else {
-              toast.error(result.message || "Failed to disconnect");
+              toast.error(result?.message || "Failed to disconnect");
             }
           } catch (err) {
-            toast.error(err.message || "Something went wrong");
+            toast.error(err?.message || "Something went wrong");
           }
         },
       },
@@ -241,7 +235,7 @@ export default function SocialConnectPage() {
 
       {/* Social Cards */}
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {socials.map((item) => {
+        {socials.map(item => {
           const status = connections[item.key];
           const isConnected = !!status?.connected;
 
@@ -275,7 +269,12 @@ export default function SocialConnectPage() {
               </CardHeader>
 
               <CardContent>
-                <p className="text-xs text-muted-foreground leading-snug">{item.description}</p>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  <div
+                    className="prose text-sm text-muted-foreground"
+                    dangerouslySetInnerHTML={{ __html: item.description }}
+                  />
+                </p>
                 {isConnected && status.tokenExpiresAt && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}
