@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
@@ -20,7 +25,12 @@ import {
   MoreVertical,
   AtSign,
 } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 
@@ -65,23 +75,28 @@ export default function SocialConnectPage() {
   const [callbackName, setCallbackName] = useState(null);
 
   // Merge Firestore active platforms with master socials
- const socials = platforms
-  .filter(p => p.status === "active").map(p => {
-  const IconComponent = ICONS[p.platform_name.toLowerCase()] || null; 
-  const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
-  const checkConnection = CONNECTION_FUNCTIONS[p.platform_name.toLowerCase()] || null;
-  const disconnect = DISCONNECT_FUNCTIONS[p.platform_name.toLowerCase()] || null;
-  return {
-  key: p.platform_name.toLowerCase(),
-  name: p.platform_name,
-  icon: IconComponent ? <IconComponent className="w-5 h-5 text-blue-600" /> : null,
-  description: p.description,
-  url: url,
-  checkConnection:  checkConnection,
-  disconnect: disconnect,
-  ...p, // keep other fields like id, created_at, status
-}
-});
+  const socials = platforms
+    .filter((p) => p.status === "active")
+    .map((p) => {
+      const IconComponent = ICONS[p.platform_name.toLowerCase()] || null;
+      const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
+      const checkConnection =
+        CONNECTION_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+      const disconnect =
+        DISCONNECT_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+      return {
+        key: p.platform_name.toLowerCase(),
+        name: p.platform_name,
+        icon: IconComponent ? (
+          <IconComponent className="w-5 h-5 text-blue-600" />
+        ) : null,
+        description: p.description,
+        url: url,
+        checkConnection: checkConnection,
+        disconnect: disconnect,
+        ...p, // keep other fields like id, created_at, status
+      };
+    });
 
   // Fetch active platforms from API
   const fetchPlatforms = async () => {
@@ -125,20 +140,20 @@ export default function SocialConnectPage() {
 
   // Load platforms and connections
   useEffect(() => {
-  let intervalId;
+    let intervalId;
 
-  const init = async () => {
-    setLoading(true);
-    await fetchPlatforms(); // your API call
-    setLoading(false);
-  };
+    const init = async () => {
+      setLoading(true);
+      await fetchPlatforms(); // your API call
+      setLoading(false);
+    };
 
-  init();
-  intervalId = setInterval(() => {
     init();
-  }, 10000);
-  return () => clearInterval(intervalId);
-}, []);
+    intervalId = setInterval(() => {
+      init();
+    }, 10000);
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     if (socials.length > 0) {
@@ -160,16 +175,25 @@ export default function SocialConnectPage() {
 
       if (status === "success") {
         toast.success(
-          `${platform.charAt(0).toUpperCase() + platform.slice(1)} account connected successfully${
+          `${
+            platform.charAt(0).toUpperCase() + platform.slice(1)
+          } account connected successfully${
             name ? `: ${decodeURIComponent(name)}` : ""
           }`
         );
-        setConnections(prev => ({
+        setConnections((prev) => ({
           ...prev,
-          [platform]: { connected: true, displayName: decodeURIComponent(name) },
+          [platform]: {
+            connected: true,
+            displayName: decodeURIComponent(name),
+          },
         }));
       } else {
-        toast.error(`${platform.charAt(0).toUpperCase() + platform.slice(1)} connection failed`);
+        toast.error(
+          `${
+            platform.charAt(0).toUpperCase() + platform.slice(1)
+          } connection failed`
+        );
       }
 
       // Clear query params from URL
@@ -182,8 +206,8 @@ export default function SocialConnectPage() {
   }, []);
 
   // Connect / Disconnect handlers
-  const handleConnect = platformKey => {
-    const platform = socials.find(p => p.key === platformKey);
+  const handleConnect = (platformKey) => {
+    const platform = socials.find((p) => p.key === platformKey);
     if (!platform) {
       toast.warning(`Integration for ${platformKey} is coming soon!`);
       return;
@@ -204,7 +228,7 @@ export default function SocialConnectPage() {
             const result = await disconnectFn();
             if (result?.success) {
               toast.success(result.message || "Disconnected successfully");
-              setConnections(prev => ({ ...prev, [platformKey]: false }));
+              setConnections((prev) => ({ ...prev, [platformKey]: false }));
             } else {
               toast.error(result?.message || "Failed to disconnect");
             }
@@ -226,7 +250,10 @@ export default function SocialConnectPage() {
           <div className="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
             <Check className="w-5 h-5 text-green-600" />
             <span>
-              Successfully connected {callbackPlatform.charAt(0).toUpperCase() + callbackPlatform.slice(1)} account
+              Successfully connected{" "}
+              {callbackPlatform.charAt(0).toUpperCase() +
+                callbackPlatform.slice(1)}{" "}
+              account
               {callbackName ? `: ${callbackName}` : ""}.
             </span>
           </div>
@@ -235,39 +262,77 @@ export default function SocialConnectPage() {
 
       {/* Social Cards */}
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {socials.map(item => {
+        {socials.map((item) => {
           const status = connections[item.key];
           const isConnected = !!status?.connected;
 
           return (
-            <Card key={item.key} className={`transition-all hover:shadow-md ${isConnected ? "border-green-400" : "border-border"}`}>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <Card
+              key={item.key}
+              className={`transition-all hover:shadow-md ${
+                isConnected ? "border-green-400" : "border-border"
+              }`}
+            >
+              <CardHeader className="flex flex-row items-center justify-between pb-2 relative">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${isConnected ? "bg-green-50" : "bg-muted"}`}>{item.icon}</div>
+                  <div
+                    className={`p-2 rounded-lg ${
+                      isConnected ? "bg-green-50" : "bg-muted"
+                    }`}
+                  >
+                    {item.icon}
+                  </div>
                   <div>
                     <h3 className="font-semibold text-sm">{item.name}</h3>
                     {isConnected && (
-                      <Badge variant="secondary" className="mt-1 flex items-center gap-1 text-xs">
+                      <Badge
+                        variant="secondary"
+                        className="mt-1 flex items-center gap-1 text-xs"
+                      >
                         <Check className="w-3 h-3" /> Connected
                       </Badge>
                     )}
                   </div>
                 </div>
+
+                {/* Expiry Badge in Corner */}
+                {isConnected && status.tokenExpiresAt && (
+                  <div className="absolute top-2 right-2 flex flex-col items-end">
+                    <span className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                      Exp:{" "}
+                      {new Date(status.tokenExpiresAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+
                 {isConnected && item.disconnect && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="ml-auto mt-6"
+                      >
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleDisconnect(item.key, item.disconnect)}>Disconnect</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => (window.location.href = item.url)}>Manage</DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          handleDisconnect(item.key, item.disconnect)
+                        }
+                      >
+                        Disconnect
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => (window.location.href = item.url)}
+                      >
+                        Manage
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
               </CardHeader>
-
               <CardContent>
                 <p className="text-xs text-muted-foreground leading-snug">
                   <div
@@ -277,7 +342,8 @@ export default function SocialConnectPage() {
                 </p>
                 {isConnected && status.tokenExpiresAt && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Token expires: {new Date(status.tokenExpiresAt).toLocaleString()}
+                    Token expires:{" "}
+                    {new Date(status.tokenExpiresAt).toLocaleString()}
                   </p>
                 )}
               </CardContent>
@@ -287,20 +353,32 @@ export default function SocialConnectPage() {
                   <div className="text-xs text-muted-foreground">
                     {status.count > 1 ? (
                       <div className="flex flex-col gap-1">
-                        <span className="font-medium">{status.count} Accounts Connected:</span>
+                        <span className="font-medium">
+                          {status.count} Accounts Connected:
+                        </span>
                         <ul className="list-disc list-inside pl-1">
                           {status.accounts.slice(0, 3).map((acc, i) => (
-                            <li key={i} className="truncate">{acc.displayName}</li>
+                            <li key={i} className="truncate">
+                              {acc.displayName}
+                            </li>
                           ))}
-                          {status.count > 3 && <li>+ {status.count - 3} more</li>}
+                          {status.count > 3 && (
+                            <li>+ {status.count - 3} more</li>
+                          )}
                         </ul>
                       </div>
                     ) : (
-                      status.displayName && <div>Name: {status.displayName}</div>
+                      status.displayName && (
+                        <div>Name: {status.displayName}</div>
+                      )
                     )}
                   </div>
                 ) : (
-                  <Button className="w-full" size="sm" onClick={() => handleConnect(item.key)}>
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    onClick={() => handleConnect(item.key)}
+                  >
                     <Link className="w-4 h-4 mr-2" />
                     Connect
                   </Button>

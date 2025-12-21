@@ -8,7 +8,7 @@ export async function GET(request) {
 
 
   const token = request.cookies.get("token")?.value;
-    const user = await verifyToken(token);
+  const user = await verifyToken(token);
 
 
   try {
@@ -19,37 +19,27 @@ export async function GET(request) {
       return NextResponse.json({ error: "Missing code" }, { status: 400 });
     }
 
-    // Exchange code for access token
-    const tokenResponse = await fetch(
-      `https://graph.facebook.com/v24.0/oauth/access_token?client_id=${process.env.FB_APP_ID}&redirect_uri=${encodeURIComponent(
-        process.env.FB_REDIRECT_URI
-      )}&client_secret=${process.env.FB_APP_SECRET}&code=${code}`
-    );
+    // Exchange code for short-lived access token
+    const shortLivedToken = await exchangeCodeForToken(code);
 
-    const tokenData = await tokenResponse.json();
-    if (tokenData.error) {
-      return NextResponse.json({ error: tokenData.error.message }, { status: 400 });
-    }
+    // Exchange for long-lived access token (60 days)
+    const longLivedToken = await exchangeForLongLivedToken(shortLivedToken);
 
-    const accessToken = tokenData.access_token;
-
-    // Get user profile from Facebook
+    // Get user profile from Facebook using LONG-LIVED token
     const userRes = await fetch(
-      `https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`
+      `https://graph.facebook.com/me?fields=id,name,email&access_token=${longLivedToken}`
     );
     const fbUser = await userRes.json();
 
-    // Get pages managed by the user (optional)
+    // Get pages managed by the user using LONG-LIVED token
     const pagesRes = await fetch(
-      `https://graph.facebook.com/me/accounts?access_token=${accessToken}`
+      `https://graph.facebook.com/me/accounts?access_token=${longLivedToken}`
     );
     const pagesData = await pagesRes.json();
 
-  
     if (!user) {
       return NextResponse.json({ valid: false, message: "Invalid token" }, { status: 403 });
     }
-
 
     const portalUserId = user.id; // must be sent from frontend
 
@@ -65,15 +55,15 @@ export async function GET(request) {
       await updateDoc(docSnap.ref, { status: "inactive", updatedAt: serverTimestamp() });
     }
 
-    // Save to socialAccounts collection
+    // Save to socialAccounts collection using Long-Lived Token
     await addDoc(collection(db, "socialAccounts"), {
       userId: portalUserId,
       platform: "facebook",
       platformUserId: fbUser.id,
       displayName: fbUser.name,
-      accessToken: accessToken,
-      refreshToken: "", // optional, FB doesn't provide refresh token
-      tokenExpiresAt: new Date(new Date().getTime() + tokenData.expires_in * 1000), // if FB provides expires_in
+      accessToken: longLivedToken,
+      refreshToken: "",
+      tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
       pages: pagesData.data?.map(p => ({
         pageId: p.id,
         pageName: p.name,
@@ -83,14 +73,45 @@ export async function GET(request) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-return NextResponse.redirect(
-  `${baseUrl}/admin/social/connect?status=success&platform=facebook&name=${encodeURIComponent(fbUser.name)}`
-);
 
-
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    return NextResponse.redirect(
+      `${baseUrl}/admin/social/connect?status=success&platform=facebook&name=${encodeURIComponent(fbUser.name)}`
+    );
 
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Facebook OAuth callback error:", error);
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    return NextResponse.redirect(
+      `${baseUrl}/admin/social/connect?status=failed&platform=facebook&message=${encodeURIComponent(error.message)}`
+    );
   }
+}
+
+// --- Helper Functions ---
+
+async function exchangeCodeForToken(code) {
+  const res = await fetch(
+    `https://graph.facebook.com/v24.0/oauth/access_token` +
+    `?client_id=${process.env.FB_APP_ID}` +
+    `&redirect_uri=${encodeURIComponent(process.env.FB_REDIRECT_URI)}` +
+    `&client_secret=${process.env.FB_APP_SECRET}` +
+    `&code=${code}`
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.access_token;
+}
+
+async function exchangeForLongLivedToken(shortLivedToken) {
+  const res = await fetch(
+    `https://graph.facebook.com/v24.0/oauth/access_token?` +
+    `grant_type=fb_exchange_token&` +
+    `client_id=${process.env.FB_APP_ID}&` +
+    `client_secret=${process.env.FB_APP_SECRET}&` +
+    `fb_exchange_token=${shortLivedToken}`
+  );
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data.access_token;
 }

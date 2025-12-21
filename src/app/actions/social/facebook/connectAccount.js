@@ -24,9 +24,24 @@ export async function checkFacebookConnection() {
     );
 
     const snapshot = await getDocs(q);
-    const isConnected = !snapshot.empty;
 
-    return { connected: isConnected };
+    // Extract data if connected
+    let accountData = null;
+    if (!snapshot.empty) {
+      const data = snapshot.docs[0].data();
+      accountData = {
+        connected: true,
+        displayName: data.displayName || "Facebook Account",
+        tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null,
+        count: snapshot.size,
+        accounts: snapshot.docs.map(d => ({
+          displayName: d.data().displayName,
+          tokenExpiresAt: d.data().tokenExpiresAt?.toDate?.() || null
+        }))
+      };
+    }
+
+    return accountData || { connected: false };
   } catch (err) {
     console.error("Error checking Facebook connection:", err);
     return { connected: false, message: err.message };

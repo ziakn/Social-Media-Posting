@@ -26,9 +26,9 @@ export default function ManageInstagramPosts() {
           <TabsTrigger value="create">Create</TabsTrigger>
           <TabsTrigger value="published">Published</TabsTrigger>
           <TabsTrigger value="scheduled">Scheduled</TabsTrigger>
-          <TabsTrigger value="draft">Drafts</TabsTrigger>
+          {/* <TabsTrigger value="draft">Drafts</TabsTrigger>
           <TabsTrigger value="stories">Stories</TabsTrigger>
-          <TabsTrigger value="reels">Reels</TabsTrigger>
+          <TabsTrigger value="reels">Reels</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="create">
