@@ -67,6 +67,13 @@ export async function GET() {
                 status: "active",
                 sorting_number: 9,
             },
+            {
+                platform_name: "TikTok",
+                description: "Short-form video sharing platform for creative content.",
+                icon_url: "tiktok",
+                status: "active",
+                sorting_number: 10,
+            },
         ];
 
         const platformsRef = collection(db, "platforms");

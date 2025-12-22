@@ -25,6 +25,7 @@ import {
   MoreVertical,
   AtSign,
   LogOut,
+  Music,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +46,7 @@ const ICONS = {
   bluesky: Globe,
   reddit: MessageSquare,
   threads: AtSign,
+  tiktok: Music,
 };
 // Platform-specific actions
 import { checkFacebookConnection } from "../../../actions/social/facebook/connectAccount";
@@ -103,6 +105,7 @@ export default function SocialConnectPage() {
           telegram: "text-[#0088cc]",
           bluesky: "text-[#0085ff]",
           reddit: "text-[#FF4500]",
+          tiktok: "text-[#000000]",
         };
 
         const iconColor = iconColors[platformKey] || "text-primary";
@@ -144,28 +147,44 @@ export default function SocialConnectPage() {
 
   // Fetch connection status for active platforms
   const fetchConnections = async () => {
-    const conn = {};
-    for (const platform of socials) {
+    // Check all platforms in parallel
+    socials.forEach(async (platform) => {
+      // Set individual loading state if not already set
+      setConnections(prev => ({
+        ...prev,
+        [platform.key]: prev[platform.key] ? prev[platform.key] : { loading: true }
+      }));
+
       if (platform.checkConnection) {
         try {
           const result = await platform.checkConnection();
-          conn[platform.key] = result.connected
-            ? {
-              connected: true,
-              displayName: result.displayName,
-              tokenExpiresAt: result.tokenExpiresAt,
-              count: result.count,
-              accounts: result.accounts,
-            }
-            : false;
-        } catch {
-          conn[platform.key] = false;
+          setConnections(prev => ({
+            ...prev,
+            [platform.key]: result.connected
+              ? {
+                connected: true,
+                displayName: result.displayName,
+                tokenExpiresAt: result.tokenExpiresAt,
+                count: result.count,
+                accounts: result.accounts,
+                loading: false
+              }
+              : { connected: false, loading: false }
+          }));
+        } catch (error) {
+          console.error(`Error checking connection for ${platform.key}:`, error);
+          setConnections(prev => ({
+            ...prev,
+            [platform.key]: { connected: false, loading: false }
+          }));
         }
       } else {
-        conn[platform.key] = false;
+        setConnections(prev => ({
+          ...prev,
+          [platform.key]: { connected: false, loading: false }
+        }));
       }
-    }
-    setConnections(conn);
+    });
   };
 
   // Load platforms and connections
@@ -215,6 +234,7 @@ export default function SocialConnectPage() {
           [platform]: {
             connected: true,
             displayName: decodeURIComponent(name),
+            loading: false
           },
         }));
       } else {
@@ -257,7 +277,7 @@ export default function SocialConnectPage() {
             const result = await disconnectFn();
             if (result?.success) {
               toast.success(result.message || "Disconnected successfully");
-              setConnections((prev) => ({ ...prev, [platformKey]: false }));
+              setConnections((prev) => ({ ...prev, [platformKey]: { connected: false, loading: false } }));
             } else {
               toast.error(result?.message || "Failed to disconnect");
             }
@@ -313,6 +333,7 @@ export default function SocialConnectPage() {
                 telegram: "hover:border-[#0088cc] group-hover:text-[#0088cc]",
                 bluesky: "hover:border-[#0085ff] group-hover:text-[#0085ff]",
                 reddit: "hover:border-[#FF4500] group-hover:text-[#FF4500]",
+                tiktok: "hover:border-[#FE2C55] group-hover:text-[#FE2C55]",
               };
 
               const accentColor = platformColors[item.key] || "hover:border-primary";
@@ -408,7 +429,15 @@ export default function SocialConnectPage() {
                   </CardContent>
 
                   <CardFooter className="pt-0 pb-6 mt-auto">
-                    {isConnected ? (
+                    {status?.loading ? (
+                      <Button
+                        disabled
+                        className="w-full bg-slate-100 text-slate-400 font-semibold rounded-lg h-9 text-xs flex items-center justify-center gap-2"
+                      >
+                        <Spinner className="w-3.5 h-3.5" />
+                        Checking status...
+                      </Button>
+                    ) : isConnected ? (
                       <Button
                         variant="outline"
                         className="w-full border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg h-9 text-xs"
