@@ -5,7 +5,6 @@ import {
     Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
@@ -19,29 +18,23 @@ import {
     AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import {
-    Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import {
-    Twitter, MoreVertical, ExternalLink, Trash2, Calendar, MessageCircle,
-    Heart, Repeat2, BarChart3, Search, Filter, ArrowUpDown, Eye,
-    Image as ImageIcon, Video, Link2, FileText, Loader2, Clock, Globe, Play
+    Twitter, MoreVertical, Trash2, Calendar, Clock, Edit3,
+    Image as ImageIcon, Video, Link2, FileText, Loader2, Play, Eye,
+    AlertCircle, Timer, ArrowRight, Repeat2
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { getTwitterPublishedPosts, deleteTwitterPost } from "@/app/actions/social/twitter/twitterPostsActions";
+import { getTwitterScheduledPosts, deleteTwitterPost } from "@/app/actions/social/twitter/twitterPostsActions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Label } from "@/components/ui/label"; // Added this import as it's used in the new code
 
-export default function PublishedTwitterPosts() {
+export default function ScheduledTwitterPosts() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const [selectedPost, setSelectedPost] = useState(null);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filterType, setFilterType] = useState("all");
-    const [sortBy, setSortBy] = useState("newest");
 
     useEffect(() => {
         loadPosts();
@@ -50,14 +43,14 @@ export default function PublishedTwitterPosts() {
     const loadPosts = async () => {
         setLoading(true);
         try {
-            const res = await getTwitterPublishedPosts();
+            const res = await getTwitterScheduledPosts();
             if (res.success) {
                 setPosts(res.posts);
             } else {
                 toast.error(res.message);
             }
         } catch (error) {
-            toast.error("Failed to load posts");
+            toast.error("Failed to load scheduled posts");
         } finally {
             setLoading(false);
         }
@@ -80,25 +73,6 @@ export default function PublishedTwitterPosts() {
         });
     };
 
-    const filteredPosts = posts
-        .filter(post => {
-            const matchesSearch = post.message?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesType = filterType === "all" ||
-                (filterType === "text" && !post.mediaUrls?.length) ||
-                (filterType === "images" && post.mediaUrls?.some(m => m.type === "image")) ||
-                (filterType === "video" && post.mediaUrls?.some(m => m.type === "video")) ||
-                (filterType === "link" && post.mediaUrls?.some(m => m.type === "link"));
-            return matchesSearch && matchesType;
-        })
-        .sort((a, b) => {
-            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
-
-            if (sortBy === "newest") return dateB.getTime() - dateA.getTime();
-            if (sortBy === "oldest") return dateA.getTime() - dateB.getTime();
-            return 0;
-        });
-
     const getPostIcon = (post) => {
         if (post.mediaUrls?.some(m => m.type === "image")) return <ImageIcon className="h-4 w-4" />;
         if (post.mediaUrls?.some(m => m.type === "video")) return <Video className="h-4 w-4" />;
@@ -115,164 +89,59 @@ export default function PublishedTwitterPosts() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <Skeleton key={i} className="aspect-square rounded-2xl" />)}
-                </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} className="aspect-square rounded-2xl" />)}
             </div>
         );
     }
 
     return (
         <div className="space-y-6">
-            {/* Header Stats */}
-            <Card className="bg-gradient-to-r from-blue-50 via-white to-purple-50 border border-gray-200 shadow-sm">
+            {/* Header */}
+            <Card className="bg-gradient-to-r from-amber-50 via-white to-orange-50 border border-gray-200 shadow-sm">
                 <CardContent className="p-6">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-                                    <BarChart3 className="h-5 w-5 text-white" />
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500">
+                                    <Calendar className="h-5 w-5 text-white" />
                                 </div>
                                 <CardTitle className="text-2xl font-bold text-gray-900">
-                                    Published Tweets
+                                    Scheduled Tweets
                                 </CardTitle>
                             </div>
                             <CardDescription className="text-gray-600 pl-13">
-                                Track performance and engagement across all your Twitter posts
+                                Manage your upcoming Twitter content and publishing schedule
                             </CardDescription>
                         </div>
-
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 min-w-[300px]">
-                            <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                        <Twitter className="h-4 w-4 text-blue-600" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-xl font-bold text-gray-900">
-                                            {posts.length}
-                                        </div>
-                                        <div className="text-xs text-gray-500">Total Tweets</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-rose-100 flex items-center justify-center">
-                                        <Heart className="h-4 w-4 text-rose-600" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-xl font-bold text-gray-900">
-                                            --
-                                        </div>
-                                        <div className="text-xs text-gray-500">Total Likes</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                                        <Repeat2 className="h-4 w-4 text-emerald-600" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-xl font-bold text-gray-900">
-                                            --
-                                        </div>
-                                        <div className="text-xs text-gray-500">Retweets</div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="flex items-center gap-4">
+                            <Button className="bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600">
+                                <Twitter className="h-4 w-4 mr-2" />
+                                Schedule New Tweet
+                            </Button>
                         </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Advanced Filters */}
-            <Card>
-                <CardContent className="p-6">
-                    <div className="space-y-6">
-                        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                            <div className="flex-1 w-full">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                                    <Input
-                                        placeholder="Search tweets by content..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-9 w-full lg:w-96"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <Select value={filterType} onValueChange={setFilterType}>
-                                    <SelectTrigger className="w-full lg:w-[150px]">
-                                        <SelectValue placeholder="Post Type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="all">All Types</SelectItem>
-                                        <SelectItem value="text">Text Only</SelectItem>
-                                        <SelectItem value="images">Images</SelectItem>
-                                        <SelectItem value="video">Video</SelectItem>
-                                        <SelectItem value="link">Link</SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                <Select value={sortBy} onValueChange={setSortBy}>
-                                    <SelectTrigger className="w-full lg:w-[150px]">
-                                        <SelectValue placeholder="Sort by" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="newest">Newest First</SelectItem>
-                                        <SelectItem value="oldest">Oldest First</SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSearchQuery("");
-                                        setFilterType("all");
-                                    }}
-                                    className="gap-2"
-                                >
-                                    <Filter className="h-4 w-4" />
-                                    Clear
-                                </Button>
-                            </div>
+            {/* Posts Grid */}
+            {posts.length === 0 ? (
+                <Card className="p-16 text-center border-dashed border-2 border-muted">
+                    <CardContent className="space-y-4">
+                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                            <Clock className="h-8 w-8 text-muted-foreground" />
                         </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Grid View */}
-            {filteredPosts.length === 0 ? (
-                <Card className="border-dashed">
-                    <CardContent className="p-12 text-center">
-                        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Twitter className="h-8 w-8 text-muted-foreground" />
+                        <div className="text-2xl font-bold text-gray-900">
+                            No scheduled tweets
                         </div>
-                        <h3 className="text-lg font-semibold mb-2">
-                            {searchQuery ? "No matching tweets found" : "No tweets available"}
-                        </h3>
-                        <p className="text-muted-foreground mb-6">
-                            {searchQuery ? "Try adjusting your search or filters" : "Your published tweets will appear here"}
+                        <p className="text-muted-foreground text-lg max-w-md mx-auto">
+                            Your upcoming tweets will appear here with countdown timers.
                         </p>
-                        <Button onClick={() => { setSearchQuery(""); setFilterType("all"); }} variant="outline">
-                            Clear All Filters
-                        </Button>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredPosts.map((post) => (
+                    {posts.map((post) => (
                         <Card
                             key={post.id}
                             className="group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col"
@@ -293,7 +162,7 @@ export default function PublishedTwitterPosts() {
                                         ) : (
                                             <img
                                                 src={post.mediaUrls[0].url}
-                                                alt="Post media"
+                                                alt="Scheduled post media"
                                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                                             />
                                         )}
@@ -322,28 +191,22 @@ export default function PublishedTwitterPosts() {
                                             <Eye className="mr-2 h-4 w-4" />
                                             View
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => window.open(post.tweetUrl, '_blank')}>
-                                            <ExternalLink className="mr-2 h-4 w-4" />
-                                            Open on Twitter
-                                        </DropdownMenuItem>
                                         <Separator className="my-1" />
                                         <DropdownMenuItem onClick={() => handleDelete(post.id)} className="text-destructive focus:text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" />
-                                            Delete
+                                            Cancel Schedule
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
 
                             {/* Status Flag */}
-                            <div className="absolute top-3 left-3 z-20 pointer-events-none flex flex-col items-start gap-1">
-                                <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-0.5 flex items-center gap-1.5">
-                                    <div className="flex items-center gap-1">
-                                        {getPostIcon(post)}
-                                        <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">
-                                            {getPostTypeLabel(post)}
-                                        </span>
-                                    </div>
+                            <div className="absolute top-3 left-3 z-20 pointer-events-none">
+                                <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5">
+                                    <Timer className="h-3 w-3 text-blue-600" />
+                                    <span className="text-[10px] font-semibold text-gray-700">
+                                        {formatDistanceToNow(post.scheduledAt?.toDate ? post.scheduledAt.toDate() : new Date(post.scheduledAt), { addSuffix: false })}
+                                    </span>
                                 </div>
                             </div>
 
@@ -365,7 +228,7 @@ export default function PublishedTwitterPosts() {
                                     </p>
                                     <div className="flex items-center gap-1 text-[10px] text-gray-300 font-medium pt-1">
                                         <Calendar className="h-3 w-3" />
-                                        <span>{format(post.createdAt?.toDate ? post.createdAt.toDate() : new Date(post.createdAt), "MMM d, yyyy")}</span>
+                                        <span>{format(post.scheduledAt?.toDate ? post.scheduledAt.toDate() : new Date(post.scheduledAt), "MMM d, h:mm a")}</span>
                                     </div>
                                 </div>
                             </div>
@@ -398,14 +261,14 @@ export default function PublishedTwitterPosts() {
                                     </div>
                                 )}
                                 <div className="absolute top-6 left-6">
-                                    <Badge className="bg-blue-500 text-white border-0 px-3 py-1 font-bold">
-                                        <Twitter className="h-3 w-3 mr-2" />
-                                        Published on Twitter
+                                    <Badge className="bg-amber-500 text-white border-0 px-3 py-1 font-bold">
+                                        <Clock className="h-3 w-3 mr-2" />
+                                        Scheduled Tweet
                                     </Badge>
                                 </div>
                             </div>
 
-                            {/* Right: Details & Stats */}
+                            {/* Right: Details */}
                             <div className="w-full md:w-[400px] bg-white flex flex-col">
                                 <div className="p-6 border-b border-slate-50 flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -413,9 +276,9 @@ export default function PublishedTwitterPosts() {
                                             <Twitter className="h-5 w-5 text-blue-400" />
                                         </div>
                                         <div>
-                                            <div className="font-bold text-slate-900">Tweet Details</div>
+                                            <div className="font-bold text-slate-900">Scheduled Details</div>
                                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                {format(selectedPost.createdAt?.toDate ? selectedPost.createdAt.toDate() : new Date(selectedPost.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                                                Twitter Post
                                             </div>
                                         </div>
                                     </div>
@@ -426,23 +289,27 @@ export default function PublishedTwitterPosts() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-48 rounded-xl border-slate-100 shadow-xl">
-                                            <DropdownMenuItem className="p-3 cursor-pointer" onClick={() => window.open(selectedPost.tweetUrl, '_blank')}>
-                                                <ExternalLink className="h-4 w-4 mr-3 text-slate-400" />
-                                                View on Twitter
+                                            <DropdownMenuItem className="p-3 cursor-pointer">
+                                                <Edit3 className="h-4 w-4 mr-3 text-slate-400" />
+                                                Edit Content
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="p-3 cursor-pointer">
+                                                <Calendar className="h-4 w-4 mr-3 text-slate-400" />
+                                                Reschedule
                                             </DropdownMenuItem>
                                             <Separator className="my-1" />
                                             <AlertDialog>
                                                 <AlertDialogTrigger asChild>
                                                     <DropdownMenuItem className="p-3 cursor-pointer text-rose-600 focus:text-rose-600 focus:bg-rose-50" onSelect={(e) => e.preventDefault()}>
                                                         <Trash2 className="h-4 w-4 mr-3" />
-                                                        Delete Tweet
+                                                        Cancel Schedule
                                                     </DropdownMenuItem>
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent className="rounded-3xl border-0 shadow-2xl">
                                                     <AlertDialogHeader>
-                                                        <AlertDialogTitle className="text-xl font-bold text-slate-900">Delete Tweet?</AlertDialogTitle>
+                                                        <AlertDialogTitle className="text-xl font-bold text-slate-900">Cancel Schedule?</AlertDialogTitle>
                                                         <AlertDialogDescription className="text-slate-500">
-                                                            This will permanently remove the tweet from your dashboard and Twitter. This action cannot be undone.
+                                                            This will remove the tweet from your scheduled queue. You can always recreate it later.
                                                         </AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter className="gap-2">
@@ -452,7 +319,7 @@ export default function PublishedTwitterPosts() {
                                                             className="rounded-xl bg-rose-600 hover:bg-rose-700 font-bold"
                                                             disabled={isPending}
                                                         >
-                                                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete Permanently"}
+                                                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Cancellation"}
                                                         </AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
@@ -463,45 +330,23 @@ export default function PublishedTwitterPosts() {
 
                                 <ScrollArea className="flex-1">
                                     <div className="p-6 space-y-8">
+                                        <div className="p-4 rounded-2xl bg-blue-50 border border-blue-100 flex items-start gap-3">
+                                            <Timer className="h-5 w-5 text-blue-600 mt-0.5" />
+                                            <div>
+                                                <div className="text-sm font-bold text-blue-900">
+                                                    Posting {formatDistanceToNow(selectedPost.scheduledAt?.toDate ? selectedPost.scheduledAt.toDate() : new Date(selectedPost.scheduledAt), { addSuffix: true })}
+                                                </div>
+                                                <div className="text-xs text-blue-700">
+                                                    {format(selectedPost.scheduledAt?.toDate ? selectedPost.scheduledAt.toDate() : new Date(selectedPost.scheduledAt), "EEEE, MMMM d 'at' h:mm a")}
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div className="space-y-3">
                                             <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Message</Label>
                                             <p className="text-sm text-slate-700 leading-relaxed font-medium bg-slate-50 p-4 rounded-2xl border border-slate-100">
                                                 {selectedPost.message}
                                             </p>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <Label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Engagement Metrics</Label>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                                                    <div className="flex items-center gap-2 text-rose-500">
-                                                        <Heart className="h-4 w-4 fill-current" />
-                                                        <span className="text-xs font-bold uppercase tracking-wider">Likes</span>
-                                                    </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
-                                                </div>
-                                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                                                    <div className="flex items-center gap-2 text-emerald-500">
-                                                        <Repeat2 className="h-4 w-4" />
-                                                        <span className="text-xs font-bold uppercase tracking-wider">Retweets</span>
-                                                    </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
-                                                </div>
-                                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                                                    <div className="flex items-center gap-2 text-blue-500">
-                                                        <MessageCircle className="h-4 w-4" />
-                                                        <span className="text-xs font-bold uppercase tracking-wider">Replies</span>
-                                                    </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
-                                                </div>
-                                                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
-                                                    <div className="flex items-center gap-2 text-slate-500">
-                                                        <BarChart3 className="h-4 w-4" />
-                                                        <span className="text-xs font-bold uppercase tracking-wider">Views</span>
-                                                    </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
-                                                </div>
-                                            </div>
                                         </div>
 
                                         <div className="space-y-4">
@@ -515,15 +360,9 @@ export default function PublishedTwitterPosts() {
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm">
                                                     <span className="text-slate-500 font-medium flex items-center gap-2">
-                                                        <Globe className="h-4 w-4" /> Visibility
-                                                    </span>
-                                                    <span className="font-bold text-slate-900">Public</span>
-                                                </div>
-                                                <div className="flex items-center justify-between text-sm">
-                                                    <span className="text-slate-500 font-medium flex items-center gap-2">
                                                         <Clock className="h-4 w-4" /> Status
                                                     </span>
-                                                    <Badge className="bg-emerald-500 text-white border-0 rounded-lg font-bold uppercase text-[10px]">Published</Badge>
+                                                    <Badge className="bg-amber-500 text-white border-0 rounded-lg font-bold uppercase text-[10px]">Scheduled</Badge>
                                                 </div>
                                             </div>
                                         </div>
@@ -533,10 +372,9 @@ export default function PublishedTwitterPosts() {
                                 <div className="p-6 border-t border-slate-50">
                                     <Button
                                         className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold shadow-lg shadow-slate-200 transition-all"
-                                        onClick={() => window.open(selectedPost.tweetUrl, '_blank')}
+                                        onClick={() => setSelectedPost(null)}
                                     >
-                                        <ExternalLink className="h-4 w-4 mr-2" />
-                                        View on Twitter
+                                        Close Preview
                                     </Button>
                                 </div>
                             </div>

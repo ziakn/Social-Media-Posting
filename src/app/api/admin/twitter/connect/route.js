@@ -9,6 +9,7 @@ export async function GET() {
         "tweet.write",
         "users.read",
         "offline.access",
+        "media.write",
     ];
 
     // Twitter OAuth 2.0 Authorization URL

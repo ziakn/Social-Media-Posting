@@ -31,11 +31,17 @@ export async function checkTwitterConnection() {
             const data = snapshot.docs[0].data();
             accountData = {
                 connected: true,
-                displayName: data.username ? `@${data.username}` : (data.displayName || "Twitter Account"),
+                accountId: snapshot.docs[0].id,
+                displayName: data.displayName || (data.username ? `@${data.username}` : "Twitter Account"),
+                username: data.username || "",
+                profilePicture: data.profilePicture || data.profileImage || "",
                 tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null,
                 count: snapshot.size,
                 accounts: snapshot.docs.map(d => ({
-                    displayName: d.data().username ? `@${d.data().username}` : (d.data().displayName || "Twitter Account"),
+                    id: d.id,
+                    name: d.data().displayName || (d.data().username ? `@${d.data().username}` : "Twitter Account"),
+                    username: d.data().username || "",
+                    profilePicture: d.data().profilePicture || d.data().profileImage || "",
                     tokenExpiresAt: d.data().tokenExpiresAt?.toDate?.() || null
                 }))
             };
