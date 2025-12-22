@@ -53,11 +53,14 @@ import { checkInstagramConnection } from "../../../actions/social/instagram/conn
 import { disconnectInstagramAccount } from "../../../actions/social/instagram/disconnectAccount";
 import { checkThreadsConnection } from "../../../actions/social/threads/connectAccount";
 import { disconnectThreadsAccount } from "../../../actions/social/threads/disconnectAccount";
+import { checkTwitterConnection } from "../../../actions/social/twitter/connectAccount";
+import { disconnectTwitterAccount } from "../../../actions/social/twitter/disconnectAccount";
 
 const CONNECTION_FUNCTIONS = {
   facebook: checkFacebookConnection,
   instagram: checkInstagramConnection,
   threads: checkThreadsConnection,
+  twitter: checkTwitterConnection,
 };
 
 // Map platform keys to disconnect functions
@@ -65,6 +68,7 @@ const DISCONNECT_FUNCTIONS = {
   facebook: disconnectFacebookAccount,
   instagram: disconnectInstagramAccount,
   threads: disconnectThreadsAccount,
+  twitter: disconnectTwitterAccount,
 };
 
 export default function SocialConnectPage() {
@@ -80,17 +84,34 @@ export default function SocialConnectPage() {
     return platforms
       .filter((p) => p.status === "active")
       .map((p) => {
-        const IconComponent = ICONS[p.platform_name.toLowerCase()] || null;
+        const platformKey = p.platform_name.toLowerCase();
+        const IconComponent = ICONS[platformKey] || null;
         const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
         const checkConnection =
-          CONNECTION_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+          CONNECTION_FUNCTIONS[platformKey] || null;
         const disconnect =
-          DISCONNECT_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+          DISCONNECT_FUNCTIONS[platformKey] || null;
+
+        // Icon colors
+        const iconColors = {
+          facebook: "text-[#1877F2]",
+          instagram: "text-[#E4405F]",
+          twitter: "text-[#000000]",
+          linkedin: "text-[#0A66C2]",
+          whatsapp: "text-[#25D366]",
+          threads: "text-[#000000]",
+          telegram: "text-[#0088cc]",
+          bluesky: "text-[#0085ff]",
+          reddit: "text-[#FF4500]",
+        };
+
+        const iconColor = iconColors[platformKey] || "text-primary";
+
         return {
-          key: p.platform_name.toLowerCase(),
+          key: platformKey,
           name: p.platform_name,
           icon: IconComponent ? (
-            <IconComponent className="w-5 h-5 text-blue-600" />
+            <IconComponent className={`w-5 h-5 ${iconColor}`} />
           ) : null,
           description: p.description,
           url: url,
@@ -219,7 +240,8 @@ export default function SocialConnectPage() {
       toast.warning(`Integration for ${platformKey} is coming soon!`);
       return;
     }
-    window.location.href = platform.url || `/api/admin/${platformKey}/connect`;
+
+    window.location.href = `/api/admin/${platformKey}/connect`;
   };
 
   const handleDisconnect = (platformKey, disconnectFn) => {
