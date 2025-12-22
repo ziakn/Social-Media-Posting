@@ -7,18 +7,21 @@ import {
     where,
     getDocs,
     orderBy,
+    limit,
+    startAfter,
     deleteDoc,
     doc,
-    updateDoc,
-    serverTimestamp
+    getCountFromServer,
+    Timestamp
 } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 
 /**
- * Fetch published tweets for the current user
+ * Fetch connected Twitter accounts for the current user
  */
-export async function getTwitterPublishedPosts() {
+export async function getUserTwitterAccounts() {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get("token")?.value;
@@ -28,22 +31,138 @@ export async function getTwitterPublishedPosts() {
             return { success: false, message: "Invalid or expired token" };
         }
 
+        // Fetch from social_accounts collection
         const q = query(
-            collection(db, "twitter_posts"),
+            collection(db, "social_accounts"),
             where("userId", "==", user.id),
-            where("status", "==", "posted"),
-            orderBy("createdAt", "desc")
+            where("platform", "==", "twitter")
         );
 
         const snapshot = await getDocs(q);
-        const posts = snapshot.docs.map(doc => ({
+        const accounts = snapshot.docs.map(doc => ({
             id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate?.() || null,
-            updatedAt: doc.data().updatedAt?.toDate?.() || null,
+            ...doc.data()
         }));
 
-        return { success: true, posts };
+        return { success: true, accounts };
+    } catch (error) {
+        console.error("Error fetching Twitter accounts:", error);
+        return { success: false, message: "Failed to fetch Twitter accounts" };
+    }
+}
+
+/**
+ * Fetch published tweets with filtering, sorting, and pagination
+ */
+export async function getTwitterPublishedPosts({
+    pageSize = 12,
+    lastDocId = null,
+    filters = {},
+    sortBy = "newest"
+} = {}) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, message: "Invalid or expired token" };
+        }
+
+        let constraints = [
+            where("userId", "==", user.id),
+            where("status", "==", "posted")
+        ];
+
+        // Apply filters
+        if (filters.accountId && filters.accountId !== "all") {
+            constraints.push(where("accountId", "==", filters.accountId));
+        }
+
+        // Server-side postType filtering
+        // Note: This assumes 'postType' field exists on the document.
+        // If data is inconsistent (legacy posts), this might exclude valid posts.
+        if (filters.postType && filters.postType !== "all") {
+            constraints.push(where("postType", "==", filters.postType));
+        }
+
+        if (filters.startDate) {
+            const startDate = new Date(filters.startDate);
+            constraints.push(where("createdAt", ">=", Timestamp.fromDate(startDate)));
+        }
+
+        if (filters.endDate) {
+            const endDate = new Date(filters.endDate);
+            // Set to end of day
+            endDate.setHours(23, 59, 59, 999);
+            constraints.push(where("createdAt", "<=", Timestamp.fromDate(endDate)));
+        }
+
+        // Apply sorting
+        if (sortBy === "oldest") {
+            constraints.push(orderBy("createdAt", "asc"));
+        } else {
+            constraints.push(orderBy("createdAt", "desc"));
+        }
+
+        // Build main query
+        const postsCollection = collection(db, "twitter_posts");
+
+        // Calculate statistics (count) for the current filter set
+        const countQuery = query(postsCollection, ...constraints);
+        const countSnapshot = await getCountFromServer(countQuery);
+        const totalCount = countSnapshot.data().count;
+
+        // Apply pagination
+        constraints.push(limit(pageSize));
+
+        if (lastDocId) {
+            const lastDocRef = await getDocs(query(postsCollection, where("__name__", "==", lastDocId)));
+            if (!lastDocRef.empty) {
+                constraints.push(startAfter(lastDocRef.docs[0]));
+            }
+        }
+
+        const q = query(postsCollection, ...constraints);
+        const snapshot = await getDocs(q);
+
+        const posts = snapshot.docs.map(doc => {
+            const data = doc.data();
+
+            // Normalize post type logic for display (fallback)
+            let postType = data.postType || "text";
+            if (!data.postType && data.mediaUrls?.length > 0) {
+                const type = data.mediaUrls[0].type;
+                if (type === "image") postType = "image";
+                else if (type === "video") postType = "video";
+            }
+
+            return {
+                id: doc.id,
+                ...data,
+                postType,
+                createdAt: data.createdAt?.toDate?.() || null,
+                updatedAt: data.updatedAt?.toDate?.() || null,
+                scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt,
+            };
+        });
+
+        const statistics = {
+            totalPosts: totalCount,
+            totalLikes: 0,
+            totalRetweets: 0
+        };
+
+        return {
+            success: true,
+            posts: posts, // Returned posts are already filtered by the query
+            pagination: {
+                hasMore: posts.length === pageSize,
+                lastVisible: snapshot.docs[snapshot.docs.length - 1]?.id || null,
+                total: totalCount
+            },
+            statistics
+        };
     } catch (err) {
         console.error("Error fetching Twitter published posts:", err);
         return { success: false, message: err.message };
@@ -102,6 +221,7 @@ export async function deleteTwitterPost(postId) {
         const postRef = doc(db, "twitter_posts", postId);
         await deleteDoc(postRef);
 
+        revalidatePath("/admin/twitter/published");
         return { success: true, message: "Post deleted successfully" };
     } catch (err) {
         console.error("Error deleting Twitter post:", err);

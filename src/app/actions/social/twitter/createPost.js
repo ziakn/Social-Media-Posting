@@ -9,6 +9,35 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 
 /**
+ * Enhanced Twitter API response handler
+ */
+async function handleTwitterResponse(res, context = "Twitter API") {
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+        let message = data.errors?.[0]?.message || data.detail || `Failed to ${context}`;
+
+        if (res.status === 429) {
+            const resetTime = res.headers.get("x-rate-limit-reset");
+            if (resetTime) {
+                const date = new Date(parseInt(resetTime) * 1000);
+                const timeString = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                message = `Twitter rate limit exceeded. You can try again after ${timeString}.`;
+            } else {
+                message = "Twitter rate limit exceeded. Please wait a while before trying again.";
+            }
+        }
+
+        const error = new Error(message);
+        error.status = res.status;
+        error.data = data;
+        throw error;
+    }
+
+    return data;
+}
+
+/**
  * Create a Twitter Post
  */
 export async function createTwitterPost({
@@ -83,15 +112,18 @@ export async function createTwitterPost({
                     body: JSON.stringify(tweetBody),
                 });
 
-                const data = await res.json();
+                // MOCK 429 FOR VERIFICATION (REMOVE AFTER TEST)
+                /*
+                const mockResetTime = Math.floor(Date.now() / 1000) + 900; // 15 mins from now
+                const res = {
+                    ok: false,
+                    status: 429,
+                    headers: new Map([["x-rate-limit-reset", mockResetTime.toString()]]),
+                    json: async () => ({ detail: "Too Many Requests" })
+                };
+                */
 
-                if (!res.ok) {
-                    const error = new Error(data.errors?.[0]?.message || data.detail || "Failed to create tweet");
-                    error.status = res.status;
-                    error.data = data;
-                    throw error;
-                }
-
+                const data = await handleTwitterResponse(res, "create tweet");
                 return { success: true, tweetId: data.data.id, mediaIds };
             } else {
                 // Return data for scheduling logic
@@ -211,23 +243,7 @@ async function handleTwitterMediaUpload(url, accessToken, mediaType) {
             }),
         });
 
-        const initText = await initRes.text();
-        let initData;
-        try {
-            initData = JSON.parse(initText);
-        } catch (e) {
-            console.error("Twitter Media INIT non-JSON response:", initText);
-            const error = new Error(`Media INIT failure (${initRes.status}): ${initText.slice(0, 50)}`);
-            error.status = initRes.status;
-            throw error;
-        }
-
-        if (!initRes.ok) {
-            const error = new Error(initData.error || initData.errors?.[0]?.message || initData.detail || "Media INIT failed");
-            error.status = initRes.status;
-            error.data = initData;
-            throw error;
-        }
+        const initData = await handleTwitterResponse(initRes, "initialize media upload");
 
         // Comprehensive ID extraction for X API v2 variations
         const mediaId = initData.data?.id ||
@@ -263,11 +279,7 @@ async function handleTwitterMediaUpload(url, accessToken, mediaType) {
             });
 
             if (!appendRes.ok) {
-                const appendText = await appendRes.text();
-                console.error(`Twitter Media APPEND failed (segment ${segmentIndex}):`, appendText);
-                const error = new Error(`Media APPEND failed (${appendRes.status}): ${appendText.slice(0, 100)}`);
-                error.status = appendRes.status;
-                throw error;
+                await handleTwitterResponse(appendRes, `append media segment ${segmentIndex}`);
             }
             segmentIndex++;
         }
@@ -280,23 +292,7 @@ async function handleTwitterMediaUpload(url, accessToken, mediaType) {
             },
         });
 
-        const finalizeText = await finalizeRes.text();
-        let finalizeData;
-        try {
-            finalizeData = JSON.parse(finalizeText);
-        } catch (e) {
-            console.error("Twitter Media FINALIZE non-JSON response:", finalizeText);
-            const error = new Error(`Media FINALIZE failed (${finalizeRes.status}): ${finalizeText.slice(0, 100)}`);
-            error.status = finalizeRes.status;
-            throw error;
-        }
-
-        if (!finalizeRes.ok) {
-            const error = new Error(finalizeData.error || finalizeData.errors?.[0]?.message || "Media FINALIZE failed");
-            error.status = finalizeRes.status;
-            error.data = finalizeData;
-            throw error;
-        }
+        const finalizeData = await handleTwitterResponse(finalizeRes, "finalize media upload");
 
         // 4. STATUS CHECK (For videos/GIFs)
         const processingInfo = finalizeData.data?.processing_info || finalizeData.processing_info;

@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useCallback, useTransition } from "react";
+import { format } from "date-fns";
 import {
-    Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter
+    Card, CardContent, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import {
-    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+    Dialog, DialogContent
 } from "@/components/ui/dialog";
 import {
     AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -22,37 +23,88 @@ import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    Twitter, MoreVertical, ExternalLink, Trash2, Calendar, MessageCircle,
-    Heart, Repeat2, BarChart3, Search, Filter, ArrowUpDown, Eye,
-    Image as ImageIcon, Video, Link2, FileText, Loader2, Clock, Globe, Play
+    Twitter, MoreVertical, ExternalLink, Trash2, Calendar as CalendarIcon, MessageCircle,
+    Heart, Repeat2, BarChart3, Search, Eye,
+    Image as ImageIcon, Video, Link2, FileText, Loader2, Clock, Globe, Play, X, AlertCircle
 } from "lucide-react";
-import { format } from "date-fns";
 import { toast } from "sonner";
-import { getTwitterPublishedPosts, deleteTwitterPost } from "@/app/actions/social/twitter/twitterPostsActions";
+import { getTwitterPublishedPosts, deleteTwitterPost, getUserTwitterAccounts } from "@/app/actions/social/twitter/twitterPostsActions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
-export default function PublishedTwitterPosts() {
+export default function PublishedPosts() {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const [selectedPost, setSelectedPost] = useState(null);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [filterType, setFilterType] = useState("all");
-    const [sortBy, setSortBy] = useState("newest");
 
+    // Filter State
+    const [filters, setFilters] = useState({
+        status: "published",
+        postType: "all",
+        accountId: "all",
+        startDate: "",
+        endDate: "",
+    });
+    const [searchQuery, setSearchQuery] = useState("");
+    const [sortBy, setSortBy] = useState("newest");
+    const [twitterAccounts, setTwitterAccounts] = useState([]);
+
+    // Pagination State
+    const [pagination, setPagination] = useState({
+        hasMore: false,
+        lastVisible: null,
+        pageSize: 12,
+        totalCount: 0
+    });
+
+    const [statistics, setStatistics] = useState(null);
+
+    // Load Twitter Accounts
     useEffect(() => {
-        loadPosts();
+        const loadAccounts = async () => {
+            try {
+                const res = await getUserTwitterAccounts();
+                if (res.success) {
+                    setTwitterAccounts(res.accounts);
+                }
+            } catch (error) {
+                console.error("Failed to load Twitter accounts", error);
+            }
+        };
+        loadAccounts();
     }, []);
 
-    const loadPosts = async () => {
+    // Load Posts
+    const loadPosts = useCallback(async (reset = false, lastDocId = null) => {
         setLoading(true);
         try {
-            const res = await getTwitterPublishedPosts();
+            const res = await getTwitterPublishedPosts({
+                pageSize: pagination.pageSize,
+                lastDocId: reset ? null : lastDocId,
+                filters,
+                sortBy
+            });
+
             if (res.success) {
-                setPosts(res.posts);
+                if (reset || !lastDocId) {
+                    setPosts(res.posts);
+                } else {
+                    setPosts(prev => [...prev, ...res.posts]);
+                }
+                setStatistics(res.statistics);
+                setPagination(prev => ({
+                    ...prev,
+                    hasMore: res.pagination?.hasMore || false,
+                    lastVisible: res.pagination?.lastVisible || null,
+                    totalCount: res.pagination?.total || 0
+                }));
             } else {
                 toast.error(res.message);
             }
@@ -61,6 +113,25 @@ export default function PublishedTwitterPosts() {
         } finally {
             setLoading(false);
         }
+    }, [pagination.pageSize, filters, sortBy]);
+
+    useEffect(() => {
+        loadPosts(true);
+    }, [loadPosts]);
+
+    const handleFilterChange = (key, value) => {
+        setFilters(prev => ({ ...prev, [key]: value }));
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            status: "published",
+            postType: "all",
+            accountId: "all",
+            startDate: "",
+            endDate: "",
+        });
+        setSearchQuery("");
     };
 
     const handleDelete = async (postId) => {
@@ -80,40 +151,22 @@ export default function PublishedTwitterPosts() {
         });
     };
 
-    const filteredPosts = posts
-        .filter(post => {
-            const matchesSearch = post.message?.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesType = filterType === "all" ||
-                (filterType === "text" && !post.mediaUrls?.length) ||
-                (filterType === "images" && post.mediaUrls?.some(m => m.type === "image")) ||
-                (filterType === "video" && post.mediaUrls?.some(m => m.type === "video")) ||
-                (filterType === "link" && post.mediaUrls?.some(m => m.type === "link"));
-            return matchesSearch && matchesType;
-        })
-        .sort((a, b) => {
-            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt);
-            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt);
-
-            if (sortBy === "newest") return dateB.getTime() - dateA.getTime();
-            if (sortBy === "oldest") return dateA.getTime() - dateB.getTime();
-            return 0;
-        });
-
     const getPostIcon = (post) => {
-        if (post.mediaUrls?.some(m => m.type === "image")) return <ImageIcon className="h-4 w-4" />;
-        if (post.mediaUrls?.some(m => m.type === "video")) return <Video className="h-4 w-4" />;
-        if (post.mediaUrls?.some(m => m.type === "link")) return <Link2 className="h-4 w-4" />;
+        if (post.postType === "image") return <ImageIcon className="h-4 w-4" />;
+        if (post.postType === "video") return <Video className="h-4 w-4" />;
+        if (post.postType === "link") return <Link2 className="h-4 w-4" />;
         return <FileText className="h-4 w-4" />;
     };
 
-    const getPostTypeLabel = (post) => {
-        if (post.mediaUrls?.some(m => m.type === "image")) return "Image";
-        if (post.mediaUrls?.some(m => m.type === "video")) return "Video";
-        if (post.mediaUrls?.some(m => m.type === "link")) return "Link";
-        return "Text";
-    };
+    // Client-side search filtering
+    const filteredAndSortedPosts = posts.filter(post => {
+        if (searchQuery) {
+            return post.message?.toLowerCase().includes(searchQuery.toLowerCase());
+        }
+        return true;
+    });
 
-    if (loading) {
+    if (loading && posts.length === 0) {
         return (
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -154,37 +207,9 @@ export default function PublishedTwitterPosts() {
                                     </div>
                                     <div className="text-left">
                                         <div className="text-xl font-bold text-gray-900">
-                                            {posts.length}
+                                            {statistics?.totalPosts || posts.length}
                                         </div>
                                         <div className="text-xs text-gray-500">Total Tweets</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-rose-100 flex items-center justify-center">
-                                        <Heart className="h-4 w-4 text-rose-600" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-xl font-bold text-gray-900">
-                                            --
-                                        </div>
-                                        <div className="text-xs text-gray-500">Total Likes</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                                        <Repeat2 className="h-4 w-4 text-emerald-600" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="text-xl font-bold text-gray-900">
-                                            --
-                                        </div>
-                                        <div className="text-xs text-gray-500">Retweets</div>
                                     </div>
                                 </div>
                             </div>
@@ -211,18 +236,54 @@ export default function PublishedTwitterPosts() {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <Select value={filterType} onValueChange={setFilterType}>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={clearFilters}
+                                    className="gap-2"
+                                >
+                                    <X className="h-4 w-4" />
+                                    Clear Filters
+                                </Button>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+                            <div className="flex-1 flex flex-wrap gap-3">
+                                <Select value={filters.postType} onValueChange={(value) => handleFilterChange("postType", value)}>
                                     <SelectTrigger className="w-full lg:w-[150px]">
                                         <SelectValue placeholder="Post Type" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="all">All Types</SelectItem>
                                         <SelectItem value="text">Text Only</SelectItem>
-                                        <SelectItem value="images">Images</SelectItem>
+                                        <SelectItem value="image">Images</SelectItem>
                                         <SelectItem value="video">Video</SelectItem>
                                         <SelectItem value="link">Link</SelectItem>
                                     </SelectContent>
                                 </Select>
+
+                                {twitterAccounts.length > 0 && (
+                                    <Select value={filters.accountId} onValueChange={(value) => handleFilterChange("accountId", value)}>
+                                        <SelectTrigger className="w-full lg:w-[180px]">
+                                            <SelectValue placeholder="Account" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">All Accounts</SelectItem>
+                                            {twitterAccounts.map((account) => (
+                                                <SelectItem key={account.id} value={account.accountId}>
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="h-4 w-4">
+                                                            <AvatarImage src={account.profilePicture} />
+                                                            <AvatarFallback>{account.username?.[0] || "?"}</AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="truncate">{account.username}</span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
 
                                 <Select value={sortBy} onValueChange={setSortBy}>
                                     <SelectTrigger className="w-full lg:w-[150px]">
@@ -234,30 +295,59 @@ export default function PublishedTwitterPosts() {
                                     </SelectContent>
                                 </Select>
 
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        setSearchQuery("");
-                                        setFilterType("all");
-                                    }}
-                                    className="gap-2"
-                                >
-                                    <Filter className="h-4 w-4" />
-                                    Clear
-                                </Button>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className={cn("w-[240px] justify-start text-left font-normal", !filters.startDate && "text-muted-foreground")}>
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {filters.startDate ? format(new Date(filters.startDate), "PPP") : <span>Pick a start date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={filters.startDate ? new Date(filters.startDate) : undefined}
+                                            onSelect={(date) => handleFilterChange("startDate", date ? date.toISOString() : "")}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
                             </div>
                         </div>
+
+                        {/* Active Filters Display */}
+                        {(filters.postType !== "all" || filters.accountId !== "all" || filters.startDate || filters.endDate) && (
+                            <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                                <span className="text-sm text-gray-600">Active filters:</span>
+                                {filters.postType !== "all" && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        Type: {filters.postType}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("postType", "all")} />
+                                    </Badge>
+                                )}
+                                {filters.startDate && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        Start Date: {format(new Date(filters.startDate), "MMM dd")}
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("startDate", "")} />
+                                    </Badge>
+                                )}
+                                {filters.accountId !== "all" && (
+                                    <Badge variant="secondary" className="gap-1">
+                                        Account Filter Active
+                                        <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("accountId", "all")} />
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
 
             {/* Grid View */}
-            {filteredPosts.length === 0 ? (
+            {filteredAndSortedPosts.length === 0 ? (
                 <Card className="border-dashed">
                     <CardContent className="p-12 text-center">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Twitter className="h-8 w-8 text-muted-foreground" />
+                            <AlertCircle className="h-8 w-8 text-muted-foreground" />
                         </div>
                         <h3 className="text-lg font-semibold mb-2">
                             {searchQuery ? "No matching tweets found" : "No tweets available"}
@@ -265,14 +355,14 @@ export default function PublishedTwitterPosts() {
                         <p className="text-muted-foreground mb-6">
                             {searchQuery ? "Try adjusting your search or filters" : "Your published tweets will appear here"}
                         </p>
-                        <Button onClick={() => { setSearchQuery(""); setFilterType("all"); }} variant="outline">
+                        <Button onClick={clearFilters} variant="outline">
                             Clear All Filters
                         </Button>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredPosts.map((post) => (
+                    {filteredAndSortedPosts.map((post) => (
                         <Card
                             key={post.id}
                             className="group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col"
@@ -341,7 +431,7 @@ export default function PublishedTwitterPosts() {
                                     <div className="flex items-center gap-1">
                                         {getPostIcon(post)}
                                         <span className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">
-                                            {getPostTypeLabel(post)}
+                                            {post.postType}
                                         </span>
                                     </div>
                                 </div>
@@ -364,8 +454,8 @@ export default function PublishedTwitterPosts() {
                                         {post.message || "No caption"}
                                     </p>
                                     <div className="flex items-center gap-1 text-[10px] text-gray-300 font-medium pt-1">
-                                        <Calendar className="h-3 w-3" />
-                                        <span>{format(post.createdAt?.toDate ? post.createdAt.toDate() : new Date(post.createdAt), "MMM d, yyyy")}</span>
+                                        <CalendarIcon className="h-3 w-3" />
+                                        <span>{format(post.createdAt ? new Date(post.createdAt) : new Date(), "MMM d, yyyy")}</span>
                                     </div>
                                 </div>
                             </div>
@@ -415,7 +505,7 @@ export default function PublishedTwitterPosts() {
                                         <div>
                                             <div className="font-bold text-slate-900">Tweet Details</div>
                                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                {format(selectedPost.createdAt?.toDate ? selectedPost.createdAt.toDate() : new Date(selectedPost.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+                                                {format(selectedPost.createdAt ? new Date(selectedPost.createdAt) : new Date(), "MMMM d, yyyy 'at' h:mm a")}
                                             </div>
                                         </div>
                                     </div>
@@ -478,28 +568,28 @@ export default function PublishedTwitterPosts() {
                                                         <Heart className="h-4 w-4 fill-current" />
                                                         <span className="text-xs font-bold uppercase tracking-wider">Likes</span>
                                                     </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
+                                                    <div className="text-2xl font-bold text-slate-900">{selectedPost.metrics?.likes || 0}</div>
                                                 </div>
                                                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                                                     <div className="flex items-center gap-2 text-emerald-500">
                                                         <Repeat2 className="h-4 w-4" />
                                                         <span className="text-xs font-bold uppercase tracking-wider">Retweets</span>
                                                     </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
+                                                    <div className="text-2xl font-bold text-slate-900">{selectedPost.metrics?.retweets || 0}</div>
                                                 </div>
                                                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                                                     <div className="flex items-center gap-2 text-blue-500">
                                                         <MessageCircle className="h-4 w-4" />
                                                         <span className="text-xs font-bold uppercase tracking-wider">Replies</span>
                                                     </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
+                                                    <div className="text-2xl font-bold text-slate-900">{selectedPost.metrics?.replies || 0}</div>
                                                 </div>
                                                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <BarChart3 className="h-4 w-4" />
                                                         <span className="text-xs font-bold uppercase tracking-wider">Views</span>
                                                     </div>
-                                                    <div className="text-2xl font-bold text-slate-900">--</div>
+                                                    <div className="text-2xl font-bold text-slate-900">{selectedPost.metrics?.views || 0}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -511,7 +601,7 @@ export default function PublishedTwitterPosts() {
                                                     <span className="text-slate-500 font-medium flex items-center gap-2">
                                                         <FileText className="h-4 w-4" /> Type
                                                     </span>
-                                                    <Badge variant="outline" className="rounded-lg font-bold uppercase text-[10px]">{getPostTypeLabel(selectedPost)}</Badge>
+                                                    <Badge variant="outline" className="rounded-lg font-bold uppercase text-[10px]">{selectedPost.postType}</Badge>
                                                 </div>
                                                 <div className="flex items-center justify-between text-sm">
                                                     <span className="text-slate-500 font-medium flex items-center gap-2">
