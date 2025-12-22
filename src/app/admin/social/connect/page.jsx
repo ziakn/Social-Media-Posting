@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Card,
   CardHeader,
@@ -75,28 +75,30 @@ export default function SocialConnectPage() {
   const [callbackName, setCallbackName] = useState(null);
 
   // Merge Firestore active platforms with master socials
-  const socials = platforms
-    .filter((p) => p.status === "active")
-    .map((p) => {
-      const IconComponent = ICONS[p.platform_name.toLowerCase()] || null;
-      const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
-      const checkConnection =
-        CONNECTION_FUNCTIONS[p.platform_name.toLowerCase()] || null;
-      const disconnect =
-        DISCONNECT_FUNCTIONS[p.platform_name.toLowerCase()] || null;
-      return {
-        key: p.platform_name.toLowerCase(),
-        name: p.platform_name,
-        icon: IconComponent ? (
-          <IconComponent className="w-5 h-5 text-blue-600" />
-        ) : null,
-        description: p.description,
-        url: url,
-        checkConnection: checkConnection,
-        disconnect: disconnect,
-        ...p, // keep other fields like id, created_at, status
-      };
-    });
+  const socials = useMemo(() => {
+    return platforms
+      .filter((p) => p.status === "active")
+      .map((p) => {
+        const IconComponent = ICONS[p.platform_name.toLowerCase()] || null;
+        const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
+        const checkConnection =
+          CONNECTION_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+        const disconnect =
+          DISCONNECT_FUNCTIONS[p.platform_name.toLowerCase()] || null;
+        return {
+          key: p.platform_name.toLowerCase(),
+          name: p.platform_name,
+          icon: IconComponent ? (
+            <IconComponent className="w-5 h-5 text-blue-600" />
+          ) : null,
+          description: p.description,
+          url: url,
+          checkConnection: checkConnection,
+          disconnect: disconnect,
+          ...p, // keep other fields like id, created_at, status
+        };
+      });
+  }, [platforms]);
 
   // Fetch active platforms from API
   const fetchPlatforms = async () => {
@@ -106,7 +108,13 @@ export default function SocialConnectPage() {
         headers: { "Content-Type": "application/json" },
       });
       const data = await res.json();
-      setPlatforms(data.platforms || []);
+      // Only update if data actually changed to avoid unnecessary re-renders
+      setPlatforms(prev => {
+        if (JSON.stringify(prev) !== JSON.stringify(data.platforms)) {
+          return data.platforms || [];
+        }
+        return prev;
+      });
     } catch (error) {
       console.error("Error fetching platforms:", error);
     }
@@ -121,12 +129,12 @@ export default function SocialConnectPage() {
           const result = await platform.checkConnection();
           conn[platform.key] = result.connected
             ? {
-                connected: true,
-                displayName: result.displayName,
-                tokenExpiresAt: result.tokenExpiresAt,
-                count: result.count,
-                accounts: result.accounts,
-              }
+              connected: true,
+              displayName: result.displayName,
+              tokenExpiresAt: result.tokenExpiresAt,
+              count: result.count,
+              accounts: result.accounts,
+            }
             : false;
         } catch {
           conn[platform.key] = false;
@@ -140,24 +148,25 @@ export default function SocialConnectPage() {
 
   // Load platforms and connections
   useEffect(() => {
-    let intervalId;
-
     const init = async () => {
       setLoading(true);
-      await fetchPlatforms(); // your API call
+      await fetchPlatforms();
       setLoading(false);
     };
 
     init();
-    intervalId = setInterval(() => {
-      init();
-    }, 10000);
+
+    // Silent polling every 30 seconds
+    const intervalId = setInterval(() => {
+      fetchPlatforms();
+    }, 30000);
+
     return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
     if (socials.length > 0) {
-      fetchConnections().finally(() => setLoading(false));
+      fetchConnections();
     }
   }, [socials]);
 
@@ -175,10 +184,8 @@ export default function SocialConnectPage() {
 
       if (status === "success") {
         toast.success(
-          `${
-            platform.charAt(0).toUpperCase() + platform.slice(1)
-          } account connected successfully${
-            name ? `: ${decodeURIComponent(name)}` : ""
+          `${platform.charAt(0).toUpperCase() + platform.slice(1)
+          } account connected successfully${name ? `: ${decodeURIComponent(name)}` : ""
           }`
         );
         setConnections((prev) => ({
@@ -190,8 +197,7 @@ export default function SocialConnectPage() {
         }));
       } else {
         toast.error(
-          `${
-            platform.charAt(0).toUpperCase() + platform.slice(1)
+          `${platform.charAt(0).toUpperCase() + platform.slice(1)
           } connection failed`
         );
       }
@@ -269,16 +275,14 @@ export default function SocialConnectPage() {
           return (
             <Card
               key={item.key}
-              className={`transition-all hover:shadow-md ${
-                isConnected ? "border-green-400" : "border-border"
-              }`}
+              className={`transition-all hover:shadow-md ${isConnected ? "border-green-400" : "border-border"
+                }`}
             >
               <CardHeader className="flex flex-row items-center justify-between pb-2 relative">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`p-2 rounded-lg ${
-                      isConnected ? "bg-green-50" : "bg-muted"
-                    }`}
+                    className={`p-2 rounded-lg ${isConnected ? "bg-green-50" : "bg-muted"
+                      }`}
                   >
                     {item.icon}
                   </div>

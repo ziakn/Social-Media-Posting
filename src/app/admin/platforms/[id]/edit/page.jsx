@@ -24,6 +24,7 @@ export default function EditPlatform() {
     description: "",
     icon_url: "",
     status: "active",
+    sorting_number: 0,
   });
 
   useEffect(() => {
@@ -40,6 +41,7 @@ export default function EditPlatform() {
           description: data.platform.description || "",
           icon_url: data.platform.icon_url,
           status: data.platform.status,
+          sorting_number: data.platform.sorting_number || 0,
         });
       } catch {
         toast.error("Failed to load platform");
@@ -158,6 +160,19 @@ export default function EditPlatform() {
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
+            </div>
+
+            {/* Sorting Number */}
+            <div>
+              <label className="block text-sm mb-1">Sorting Number</label>
+              <input
+                type="number"
+                className="w-full border rounded px-3 py-2"
+                value={form.sorting_number}
+                onChange={(e) =>
+                  setForm({ ...form, sorting_number: e.target.value })
+                }
+              />
             </div>
 
             <div className="flex justify-end pt-4">

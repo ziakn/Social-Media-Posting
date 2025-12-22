@@ -1,7 +1,7 @@
 import { db } from "@/lib/firebase";
 import { collection, getDocs, getDoc, doc, addDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 function serializeBigInt(obj) {
   return JSON.parse(
@@ -37,6 +37,9 @@ export const GET = async () => {
     //  Resolve all async map promises
     const platforms = await Promise.all(platformsPromises);
 
+    // Sort by sorting_number
+    platforms.sort((a, b) => (a.sorting_number || 0) - (b.sorting_number || 0));
+
     return new Response(
       JSON.stringify({ success: true, platforms: serializeBigInt(platforms) }),
       { status: 200 }
@@ -53,7 +56,7 @@ export const GET = async () => {
 export async function POST(req) {
   try {
     console.log(req.body);
-    const { platform_name,description, icon_url, status } = await req.json();
+    const { platform_name, description, icon_url, status, sorting_number } = await req.json();
 
     if (!platform_name || !description || !icon_url || !status) {
       return new Response(
@@ -77,6 +80,7 @@ export async function POST(req) {
       description,
       icon_url,
       status,
+      sorting_number: parseInt(sorting_number) || 0,
       created_at: new Date(),
     });
 

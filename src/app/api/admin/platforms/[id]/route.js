@@ -4,7 +4,7 @@ import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export async function GET(req, { params }) {
   try {
-    
+
     const { id } = await params;
     const platformRef = doc(db, "platforms", id);
     const platformSnap = await getDoc(platformRef);
@@ -52,7 +52,7 @@ export async function DELETE(req, { params }) {
 export async function PUT(req, { params }) {
   try {
     const { id } = await params;
-    const { platform_name, description, icon_url, status } = await req.json();
+    const { platform_name, description, icon_url, status, sorting_number } = await req.json();
     const platformRef = doc(db, "platforms", id);
     const platformSnap = await getDoc(platformRef);
 
@@ -60,7 +60,13 @@ export async function PUT(req, { params }) {
       return new Response(JSON.stringify({ success: false, message: "Platform not found" }), { status: 404 });
     }
 
-    const data = { platform_name, description, icon_url, status };
+    const data = {
+      platform_name,
+      description,
+      icon_url,
+      status,
+      sorting_number: parseInt(sorting_number) || 0
+    };
 
     await updateDoc(platformRef, data);
 

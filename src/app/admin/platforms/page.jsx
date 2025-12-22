@@ -93,7 +93,7 @@ export default function UsersList() {
           {platforms.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <p className="mb-4">No platforms found.</p>
-              {hasPermission('create_platforms') &&
+              {hasPermission('create_plateforms') &&
                 <Button
                   size="sm"
                   onClick={() => router.push(ROUTES.ADMIN_PLATFORM_CREATE)}
@@ -110,6 +110,7 @@ export default function UsersList() {
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Icon URL</TableHead>
+                  <TableHead>Sort</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -119,6 +120,7 @@ export default function UsersList() {
                     <TableCell className="font-medium">{platform.platform_name}</TableCell>
                     <TableCell className="text-wrap"><div dangerouslySetInnerHTML={{ __html: platform.description }} /></TableCell>
                     <TableCell> <Link href={platform.icon_url}>{platform.icon_url}</Link></TableCell>
+                    <TableCell>{platform.sorting_number || 0}</TableCell>
                     <TableCell className="text-right space-x-2">
                       {hasPermission('edit_plateforms') &&
                         <Button
