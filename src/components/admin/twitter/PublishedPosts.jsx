@@ -28,14 +28,16 @@ import { Calendar } from "@/components/ui/calendar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Twitter, MoreVertical, ExternalLink, Trash2, Calendar as CalendarIcon, MessageCircle,
-    Heart, Repeat2, BarChart3, Search, Eye,
+    Heart, Repeat2, BarChart3, Search, Eye, Edit3,
     Image as ImageIcon, Video, Link2, FileText, Loader2, Clock, Globe, Play, X, AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
-import { getTwitterPublishedPosts, deleteTwitterPost, getUserTwitterAccounts } from "@/app/actions/social/twitter/twitterPostsActions";
+import { getTwitterPublishedPosts, deleteTwitterPost, getUserTwitterAccounts, updateTwitterPost } from "@/app/actions/social/twitter/twitterPostsActions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export default function PublishedPosts() {
@@ -43,6 +45,8 @@ export default function PublishedPosts() {
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const [selectedPost, setSelectedPost] = useState(null);
+    const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
+    const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
 
     // Filter State
     const [filters, setFilters] = useState({
@@ -141,12 +145,32 @@ export default function PublishedPosts() {
                 if (res.success) {
                     toast.success(res.message);
                     setPosts(posts.filter(p => p.id !== postId));
+                    setDeleteDialog({ open: false, postId: null });
                     setSelectedPost(null);
                 } else {
                     toast.error(res.message);
                 }
             } catch (error) {
                 toast.error("An unexpected error occurred");
+            }
+        });
+    };
+
+    const handleUpdate = async () => {
+        if (!editDialog.postId || !editDialog.message.trim()) return;
+
+        startTransition(async () => {
+            try {
+                const res = await updateTwitterPost(editDialog.postId, editDialog.message);
+                if (res.success) {
+                    toast.success(res.message);
+                    setPosts(posts.map(p => p.id === editDialog.postId ? { ...p, message: editDialog.message } : p));
+                    setEditDialog({ open: false, postId: null, message: "" });
+                } else {
+                    toast.error(res.message);
+                }
+            } catch (error) {
+                toast.error("Failed to update post");
             }
         });
     };
@@ -417,7 +441,16 @@ export default function PublishedPosts() {
                                             Open on Twitter
                                         </DropdownMenuItem>
                                         <Separator className="my-1" />
-                                        <DropdownMenuItem onClick={() => handleDelete(post.id)} className="text-destructive focus:text-destructive">
+                                        <DropdownMenuItem onClick={() => setEditDialog({
+                                            open: true,
+                                            postId: post.id,
+                                            message: post.message || ""
+                                        })}>
+                                            <Edit3 className="mr-2 h-4 w-4" />
+                                            Edit Content
+                                        </DropdownMenuItem>
+                                        <Separator className="my-1" />
+                                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, postId: post.id })} className="text-destructive focus:text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Delete
                                         </DropdownMenuItem>
@@ -519,6 +552,10 @@ export default function PublishedPosts() {
                                             <DropdownMenuItem className="p-3 cursor-pointer" onClick={() => window.open(selectedPost.tweetUrl, '_blank')}>
                                                 <ExternalLink className="h-4 w-4 mr-3 text-slate-400" />
                                                 View on Twitter
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="p-3 cursor-pointer" onClick={() => setEditDialog({ open: true, postId: selectedPost.id, message: selectedPost.message || "" })}>
+                                                <Edit3 className="h-4 w-4 mr-3 text-slate-400" />
+                                                Edit Content
                                             </DropdownMenuItem>
                                             <Separator className="my-1" />
                                             <AlertDialog>
@@ -634,6 +671,65 @@ export default function PublishedPosts() {
                     )}
                 </DialogContent>
             </Dialog>
+            {/* Edit Dialog */}
+            <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog(prev => ({ ...prev, open }))}>
+                <DialogContent className="max-w-lg rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Edit Tweet</DialogTitle>
+                        <DialogDescription>
+                            Update the content of your published tweet.
+                            <br />
+                            <span className="text-amber-600 text-xs font-semibold mt-2 block">
+                                ⚠️ Note: This will delete the original tweet and repost it with the updated content. Engagement metrics will be reset.
+                            </span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="message" className="mb-2 block">Message</Label>
+                        <Textarea
+                            id="message"
+                            value={editDialog.message}
+                            onChange={(e) => setEditDialog(prev => ({ ...prev, message: e.target.value }))}
+                            placeholder="What's happening?"
+                            className="min-h-[150px] rounded-xl resize-none"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditDialog({ open: false, postId: null, message: "" })} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleUpdate}
+                            disabled={isPending || !editDialog.message.trim()}
+                            className="bg-blue-600 hover:bg-blue-700 rounded-xl min-w-[100px]"
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+                <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove the post from your dashboard. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => handleDelete(deleteDialog.postId)}
+                            className="bg-red-600 hover:bg-red-700 rounded-xl"
+                            disabled={isPending}
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete Post"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

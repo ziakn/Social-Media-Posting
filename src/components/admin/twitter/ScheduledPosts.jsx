@@ -32,10 +32,12 @@ import {
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
-import { getTwitterScheduledPosts, deleteTwitterPost, getUserTwitterAccounts } from "@/app/actions/social/twitter/twitterPostsActions";
+import { getTwitterScheduledPosts, deleteTwitterPost, getUserTwitterAccounts, updateTwitterPost, updateTwitterPostSchedule } from "@/app/actions/social/twitter/twitterPostsActions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import { DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -44,6 +46,9 @@ export default function ScheduledPosts() {
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const [selectedPost, setSelectedPost] = useState(null);
+    const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
+    const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+    const [scheduleDialog, setScheduleDialog] = useState({ open: false, postId: null, date: new Date(), time: "12:00" });
 
     // Filter State
     const [filters, setFilters] = useState({
@@ -137,12 +142,51 @@ export default function ScheduledPosts() {
                 if (res.success) {
                     toast.success(res.message);
                     setPosts(posts.filter(p => p.id !== postId));
+                    setDeleteDialog({ open: false, postId: null });
                     setSelectedPost(null);
                 } else {
                     toast.error(res.message);
                 }
             } catch (error) {
                 toast.error("An unexpected error occurred");
+            }
+        });
+    };
+
+    const handleUpdate = async () => {
+        if (!editDialog.postId || !editDialog.message.trim()) return;
+
+        startTransition(async () => {
+            try {
+                const res = await updateTwitterPost(editDialog.postId, editDialog.message);
+                if (res.success) {
+                    toast.success(res.message);
+                    setPosts(posts.map(p => p.id === editDialog.postId ? { ...p, message: editDialog.message } : p));
+                    setEditDialog({ open: false, postId: null, message: "" });
+                } else {
+                    toast.error(res.message);
+                }
+            } catch (error) {
+                toast.error("Failed to update post");
+            }
+        });
+    };
+
+    const handleScheduleUpdate = async (postId, newDate, newTime) => {
+        startTransition(async () => {
+            try {
+                const scheduledAt = new Date(`${format(newDate, "yyyy-MM-dd")}T${newTime}`);
+                const res = await updateTwitterPostSchedule(postId, scheduledAt.toISOString());
+                if (res.success) {
+                    toast.success(res.message);
+                    setPosts(posts.map(p => p.id === postId ? { ...p, scheduledAt: scheduledAt } : p));
+                    setScheduleDialog({ open: false, postId: null, date: new Date(), time: "12:00" });
+                    loadPosts(true); // Refresh to respect sorting
+                } else {
+                    toast.error(res.message);
+                }
+            } catch (error) {
+                toast.error("Failed to reschedule post");
             }
         });
     };
@@ -416,7 +460,28 @@ export default function ScheduledPosts() {
                                             View
                                         </DropdownMenuItem>
                                         <Separator className="my-1" />
-                                        <DropdownMenuItem onClick={() => handleDelete(post.id)} className="text-destructive focus:text-destructive">
+                                        <DropdownMenuItem onClick={() => setEditDialog({
+                                            open: true,
+                                            postId: post.id,
+                                            message: post.message || ""
+                                        })}>
+                                            <Edit3 className="mr-2 h-4 w-4" />
+                                            Edit Content
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => {
+                                            const postDate = post.scheduledAt?.toDate ? post.scheduledAt.toDate() : new Date(post.scheduledAt);
+                                            setScheduleDialog({
+                                                open: true,
+                                                postId: post.id,
+                                                date: postDate,
+                                                time: format(postDate, "HH:mm")
+                                            });
+                                        }}>
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            Reschedule
+                                        </DropdownMenuItem>
+                                        <Separator className="my-1" />
+                                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, postId: post.id })} className="text-destructive focus:text-destructive">
                                             <Trash2 className="mr-2 h-4 w-4" />
                                             Cancel Schedule
                                         </DropdownMenuItem>
@@ -533,11 +598,19 @@ export default function ScheduledPosts() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-48 rounded-xl border-slate-100 shadow-xl">
-                                            <DropdownMenuItem className="p-3 cursor-pointer">
+                                            <DropdownMenuItem className="p-3 cursor-pointer" onClick={() => setEditDialog({ open: true, postId: selectedPost.id, message: selectedPost.message || "" })}>
                                                 <Edit3 className="h-4 w-4 mr-3 text-slate-400" />
                                                 Edit Content
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem className="p-3 cursor-pointer">
+                                            <DropdownMenuItem className="p-3 cursor-pointer" onClick={() => {
+                                                const postDate = selectedPost.scheduledAt?.toDate ? selectedPost.scheduledAt.toDate() : new Date(selectedPost.scheduledAt);
+                                                setScheduleDialog({
+                                                    open: true,
+                                                    postId: selectedPost.id,
+                                                    date: postDate,
+                                                    time: format(postDate, "HH:mm")
+                                                });
+                                            }}>
                                                 <CalendarIcon className="h-4 w-4 mr-3 text-slate-400" />
                                                 Reschedule
                                             </DropdownMenuItem>
@@ -626,6 +699,106 @@ export default function ScheduledPosts() {
                     )}
                 </DialogContent>
             </Dialog>
+            {/* Edit Dialog */}
+            <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog(prev => ({ ...prev, open }))}>
+                <DialogContent className="max-w-lg rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Edit Scheduled Tweet</DialogTitle>
+                        <DialogDescription>
+                            Update the content of your scheduled tweet. Changes will be applied when the tweet is published.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label htmlFor="message" className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-400">Message</Label>
+                        <Textarea
+                            id="message"
+                            value={editDialog.message}
+                            onChange={(e) => setEditDialog(prev => ({ ...prev, message: e.target.value }))}
+                            placeholder="What's happening?"
+                            className="min-h-[150px] rounded-xl resize-none border-slate-200 focus:ring-blue-500"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditDialog({ open: false, postId: null, message: "" })} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleUpdate}
+                            disabled={isPending || !editDialog.message.trim()}
+                            className="bg-blue-600 hover:bg-blue-700 rounded-xl min-w-[100px]"
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reschedule Dialog */}
+            <Dialog open={scheduleDialog.open} onOpenChange={(open) => setScheduleDialog(prev => ({ ...prev, open }))}>
+                <DialogContent className="max-w-md rounded-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Reschedule Tweet</DialogTitle>
+                        <DialogDescription>
+                            Choose a new date and time for this tweet.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-6">
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Date</Label>
+                            <Calendar
+                                mode="single"
+                                selected={scheduleDialog.date}
+                                onSelect={(date) => setScheduleDialog(prev => ({ ...prev, date: date || new Date() }))}
+                                className="rounded-xl border border-slate-100"
+                                disabled={(date) => date < new Date().setHours(0, 0, 0, 0)}
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="text-xs font-bold uppercase tracking-widest text-slate-400">Time</Label>
+                            <Input
+                                type="time"
+                                value={scheduleDialog.time}
+                                onChange={(e) => setScheduleDialog(prev => ({ ...prev, time: e.target.value }))}
+                                className="rounded-xl border-slate-200"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setScheduleDialog({ ...scheduleDialog, open: false })} className="rounded-xl">
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={() => handleScheduleUpdate(scheduleDialog.postId, scheduleDialog.date, scheduleDialog.time)}
+                            disabled={isPending}
+                            className="bg-amber-500 hover:bg-amber-600 rounded-xl min-w-[100px]"
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Schedule"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+                <AlertDialogContent className="rounded-2xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Cancel Scheduled Tweet?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will remove the tweet from your scheduled queue. You can find it again later if you haven't deleted it permanently.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={() => handleDelete(deleteDialog.postId)}
+                            className="bg-red-600 hover:bg-red-700 rounded-xl"
+                            disabled={isPending}
+                        >
+                            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Confirm Cancellation"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
