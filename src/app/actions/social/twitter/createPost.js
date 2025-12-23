@@ -112,17 +112,6 @@ export async function createTwitterPost({
                     body: JSON.stringify(tweetBody),
                 });
 
-                // MOCK 429 FOR VERIFICATION (REMOVE AFTER TEST)
-                /*
-                const mockResetTime = Math.floor(Date.now() / 1000) + 900; // 15 mins from now
-                const res = {
-                    ok: false,
-                    status: 429,
-                    headers: new Map([["x-rate-limit-reset", mockResetTime.toString()]]),
-                    json: async () => ({ detail: "Too Many Requests" })
-                };
-                */
-
                 const data = await handleTwitterResponse(res, "create tweet");
                 return { success: true, tweetId: data.data.id, mediaIds };
             } else {
@@ -169,10 +158,11 @@ export async function createTwitterPost({
                 platform: "twitter",
                 userId,
                 twitterUserId,
+                accountId,
                 message,
                 mediaUrls: mediaUrls.length ? mediaUrls : null,
                 link: link || null,
-                postType: mediaUrls.length > 0 ? (mediaUrls[0].type?.startsWith("video") ? "video" : "images") : (link ? "link" : "text"),
+                postType: mediaUrls.length > 0 ? (mediaUrls[0].type?.startsWith("video") ? "video" : "image") : (link ? "link" : "text"),
                 status: "scheduled",
                 scheduledAt: new Date(scheduledTime),
                 createdAt: serverTimestamp(),
@@ -185,11 +175,12 @@ export async function createTwitterPost({
                 platform: "twitter",
                 userId,
                 twitterUserId,
+                accountId,
                 message,
                 mediaUrls: mediaUrls.length ? mediaUrls : null,
                 mediaIds: result.mediaIds?.length ? result.mediaIds : null,
                 link: link || null,
-                postType: result.mediaIds?.length > 0 ? (mediaUrls[0].type?.startsWith("video") ? "video" : "images") : (link ? "link" : "text"),
+                postType: result.mediaIds?.length > 0 ? (mediaUrls[0].type?.startsWith("video") ? "video" : "image") : (link ? "link" : "text"),
                 status: "posted",
                 twitterPostId: result.tweetId,
                 createdAt: serverTimestamp(),
