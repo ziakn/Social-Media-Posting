@@ -203,9 +203,18 @@ export async function createTwitterPost({
  * Helper to upload media to Twitter v2 (Direct Blob/Chunked)
  */
 async function handleTwitterMediaUpload(media, accessToken) {
-    const { url, type: mimeType } = media;
-    const isVideo = mimeType?.startsWith("video");
-    const mediaCategory = isVideo ? "tweet_video" : "tweet_image";
+    const { url, type: rawMimeType } = media;
+
+    // Normalize MIME type and detect category
+    let mimeType = rawMimeType || "image/jpeg";
+    if (mimeType === "image/jpg") mimeType = "image/jpeg";
+
+    const isVideo = mimeType.startsWith("video");
+    const isGif = mimeType === "image/gif";
+
+    let mediaCategory = "tweet_image";
+    if (isVideo) mediaCategory = "tweet_video";
+    else if (isGif) mediaCategory = "tweet_gif";
 
     try {
         let buffer;
@@ -269,9 +278,12 @@ async function handleTwitterMediaUpload(media, accessToken) {
 
             const appendData = new FormData();
             appendData.append("segment_index", segmentIndex.toString());
-            appendData.append("media", chunkBlob, isVideo ? "video.mp4" : "image.jpg");
 
-            console.log(`[Twitter] Appending segment ${segmentIndex} (${chunk.length} bytes)...`);
+            // Use appropriate filename extension based on MIME type
+            const extension = mimeType.split('/')[1] || (isVideo ? "mp4" : "jpg");
+            appendData.append("media", chunkBlob, `media.${extension}`);
+
+            console.log(`[Twitter] Appending segment ${segmentIndex} (${chunk.length} bytes) as ${mimeType}...`);
             const appendRes = await fetch(`https://api.twitter.com/2/media/upload/${mediaIdStr}/append`, {
                 method: "POST",
                 headers: {
@@ -297,9 +309,9 @@ async function handleTwitterMediaUpload(media, accessToken) {
 
         const finalizeData = await handleTwitterResponse(finalizeRes, "finalize media upload");
 
-        // 4. STATUS CHECK (For videos/GIFs)
+        // 4. STATUS CHECK (For videos/GIFs/Larger images)
         const processingInfo = finalizeData.data?.processing_info || finalizeData.processing_info;
-        if (processingInfo || mediaType === "video") {
+        if (processingInfo || isVideo || isGif) {
             let state = (processingInfo?.state || "pending").toLowerCase();
             let checkInterval = (processingInfo?.check_after_secs || 5) * 1000;
 
