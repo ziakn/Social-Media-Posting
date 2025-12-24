@@ -202,7 +202,7 @@ export async function createTwitterPost({
 /**
  * Helper to upload media to Twitter v2 (Direct Blob/Chunked)
  */
-async function handleTwitterMediaUpload(media, accessToken) {
+export async function handleTwitterMediaUpload(media, accessToken) {
     const { url, type: rawMimeType } = media;
 
     // Normalize MIME type and detect category

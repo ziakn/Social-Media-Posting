@@ -20,6 +20,7 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { refreshTwitterToken } from "./tokenRefresh";
+import { handleTwitterMediaUpload } from "./createPost";
 
 /**
  * Helper to handle Twitter API responses and errors
@@ -492,10 +493,25 @@ export async function updateTwitterPost(postId, message) {
                         finalMessage = finalMessage ? `${finalMessage}\n\n${postData.link}` : postData.link;
                     }
 
+                    // Step 1.5: Re-upload media to get fresh media IDs (Twitter consumes media IDs upon tweet creation)
+                    let newMediaIds = [];
+                    if (postData.mediaUrls?.length > 0) {
+                        console.log(`[Twitter] Re-uploading ${postData.mediaUrls.length} media items...`);
+                        for (const media of postData.mediaUrls) {
+                            try {
+                                const mId = await handleTwitterMediaUpload(media, token);
+                                newMediaIds.push(String(mId));
+                            } catch (uploadError) {
+                                console.error("[Twitter] Media re-upload failed during edit:", uploadError);
+                                // Optional: continue or throw? Better to throw so we don't post without media if intended.
+                                throw uploadError;
+                            }
+                        }
+                    }
+
                     const tweetBody = {
                         text: finalMessage,
-                        // Reuse existing media IDs if available
-                        ...(postData.mediaIds?.length > 0 && { media: { media_ids: postData.mediaIds } })
+                        ...(newMediaIds.length > 0 && { media: { media_ids: newMediaIds } })
                     };
 
                     const createRes = await fetch("https://api.twitter.com/2/tweets", {
@@ -510,18 +526,23 @@ export async function updateTwitterPost(postId, message) {
                     const createData = await handleTwitterResponse(createRes, "create new tweet");
                     console.log("[Twitter] New tweet created successfully with ID:", createData.data.id);
 
-                    return createData.data.id;
+                    return { tweetId: createData.data.id, mediaIds: newMediaIds };
                 };
 
                 let newTweetId;
+                let currentMediaIds = [];
                 try {
-                    newTweetId = await performEditViaDeleteRepost(accessToken);
+                    const result = await performEditViaDeleteRepost(accessToken);
+                    newTweetId = result.tweetId;
+                    currentMediaIds = result.mediaIds;
                 } catch (error) {
                     // Handle 401 Unauthorized (Expired Token) - retry once
                     if (error.status === 401 && refreshToken) {
                         console.log("[Twitter] Token expired during edit, refreshing and retrying...");
                         const refreshResult = await refreshTwitterToken(postData.accountId, refreshToken);
-                        newTweetId = await performEditViaDeleteRepost(refreshResult.access_token);
+                        const result = await performEditViaDeleteRepost(refreshResult.access_token);
+                        newTweetId = result.tweetId;
+                        currentMediaIds = result.mediaIds;
                     } else {
                         throw error;
                     }
@@ -531,6 +552,7 @@ export async function updateTwitterPost(postId, message) {
                 await updateDoc(postRef, {
                     message: message,
                     twitterPostId: newTweetId,
+                    mediaIds: currentMediaIds || [], // Store new IDs
                     updatedAt: new Date()
                 });
 

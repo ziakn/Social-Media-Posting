@@ -344,10 +344,13 @@ export default function CreateTwitterPost() {
                                                                     className="w-full h-full object-cover"
                                                                 />
                                                             </div>
+                                                            <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-1.5 py-0.5 rounded font-bold backdrop-blur-sm">
+                                                                {index + 1}
+                                                            </div>
                                                             <Button
                                                                 variant="destructive"
                                                                 size="icon"
-                                                                className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                                                className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                                                                 onClick={() => setPostContent(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }))}
                                                             >
                                                                 <X className="h-3 w-3" />

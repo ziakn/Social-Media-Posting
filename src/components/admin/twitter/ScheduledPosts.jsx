@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Twitter, MoreVertical, Trash2, Calendar as CalendarIcon, Clock, Edit3,
     Image as ImageIcon, Video, Link2, FileText, Loader2, Play, Eye,
-    AlertCircle, Timer, Repeat2, Search, X, BarChart3
+    AlertCircle, Timer, Repeat2, Search, X, BarChart3, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -46,6 +46,7 @@ export default function ScheduledPosts() {
     const [loading, setLoading] = useState(true);
     const [isPending, startTransition] = useTransition();
     const [selectedPost, setSelectedPost] = useState(null);
+    const [currentSlide, setCurrentSlide] = useState(0);
     const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
     const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
     const [scheduleDialog, setScheduleDialog] = useState({ open: false, postId: null, date: new Date(), time: "12:00" });
@@ -435,6 +436,16 @@ export default function ScheduledPosts() {
                                             />
                                         )}
                                         <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+
+                                        {/* Multi-image Badge */}
+                                        {post.mediaUrls.length > 1 && (
+                                            <div className="absolute top-3 right-3 z-10">
+                                                <div className="bg-black/40 backdrop-blur-md px-2 py-1 rounded-full flex items-center gap-1 border border-white/10">
+                                                    <ImageIcon className="h-3 w-3 text-white" />
+                                                    <span className="text-[10px] font-bold text-white">+{post.mediaUrls.length - 1}</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </>
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-100 p-6 text-center">
@@ -547,18 +558,68 @@ export default function ScheduledPosts() {
             )}
 
             {/* Detail Dialog */}
-            <Dialog open={!!selectedPost} onOpenChange={(open) => !open && setSelectedPost(null)}>
+            <Dialog open={!!selectedPost} onOpenChange={(open) => {
+                if (!open) {
+                    setSelectedPost(null);
+                    setCurrentSlide(0);
+                }
+            }}>
                 <DialogContent className="max-w-5xl p-0 border-0 overflow-hidden rounded-3xl shadow-2xl">
                     {selectedPost && (
                         <div className="flex flex-col md:flex-row h-[80vh]">
                             {/* Left: Media Preview */}
                             <div className="flex-1 bg-slate-950 flex items-center justify-center relative group">
-                                {selectedPost.mediaUrls?.[0]?.url ? (
-                                    selectedPost.mediaUrls[0].type === "video" ? (
-                                        <video src={selectedPost.mediaUrls[0].url} controls className="max-h-full max-w-full" />
-                                    ) : (
-                                        <img src={selectedPost.mediaUrls[0].url} alt="" className="max-h-full max-w-full object-contain" />
-                                    )
+                                {selectedPost.mediaUrls?.length > 0 ? (
+                                    <div className="relative w-full h-full flex items-center justify-center">
+                                        {selectedPost.mediaUrls[currentSlide].type === "video" ? (
+                                            <video src={selectedPost.mediaUrls[currentSlide].url} controls className="max-h-full max-w-full" />
+                                        ) : (
+                                            <img
+                                                src={selectedPost.mediaUrls[currentSlide].url}
+                                                alt={`Slide ${currentSlide + 1}`}
+                                                className="max-h-full max-w-full object-contain"
+                                            />
+                                        )}
+
+                                        {/* Carousel Controls */}
+                                        {selectedPost.mediaUrls.length > 1 && (
+                                            <>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => setCurrentSlide(prev => Math.max(0, prev - 1))}
+                                                    disabled={currentSlide === 0}
+                                                >
+                                                    <ChevronLeft className="h-8 w-8" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/40 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => setCurrentSlide(prev => Math.min(selectedPost.mediaUrls.length - 1, prev + 1))}
+                                                    disabled={currentSlide === selectedPost.mediaUrls.length - 1}
+                                                >
+                                                    <ChevronRight className="h-8 w-8" />
+                                                </Button>
+
+                                                {/* Dots Indicator */}
+                                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 p-2 rounded-full bg-black/20 backdrop-blur-sm">
+                                                    {selectedPost.mediaUrls.map((_, idx) => (
+                                                        <div
+                                                            key={idx}
+                                                            className={`w-1.5 h-1.5 rounded-full cursor-pointer transition-all ${idx === currentSlide ? 'bg-white w-3' : 'bg-white/40'
+                                                                }`}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setCurrentSlide(idx);
+                                                            }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                 ) : (
                                     <div className="p-12 text-center space-y-4">
                                         <div className="h-20 w-20 rounded-full bg-white/5 flex items-center justify-center mx-auto border border-white/10">
