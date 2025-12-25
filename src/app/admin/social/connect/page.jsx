@@ -8,7 +8,6 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import { API_ROUTES } from "@/constants/api";
 import {
@@ -26,6 +25,7 @@ import {
   AtSign,
   LogOut,
   Music,
+  Youtube,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -47,6 +47,7 @@ const ICONS = {
   reddit: MessageSquare,
   threads: AtSign,
   tiktok: Music,
+  youtube: Youtube,
 };
 // Platform-specific actions
 import { checkFacebookConnection } from "../../../actions/social/facebook/connectAccount";
@@ -57,12 +58,15 @@ import { checkThreadsConnection } from "../../../actions/social/threads/connectA
 import { disconnectThreadsAccount } from "../../../actions/social/threads/disconnectAccount";
 import { checkTwitterConnection } from "../../../actions/social/twitter/connectAccount";
 import { disconnectTwitterAccount } from "../../../actions/social/twitter/disconnectAccount";
+import { checkYoutubeConnection } from "../../../actions/social/youtube/connectAccount";
+import { disconnectYoutubeAccount } from "../../../actions/social/youtube/disconnectAccount";
 
 const CONNECTION_FUNCTIONS = {
   facebook: checkFacebookConnection,
   instagram: checkInstagramConnection,
   threads: checkThreadsConnection,
   twitter: checkTwitterConnection,
+  youtube: checkYoutubeConnection,
 };
 
 // Map platform keys to disconnect functions
@@ -71,6 +75,7 @@ const DISCONNECT_FUNCTIONS = {
   instagram: disconnectInstagramAccount,
   threads: disconnectThreadsAccount,
   twitter: disconnectTwitterAccount,
+  youtube: disconnectYoutubeAccount,
 };
 
 export default function SocialConnectPage() {
@@ -106,6 +111,7 @@ export default function SocialConnectPage() {
           bluesky: "text-[#0085ff]",
           reddit: "text-[#FF4500]",
           tiktok: "text-[#000000]",
+          youtube: "text-[#FF0000]",
         };
 
         const iconColor = iconColors[platformKey] || "text-primary";
