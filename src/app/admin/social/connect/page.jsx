@@ -60,6 +60,8 @@ import { checkTwitterConnection } from "../../../actions/social/twitter/connectA
 import { disconnectTwitterAccount } from "../../../actions/social/twitter/disconnectAccount";
 import { checkYoutubeConnection } from "../../../actions/social/youtube/connectAccount";
 import { disconnectYoutubeAccount } from "../../../actions/social/youtube/disconnectAccount";
+import { checkLinkedinConnection } from "../../../actions/social/linkedin/connectAccount";
+import { disconnectLinkedinAccount } from "../../../actions/social/linkedin/disconnectAccount";
 
 const CONNECTION_FUNCTIONS = {
   facebook: checkFacebookConnection,
@@ -67,6 +69,7 @@ const CONNECTION_FUNCTIONS = {
   threads: checkThreadsConnection,
   twitter: checkTwitterConnection,
   youtube: checkYoutubeConnection,
+  linkedin: checkLinkedinConnection,
 };
 
 // Map platform keys to disconnect functions
@@ -76,6 +79,7 @@ const DISCONNECT_FUNCTIONS = {
   threads: disconnectThreadsAccount,
   twitter: disconnectTwitterAccount,
   youtube: disconnectYoutubeAccount,
+  linkedin: disconnectLinkedinAccount,
 };
 
 export default function SocialConnectPage() {
