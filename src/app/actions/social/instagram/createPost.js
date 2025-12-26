@@ -35,7 +35,7 @@ async function uploadToFirebase(input, folder = "instagram") {
  */
 async function makeInstagramRequest(endpoint, formData, accessToken) {
   formData.append("access_token", accessToken);
-  const response = await fetch(`https://graph.facebook.com/v24.0${endpoint}`, {
+  const response = await fetch(`https://graph.instagram.com/v24.0${endpoint}`, {
     method: "POST",
     body: formData,
   });
@@ -94,7 +94,7 @@ async function publishMediaContainer(instagramId, containerId, accessToken) {
  */
 async function checkMediaStatus(instagramId, containerId, accessToken) {
   const response = await fetch(
-    `https://graph.facebook.com/v24.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
+    `https://graph.instagram.com/v24.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
   );
   return await response.json();
 }

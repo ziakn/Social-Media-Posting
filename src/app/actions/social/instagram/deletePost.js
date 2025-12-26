@@ -53,7 +53,7 @@ export async function deleteInstagramPost(postId) {
 
                     if (account) {
                         const response = await fetch(
-                            `https://graph.facebook.com/v24.0/${post.instagramPostId}?access_token=${account.accessToken}`,
+                            `https://graph.instagram.com/v24.0/${post.instagramPostId}?access_token=${account.accessToken}`,
                             { method: "DELETE" }
                         );
 
@@ -81,7 +81,7 @@ export async function deleteInstagramPost(postId) {
 
                     if (account) {
                         const response = await fetch(
-                            `https://graph.facebook.com/v24.0/${post.instagramContainerId}?access_token=${account.accessToken}`,
+                            `https://graph.instagram.com/v24.0/${post.instagramContainerId}?access_token=${account.accessToken}`,
                             { method: "DELETE" }
                         );
 

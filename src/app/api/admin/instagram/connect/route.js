@@ -5,17 +5,16 @@ export async function GET() {
   const app_id = process.env.IG_APP_ID;
 
   const scopes = [
-    "instagram_basic", // Required: Basic profile info
-    "pages_show_list", // Required: List Facebook Pages
-    "instagram_content_publish", // Required: Post to Instagram
-    "instagram_manage_insights", // Optional: Analytics
-    "pages_read_engagement", // Recommended: Page insights
-    "business_management", // Recommended: Business tools
+    "instagram_business_basic",
+    "instagram_business_manage_messages",
+    "instagram_business_content_publish",
+    "instagram_business_manage_insights",
+    "instagram_business_manage_comments",
   ];
 
-  const authUrl = `https://www.facebook.com/v24.0/dialog/oauth?client_id=${app_id}&redirect_uri=${encodeURIComponent(
+  const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${app_id}&redirect_uri=${encodeURIComponent(
     redirect_uri
-  )}&scope=${scopes.join(",")}`;
+  )}&scope=${scopes.join(",")}&response_type=code`;
 
   return NextResponse.redirect(authUrl);
 }

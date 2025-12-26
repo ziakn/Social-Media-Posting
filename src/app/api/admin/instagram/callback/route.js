@@ -33,7 +33,6 @@ export async function GET(request) {
     );
     const existingSnapshot = await getDocs(q);
 
-    // Run in parallel
     await Promise.all(
       existingSnapshot.docs.map((doc) =>
         updateDoc(doc.ref, {
@@ -47,59 +46,31 @@ export async function GET(request) {
     const shortLivedToken = await exchangeCodeForToken(code);
     const userAccessToken = await exchangeForLongLivedToken(shortLivedToken);
 
-    // --- 3. Fetch Pages and Instagram Accounts ---
-    const pages = await getPages(userAccessToken);
+    // --- 3. Fetch Instagram User Data ---
+    const igUser = await getInstagramUser(userAccessToken);
 
-    if (!Array.isArray(pages) || pages.length === 0) {
-      return NextResponse.json({ error: "No Facebook Pages found" }, { status: 400 });
+    if (!igUser.user_id) {
+      return NextResponse.json({ error: "Failed to fetch Instagram user data" }, { status: 400 });
     }
 
-    let connectedCount = 0;
-
-    for (const page of pages) {
-      try {
-        if (!page.access_token) continue;
-
-        const igData = await getInstagramBusinessAccount(page.id, page.access_token);
-        if (!igData.instagram_business_account?.id) continue;
-
-        const igId = igData.instagram_business_account.id;
-
-        // --- 4. Insert NEW document (Active) ---
-        // We do not check for existing; we just insert a fresh record.
-        // Previous active records are already deactivated.
-        await addDoc(collection(db, "socialAccounts"), {
-          userId: portalUser.id,
-          platform: "instagram",
-          accountId: igId,
-          username: igData.username || null,
-          pageId: page.id,
-          pageName: page.name,
-          accessToken: page.access_token,
-          tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
-          status: "active",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-
-        connectedCount++;
-      } catch (errPage) {
-        console.error(`Failed to connect page ${page.name}:`, errPage.message);
-        continue;
-      }
-    }
+    // --- 4. Insert NEW document (Active) ---
+    await addDoc(collection(db, "socialAccounts"), {
+      userId: portalUser.id,
+      platform: "instagram",
+      accountId: igUser.user_id,
+      username: igUser.username || null,
+      accessToken: userAccessToken,
+      tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
+      status: "active",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
-    if (connectedCount > 0) {
-      return NextResponse.redirect(
-        `${baseUrl}/admin/social/connect?platform=instagram&status=success&connected=${connectedCount}`
-      );
-    } else {
-      return NextResponse.redirect(
-        `${baseUrl}/admin/social/connect?platform=instagram&status=failed&message=No%20Instagram%20accounts%20found`
-      );
-    }
+    return NextResponse.redirect(
+      `${baseUrl}/admin/social/connect?platform=instagram&status=success&connected=1&name=${encodeURIComponent(igUser.username)}`
+    );
 
   } catch (err) {
     console.error("Instagram OAuth callback error:", err);
@@ -115,43 +86,35 @@ export async function GET(request) {
 // --- Helper Functions ---
 
 async function exchangeCodeForToken(code) {
-  const res = await fetch(
-    `https://graph.facebook.com/v24.0/oauth/access_token` +
-    `?client_id=${process.env.IG_APP_ID}` +
-    `&redirect_uri=${encodeURIComponent(process.env.IG_REDIRECT_URI)}` +
-    `&client_secret=${process.env.IG_APP_SECRET}` +
-    `&code=${code}`
-  );
+  const formData = new FormData();
+  formData.append("client_id", process.env.IG_APP_ID);
+  formData.append("client_secret", process.env.IG_APP_SECRET);
+  formData.append("grant_type", "authorization_code");
+  formData.append("redirect_uri", process.env.IG_REDIRECT_URI);
+  formData.append("code", code);
+
+  const res = await fetch("https://api.instagram.com/oauth/access_token", {
+    method: "POST",
+    body: formData,
+  });
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
+  if (data.error_message) throw new Error(data.error_message);
+  if (data.error) throw new Error(data.error.message || data.error);
   return data.access_token;
 }
 
 async function exchangeForLongLivedToken(shortLivedToken) {
   const res = await fetch(
-    `https://graph.facebook.com/v24.0/oauth/access_token?` +
-    `grant_type=fb_exchange_token&` +
-    `client_id=${process.env.IG_APP_ID}&` +
-    `client_secret=${process.env.IG_APP_SECRET}&` +
-    `fb_exchange_token=${shortLivedToken}`
+    `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.IG_APP_SECRET}&access_token=${shortLivedToken}`
   );
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
   return data.access_token;
 }
 
-async function getPages(userAccessToken) {
+async function getInstagramUser(accessToken) {
   const res = await fetch(
-    `https://graph.facebook.com/v24.0/me/accounts?access_token=${userAccessToken}`
-  );
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.data || [];
-}
-
-async function getInstagramBusinessAccount(pageId, pageAccessToken) {
-  const res = await fetch(
-    `https://graph.facebook.com/v24.0/${pageId}?fields=instagram_business_account,username&access_token=${pageAccessToken}`
+    `https://graph.instagram.com/v24.0/me?fields=user_id,username&access_token=${accessToken}`
   );
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
