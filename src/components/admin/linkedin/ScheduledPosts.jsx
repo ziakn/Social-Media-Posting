@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { deletelinkedinPost } from "@/app/actions/social/linkedin/createPost";
-import { fetchScheduledLinkedinPosts, getUserLinkedinAccounts, updateLinkedinPost, updateLinkedinPostSchedule } from "@/app/actions/social/linkedin/linkedinPostsActions";
+import { fetchScheduledLinkedinPosts, getUserLinkedinAccounts } from "@/app/actions/social/linkedin/linkedinPostsActions";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
