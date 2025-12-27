@@ -717,8 +717,8 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     loadPages();
   }, []);
 
-  const openGallery = (type) => {
-    setGalleryMediaType(type);
+  const openGallery = (types) => {
+    setGalleryMediaType(types);
     setGalleryOpen(true);
   };
 
@@ -739,6 +739,26 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       media: postType === "feed" ? [...prev.media, ...newMedia].slice(0, maxMedia) : [newMedia[0]]
     }));
     setGalleryOpen(false);
+  };
+
+  const removeMedia = (index) => {
+    setPostContent(prev => ({
+      ...prev,
+      media: prev.media.filter((_, i) => i !== index)
+    }));
+    if (currentSlide >= postContent.media.length - 1) {
+      setCurrentSlide(Math.max(0, postContent.media.length - 2));
+    }
+  };
+
+  const scrollSelection = (direction) => {
+    if (selectionScrollRef.current) {
+      const scrollAmount = 80;
+      selectionScrollRef.current.scrollBy({
+        top: direction === 'up' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
   };
 
   const handleSubmit = async () => {
@@ -789,10 +809,10 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
   const maxCharacters = 2200;
 
   return (
-    <div className="w-full h-full flex flex-col bg-gray-50 overflow-y-auto custom-scrollbar">
-      {/* Scrollable Content Container */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-        <div className="flex-1 overflow-y-auto p-4 lg:p-8 space-y-6 lg:space-y-8">
+    <div className="w-full h-full flex flex-col bg-gray-50 overflow-hidden">
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="p-4 lg:p-8 space-y-6 lg:space-y-8">
           {/* Account Selection */}
           <div className="space-y-3 px-2">
             <div className="flex items-center gap-2 opacity-40">
@@ -861,7 +881,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                 <Separator className="bg-gray-50" />
                 <div className="space-y-4">
                   <Label className="text-sm font-bold text-gray-900">Media</Label>
-                  <Button variant="outline" onClick={() => openGallery(postType === "reels" ? "video" : "image")} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2">
+                  <Button variant="outline" onClick={() => openGallery(postType === "reels" ? ["video"] : ["image", "video"])} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2">
                     <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-pink-600" /></div>
                     <span className="text-xs font-black uppercase text-gray-600">Select Media</span>
                   </Button>
@@ -869,22 +889,76 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
               </div>
             </div>
 
-            {/* Preview */}
-            <div className="lg:sticky top-0">
-              <InstagramPreview postType={postType} content={postContent} account={pages.find(p => p.igUserId === selectedPage)} currentSlide={currentSlide} />
+            {/* Preview & Media Tray */}
+            <div className="lg:sticky top-0 flex gap-4">
+              <div className="flex-1 min-w-0">
+                <InstagramPreview postType={postType} content={postContent} account={pages.find(p => p.igUserId === selectedPage)} currentSlide={currentSlide} />
+              </div>
+
+              {/* Media Selection Tray (Vertical Slide) */}
+              {postContent.media.length > 0 && (
+                <div className="hidden lg:flex flex-col items-center py-2 bg-white rounded-2xl border border-gray-100 shadow-sm w-20 shrink-0 h-fit">
+                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('up')} className="h-6 w-6 text-gray-400 hover:text-pink-600 mb-2">
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+
+                  <div
+                    ref={selectionScrollRef}
+                    className="flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[450px] px-2"
+                  >
+                    {postContent.media.map((item, index) => (
+                      <div
+                        key={index}
+                        className={cn(
+                          "relative group shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer",
+                          currentSlide === index
+                            ? "border-pink-500 ring-2 ring-pink-100 scale-105 shadow-md"
+                            : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-200"
+                        )}
+                        onClick={() => setCurrentSlide(index)}
+                      >
+                        {item.type === 'video' ? (
+                          <div className="w-full h-full bg-black relative">
+                            <video src={item.url} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                              <Play className="h-4 w-4 text-white fill-white" />
+                            </div>
+                          </div>
+                        ) : (
+                          <img src={item.url} alt="" className="w-full h-full object-cover" />
+                        )}
+
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeMedia(index);
+                          }}
+                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-[1px]"
+                        >
+                          <Trash2 className="h-5 w-5 text-white" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('down')} className="h-6 w-6 text-gray-400 hover:text-pink-600 mt-2">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t bg-white sticky bottom-0 z-20 flex justify-end gap-3">
-          <Button disabled={isPending} onClick={handleSubmit} className="bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl px-8">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-            {scheduling.schedule ? "Schedule Post" : "Publish Now"}
-          </Button>
-        </div>
       </div>
-      <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} mediaType={galleryMediaType} allowMultiple={postType === 'feed'} maxSelection={postType === 'feed' ? 10 : 1} />
+
+      {/* Footer */}
+      <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
+        <Button disabled={isPending} onClick={handleSubmit} className="bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl px-12 h-11">
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+          {scheduling.schedule ? "Schedule Post" : "Publish Now"}
+        </Button>
+      </div>
+      <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={postType === 'feed'} maxSelection={postType === 'feed' ? 10 : 1} />
     </div>
   );
 }
