@@ -26,13 +26,17 @@ import {
   LogOut,
   Music,
   Youtube,
+  RefreshCw,
+  Trash2,
+  ExternalLink,
 } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 
@@ -49,6 +53,7 @@ const ICONS = {
   tiktok: Music,
   youtube: Youtube,
 };
+
 // Platform-specific actions
 import { checkFacebookConnection } from "../../../actions/social/facebook/connectAccount";
 import { disconnectFacebookAccount } from "../../../actions/social/facebook/disconnectAccount";
@@ -69,7 +74,6 @@ const CONNECTION_FUNCTIONS = {
   youtube: checkYoutubeConnection,
 };
 
-// Map platform keys to disconnect functions
 const DISCONNECT_FUNCTIONS = {
   facebook: disconnectFacebookAccount,
   instagram: disconnectInstagramAccount,
@@ -86,7 +90,10 @@ export default function SocialConnectPage() {
   const [callbackPlatform, setCallbackPlatform] = useState(null);
   const [callbackName, setCallbackName] = useState(null);
 
-  // Merge Firestore active platforms with master socials
+  // Multi-account management state
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
+
   const socials = useMemo(() => {
     return platforms
       .filter((p) => p.status === "active")
@@ -94,12 +101,9 @@ export default function SocialConnectPage() {
         const platformKey = p.platform_name.toLowerCase();
         const IconComponent = ICONS[platformKey] || null;
         const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
-        const checkConnection =
-          CONNECTION_FUNCTIONS[platformKey] || null;
-        const disconnect =
-          DISCONNECT_FUNCTIONS[platformKey] || null;
+        const checkConnection = CONNECTION_FUNCTIONS[platformKey] || null;
+        const disconnect = DISCONNECT_FUNCTIONS[platformKey] || null;
 
-        // Icon colors
         const iconColors = {
           facebook: "text-[#1877F2]",
           instagram: "text-[#E4405F]",
@@ -114,110 +118,62 @@ export default function SocialConnectPage() {
           youtube: "text-[#FF0000]",
         };
 
-        const iconColor = iconColors[platformKey] || "text-primary";
-
         return {
           key: platformKey,
           name: p.platform_name,
           icon: IconComponent ? (
-            <IconComponent className={`w-5 h-5 ${iconColor}`} />
+            <IconComponent className={`w-5 h-5 ${iconColors[platformKey] || "text-primary"}`} />
           ) : null,
           description: p.description,
           url: url,
           checkConnection: checkConnection,
           disconnect: disconnect,
-          ...p, // keep other fields like id, created_at, status
+          ...p,
         };
       });
   }, [platforms]);
 
-  // Fetch active platforms from API
   const fetchPlatforms = async () => {
     try {
-      const res = await fetch(API_ROUTES.PLATFORMS, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await fetch(API_ROUTES.PLATFORMS);
       const data = await res.json();
-      // Only update if data actually changed to avoid unnecessary re-renders
-      setPlatforms(prev => {
-        if (JSON.stringify(prev) !== JSON.stringify(data.platforms)) {
-          return data.platforms || [];
-        }
-        return prev;
-      });
+      setPlatforms(data.platforms || []);
     } catch (error) {
       console.error("Error fetching platforms:", error);
     }
   };
 
-  // Fetch connection status for active platforms
   const fetchConnections = async () => {
-    // Check all platforms in parallel
     socials.forEach(async (platform) => {
-      // Set individual loading state if not already set
-      setConnections(prev => ({
-        ...prev,
-        [platform.key]: prev[platform.key] ? prev[platform.key] : { loading: true }
-      }));
-
       if (platform.checkConnection) {
         try {
           const result = await platform.checkConnection();
           setConnections(prev => ({
             ...prev,
             [platform.key]: result.connected
-              ? {
-                connected: true,
-                displayName: result.displayName,
-                tokenExpiresAt: result.tokenExpiresAt,
-                count: result.count,
-                accounts: result.accounts,
-                loading: false
-              }
+              ? { connected: true, ...result, loading: false }
               : { connected: false, loading: false }
           }));
         } catch (error) {
-          console.error(`Error checking connection for ${platform.key}:`, error);
-          setConnections(prev => ({
-            ...prev,
-            [platform.key]: { connected: false, loading: false }
-          }));
+          setConnections(prev => ({ ...prev, [platform.key]: { connected: false, loading: false } }));
         }
-      } else {
-        setConnections(prev => ({
-          ...prev,
-          [platform.key]: { connected: false, loading: false }
-        }));
       }
     });
   };
 
-  // Load platforms and connections
   useEffect(() => {
     const init = async () => {
       setLoading(true);
       await fetchPlatforms();
       setLoading(false);
     };
-
     init();
-
-    // Silent polling every 30 seconds
-    const intervalId = setInterval(() => {
-      fetchPlatforms();
-    }, 30000);
-
-    return () => clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
-    if (socials.length > 0) {
-      fetchConnections();
-    }
+    if (socials.length > 0) fetchConnections();
   }, [socials]);
 
-  // Handle OAuth callback query params
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const status = params.get("status");
@@ -228,67 +184,36 @@ export default function SocialConnectPage() {
       setCallbackStatus(status);
       setCallbackPlatform(platform);
       setCallbackName(name ? decodeURIComponent(name) : null);
-
       if (status === "success") {
-        toast.success(
-          `${platform.charAt(0).toUpperCase() + platform.slice(1)
-          } account connected successfully${name ? `: ${decodeURIComponent(name)}` : ""
-          }`
-        );
-        setConnections((prev) => ({
-          ...prev,
-          [platform]: {
-            connected: true,
-            displayName: decodeURIComponent(name),
-            loading: false
-          },
-        }));
+        toast.success(`${platform} connected successfully!`);
       } else {
-        toast.error(
-          `${platform.charAt(0).toUpperCase() + platform.slice(1)
-          } connection failed`
-        );
+        toast.error(`${platform} connection failed.`);
       }
-
-      // Clear query params from URL
-      if (window.history.replaceState) {
-        const url = new URL(window.location);
-        url.search = "";
-        window.history.replaceState({}, document.title, url);
-      }
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
-  // Connect / Disconnect handlers
   const handleConnect = (platformKey) => {
-    const platform = socials.find((p) => p.key === platformKey);
-    if (!platform) {
-      toast.warning(`Integration for ${platformKey} is coming soon!`);
-      return;
-    }
-
     window.location.href = `/api/admin/${platformKey}/connect`;
   };
 
-  const handleDisconnect = (platformKey, disconnectFn) => {
-    if (!disconnectFn) {
-      toast.warning(`Disconnect not implemented for ${platformKey}`);
-      return;
-    }
-    toast(`Are you sure you want to disconnect ${platformKey}?`, {
+  const handleDisconnectAccount = async (platformKey, accountId, disconnectFn) => {
+    toast(`Are you sure you want to disconnect this account?`, {
       action: {
         label: "Disconnect",
         onClick: async () => {
           try {
-            const result = await disconnectFn();
+            // Updated disconnect functions should ideally take an accountId
+            // for now we use the general one if it doesn't support IDs yet
+            const result = await disconnectFn(accountId);
             if (result?.success) {
-              toast.success(result.message || "Disconnected successfully");
-              setConnections((prev) => ({ ...prev, [platformKey]: { connected: false, loading: false } }));
+              toast.success("Account disconnected");
+              fetchConnections();
             } else {
               toast.error(result?.message || "Failed to disconnect");
             }
           } catch (err) {
-            toast.error(err?.message || "Something went wrong");
+            toast.error("Something went wrong");
           }
         },
       },
@@ -298,176 +223,148 @@ export default function SocialConnectPage() {
   if (loading) return <Spinner />;
 
   return (
-    <div className="p-4 min-h-screen bg-slate-50/50">
-      <Card className="shadow-sm border-slate-200/60 bg-white">
-        <div className="max-w-[1600px] mx-auto p-6">
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Social Connections</h1>
-            <p className="mt-2 text-slate-600">Manage and monitor your connected social media platforms.</p>
-          </div>
-
-          {/* Banner for OAuth callback */}
-          {callbackStatus === "success" && callbackPlatform && (
-            <div className="mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-6 py-4 rounded-xl flex items-center gap-3 shadow-sm">
-                <div className="bg-emerald-500 p-1 rounded-full">
-                  <Check className="w-4 h-4 text-white" />
-                </div>
-                <span className="font-medium">
-                  Successfully connected{" "}
-                  <span className="font-bold capitalize">{callbackPlatform}</span>
-                  {callbackName ? ` as ${callbackName}` : ""}.
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Social Cards Grid */}
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {socials.map((item) => {
-              const status = connections[item.key];
-              const isConnected = !!status?.connected;
-
-              // Platform specific colors
-              const platformColors = {
-                facebook: "hover:border-[#1877F2] group-hover:text-[#1877F2]",
-                instagram: "hover:border-[#E4405F] group-hover:text-[#E4405F]",
-                twitter: "hover:border-[#000000] group-hover:text-[#000000]",
-                linkedin: "hover:border-[#0A66C2] group-hover:text-[#0A66C2]",
-                whatsapp: "hover:border-[#25D366] group-hover:text-[#25D366]",
-                threads: "hover:border-[#000000] group-hover:text-[#000000]",
-                telegram: "hover:border-[#0088cc] group-hover:text-[#0088cc]",
-                bluesky: "hover:border-[#0085ff] group-hover:text-[#0085ff]",
-                reddit: "hover:border-[#FF4500] group-hover:text-[#FF4500]",
-                tiktok: "hover:border-[#FE2C55] group-hover:text-[#FE2C55]",
-              };
-
-              const accentColor = platformColors[item.key] || "hover:border-primary";
-
-              return (
-                <Card
-                  key={item.key}
-                  className={`group relative overflow-hidden border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 bg-white flex flex-col h-full ${isConnected ? "border-emerald-100 shadow-sm" : "border-slate-100"
-                    } ${accentColor}`}
-                >
-                  {/* Status Indicator Bar */}
-                  <div className={`absolute top-0 left-0 w-full h-1 transition-colors duration-300 ${isConnected ? "bg-emerald-500" : "bg-transparent group-hover:bg-slate-200"
-                    }`} />
-
-                  <CardHeader className="pt-6 pb-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2.5 rounded-xl transition-all duration-300 ${isConnected
-                          ? "bg-emerald-50 text-emerald-600"
-                          : "bg-slate-50 text-slate-400 group-hover:bg-slate-100 group-hover:scale-110"
-                          }`}>
-                          {item.icon}
-                        </div>
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900 group-hover:text-inherit transition-colors">
-                            {item.name}
-                          </h3>
-                          {isConnected ? (
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Connected</span>
-                            </div>
-                          ) : (
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Not Connected</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {isConnected && item.disconnect && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-slate-100">
-                              <MoreVertical className="w-3.5 h-3.5 text-slate-400" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem
-                              className="text-slate-600 focus:text-slate-900"
-                              onClick={() => (window.location.href = item.url)}
-                            >
-                              <Globe className="w-4 h-4 mr-2" /> Manage Platform
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="text-rose-600 focus:text-rose-700 focus:bg-rose-50"
-                              onClick={() => handleDisconnect(item.key, item.disconnect)}
-                            >
-                              <LogOut className="w-4 h-4 mr-2" /> Disconnect
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="pb-4 flex-1 flex flex-col">
-                    <div
-                      className="text-xs text-slate-500 leading-relaxed line-clamp-2 mb-3"
-                      dangerouslySetInnerHTML={{ __html: item.description }}
-                    />
-
-                    {isConnected && (
-                      <div className="mt-auto space-y-2 p-3 rounded-lg bg-slate-50/50 border border-slate-100">
-                        <div className="flex items-center justify-between text-[10px]">
-                          <span className="text-slate-400 font-medium uppercase tracking-tight">Account</span>
-                          <span className="text-slate-900 font-bold truncate max-w-[120px]">
-                            {status.count > 1 ? `${status.count} Accounts` : status.displayName}
-                          </span>
-                        </div>
-
-                        {status.tokenExpiresAt && (
-                          <div className="flex items-center justify-between text-[10px]">
-                            <span className="text-slate-400 font-medium uppercase tracking-tight">Expires</span>
-                            <span className={`font-bold ${new Date(status.tokenExpiresAt) < new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-                              ? "text-amber-600"
-                              : "text-slate-700"
-                              }`}>
-                              {new Date(status.tokenExpiresAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-
-                  <CardFooter className="pt-0 pb-6 mt-auto">
-                    {status?.loading ? (
-                      <Button
-                        disabled
-                        className="w-full bg-slate-100 text-slate-400 font-semibold rounded-lg h-9 text-xs flex items-center justify-center gap-2"
-                      >
-                        <Spinner className="w-3.5 h-3.5" />
-                        Checking status...
-                      </Button>
-                    ) : isConnected ? (
-                      <Button
-                        variant="outline"
-                        className="w-full border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg h-9 text-xs"
-                        onClick={() => (window.location.href = item.url)}
-                      >
-                        View Dashboard
-                      </Button>
-                    ) : (
-                      <Button
-                        className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg h-9 text-xs shadow-md shadow-slate-200 transition-all hover:shadow-lg active:scale-[0.98]"
-                        onClick={() => handleConnect(item.key)}
-                      >
-                        <Link className="w-3.5 h-3.5 mr-2" />
-                        Connect Account
-                      </Button>
-                    )}
-                  </CardFooter>
-                </Card>
-              );
-            })}
-          </div>
+    <div className="p-6 min-h-screen bg-slate-50/50">
+      <div className="max-w-[1600px] mx-auto">
+        <div className="mb-10">
+          <h1 className="text-3xl font-bold text-slate-900">Social Connections</h1>
+          <p className="mt-2 text-slate-600">Securely connect and manage your professional social profiles.</p>
         </div>
-      </Card>
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {socials.map((item) => {
+            const status = connections[item.key];
+            const isConnected = !!status?.connected;
+            const accountCount = status?.count || 0;
+
+            return (
+              <Card key={item.key} className="flex flex-col h-full border-slate-200 hover:shadow-lg transition-all group">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div className="p-2.5 rounded-xl bg-slate-50 group-hover:bg-white border border-transparent group-hover:border-slate-100 transition-all">
+                      {item.icon}
+                    </div>
+                    {isConnected && (
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        Connected
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-lg font-bold text-slate-900">{item.name}</h3>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-1">{item.description}</p>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="flex-1">
+                  {isConnected ? (
+                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
+                      <div className="flex items-center justify-between text-[11px] font-medium">
+                        <span className="text-slate-400 uppercase">Accounts</span>
+                        <span className="text-slate-900">{accountCount} Profile{accountCount !== 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="h-10" />
+                  )}
+                </CardContent>
+
+                <CardFooter className="pt-2">
+                  {isConnected ? (
+                    <Button
+                      variant="outline"
+                      className="w-full text-xs font-semibold"
+                      onClick={() => {
+                        setSelectedPlatform(item);
+                        setIsManageDialogOpen(true);
+                      }}
+                    >
+                      <MoreVertical className="w-3.5 h-3.5 mr-2" />
+                      Manage Accounts
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-xs font-semibold"
+                      onClick={() => handleConnect(item.key)}
+                    >
+                      <Link className="w-3.5 h-3.5 mr-2" />
+                      Connect {item.name}
+                    </Button>
+                  )}
+                </CardFooter>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Multi-Account Management Dialog */}
+      <Dialog open={isManageDialogOpen} onOpenChange={setIsManageDialogOpen}>
+        <DialogContent className="max-w-md">
+          {selectedPlatform && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  {selectedPlatform.icon}
+                  Manage {selectedPlatform.name} Accounts
+                </DialogTitle>
+                <DialogDescription>
+                  Connect additional profiles or manage existing ones.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 my-4">
+                {connections[selectedPlatform.key]?.accounts?.map((acc, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50/50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 text-xs font-bold">
+                        {acc.displayName?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-900">{acc.displayName}</p>
+                        <p className="text-[10px] text-slate-500 uppercase font-medium">
+                          Expires: {acc.tokenExpiresAt ? new Date(acc.tokenExpiresAt).toLocaleDateString() : 'Never'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900">
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-slate-400 hover:text-rose-600"
+                        onClick={() => handleDisconnectAccount(selectedPlatform.key, acc.id, selectedPlatform.disconnect)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-2 mt-2">
+                <Button
+                  className="w-full bg-slate-900"
+                  onClick={() => handleConnect(selectedPlatform.key)}
+                >
+                  <Link className="w-3.5 h-3.5 mr-2" />
+                  Connect Another Account
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.location.href = selectedPlatform.url}
+                >
+                  <ExternalLink className="w-3.5 h-3.5 mr-2" />
+                  Go to {selectedPlatform.name} Dashboard
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

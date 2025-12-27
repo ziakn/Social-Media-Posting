@@ -60,6 +60,8 @@ import {
 import { toast } from "sonner";
 import { getScheduledInstagramPosts } from "@/app/actions/social/instagram/getPosts";
 import { deleteInstagramPost } from "@/app/actions/social/instagram/deletePost";
+import FullCalendar from "./FullCalendar";
+import CreatePost from "./CreatePost";
 
 const postTypeConfig = {
   image: { icon: ImageIcon, color: "bg-pink-100 text-pink-800 border-pink-200", label: "Image" },
@@ -81,6 +83,7 @@ export default function ScheduledPosts() {
   // Dialog states
   const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+  const [createDialog, setCreateDialog] = useState({ open: false, initialData: null });
 
   // Placeholder handlers for actions not yet implemented in backend for Instagram specifically (Edit/Reschedule/Delete)
   // We will wire these up if the actions exist, or leave placeholders.
@@ -179,10 +182,22 @@ export default function ScheduledPosts() {
     }
   };
 
-  const handleLoadMore = () => {
-    if (pagination.hasMore && pagination.lastVisible) {
-      loadPosts(false, pagination.lastVisible);
-    }
+  const handleDateClick = (date) => {
+    setCreateDialog({
+      open: true,
+      initialData: {
+        scheduling: {
+          schedule: true,
+          date: date,
+          time: format(new Date(), "HH:mm"),
+          timezone: "UTC"
+        }
+      }
+    });
+  };
+
+  const handlePostClick = (post) => {
+    setViewDialog({ open: true, post, currentSlide: 0 });
   };
 
 
@@ -205,8 +220,8 @@ export default function ScheduledPosts() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <Card className="bg-gradient-to-r from-pink-50 via-white to-purple-50 border border-gray-200 shadow-sm">
+      {/* Header - Simplified as Calendar has its own or we can keep it */}
+      <Card className="bg-gradient-to-r from-pink-50 via-white to-purple-50 border border-gray-200 shadow-sm hidden">
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -223,7 +238,10 @@ export default function ScheduledPosts() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-4">
-              <Button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
+              <Button
+                className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600"
+                onClick={() => setCreateDialog({ open: true, initialData: null })}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Schedule New Post
               </Button>
@@ -232,138 +250,29 @@ export default function ScheduledPosts() {
         </CardContent>
       </Card>
 
-      {/* Posts Grid */}
-      {posts.length === 0 ? (
-        <Card className="p-16 text-center border-dashed border-2 border-muted">
-          <CardContent>
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Instagram className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">No scheduled posts</h3>
-            <p className="text-muted-foreground">Schedule content to see it appear here.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
-            {posts.map((post) => (
-              <Card
-                key={post.id}
-                className="group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col"
-              >
-                <div className="absolute inset-0 z-0 bg-gray-50 cursor-pointer" onClick={() => setViewDialog({ open: true, post, currentSlide: 0 })}>
-                  {post.mediaUrl || (post.carouselMedia && post.carouselMedia.length > 0) ? (
-                    <>
-                      {post.postType === 'video' || (post.mediaType === 'video') ? (
-                        <div className="w-full h-full bg-black relative">
-                          <video src={post.mediaUrl} className="w-full h-full object-cover opacity-90" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="bg-white/30 backdrop-blur-md p-3 rounded-full shadow-lg">
-                              <Play className="h-6 w-6 text-white fill-white" />
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <img
-                          src={post.mediaUrl || (post.carouselMedia?.[0]?.url)}
-                          alt="Post"
-                          className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 ${post.postType === 'story' ? 'scale-90 object-contain bg-gray-900' : ''}`}
-                        />
-                      )}
-                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-50 p-4 text-center">
-                      <FileText className="h-8 w-8 text-gray-300 mb-2" />
-                    </div>
-                  )}
-                </div>
+      {/* Calendar View */}
+      <FullCalendar
+        posts={posts}
+        onDateClick={handleDateClick}
+        onPostClick={handlePostClick}
+      />
 
-                {/* Top Actions (Hover) */}
-                <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50 text-gray-700 border border-gray-100">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="text-red-600" onClick={() => setDeleteDialog({ open: true, postId: post.id })}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                {/* Status Badge */}
-                <div className="absolute top-3 left-3 z-20 pointer-events-none">
-                  <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5">
-                    <Clock className="h-3 w-3 text-purple-600" />
-                    <span className="text-[10px] font-semibold text-gray-700">
-                      {timeRemaining[post.id] ? `${timeRemaining[post.id].days}d ${timeRemaining[post.id].hours}h` : "Scheduled"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content Overlay */}
-                <div className="absolute inset-x-0 bottom-0 p-3 z-10 pointer-events-none text-white">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-bold">{post.pageName || "Instagram User"}</span>
-                      {(post.postType === 'carousel') && (
-                        <span className="text-[10px] bg-black/40 px-1.5 rounded-full backdrop-blur-sm flex items-center gap-0.5">
-                          <Layers className="h-3 w-3" />
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs line-clamp-2 leading-snug font-medium text-gray-100 drop-shadow-md">
-                      {post.caption || "No caption"}
-                    </p>
-                    <div className="flex items-center gap-1 text-[10px] text-gray-300 pt-1">
-                      <Calendar className="h-3 w-3" />
-                      <span>{formatDate(post.scheduledAt)}</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-          {/* Load More */}
-          {pagination.hasMore && (
-            <div className="text-center pt-6">
-              <Button
-                variant="outline"
-                onClick={handleLoadMore}
-                disabled={loading}
-                className="px-8"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  "Load More Posts"
-                )}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+      {/* Original Grid - Removed or kept as fallback? Let's remove for cleaner redesign */}
 
       {/* View Post Dialog */}
       <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-[1100px] p-0 overflow-hidden bg-white" showCloseButton={false}>
-          <div className="flex flex-col md:flex-row h-[85vh] md:h-[650px]">
+        <DialogContent className="w-full max-w-[95vw] lg:max-w-[1100px] p-0 overflow-hidden bg-white rounded-2xl lg:rounded-3xl shadow-2xl border-0" showCloseButton={false}>
+          <div className="flex flex-col lg:flex-row h-auto max-h-[95vh] lg:h-[650px]">
             {/* Media Section */}
-            <div className="w-full md:w-[65%] bg-zinc-950 flex items-center justify-center relative">
+            <div className="w-full lg:w-[65%] bg-zinc-950 flex items-center justify-center relative min-h-[300px] lg:min-h-0">
               {(() => {
                 const post = viewDialog.post;
                 if (!post) return null;
 
                 let mediaList = [];
-                if (post.carouselMedia && post.carouselMedia.length > 0) {
+                if (post.content?.media && post.content.media.length > 0) {
+                  mediaList = post.content.media;
+                } else if (post.carouselMedia && post.carouselMedia.length > 0) {
                   mediaList = post.carouselMedia;
                 } else if (post.mediaUrl) {
                   mediaList = [{ url: post.mediaUrl, type: post.postType === 'video' ? 'video' : 'image' }];
@@ -424,7 +333,7 @@ export default function ScheduledPosts() {
             </div>
 
             {/* Details Section */}
-            <div className="w-full md:w-[35%] flex flex-col h-full bg-white border-l">
+            <div className="w-full lg:w-[35%] flex flex-col h-full bg-white border-l">
               <div className="p-4 border-b flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <Avatar>
@@ -482,6 +391,29 @@ export default function ScheduledPosts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Create Post Dialog */}
+      <Dialog open={createDialog.open} onOpenChange={(open) => setCreateDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="sm:max-w-[1200px] h-[90vh] p-0 overflow-y-auto bg-gray-50">
+          <div className="p-8">
+            <div className="flex justify-between items-center mb-6">
+              <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <Plus className="h-6 w-6 text-purple-600" />
+                Schedule Post
+              </DialogTitle>
+              <Button variant="ghost" size="icon" onClick={() => setCreateDialog({ open: false, initialData: null })}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <CreatePost
+              initialData={createDialog.initialData}
+              onSuccess={() => {
+                setCreateDialog({ open: false, initialData: null });
+                loadPosts(true); // Refresh the list
+              }}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

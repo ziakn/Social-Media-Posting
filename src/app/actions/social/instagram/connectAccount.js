@@ -29,9 +29,11 @@ export async function checkInstagramConnection() {
     snapshot.forEach((doc) => {
       const data = doc.data();
       accounts.push({
-        displayName: data.pageName || data.username || data.displayName || "Instagram Account",
+        id: doc.id,
+        displayName: data.username || data.displayName || "Instagram Account",
         username: data.username,
-        tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null
+        tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null,
+        status: data.status
       });
     });
 

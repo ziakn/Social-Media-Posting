@@ -93,9 +93,20 @@ export async function getPublishedPosts({
 
     // Build base query
     let constraints = [
-      where("platform", "==", "instagram"),
-      where("status", "==", "published")
+      where("platform", "==", "instagram")
     ];
+
+    // Status filter
+    if (filters.status === "all") {
+      // No status constraint (fetches all: published, scheduled, draft)
+      // You might want to exclude deleted?
+      constraints.push(where("delete", "!=", 1));
+    } else if (filters.status) {
+      constraints.push(where("status", "==", filters.status));
+    } else {
+      // Default to published (legacy behavior)
+      constraints.push(where("status", "==", "published"));
+    }
 
     // Add pageId filter if provided
     if (pageId) {
@@ -471,5 +482,111 @@ export async function getScheduledInstagramPosts({
       posts: [],
       hasMore: false
     };
+  }
+}
+/**
+ * Get all posts (published and scheduled) for calendar view
+ */
+export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    const user = await verifyToken(token);
+
+    if (!user) {
+      return { success: false, message: "Invalid or expired token", posts: [] };
+    }
+
+    // Base constraints
+    const baseConstraints = [
+      where("platform", "==", "instagram")
+    ];
+
+    if (pageId) {
+      baseConstraints.push(where("pageId", "==", pageId));
+    }
+
+    // Build Published Query
+    let pubConstraints = [
+      ...baseConstraints,
+      where("status", "==", "published")
+    ];
+
+    if (startDate) pubConstraints.push(where("createdAt", ">=", startDate));
+    if (endDate) pubConstraints.push(where("createdAt", "<=", endDate));
+
+    pubConstraints.push(orderBy("createdAt", "desc"));
+    if (!startDate) pubConstraints.push(limit(1000)); // Only limit if no date range
+
+    const pubQuery = query(collection(db, "instagram_posts"), ...pubConstraints);
+
+    // Build Scheduled Query
+    let schedConstraints = [
+      ...baseConstraints,
+      where("status", "==", "scheduled")
+    ];
+
+    if (startDate) schedConstraints.push(where("scheduledAt", ">=", startDate));
+    if (endDate) schedConstraints.push(where("scheduledAt", "<=", endDate));
+
+    schedConstraints.push(orderBy("scheduledAt", "asc"));
+    if (!startDate) schedConstraints.push(limit(1000)); // Only limit if no date range
+
+    const schedQuery = query(collection(db, "instagram_posts"), ...schedConstraints);
+
+    let pubSnap = { forEach: () => { } };
+    let schedSnap = { forEach: () => { } };
+
+    try {
+      pubSnap = await getDocs(pubQuery);
+    } catch (e) {
+      console.error("Error fetching published calendar posts:", e);
+    }
+
+    try {
+      schedSnap = await getDocs(schedQuery);
+    } catch (e) {
+      console.error("Error fetching scheduled calendar posts:", e);
+    }
+
+    const allPosts = [];
+
+    // Process Published
+    pubSnap.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.delete === 1) return;
+
+      allPosts.push({
+        id: docSnap.id,
+        postType: data.postType,
+        caption: data.content?.caption || "",
+        mediaUrl: getMediaUrl(data),
+        scheduledAt: data.createdAt?.toDate?.() || new Date(), // Use created date for calendar placement
+        status: "published",
+        isPublished: true,
+        metrics: data.metrics
+      });
+    });
+
+    // Process Scheduled
+    schedSnap.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.delete === 1) return;
+
+      allPosts.push({
+        id: docSnap.id,
+        postType: data.postType,
+        caption: data.content?.caption || "",
+        mediaUrl: getMediaUrl(data),
+        scheduledAt: data.scheduledAt?.toDate?.() || null,
+        status: "scheduled",
+        isPublished: false
+      });
+    });
+
+    return { success: true, posts: allPosts };
+  } catch (error) {
+    console.error("Error fetching calendar posts:", error);
+    return { success: false, message: error.message, posts: [] };
   }
 }

@@ -252,7 +252,7 @@ export default function GallerySelector({
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                                 {filteredItems.map((item) => {
                                     const isSelected = selectedItems.some((i) => i.id === item.id);
                                     return (
@@ -260,10 +260,10 @@ export default function GallerySelector({
                                             key={item.id}
                                             onClick={() => handleSelect(item)}
                                             className={cn(
-                                                "group relative aspect-[4/3] rounded-md border overflow-hidden cursor-pointer transition-all",
+                                                "group relative aspect-square rounded-lg border overflow-hidden cursor-pointer transition-all",
                                                 isSelected
-                                                    ? "border-primary ring-2 ring-primary ring-offset-1"
-                                                    : "border-transparent hover:border-primary/50"
+                                                    ? "border-primary ring-2 ring-primary ring-offset-0"
+                                                    : "border-gray-100 hover:border-primary/50"
                                             )}
                                         >
                                             {item.mediaType === MEDIA_TYPES.IMAGE ? (
@@ -315,6 +315,48 @@ export default function GallerySelector({
                             </div>
                         )}
                     </ScrollArea>
+
+                    {/* Selected Items Tray (Slider) */}
+                    {allowMultiple && selectedItems.length > 0 && (
+                        <div className="border-t bg-muted/10 p-2 shrink-0 animate-in slide-in-from-bottom-2 duration-300">
+                            <div className="flex items-center gap-2 mb-1.5 px-2">
+                                <span className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                                    Queue ({selectedItems.length})
+                                </span>
+                            </div>
+                            <ScrollArea className="w-full" orientation="horizontal">
+                                <div className="flex gap-2 pb-2 px-1">
+                                    {selectedItems.map((item) => (
+                                        <div
+                                            key={item.id}
+                                            className="relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-muted bg-background group"
+                                        >
+                                            {item.mediaType === MEDIA_TYPES.IMAGE ? (
+                                                <img
+                                                    src={item.thumbnailUrl || item.fileUrl}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="relative w-full h-full">
+                                                    <video src={item.fileUrl} className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Play className="h-3 w-3 text-white fill-white shadow-lg" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={() => handleSelect(item)}
+                                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                            >
+                                                <X className="h-2 w-2" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </ScrollArea>
+                        </div>
+                    )}
 
                     {/* Footer Actions */}
                     <div className="p-4 border-t bg-muted/20 shrink-0 flex justify-between items-center">

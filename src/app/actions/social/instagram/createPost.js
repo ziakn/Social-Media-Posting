@@ -209,20 +209,26 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
 /**
  * Create carousel post (TEST MODE)
  */
-export async function createInstagramCarouselPost({ pageId, images, caption, scheduling }) {
+export async function createInstagramCarouselPost({ pageId, media, caption, scheduling }) {
   const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  // TEST MODE: Hardcoded images
-  const testImages = [
-    "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80",
-    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80"
-  ];
-  console.log("Creating Instagram Carousel Post with TEST URLs");
+  // TEST MODE: In production, you would upload media[i].file to get a real URL
+  // Here we use the provided URLs (which might be blob URLs in frontend, which won't work server-side)
+  // For TEST MODE, we'll continue using sample URLs if the provided ones are local
+  const getTestUrl = (item) => {
+    if (item.type === 'video') return "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+    return "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
+  };
+
+  console.log("Creating Instagram Carousel Post with Mixed Media");
 
   const childContainers = [];
-  for (const imageUrl of testImages) {
-    const childContainerId = await createMediaContainer(instagramId, { image_url: imageUrl, caption: "" }, accessToken);
+  for (const item of media) {
+    const mediaUrl = item.url.startsWith('blob:') ? getTestUrl(item) : item.url;
+    const mediaData = item.type === 'video' ? { video_url: mediaUrl } : { image_url: mediaUrl };
+
+    const childContainerId = await createMediaContainer(instagramId, { ...mediaData, caption: "" }, accessToken);
     childContainers.push(childContainerId);
     await new Promise(r => setTimeout(r, 1000));
   }
@@ -245,7 +251,7 @@ export async function createInstagramCarouselPost({ pageId, images, caption, sch
     platform: "instagram",
     pageId,
     postType: "carousel",
-    content: { caption, images: testImages.map(url => ({ url })) },
+    content: { caption, media: media.map(m => ({ url: m.url, type: m.type })) },
     status: scheduling?.schedule ? "scheduled" : "published",
     scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
     instagramContainerId: carouselContainerId,
@@ -311,15 +317,33 @@ export async function createInstagramStory({ pageId, media, caption }) {
   const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  // TEST MODE
-  const mediaUrl = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
-  console.log("Creating Instagram Story with TEST URL:", mediaUrl);
+  // TEST MODE: Standard sample URL if provided one is local
+  const getTestUrl = (item) => {
+    if (item.type === 'video') return "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+    return "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
+  };
 
-  const containerId = await createMediaContainer(instagramId, { image_url: mediaUrl, caption, media_type: "STORIES" }, accessToken);
+  const mediaUrl = media.url.startsWith('blob:') ? getTestUrl(media) : media.url;
+  const mediaData = media.type === 'video' ? { video_url: mediaUrl } : { image_url: mediaUrl };
 
-  await new Promise(r => setTimeout(r, 3000));
-  const status = await checkMediaStatus(instagramId, containerId, accessToken);
-  if (status.status_code !== "FINISHED") throw new Error(`Story not ready`);
+  console.log(`Creating Instagram Story with ${media.type} URL:`, mediaUrl);
+
+  const containerId = await createMediaContainer(instagramId, { ...mediaData, caption, media_type: "STORIES" }, accessToken);
+
+  // Wait for processing
+  await new Promise(r => setTimeout(r, media.type === 'video' ? 10000 : 3000));
+
+  let status, attempts = 0;
+  const maxAttempts = media.type === 'video' ? 12 : 3;
+  do {
+    status = await checkMediaStatus(instagramId, containerId, accessToken);
+    if (status.status_code === "FINISHED") break;
+    if (status.status_code === "ERROR") throw new Error(`Story processing failed. Status: ${JSON.stringify(status)}`);
+    attempts++;
+    await new Promise(r => setTimeout(r, 5000));
+  } while (attempts < maxAttempts);
+
+  if (status.status_code !== "FINISHED") throw new Error(`Story not ready after timeout`);
 
   const publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
 
@@ -327,7 +351,7 @@ export async function createInstagramStory({ pageId, media, caption }) {
     platform: "instagram",
     pageId,
     postType: "story",
-    content: { caption, media: { url: mediaUrl, name: "test_story.jpg" } },
+    content: { caption, media: { url: mediaUrl, name: media.name || "story_media", type: media.type } },
     status: "published",
     instagramContainerId: containerId,
     instagramPostId: publishResult.id,

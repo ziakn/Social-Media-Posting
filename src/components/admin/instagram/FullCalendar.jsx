@@ -1,0 +1,248 @@
+"use client";
+
+import React, { useState } from "react";
+import {
+    format,
+    addMonths,
+    subMonths,
+    startOfMonth,
+    endOfMonth,
+    startOfWeek,
+    endOfWeek,
+    isSameMonth,
+    isSameDay,
+    addDays,
+    isToday,
+    eachDayOfInterval,
+    startOfToday,
+    isBefore,
+} from "date-fns";
+import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Clock, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+export default function FullCalendar({
+    posts = [],
+    onDateClick,
+    onPostClick,
+    onMonthChange,
+    className,
+    mini = false
+}) {
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+
+    const nextMonth = () => {
+        const newDate = addMonths(currentMonth, 1);
+        setCurrentMonth(newDate);
+        if (onMonthChange) onMonthChange(newDate);
+    };
+
+    const prevMonth = () => {
+        const newDate = subMonths(currentMonth, 1);
+        setCurrentMonth(newDate);
+        if (onMonthChange) onMonthChange(newDate);
+    };
+
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(monthStart);
+    const startDate = startOfWeek(monthStart);
+    const endDate = endOfWeek(monthEnd);
+
+    const days = eachDayOfInterval({
+        start: startDate,
+        end: endDate,
+    });
+
+    const getPostsForDay = (day) => {
+        return posts.filter((post) => {
+            // Backend now standardizes 'scheduledAt' for both published (uses createdAt) and scheduled posts
+            const dateToCheck = post.scheduledAt || post.createdAt;
+            if (!dateToCheck) return false;
+            return isSameDay(new Date(dateToCheck), day);
+        });
+    };
+
+    const renderHeader = () => {
+        return (
+            <div className={cn("flex items-center justify-between px-2", mini ? "mb-4" : "mb-8")}>
+                <div className="flex flex-col">
+                    <h2 className={cn("font-bold text-gray-900 tracking-tight", mini ? "text-xl" : "text-3xl")}>
+                        {format(currentMonth, "MMMM yyyy")}
+                    </h2>
+                    {!mini && (
+                        <p className="text-gray-500 text-sm mt-1">
+                            Manage and plan your social media content
+                        </p>
+                    )}
+                </div>
+                <div className="flex items-center gap-2 bg-white rounded-xl border border-gray-200 p-1.5 shadow-sm">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={prevMonth}
+                        className="h-8 w-8 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <ChevronLeft className="h-4 w-4 text-gray-600" />
+                    </Button>
+                    <div className="w-[1px] h-4 bg-gray-200 mx-1" />
+                    <Button
+                        variant="ghost"
+                        onClick={() => setCurrentMonth(new Date())}
+                        className="px-2 h-8 text-[10px] font-bold text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        Today
+                    </Button>
+                    <div className="w-[1px] h-4 bg-gray-200 mx-1" />
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={nextMonth}
+                        className="h-8 w-8 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <ChevronRight className="h-4 w-4 text-gray-600" />
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+
+    const renderDays = () => {
+        const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        return (
+            <div className="grid grid-cols-7 border-b border-gray-100 mb-2">
+                {dayLabels.map((day) => (
+                    <div
+                        key={day}
+                        className={cn("py-2 text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider", mini && "py-1 text-[8px]")}
+                    >
+                        {day}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    const renderCells = () => {
+        return (
+            <div className={cn(
+                "grid grid-cols-7 gap-px bg-gray-100 border-gray-100 overflow-hidden shadow-sm",
+                mini ? "rounded-2xl border" : "rounded-none border-y",
+                className?.includes("rounded-none") && "rounded-none"
+            )}>
+                {days.map((day, idx) => {
+                    const dayPosts = getPostsForDay(day);
+                    const isSelectedMonth = isSameMonth(day, monthStart);
+                    const isTodayDate = isToday(day);
+
+                    return (
+                        <div
+                            key={day.toString()}
+                            className={cn(
+                                "bg-white p-2 transition-all duration-200 relative group flex flex-col",
+                                mini ? "min-h-[70px]" : "min-h-[140px]",
+                                !isSelectedMonth && "bg-gray-50/50",
+                                "hover:bg-gray-50/80 cursor-default"
+                            )}
+                        >
+                            {/* Day Header */}
+                            <div className={cn("flex items-center justify-between mb-1", mini && "mb-0.5")}>
+                                <span
+                                    className={cn(
+                                        "inline-flex items-center justify-center transition-colors font-medium rounded-full",
+                                        mini ? "w-4 h-4 text-[9px]" : "w-7 h-7 text-sm",
+                                        isTodayDate
+                                            ? "bg-purple-600 text-white shadow-md ring-2 ring-purple-100"
+                                            : isSelectedMonth
+                                                ? "text-gray-700 font-semibold"
+                                                : "text-gray-300"
+                                    )}
+                                >
+                                    {format(day, "d")}
+                                </span>
+
+                                {onDateClick && !isBefore(day, startOfToday()) && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={cn("opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full hover:bg-purple-100 hover:text-purple-600", mini ? "h-5 w-5" : "h-7 w-7")}
+                                        onClick={() => onDateClick(day)}
+                                    >
+                                        <Plus className={cn(mini ? "h-3 w-3" : "h-4 w-4")} />
+                                    </Button>
+                                )}
+                            </div>
+
+                            {/* Day Content */}
+                            <div className={cn("flex-1 space-y-1 overflow-y-auto scrollbar-hide", mini ? "max-h-[50px]" : "max-h-[100px]")}>
+                                {dayPosts.map((post) => (
+                                    <div
+                                        key={post.id}
+                                        onClick={() => onPostClick && onPostClick(post)}
+                                        className={cn(
+                                            "flex items-center gap-1.5 p-1 rounded-lg text-[10px] cursor-pointer transition-all duration-200 border shadow-sm",
+                                            mini && "gap-1 p-0.5 text-[8px]",
+                                            "bg-white hover:shadow-md hover:scale-[1.02] active:scale-95",
+                                            post.postType === "video" ? "border-purple-200 bg-purple-50/30" :
+                                                post.postType === "story" ? "border-amber-200 bg-amber-50/30" :
+                                                    post.postType === "carousel" ? "border-blue-200 bg-blue-50/30" :
+                                                        "border-pink-200 bg-pink-50/30"
+                                        )}
+                                    >
+                                        <div className={cn("relative flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200", mini ? "w-4 h-4" : "w-7 h-7")}>
+                                            {post.mediaUrl ? (
+                                                <img
+                                                    src={post.mediaUrl}
+                                                    alt=""
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-50 uppercase font-black text-[6px] text-gray-400">
+                                                    IG
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0 flex items-center gap-1">
+                                            {post.status === "published" || post.isPublished ? (
+                                                <CheckCircle2 className="h-3 w-3 text-green-600 shrink-0" />
+                                            ) : (
+                                                <Clock className="h-3 w-3 text-gray-400 shrink-0" />
+                                            )}
+                                            <p className="font-black text-gray-900 truncate tracking-tighter">
+                                                {format(new Date(post.scheduledAt), "h:mm")}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Empty state hint */}
+                            {dayPosts.length === 0 && isSelectedMonth && !mini && !isBefore(day, startOfToday()) && (
+                                <div
+                                    className="absolute inset-x-2 bottom-2 text-[9px] text-gray-300 font-medium opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                    onClick={() => onDateClick(day)}
+                                >
+                                    Click + to schedule
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
+    return (
+        <div className={cn(
+            "calendar-container bg-white overflow-hidden",
+            mini ? "rounded-3xl shadow-xl border border-gray-100 p-3" : "p-0",
+            className
+        )}>
+            {renderHeader()}
+            <div className={mini ? "" : "px-6"}>
+                {renderDays()}
+                {renderCells()}
+            </div>
+        </div>
+    );
+}

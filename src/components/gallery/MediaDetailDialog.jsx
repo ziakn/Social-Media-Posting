@@ -18,7 +18,7 @@ export function MediaDetailDialog({ item, isOpen, onClose }) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden sm:max-h-[90vh]">
+            <DialogContent className="w-full max-w-[95vw] lg:max-w-4xl p-0 overflow-hidden h-auto max-h-[90vh] rounded-2xl lg:rounded-3xl border-0 shadow-2xl">
                 <div className="flex flex-col sm:flex-row h-full max-h-[90vh]">
 
                     {/* ========= MEDIA PREVIEW ========= */}

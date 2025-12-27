@@ -29,7 +29,7 @@ export default function GalleryModal({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-            <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0">
+            <DialogContent className="w-full max-w-[95vw] lg:max-w-4xl h-[95vh] lg:h-[80vh] flex flex-col p-0 gap-0 rounded-2xl lg:rounded-3xl overflow-hidden shadow-2xl border-0">
                 <DialogHeader className="px-6 py-4 border-b shrink-0">
                     <DialogTitle>{title}</DialogTitle>
                 </DialogHeader>

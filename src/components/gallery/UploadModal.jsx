@@ -145,7 +145,7 @@ export function UploadModal({ isOpen, onClose, onUpload }) {
 
     return (
         <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="w-full max-w-[95vw] sm:max-w-[500px] max-h-[95vh] overflow-y-auto rounded-2xl">
                 <DialogHeader>
                     <DialogTitle>Upload Media</DialogTitle>
                     <DialogDescription>

@@ -5,7 +5,7 @@ import { collection, query, where, getDocs, updateDoc, doc } from "firebase/fire
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
-export async function disconnectInstagramAccount() {
+export async function disconnectInstagramAccount(accountId = null) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
@@ -13,6 +13,12 @@ export async function disconnectInstagramAccount() {
     const user = await verifyToken(token);
     if (!user) {
       return { success: false, message: "Invalid or expired token" };
+    }
+
+    if (accountId) {
+      const ref = doc(db, "socialAccounts", accountId);
+      await updateDoc(ref, { status: "inactive", accessToken: "" });
+      return { success: true, message: "Account disconnected successfully" };
     }
 
     const q = query(

@@ -24,47 +24,50 @@ export async function GET(request) {
       return NextResponse.json({ error: "Missing OAuth code" }, { status: 400 });
     }
 
-    // --- 1. Deactivate existing Instagram accounts for this user ---
-    const q = query(
-      collection(db, "socialAccounts"),
-      where("userId", "==", portalUser.id),
-      where("platform", "==", "instagram"),
-      where("status", "==", "active")
-    );
-    const existingSnapshot = await getDocs(q);
-
-    await Promise.all(
-      existingSnapshot.docs.map((doc) =>
-        updateDoc(doc.ref, {
-          status: "inactive",
-          updatedAt: serverTimestamp(),
-        })
-      )
-    );
-
-    // --- 2. Exchange code for access token ---
+    // --- 1. Exchange code for tokens ---
     const shortLivedToken = await exchangeCodeForToken(code);
     const userAccessToken = await exchangeForLongLivedToken(shortLivedToken);
 
-    // --- 3. Fetch Instagram User Data ---
+    // --- 2. Fetch Instagram User Data ---
     const igUser = await getInstagramUser(userAccessToken);
 
     if (!igUser.user_id) {
       return NextResponse.json({ error: "Failed to fetch Instagram user data" }, { status: 400 });
     }
 
-    // --- 4. Insert NEW document (Active) ---
-    await addDoc(collection(db, "socialAccounts"), {
-      userId: portalUser.id,
-      platform: "instagram",
-      accountId: igUser.user_id,
-      username: igUser.username || null,
-      accessToken: userAccessToken,
-      tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
-      status: "active",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    // --- 3. Check if this specific account is already connected ---
+    const q = query(
+      collection(db, "socialAccounts"),
+      where("userId", "==", portalUser.id),
+      where("platform", "==", "instagram"),
+      where("accountId", "==", igUser.user_id)
+    );
+    const existingSnapshot = await getDocs(q);
+
+    if (!existingSnapshot.empty) {
+      // Update existing account
+      const docRef = existingSnapshot.docs[0].ref;
+      await updateDoc(docRef, {
+        accessToken: userAccessToken,
+        username: igUser.username || null,
+        tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
+        status: "active",
+        updatedAt: serverTimestamp(),
+      });
+    } else {
+      // Insert NEW account
+      await addDoc(collection(db, "socialAccounts"), {
+        userId: portalUser.id,
+        platform: "instagram",
+        accountId: igUser.user_id,
+        username: igUser.username || null,
+        accessToken: userAccessToken,
+        tokenExpiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days
+        status: "active",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
