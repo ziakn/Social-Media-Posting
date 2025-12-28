@@ -93,7 +93,8 @@ export async function getPublishedPosts({
 
     // Build base query
     let constraints = [
-      where("platform", "==", "instagram")
+      where("platform", "==", "instagram"),
+      where("userId", "==", user.id)
     ];
 
     // Status filter
@@ -242,6 +243,7 @@ export async function getPublishedPostsCount({ pageId, filters = {} }) {
     // Build query constraints
     let constraints = [
       where("platform", "==", "instagram"),
+      where("userId", "==", user.id),
       where("status", "==", "published")
     ];
 
@@ -290,6 +292,7 @@ export async function getPublishedPostsStats({ pageId }) {
     // Build query
     let constraints = [
       where("platform", "==", "instagram"),
+      where("userId", "==", user.id),
       where("status", "==", "published")
     ];
 
@@ -386,6 +389,7 @@ export async function getScheduledInstagramPosts({
     // Build base query
     let constraints = [
       where("platform", "==", "instagram"),
+      where("userId", "==", user.id),
       where("status", "==", "scheduled")
     ];
 
@@ -499,7 +503,8 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
 
     // Base constraints
     const baseConstraints = [
-      where("platform", "==", "instagram")
+      where("platform", "==", "instagram"),
+      where("userId", "==", user.id)
     ];
 
     if (pageId) {
