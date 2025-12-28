@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { fetchInstagramAccounts } from "./getPages";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 
 /**
  * Update an Instagram post (Caption for published, all fields for scheduled)
@@ -63,14 +64,22 @@ export async function updateInstagramPost(postId, updates) {
                 let content = { ...post.content, caption: updates.caption || post.content?.caption || "" };
 
                 if (post.postType === "story") {
-                    // Stories stay stories, update the single media object
-                    content.media = media[0];
+                    const item = media[0];
+                    content.media = {
+                        url: needsTestUrl(item.url) ? getTestUrl(item.type, 0) : getAbsoluteUrl(item.url),
+                        type: item.type,
+                        name: item.name || "story_media"
+                    };
                     newPostType = "story";
                 } else {
                     // Feed posts can switch between image, video, and carousel
                     if (media.length > 1) {
                         newPostType = "carousel";
-                        content.media = media.map(m => ({ url: m.url, type: m.type, name: m.name }));
+                        content.media = media.map((m, idx) => ({
+                            url: needsTestUrl(m.url) ? getTestUrl(m.type, idx) : getAbsoluteUrl(m.url),
+                            type: m.type,
+                            name: m.name
+                        }));
                         // Clean up single image/video fields if they exist
                         delete content.image;
                         delete content.video;
@@ -78,12 +87,14 @@ export async function updateInstagramPost(postId, updates) {
                         const item = media[0];
                         if (item.type === "video") {
                             newPostType = "video";
-                            content.video = { url: item.url, name: item.name || "video.mp4" };
+                            const videoUrl = needsTestUrl(item.url) ? getTestUrl('video', 0) : getAbsoluteUrl(item.url);
+                            content.video = { url: videoUrl, name: item.name || "video.mp4" };
                             delete content.image;
                             delete content.media;
                         } else {
                             newPostType = "image";
-                            content.image = { url: item.url, name: item.name || "image.jpg", type: item.type, size: item.size };
+                            const imageUrl = needsTestUrl(item.url) ? getTestUrl('image', 0) : getAbsoluteUrl(item.url);
+                            content.image = { url: imageUrl, name: item.name || "image.jpg", type: item.type, size: item.size };
                             delete content.video;
                             delete content.media;
                         }

@@ -10,6 +10,7 @@ import {
 } from "./createPost";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { getAbsoluteUrl, needsTestUrl, getTestUrl } from "./mediaUtils";
 
 /**
  * Publish a scheduled Instagram post immediately
@@ -103,13 +104,17 @@ export async function publishInstagramPostNow(postId) {
             );
         } else if (post.postType === "story") {
             const mediaUrl = post.content.media?.url;
-            const mediaType = post.content.media?.type;
+            const mediaType = post.content.media?.type || (mediaUrl?.match(/\.(mp4|mov|avi|m4v)$/i) ? 'video' : 'image');
+
+            // Ensure URL is absolute/processed
+            const finalMediaUrl = needsTestUrl(mediaUrl) ? getTestUrl(mediaType, 0) : getAbsoluteUrl(mediaUrl);
+            console.log(`Publishing Story with mediaType: ${mediaType}, originalUrl: ${mediaUrl}, finalUrl: ${finalMediaUrl}`);
+
             containerId = await createMediaContainer(
                 instagramId,
                 {
-                    image_url: mediaType === 'video' ? undefined : mediaUrl,
-                    video_url: mediaType === 'video' ? mediaUrl : undefined,
-                    caption,
+                    image_url: mediaType === 'video' ? undefined : finalMediaUrl,
+                    video_url: mediaType === 'video' ? finalMediaUrl : undefined,
                     media_type: "STORIES"
                 },
                 accessToken
