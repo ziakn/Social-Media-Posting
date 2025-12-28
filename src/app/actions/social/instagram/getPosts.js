@@ -558,13 +558,15 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
 
       allPosts.push({
         id: docSnap.id,
+        pageId: data.pageId,
         postType: data.postType,
         caption: data.content?.caption || "",
         mediaUrl: getMediaUrl(data),
         scheduledAt: data.createdAt?.toDate?.() || new Date(), // Use created date for calendar placement
         status: "published",
         isPublished: true,
-        metrics: data.metrics
+        metrics: data.metrics,
+        content: data.content
       });
     });
 
@@ -575,12 +577,14 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
 
       allPosts.push({
         id: docSnap.id,
+        pageId: data.pageId,
         postType: data.postType,
         caption: data.content?.caption || "",
         mediaUrl: getMediaUrl(data),
         scheduledAt: data.scheduledAt?.toDate?.() || null,
         status: "scheduled",
-        isPublished: false
+        isPublished: false,
+        content: data.content
       });
     });
 

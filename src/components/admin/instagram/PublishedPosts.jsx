@@ -53,6 +53,7 @@ import {
 import { fetchInstagramAccounts } from "@/app/actions/social/instagram/getPages";
 import { updateInstagramPost } from "@/app/actions/social/instagram/updatePost";
 import { deleteInstagramPost } from "@/app/actions/social/instagram/deletePost";
+import { getDateTime } from "@/lib/utils";
 
 // Internal Components (formerly separate files)
 import FullCalendar from "@/components/admin/instagram/FullCalendar";
@@ -597,8 +598,8 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
                 const post = viewDialog.post;
                 if (!post) return null;
                 let mediaList = [];
-                if (post.content?.media && post.content.media.length > 0) {
-                  mediaList = post.content.media;
+                if (post.content?.media) {
+                  mediaList = Array.isArray(post.content.media) ? post.content.media : [post.content.media];
                 } else if (post.carouselMedia && post.carouselMedia.length > 0) {
                   mediaList = post.carouselMedia;
                 } else if (post.mediaUrl) {
@@ -682,24 +683,37 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
 // -----------------------------------------------------------------------------
 function CreatePostForm({ initialData = null, onSuccess = null }) {
   const [isPending, startTransition] = useTransition();
-  const [postType, setPostType] = useState(initialData?.postType || "feed");
+  const getInitialPostType = (type) => {
+    if (!type) return "feed";
+    if (type === "video" || type === "reels" || type === "reel") return "reels";
+    if (type === "story") return "story";
+    return "feed";
+  };
+  const [postType, setPostType] = useState(getInitialPostType(initialData?.postType));
+  const isReadOnly = initialData?.readOnly || false;
+  const isEditing = !!initialData?.id;
+
   const [postContent, setPostContent] = useState({
-    caption: initialData?.caption || "",
-    media: initialData?.media || (initialData?.images?.length ? initialData.images.map(img => ({ ...img, type: 'image' })) : (initialData?.video ? [{ ...initialData.video, type: 'video' }] : [])),
+    caption: initialData?.content?.caption || initialData?.caption || "",
+    media: initialData?.content?.media ?
+      (Array.isArray(initialData.content.media) ? initialData.content.media : [initialData.content.media]) :
+      (initialData?.content?.image ? [{ ...initialData.content.image, type: 'image' }] :
+        (initialData?.content?.video ? [{ ...initialData.content.video, type: 'video' }] :
+          (initialData?.media || (initialData?.images?.length ? initialData.images.map(img => ({ ...img, type: 'image' })) : (initialData?.video ? [{ ...initialData.video, type: 'video' }] : []))))),
     audio: initialData?.audio || null,
     coverImage: initialData?.coverImage || null,
   });
   const [scheduling, setScheduling] = useState({
-    schedule: initialData?.scheduling?.schedule || false,
-    date: initialData?.scheduling?.date || new Date(),
-    time: initialData?.scheduling?.time || "12:00",
-    timezone: initialData?.scheduling?.timezone || "UTC"
+    schedule: initialData?.scheduling?.schedule || (initialData?.status === 'scheduled'),
+    date: initialData?.scheduling?.date || (initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date()),
+    time: initialData?.scheduling?.time || (initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00"),
+    timezone: initialData?.scheduling?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
   });
 
   const [posts, setPosts] = useState([]); // unused but part of original
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [pages, setPages] = useState([]);
-  const [selectedPage, setSelectedPage] = useState(null);
+  const [selectedPage, setSelectedPage] = useState(initialData?.pageId || null);
 
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -769,6 +783,26 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     startTransition(async () => {
       try {
         let result;
+
+        if (isEditing) {
+          // Handle Update
+          const payload = {
+            caption: postContent.caption,
+            media: postContent.media,
+          };
+          if (scheduling.schedule) {
+            payload.scheduledAt = getDateTime(scheduling.date, scheduling.time);
+          }
+          result = await updateInstagramPost(initialData.id, payload);
+          if (result.success) {
+            toast.success(result.message);
+            if (onSuccess) onSuccess(result);
+          } else {
+            toast.error(result.error || "Failed to update post");
+          }
+          return;
+        }
+
         const payload = {
           pageId: selectedPage, caption: postContent.caption, scheduling, media: postContent.media
         };
@@ -778,14 +812,14 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         switch (postType) {
           case "feed":
             if (postContent.media.length > 1) {
-              result = await createInstagramCarouselPost({ ...payload, images: postContent.media.filter(m => m.type === 'image'), videos: postContent.media.filter(m => m.type === 'video') });
+              result = await createInstagramCarouselPost({ ...payload });
             } else {
               const item = postContent.media[0];
               result = item.type === 'video' ? await createInstagramVideoPost({ ...payload, video: item }) : await createInstagramImagePost({ ...payload, image: item });
             }
             break;
           case "story":
-            result = await createInstagramStory({ pageId: selectedPage, media: postContent.media[0], caption: postContent.caption });
+            result = await createInstagramStory({ pageId: selectedPage, media: postContent.media[0], caption: postContent.caption, scheduling });
             break;
           case "reels":
             result = await createInstagramReel({ ...payload, video: postContent.media[0] });
@@ -793,14 +827,15 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         }
 
         if (result.success) {
-          toast.success(scheduling.schedule ? "Post scheduled!" : "Post published!");
-          setPostContent({ caption: "", media: [], audio: null, coverImage: null });
+          toast.success(isEditing ? "Post updated!" : (scheduling.schedule ? "Post scheduled!" : "Post published!"));
+          if (!isEditing) setPostContent({ caption: "", media: [], audio: null, coverImage: null });
           if (onSuccess) onSuccess(result);
         } else {
-          toast.error(result.error || "Failed to create post");
+          toast.error(result.message || result.error || `Failed to ${isEditing ? 'update' : 'create'} post`);
         }
       } catch (error) {
-        toast.error("Failed to create post.");
+        console.error("Submit error:", error);
+        toast.error(error.message || `Failed to ${isEditing ? 'update' : 'create'} post`);
       }
     });
   };
@@ -823,7 +858,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
               {pages.map((page) => {
                 const isSelected = selectedPage === page.igUserId;
                 return (
-                  <div key={page.igUserId} onClick={() => setSelectedPage(page.igUserId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-pink-500 bg-pink-50 shadow-lg" : "w-12 h-12 border-gray-100 opacity-60")}>
+                  <div key={page.igUserId} onClick={() => !isReadOnly && setSelectedPage(page.igUserId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-pink-500 bg-pink-50 shadow-lg" : "w-12 h-12 border-gray-100 opacity-60", isReadOnly && "cursor-default")}>
                     <div className="w-10 h-10 relative">
                       <div className={cn("w-full h-full rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 p-[2px]", isSelected && "animate-spin-slow")}>
                         <div className="w-full h-full rounded-full bg-white p-[2px]">
@@ -850,17 +885,17 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                     <Clock className="h-3.5 w-3.5 text-pink-600" />
                     <h3 className="text-xs font-black text-gray-900 leading-none">Smart Scheduler</h3>
                   </div>
-                  <Switch checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-pink-600 scale-75" />
+                  <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-pink-600 scale-75" />
                 </div>
                 {scheduling.schedule && (
                   <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-50">
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full h-8 rounded-lg text-xs justify-start px-2"><CalendarIcon className="mr-1.5 h-3 w-3 text-pink-500" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}</Button>
+                        <Button disabled={isReadOnly} variant="outline" className="w-full h-8 rounded-lg text-xs justify-start px-2"><CalendarIcon className="mr-1.5 h-3 w-3 text-pink-500" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}</Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0 border-0 rounded-3xl" align="start"><Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus /></PopoverContent>
                     </Popover>
-                    <Input type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-8 rounded-lg text-xs" />
+                    <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-8 rounded-lg text-xs" />
                   </div>
                 )}
               </div>
@@ -871,17 +906,29 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                   <h3 className="text-sm font-black text-gray-900 uppercase">Format</h3>
                   <div className="flex gap-1 bg-gray-50 p-1 rounded-lg">
                     {["feed", "reels", "story"].map(type => (
-                      <button key={type} onClick={() => { setPostType(type); setPostContent(prev => ({ ...prev, media: [] })); }} className={cn("px-4 py-1.5 rounded-md text-[9px] font-black uppercase transition-all", postType === type ? "bg-white text-gray-900 shadow-sm" : "text-gray-400")}>{type}</button>
+                      <button
+                        key={type}
+                        disabled={isReadOnly || isEditing}
+                        onClick={() => { setPostType(type); setPostContent(prev => ({ ...prev, media: [] })); }}
+                        className={cn(
+                          "px-4 py-1.5 rounded-md text-[9px] font-black uppercase transition-all",
+                          postType === type
+                            ? "bg-white text-gray-900 shadow-sm ring-1 ring-black/5 opacity-100"
+                            : "text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                        )}
+                      >
+                        {type}
+                      </button>
                     ))}
                   </div>
                 </div>
-                <SocialCaptionEditor value={postContent.caption} onChange={(e) => setPostContent(prev => ({ ...prev, caption: e.target.value }))} placeholder="Craft your caption..." platform="instagram" className="rounded-xl border-gray-50 bg-gray-50/50 p-4 font-medium text-sm text-gray-800" />
+                <SocialCaptionEditor disabled={isReadOnly} value={postContent.caption} onChange={(e) => setPostContent(prev => ({ ...prev, caption: e.target.value }))} placeholder="Craft your caption..." platform="instagram" className="rounded-xl border-gray-50 bg-gray-50/50 p-4 font-medium text-sm text-gray-800" />
                 <div className="flex justify-end"><span className={cn("text-[10px] font-black uppercase", characterCount > maxCharacters ? "text-red-500" : "text-gray-300")}>{characterCount} / {maxCharacters}</span></div>
 
                 <Separator className="bg-gray-50" />
                 <div className="space-y-4">
                   <Label className="text-sm font-bold text-gray-900">Media</Label>
-                  <Button variant="outline" onClick={() => openGallery(postType === "reels" ? ["video"] : ["image", "video"])} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2">
+                  <Button disabled={isReadOnly} variant="outline" onClick={() => openGallery(postType === "reels" ? ["video"] : ["image", "video"])} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2">
                     <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-pink-600" /></div>
                     <span className="text-xs font-black uppercase text-gray-600">Select Media</span>
                   </Button>
@@ -928,15 +975,17 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                           <img src={item.url} alt="" className="w-full h-full object-cover" />
                         )}
 
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeMedia(index);
-                          }}
-                          className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-[1px]"
-                        >
-                          <Trash2 className="h-5 w-5 text-white" />
-                        </div>
+                        {!isReadOnly && (
+                          <div
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeMedia(index);
+                            }}
+                            className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-[1px]"
+                          >
+                            <Trash2 className="h-5 w-5 text-white" />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -952,12 +1001,14 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
-        <Button disabled={isPending} onClick={handleSubmit} className="bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl px-12 h-11">
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-          {scheduling.schedule ? "Schedule Post" : "Publish Now"}
-        </Button>
-      </div>
+      {!isReadOnly && (
+        <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
+          <Button disabled={isPending} onClick={handleSubmit} className="bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl px-12 h-11">
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />)}
+            {isEditing ? "Save Changes" : (scheduling.schedule ? "Schedule Post" : "Publish Now")}
+          </Button>
+        </div>
+      )}
       <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={postType === 'feed'} maxSelection={postType === 'feed' ? 10 : 1} />
     </div>
   );
@@ -967,7 +1018,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
 // MAIN COMPONENT (Formerly ManageInstagramPosts page)
 // -----------------------------------------------------------------------------
 export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid", initialStatus = "published" }) {
-  const [activeTab, setActiveTab] = useState("listing");
+  const [activeTab, setActiveTab] = useState("calendar");
   const [isCreating, setIsCreating] = useState(false);
   const [calendarPosts, setCalendarPosts] = useState([]);
   const [loadingCalendar, setLoadingCalendar] = useState(false);
@@ -992,52 +1043,85 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
       scheduling: {
         schedule: true,
         date: date,
-        time: "12:00", // Default
+        time: "12:00",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }
     });
     setIsCreating(true);
   };
 
+  const handlePostClick = (post) => {
+    // Map post to initialData format
+    const isScheduled = post.status === 'scheduled';
+    const initialData = {
+      ...post,
+      readOnly: !isScheduled,
+    };
+    setCreateInitialData(initialData);
+    setIsCreating(true);
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Content Studio</h1>
-          <p className="text-gray-500 mt-1">Manage, schedule, and analyze your Instagram content</p>
+      {/* Premium Compact Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg shadow-pink-50/20 p-5 lg:p-6">
+        {/* Background Decorative Elements */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-gradient-to-br from-pink-200/10 to-purple-200/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-pink-50 border border-pink-100 text-pink-600">
+              <Instagram className="h-3 w-3" />
+              <span className="text-[9px] font-black uppercase tracking-wider">Instagram Business Academy</span>
+            </div>
+
+            <div className="space-y-0.5">
+              <h1 className="text-2xl lg:text-3xl font-black tracking-tight bg-gradient-to-r from-gray-900 via-pink-600 to-purple-600 bg-clip-text text-transparent">
+                Content Studio
+              </h1>
+              <p className="text-gray-500 max-w-md text-xs font-medium leading-relaxed">
+                Elevate your social presence with precision scheduling and analytics.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm">
+                  <img src={`https://i.pravatar.cc/150?u=${i + 15}`} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+
+            <Button
+              onClick={() => {
+                setCreateInitialData(null);
+                setIsCreating(true);
+              }}
+              className="group relative px-6 h-11 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-black rounded-xl shadow-xl shadow-pink-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
+            >
+              <div className="relative flex items-center gap-2">
+                <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                <span className="text-sm">Compose Masterpiece</span>
+              </div>
+            </Button>
+          </div>
         </div>
-        <Button
-          onClick={() => {
-            setCreateInitialData(null);
-            setIsCreating(true);
-          }}
-          className="bg-pink-600 hover:bg-pink-700 text-white shadow-lg shadow-pink-200 font-bold rounded-xl h-12 px-6 transition-all hover:scale-105 active:scale-95"
-        >
-          <Plus className="mr-2 h-5 w-5" /> Create Post
-        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="bg-white border border-gray-100 p-1 rounded-xl shadow-sm mb-6 h-auto inline-flex">
-          <TabsTrigger value="listing" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 font-bold text-gray-500 gap-2">
-            <List className="h-4 w-4" /> Listing View
+          <TabsTrigger value="calendar" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-600 font-bold text-gray-500 gap-2">
+            <CalendarIcon className="h-4 w-4" /> Calendar View
           </TabsTrigger>
           <TabsTrigger value="instagram" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-pink-50 data-[state=active]:text-pink-600 font-bold text-gray-500 gap-2">
             <Grid className="h-4 w-4" /> Instagram View
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-600 font-bold text-gray-500 gap-2">
-            <CalendarIcon className="h-4 w-4" /> Calendar View
+          <TabsTrigger value="listing" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 font-bold text-gray-500 gap-2">
+            <List className="h-4 w-4" /> Listing View
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <PostListing viewMode="list" initialStatus="all" pageId={initialPageId} />
-        </TabsContent>
-
-        <TabsContent value="instagram" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <PostListing viewMode="grid" initialStatus="published" pageId={initialPageId} />
-        </TabsContent>
 
         <TabsContent value="calendar" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px] relative">
@@ -1049,8 +1133,16 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
                 </div>
               </div>
             )}
-            <FullCalendar posts={calendarPosts} onMonthChange={setCalendarDate} onDateClick={handleDateClick} />
+            <FullCalendar posts={calendarPosts} onMonthChange={setCalendarDate} onDateClick={handleDateClick} onPostClick={handlePostClick} />
           </div>
+        </TabsContent>
+
+        <TabsContent value="instagram" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <PostListing viewMode="grid" initialStatus="published" pageId={initialPageId} />
+        </TabsContent>
+
+        <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <PostListing viewMode="list" initialStatus="all" pageId={initialPageId} />
         </TabsContent>
       </Tabs>
 
@@ -1063,7 +1155,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           }
         }}
       >
-        <DialogContent className="!w-[95vw] !max-w-[95vw] h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none">
+        <DialogContent className="!w-[80vw] !max-w-[80vw] h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none" showCloseButton={false}>
           {isCreating && (
             <div className="bg-white w-full h-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
               {/* Modal Header */}

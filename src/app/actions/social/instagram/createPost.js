@@ -6,8 +6,67 @@ import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { fetchInstagramAccounts } from "./getPages";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { getDateTime } from "@/lib/utils";
+
+/**
+ * Convert relative URL to absolute URL
+ */
+function getAbsoluteUrl(url) {
+  if (!url) return url;
+  if (url.startsWith('http')) return url;
+
+  try {
+    const headerList = headers();
+    const host = headerList.get('host');
+    if (!host) return url;
+
+    const protocol = host.includes('localhost') ? 'http' : 'https';
+    return `${protocol}://${host}${url.startsWith('/') ? '' : '/'}${url}`;
+  } catch (error) {
+    console.error("Error getting absolute URL:", error);
+    return url;
+  }
+}
+
+/**
+ * Get public test URL for development with uniqueness
+ */
+function getTestUrl(type, index = 0) {
+  const seed = Date.now() + index;
+  let baseUrl;
+  if (type === 'video') {
+    const videos = [
+      "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+      "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+    ];
+    baseUrl = videos[index % videos.length];
+  } else {
+    const images = [
+      "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=1000&q=80"
+    ];
+    baseUrl = images[index % images.length];
+  }
+
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}t=${seed}`;
+}
+
+/**
+ * Check if URL needs a test replacement (relative or local)
+ */
+function needsTestUrl(url) {
+  if (!url) return true; // No URL provided, assume local/needs replacement
+  if (url.startsWith('blob:')) return true; // Client-side blob URL
+  if (url.startsWith('/')) return true; // Relative path
+  // Check if it's a local file path (e.g., from fs.readFileSync) or a local server URL
+  if (!url.startsWith('http') && !url.startsWith('blob:')) return true;
+  if (url.includes('localhost') || url.includes('127.0.0.1')) return true; // Local server URL
+  return false;
+}
 
 /**
  * Upload local file or File object to Firebase and return public URL
@@ -48,26 +107,27 @@ async function makeInstagramRequest(endpoint, formData, accessToken) {
 /**
  * Create media container
  */
-async function createMediaContainer(instagramId, mediaData, accessToken, isCarousel = false) {
+async function createMediaContainer(instagramId, mediaData, accessToken, isCarouselContainer = false) {
   const formData = new FormData();
 
-  if (mediaData.image_url) formData.append("image_url", mediaData.image_url);
+  if (mediaData.image_url) formData.append("image_url", getAbsoluteUrl(mediaData.image_url));
   if (mediaData.video_url) {
-    formData.append("video_url", mediaData.video_url);
+    formData.append("video_url", getAbsoluteUrl(mediaData.video_url));
   }
 
   if (mediaData.caption) formData.append("caption", mediaData.caption);
+  if (mediaData.is_carousel_item) formData.append("is_carousel_item", "true");
 
   // Use provided media_type (e.g., STORIES, REELS, CAROUSEL)
   if (mediaData.media_type) {
     formData.append("media_type", mediaData.media_type);
   }
-  // Default to REELS for videos if not specified (since VIDEO is deprecated)
+  // Default to VIDEO for carousel items or REELS for standalone videos
   else if (mediaData.video_url) {
-    formData.append("media_type", "REELS");
+    formData.append("media_type", mediaData.is_carousel_item ? "VIDEO" : "REELS");
   }
 
-  if (isCarousel && mediaData.children) {
+  if (isCarouselContainer && mediaData.children) {
     formData.append("children", mediaData.children.join(","));
     formData.append("media_type", "CAROUSEL");
   }
@@ -142,22 +202,6 @@ async function getAuthenticatedUser() {
  * Helper to construct Date object correctly from date string/object and time string
  * Ensures we get YYYY-MM-DD from the date and combine it with the time
  */
-function getDateTime(date, time) {
-  if (!date || !time) return null;
-  let dateStr;
-
-  // Handle Date object or ISO string (which Date object becomes when serialized)
-  if (typeof date === 'object' && date instanceof Date) {
-    dateStr = date.toISOString().split('T')[0];
-  } else if (typeof date === 'string') {
-    // Handle both "YYYY-MM-DD" and "YYYY-MM-DDTHH:mm:ss..."
-    dateStr = date.split('T')[0];
-  } else {
-    return null;
-  }
-
-  return new Date(`${dateStr}T${time}:00`);
-}
 
 /**
  * Create single image post
@@ -166,22 +210,20 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
   const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  // TEST MODE: Use hardcoded public URL instead of uploading
-  const imageUrl = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
-  console.log("Creating Instagram Image Post with TEST URL:", imageUrl);
+  // DEVELOPMENT: Use test URL if the provided URL is not public
+  const imageUrl = needsTestUrl(image.url) ? getTestUrl('image') : getAbsoluteUrl(image.url);
+  console.log("Creating Instagram Image Post with URL:", imageUrl);
 
-  const scheduledTime = scheduling?.schedule
-    ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
-    : null;
-
-  const containerId = await createMediaContainer(
-    instagramId,
-    { image_url: imageUrl, caption, scheduled_publish_time: scheduledTime },
-    accessToken
-  );
-
+  let containerId = null;
   let publishResult = null;
+
   if (!scheduling?.schedule) {
+    containerId = await createMediaContainer(
+      instagramId,
+      { image_url: imageUrl, caption },
+      accessToken
+    );
+
     await new Promise(r => setTimeout(r, 2000));
     const status = await checkMediaStatus(instagramId, containerId, accessToken);
     if (status.status_code === "FINISHED") {
@@ -215,43 +257,73 @@ export async function createInstagramCarouselPost({ pageId, media, caption, sche
 
   // TEST MODE: In production, you would upload media[i].file to get a real URL
   // Here we use the provided URLs (which might be blob URLs in frontend, which won't work server-side)
-  // For TEST MODE, we'll continue using sample URLs if the provided ones are local
-  const getTestUrl = (item) => {
-    if (item.type === 'video') return "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-    return "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
-  };
-
   console.log("Creating Instagram Carousel Post with Mixed Media");
 
-  const childContainers = [];
-  for (const item of media) {
-    const mediaUrl = item.url.startsWith('blob:') ? getTestUrl(item) : item.url;
-    const mediaData = item.type === 'video' ? { video_url: mediaUrl } : { image_url: mediaUrl };
+  let carouselContainerId = null;
+  let publishResult = null;
+  const processedMedia = [];
 
-    const childContainerId = await createMediaContainer(instagramId, { ...mediaData, caption: "" }, accessToken);
-    childContainers.push(childContainerId);
-    await new Promise(r => setTimeout(r, 1000));
+  for (let i = 0; i < media.length; i++) {
+    const item = media[i];
+    const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type, i) : getAbsoluteUrl(item.url);
+    processedMedia.push({ url: mediaUrl, type: item.type });
   }
 
-  const scheduledTime = scheduling?.schedule
-    ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
-    : null;
-
-  const carouselContainerId = await createMediaContainer(instagramId, { caption, children: childContainers, scheduled_publish_time: scheduledTime }, accessToken, true);
-
-  let publishResult = null;
   if (!scheduling?.schedule) {
-    await new Promise(r => setTimeout(r, 3000));
-    const status = await checkMediaStatus(instagramId, carouselContainerId, accessToken);
-    if (status.status_code === "FINISHED") publishResult = await publishMediaContainer(instagramId, carouselContainerId, accessToken);
-    else throw new Error(`Carousel not ready. Status: ${status.status}`);
+    const childContainers = [];
+    for (let i = 0; i < processedMedia.length; i++) {
+      const item = processedMedia[i];
+      const mediaData = item.type === 'video' ? { video_url: item.url } : { image_url: item.url };
+
+      console.log(`Creating child container for carousel item ${i + 1} (${item.type}) with URL:`, item.url);
+      const childContainerId = await createMediaContainer(instagramId, { ...mediaData, caption: "", is_carousel_item: true }, accessToken);
+
+      // Polling child container status
+      console.log(`Polling child container ${childContainerId} status...`);
+      let status, attempts = 0;
+      const maxAttempts = item.type === 'video' ? 15 : 6;
+      do {
+        await new Promise(r => setTimeout(r, 5000));
+        status = await checkMediaStatus(instagramId, childContainerId, accessToken);
+        console.log(`Child container ${childContainerId} status:`, status.status_code);
+        if (status.status_code === "FINISHED") break;
+        if (status.status_code === "ERROR") throw new Error(`Carousel child processing failed: ${JSON.stringify(status.error || status)}`);
+        attempts++;
+      } while (attempts < maxAttempts);
+
+      if (status.status_code !== "FINISHED") {
+        throw new Error(`Carousel child ${i + 1} was not ready in time. Last status: ${status.status_code}`);
+      }
+      childContainers.push(childContainerId);
+    }
+
+    console.log("Creating final carousel container with children:", childContainers);
+    carouselContainerId = await createMediaContainer(instagramId, { caption, children: childContainers }, accessToken, true);
+
+    // Wait for carousel container itself to be ready
+    console.log("Polling carousel container status...");
+    let status, attempts = 0;
+    do {
+      await new Promise(r => setTimeout(r, 5000));
+      status = await checkMediaStatus(instagramId, carouselContainerId, accessToken);
+      console.log("Carousel container status:", status.status_code);
+      if (status.status_code === "FINISHED") break;
+      if (status.status_code === "ERROR") throw new Error(`Carousel container processing failed: ${JSON.stringify(status.error || status)}`);
+      attempts++;
+    } while (attempts < 5);
+
+    if (status.status_code === "FINISHED") {
+      publishResult = await publishMediaContainer(instagramId, carouselContainerId, accessToken);
+    } else {
+      throw new Error(`Carousel not ready for publishing. Status: ${status.status_code}`);
+    }
   }
 
   const firestoreId = await saveToFirestore({
     platform: "instagram",
     pageId,
     postType: "carousel",
-    content: { caption, media: media.map(m => ({ url: m.url, type: m.type })) },
+    content: { caption, media: processedMedia },
     status: scheduling?.schedule ? "scheduled" : "published",
     scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
     instagramContainerId: carouselContainerId,
@@ -269,18 +341,16 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
   const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  // TEST MODE: Standard sample video (known to work with Instagram processing)
-  const videoUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-  console.log("Creating Instagram Video Post with TEST URL:", videoUrl);
+  // DEVELOPMENT: Use test URL if the provided URL is not public
+  const videoUrl = needsTestUrl(video.url) ? getTestUrl('video') : getAbsoluteUrl(video.url);
+  console.log("Creating Instagram Video Post with URL:", videoUrl);
 
-  const scheduledTime = scheduling?.schedule
-    ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
-    : null;
-
-  const containerId = await createMediaContainer(instagramId, { video_url: videoUrl, caption, scheduled_publish_time: scheduledTime, media_type: "REELS" }, accessToken);
-
+  let containerId = null;
   let publishResult = null;
+
   if (!scheduling?.schedule) {
+    containerId = await createMediaContainer(instagramId, { video_url: videoUrl, caption, media_type: "REELS" }, accessToken);
+
     await new Promise(r => setTimeout(r, 10000));
     let status, attempts = 0;
     do {
@@ -313,52 +383,52 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
 /**
  * Create story post (TEST MODE)
  */
-export async function createInstagramStory({ pageId, media, caption }) {
+export async function createInstagramStory({ pageId, media, caption, scheduling }) {
   const user = await getAuthenticatedUser();
   const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  // TEST MODE: Standard sample URL if provided one is local
-  const getTestUrl = (item) => {
-    if (item.type === 'video') return "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-    return "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
-  };
-
-  const mediaUrl = media.url.startsWith('blob:') ? getTestUrl(media) : media.url;
-  const mediaData = media.type === 'video' ? { video_url: mediaUrl } : { image_url: mediaUrl };
+  // DEVELOPMENT: Use test URL if the provided URL is not public
+  const mediaUrl = needsTestUrl(media.url) ? getTestUrl(media.type) : getAbsoluteUrl(media.url);
 
   console.log(`Creating Instagram Story with ${media.type} URL:`, mediaUrl);
 
-  const containerId = await createMediaContainer(instagramId, { ...mediaData, caption, media_type: "STORIES" }, accessToken);
+  let containerId = null;
+  let publishResult = null;
 
-  // Wait for processing
-  await new Promise(r => setTimeout(r, media.type === 'video' ? 10000 : 3000));
+  if (!scheduling?.schedule) {
+    containerId = await createMediaContainer(instagramId, { image_url: media.type === 'video' ? undefined : mediaUrl, video_url: media.type === 'video' ? mediaUrl : undefined, caption, media_type: "STORIES" }, accessToken);
 
-  let status, attempts = 0;
-  const maxAttempts = media.type === 'video' ? 12 : 3;
-  do {
-    status = await checkMediaStatus(instagramId, containerId, accessToken);
-    if (status.status_code === "FINISHED") break;
-    if (status.status_code === "ERROR") throw new Error(`Story processing failed. Status: ${JSON.stringify(status)}`);
-    attempts++;
-    await new Promise(r => setTimeout(r, 5000));
-  } while (attempts < maxAttempts);
+    // Wait for processing
+    await new Promise(r => setTimeout(r, media.type === 'video' ? 10000 : 3000));
 
-  if (status.status_code !== "FINISHED") throw new Error(`Story not ready after timeout`);
+    let status, attempts = 0;
+    const maxAttempts = media.type === 'video' ? 12 : 3;
+    do {
+      status = await checkMediaStatus(instagramId, containerId, accessToken);
+      if (status.status_code === "FINISHED") break;
+      if (status.status_code === "ERROR") throw new Error(`Story processing failed. Status: ${JSON.stringify(status)}`);
+      attempts++;
+      await new Promise(r => setTimeout(r, 5000));
+    } while (attempts < maxAttempts);
 
-  const publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
+    if (status.status_code !== "FINISHED") throw new Error(`Story not ready after timeout`);
+
+    publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
+  }
 
   const firestoreId = await saveToFirestore({
     platform: "instagram",
     pageId,
     postType: "story",
     content: { caption, media: { url: mediaUrl, name: media.name || "story_media", type: media.type } },
-    status: "published",
+    status: scheduling?.schedule ? "scheduled" : "published",
+    scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
     instagramContainerId: containerId,
-    instagramPostId: publishResult.id,
+    instagramPostId: publishResult?.id || null,
     metrics: { reach: 0, impressions: 0, replies: 0, exits: 0 },
   }, user.id);
 
-  return { success: true, containerId, instagramPostId: publishResult.id, firestoreId };
+  return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
 }
 
 /**

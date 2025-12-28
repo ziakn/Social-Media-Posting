@@ -7,11 +7,11 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
 /**
- * Update an Instagram post's caption
+ * Update an Instagram post (Caption for published, all fields for scheduled)
  * @param {string} postId - Firestore document ID
- * @param {string} newCaption - New caption text
+ * @param {object} updates - Fields to update
  */
-export async function updateInstagramPost(postId, newCaption) {
+export async function updateInstagramPost(postId, updates) {
     try {
         // 1. Authenticate
         const cookieStore = await cookies();
@@ -36,43 +36,113 @@ export async function updateInstagramPost(postId, newCaption) {
             return { success: false, message: "Unauthorized to edit this post" };
         }
 
-        if (!post.instagramPostId) {
-            return { success: false, message: "Cannot edit a post that hasn't been published to Instagram yet" };
-        }
+        const isScheduled = post.status === "scheduled";
+        const isPublished = post.status === "published" || !!post.instagramPostId;
 
-        // 3. Get Page Access Token
-        const accountsResult = await fetchInstagramAccounts();
-        if (!accountsResult.success) {
-            return { success: false, message: "Failed to fetch accounts" };
-        }
-
-        const account = accountsResult.accounts.find(acc => acc.igUserId === post.pageId);
-        if (!account) {
-            return { success: false, message: "Page not found for this post" };
-        }
-
-        // 4. Update on Instagram
-        // verified: Instagram API DOES NOT support updating captions for published media.
-        // verified: The endpoint POST /{media-id} only supports comment_enabled.
-        // We will only update Firestore locally and warn the user.
-        console.warn("Skipping Instagram API call: Caption update not supported by Instagram API.");
-
-
-        // 5. Update Firestore
-        await updateDoc(postRef, {
-            "content.caption": newCaption, // Update nested field
-            caption: newCaption, // Update distinct field if it exists (legacy support)
+        // 3. Prepare Firestore update
+        const firestoreUpdate = {
             updatedAt: serverTimestamp()
-        });
+        };
+
+        if (updates.caption !== undefined) {
+            firestoreUpdate["content.caption"] = updates.caption;
+            firestoreUpdate["caption"] = updates.caption; // legacy
+        }
+
+        if (isScheduled) {
+            if (updates.scheduledAt !== undefined) {
+                firestoreUpdate.scheduledAt = updates.scheduledAt;
+            }
+
+            // Handle media updates for scheduled posts
+            if (updates.media !== undefined && Array.isArray(updates.media)) {
+                const media = updates.media;
+
+                // Determine new postType and content structure
+                let newPostType = post.postType;
+                let content = { ...post.content, caption: updates.caption || post.content?.caption || "" };
+
+                if (post.postType === "story") {
+                    // Stories stay stories, update the single media object
+                    content.media = media[0];
+                    newPostType = "story";
+                } else {
+                    // Feed posts can switch between image, video, and carousel
+                    if (media.length > 1) {
+                        newPostType = "carousel";
+                        content.media = media.map(m => ({ url: m.url, type: m.type, name: m.name }));
+                        // Clean up single image/video fields if they exist
+                        delete content.image;
+                        delete content.video;
+                    } else if (media.length === 1) {
+                        const item = media[0];
+                        if (item.type === "video") {
+                            newPostType = "video";
+                            content.video = { url: item.url, name: item.name || "video.mp4" };
+                            delete content.image;
+                            delete content.media;
+                        } else {
+                            newPostType = "image";
+                            content.image = { url: item.url, name: item.name || "image.jpg", type: item.type, size: item.size };
+                            delete content.video;
+                            delete content.media;
+                        }
+                    }
+                }
+
+                firestoreUpdate.postType = newPostType;
+                firestoreUpdate.content = content;
+            }
+        }
+
+        // 4. Sanitize and Update Firestore
+        const sanitizedUpdate = sanitizeFirestoreData(firestoreUpdate);
+        await updateDoc(postRef, sanitizedUpdate);
+
+        if (isPublished) {
+            return {
+                success: true,
+                message: "Post updated locally (Instagram does not support editing captions via API)",
+                warning: true
+            };
+        }
 
         return {
             success: true,
-            message: "Post updated locally (Instagram does not support editing captions via API)",
-            warning: true
+            message: "Scheduled post updated successfully"
         };
 
     } catch (error) {
         console.error("Error updating Instagram post:", error);
         return { success: false, message: error.message };
     }
+}
+
+/**
+ * Recursively remove undefined values from an object and provide defaults
+ * Firebase does not support 'undefined' in documents.
+ */
+function sanitizeFirestoreData(obj) {
+    if (obj === null || typeof obj !== 'object') return obj;
+
+    const sanitized = Array.isArray(obj) ? [] : {};
+
+    for (const key in obj) {
+        let value = obj[key];
+
+        if (value === undefined) {
+            // Provide safe defaults based on common key names or types
+            if (key === 'size') value = 0;
+            else if (key === 'type' || key === 'name' || key === 'url') value = "";
+            else continue; // Skip other undefined fields
+        }
+
+        if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+            sanitized[key] = sanitizeFirestoreData(value);
+        } else {
+            sanitized[key] = value;
+        }
+    }
+
+    return sanitized;
 }
