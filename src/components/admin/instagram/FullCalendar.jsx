@@ -17,9 +17,17 @@ import {
     startOfToday,
     isBefore,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Clock, Globe } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Clock, Globe, Eye, Edit, Trash2, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { publishInstagramPostNow } from "@/app/actions/social/instagram/publishPost";
+import { toast } from "sonner";
 
 export default function FullCalendar({
     posts = [],
@@ -30,6 +38,27 @@ export default function FullCalendar({
     mini = false
 }) {
     const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [publishingId, setPublishingId] = useState(null);
+
+    const handlePublishNow = async (e, post) => {
+        e.stopPropagation();
+        try {
+            setPublishingId(post.id);
+            const result = await publishInstagramPostNow(post.id);
+            if (result.success) {
+                toast.success("Post published successfully!");
+                // Trigger a refresh if needed - since posts are passed as props, 
+                // the parent should ideally re-fetch or we should have a refresh callback.
+                // For now, we rely on the parent's data management.
+            } else {
+                toast.error(result.message || "Failed to publish post");
+            }
+        } catch (error) {
+            toast.error("An error occurred while publishing");
+        } finally {
+            setPublishingId(null);
+        }
+    };
 
     const nextMonth = () => {
         const newDate = addMonths(currentMonth, 1);
@@ -175,45 +204,88 @@ export default function FullCalendar({
 
                             {/* Day Content */}
                             <div className={cn("flex-1 space-y-1 overflow-y-auto scrollbar-hide", mini ? "max-h-[50px]" : "max-h-[100px]")}>
-                                {dayPosts.map((post) => (
-                                    <div
-                                        key={post.id}
-                                        onClick={() => onPostClick && onPostClick(post)}
-                                        className={cn(
-                                            "flex items-center gap-1.5 p-1 rounded-lg text-[10px] cursor-pointer transition-all duration-200 border shadow-sm",
-                                            mini && "gap-1 p-0.5 text-[8px]",
-                                            "bg-white hover:shadow-md hover:scale-[1.02] active:scale-95",
-                                            post.postType === "video" ? "border-purple-200 bg-purple-50/30" :
-                                                post.postType === "story" ? "border-amber-200 bg-amber-50/30" :
-                                                    post.postType === "carousel" ? "border-blue-200 bg-blue-50/30" :
-                                                        "border-pink-200 bg-pink-50/30"
-                                        )}
-                                    >
-                                        <div className={cn("relative flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200", mini ? "w-4 h-4" : "w-7 h-7")}>
-                                            {post.mediaUrl ? (
-                                                <img
-                                                    src={post.mediaUrl}
-                                                    alt=""
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center bg-gray-50 uppercase font-black text-[6px] text-gray-400">
-                                                    IG
+                                {dayPosts.map((post) => {
+                                    const isPublished = post.status === "published" || post.isPublished;
+                                    const isScheduled = post.status === "scheduled";
+                                    const isProcessing = publishingId === post.id;
+
+                                    return (
+                                        <DropdownMenu key={post.id}>
+                                            <DropdownMenuTrigger asChild>
+                                                <div
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 p-1 rounded-lg text-[10px] cursor-pointer transition-all duration-200 border shadow-sm relative",
+                                                        mini && "gap-1 p-0.5 text-[8px]",
+                                                        "bg-white hover:shadow-md hover:scale-[1.02] active:scale-95",
+                                                        post.postType === "video" ? "border-purple-200 bg-purple-50/30" :
+                                                            post.postType === "story" ? "border-amber-200 bg-amber-50/30" :
+                                                                post.postType === "carousel" ? "border-blue-200 bg-blue-50/30" :
+                                                                    "border-pink-200 bg-pink-50/30",
+                                                        isProcessing && "opacity-70 pointer-events-none"
+                                                    )}
+                                                >
+                                                    <div className={cn("relative flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200", mini ? "w-4 h-4" : "w-7 h-7")}>
+                                                        {post.mediaUrl ? (
+                                                            <img
+                                                                src={post.mediaUrl}
+                                                                alt=""
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center bg-gray-50 uppercase font-black text-[6px] text-gray-400">
+                                                                IG
+                                                            </div>
+                                                        )}
+                                                        {isProcessing && (
+                                                            <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                                                                <Loader2 className="h-3 w-3 animate-spin text-purple-600" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0 flex items-center gap-1">
+                                                        {isPublished ? (
+                                                            <CheckCircle2 className="h-3 w-3 text-green-600 shrink-0" />
+                                                        ) : (
+                                                            <Clock className="h-3 w-3 text-gray-400 shrink-0" />
+                                                        )}
+                                                        <p className="font-black text-gray-900 truncate tracking-tighter">
+                                                            {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm") : "Draft"}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex items-center gap-1">
-                                            {post.status === "published" || post.isPublished ? (
-                                                <CheckCircle2 className="h-3 w-3 text-green-600 shrink-0" />
-                                            ) : (
-                                                <Clock className="h-3 w-3 text-gray-400 shrink-0" />
-                                            )}
-                                            <p className="font-black text-gray-900 truncate tracking-tighter">
-                                                {format(new Date(post.scheduledAt), "h:mm")}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="start" className="w-40">
+                                                {isPublished ? (
+                                                    <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'view')}>
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                        <span>View Post</span>
+                                                    </DropdownMenuItem>
+                                                ) : (
+                                                    <>
+                                                        <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'edit')}>
+                                                            <Edit className="mr-2 h-4 w-4" />
+                                                            <span>Edit Post</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => handlePublishNow(e, post)}
+                                                            className="text-purple-600 focus:text-purple-700 focus:bg-purple-50"
+                                                        >
+                                                            <Send className="mr-2 h-4 w-4" />
+                                                            <span>Publish Now</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={() => onPostClick && onPostClick(post, 'delete')}
+                                                            className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            <span>Delete Post</span>
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    );
+                                })}
                             </div>
 
                             {/* Empty state hint */}

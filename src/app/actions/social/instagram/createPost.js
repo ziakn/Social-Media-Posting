@@ -107,7 +107,7 @@ async function makeInstagramRequest(endpoint, formData, accessToken) {
 /**
  * Create media container
  */
-async function createMediaContainer(instagramId, mediaData, accessToken, isCarouselContainer = false) {
+export async function createMediaContainer(instagramId, mediaData, accessToken, isCarouselContainer = false) {
   const formData = new FormData();
 
   if (mediaData.image_url) formData.append("image_url", getAbsoluteUrl(mediaData.image_url));
@@ -143,7 +143,7 @@ async function createMediaContainer(instagramId, mediaData, accessToken, isCarou
 /**
  * Publish container
  */
-async function publishMediaContainer(instagramId, containerId, accessToken) {
+export async function publishMediaContainer(instagramId, containerId, accessToken) {
   const formData = new FormData();
   formData.append("creation_id", containerId);
   return await makeInstagramRequest(`/${instagramId}/media_publish`, formData, accessToken);
@@ -152,7 +152,7 @@ async function publishMediaContainer(instagramId, containerId, accessToken) {
 /**
  * Check media status
  */
-async function checkMediaStatus(instagramId, containerId, accessToken) {
+export async function checkMediaStatus(instagramId, containerId, accessToken) {
   const response = await fetch(
     `https://graph.instagram.com/v24.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
   );
@@ -162,7 +162,7 @@ async function checkMediaStatus(instagramId, containerId, accessToken) {
 /**
  * Get Instagram account info
  */
-async function getInstagramAccount(pageId) {
+export async function getInstagramAccount(pageId) {
   const result = await fetchInstagramAccounts();
   if (!result.success) throw new Error(result.message || "Failed to fetch Instagram accounts");
   const account = result.accounts.find(acc => acc.igUserId === pageId);

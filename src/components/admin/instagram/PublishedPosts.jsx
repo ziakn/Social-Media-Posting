@@ -64,7 +64,7 @@ import InstagramPreview from "@/components/admin/instagram/InstagramPreview"; //
 // -----------------------------------------------------------------------------
 // POST LISTING COMPONENT (Formerly PublishedPosts default export)
 // -----------------------------------------------------------------------------
-function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus = "published" }) {
+function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus = "published", refreshTrigger = 0, onEdit = null }) {
   // State management
   const [posts, setPosts] = useState([]);
   const [stats, setStats] = useState(null);
@@ -74,12 +74,6 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
   // Dialog states
   const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
-  const [editDialog, setEditDialog] = useState({
-    open: false,
-    post: null,
-    caption: "",
-    updating: false
-  });
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -180,7 +174,7 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
   // Initial load and filter changes
   useEffect(() => {
     loadPosts(true);
-  }, [loadPosts]);
+  }, [loadPosts, refreshTrigger]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -217,38 +211,11 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
     }
   };
 
-  // Handle Edit Click
+  // Handle Edit Click - Now uses parent creator
   const onEditClick = (post) => {
-    setEditDialog({
-      open: true,
-      postId: post.id,
-      caption: post.caption || "",
-      updating: false
-    });
+    if (onEdit) onEdit(post);
   };
 
-  // Handle Update
-  const handleUpdate = async () => {
-    try {
-      if (!editDialog.postId) return;
-      setEditDialog(prev => ({ ...prev, updating: true }));
-      const result = await updateInstagramPost(editDialog.postId, editDialog.caption);
-      if (result.success) {
-        toast.success(result.message);
-        setPosts(prev => prev.map(p =>
-          p.id === editDialog.postId ? { ...p, caption: editDialog.caption } : p
-        ));
-        setEditDialog({ open: false, postId: null, caption: "", updating: false });
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      console.error("Update error:", error);
-      toast.error("Failed to update post");
-    } finally {
-      setEditDialog(prev => ({ ...prev, updating: false }));
-    }
-  };
 
   // Handle Delete
   const handleDelete = async (postId) => {
@@ -673,7 +640,22 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
           </div>
         </DialogContent>
       </Dialog>
-      {/* Delete and Edit Dialogs (omitted for brevity, assume existing) */}
+      {/* Delete and Edit Dialogs */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the post from our records.
+              {viewDialog.post?.status === 'published' && " Note: This will not delete the post from Instagram."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleDelete(deleteDialog.postId)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -742,7 +724,20 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       url: item.fileUrl, name: item.fileName, size: item.fileSize,
       type: item.mediaType, mimeType: item.fileType, file: null
     }));
+
     const maxMedia = postType === "feed" ? 10 : 1;
+
+    // If it's a single-media post type (reel/story), replace automatically
+    if (maxMedia === 1) {
+      setPostContent(prev => ({
+        ...prev,
+        media: [newMedia[0]]
+      }));
+      setGalleryOpen(false);
+      setCurrentSlide(0);
+      return;
+    }
+
     const totalMedia = postContent.media.length + newMedia.length;
     if (totalMedia > maxMedia) {
       toast.error(`You can upload maximum ${maxMedia} item${maxMedia !== 1 ? 's' : ''} for ${postType} posts`);
@@ -750,7 +745,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     }
     setPostContent(prev => ({
       ...prev,
-      media: postType === "feed" ? [...prev.media, ...newMedia].slice(0, maxMedia) : [newMedia[0]]
+      media: [...prev.media, ...newMedia].slice(0, maxMedia)
     }));
     setGalleryOpen(false);
   };
@@ -1024,6 +1019,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const [loadingCalendar, setLoadingCalendar] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [createInitialData, setCreateInitialData] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch calendar posts when that tab is active or date changes
   useEffect(() => {
@@ -1036,7 +1032,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
         if (res.success) setCalendarPosts(res.posts);
       }).finally(() => setLoadingCalendar(false));
     }
-  }, [activeTab, calendarDate]);
+  }, [activeTab, calendarDate, refreshTrigger]);
 
   const handleDateClick = (date) => {
     setCreateInitialData({
@@ -1138,11 +1134,11 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
         </TabsContent>
 
         <TabsContent value="instagram" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <PostListing viewMode="grid" initialStatus="published" pageId={initialPageId} />
+          <PostListing viewMode="grid" initialStatus="published" pageId={initialPageId} refreshTrigger={refreshTrigger} onEdit={handlePostClick} />
         </TabsContent>
 
         <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <PostListing viewMode="list" initialStatus="all" pageId={initialPageId} />
+          <PostListing viewMode="list" initialStatus="all" pageId={initialPageId} refreshTrigger={refreshTrigger} onEdit={handlePostClick} />
         </TabsContent>
       </Tabs>
 
@@ -1171,7 +1167,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
                 onSuccess={() => {
                   setIsCreating(false);
                   setCreateInitialData(null);
-                  // In a real app we might trigger a refresh here of listings/calendar
+                  setRefreshTrigger(prev => prev + 1);
                 }}
               />
             </div>
