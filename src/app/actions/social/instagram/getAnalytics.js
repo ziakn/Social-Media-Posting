@@ -37,10 +37,10 @@ export async function getInstagramPostAnalytics(pageId, postId) {
         }
 
         // 2. Determine Metrics based on media type (we might not know media type yet, so we can try to fetch media fields first)
-        // First, fetch basic media fields including media_type
-        const mediaFields = "media_type,like_count,comments_count,timestamp,permalink,shortcode";
+        // First, fetch basic media fields including media_type and media_product_type
+        const mediaFields = "media_type,media_product_type,like_count,comments_count,timestamp,permalink,shortcode";
         const mediaRes = await fetch(
-            `https://graph.facebook.com/v24.0/${postId}?fields=${mediaFields}&access_token=${accessToken}`
+            `https://graph.instagram.com/v24.0/${postId}?fields=${mediaFields}&access_token=${accessToken}`
         );
         const mediaData = await mediaRes.json();
 
@@ -50,59 +50,58 @@ export async function getInstagramPostAnalytics(pageId, postId) {
         }
 
         const mediaType = mediaData.media_type;
-        let metrics = "impressions,reach,saved";
+        const mediaProductType = mediaData.media_product_type;
+        let insightsMetricParam = "";
 
-        // Add specific metrics based on type
-        if (mediaType === "VIDEO" || mediaType === "REELS") { // REELS might be VIDEO in API
-            metrics += ",video_views"; // plays might be better for reels, but video_views is standard
-            // For Reels, 'plays' is often used instead of 'video_views' in newer API versions, but let's stick to standard first or try both if needed.
-            // Actually v19.0+ often uses 'plays' for Reels. Let's try to add it.
-            metrics += ",plays";
-            metrics += ",total_interactions";
+        // Determine metrics based on media type and product type
+        if (mediaProductType === "REELS") {
+            // Reels metrics - use 'plays' instead of 'impressions'
+            insightsMetricParam = "plays,shares,reach,saved,total_interactions";
+        } else if (mediaType === "VIDEO") {
+            // Feed videos - use 'impressions' for feed videos
+            insightsMetricParam = "impressions,shares,reach,saved,total_interactions";
         } else if (mediaType === "CAROUSEL_ALBUM") {
-            metrics += ",carousel_album_impressions,carousel_album_reach,carousel_album_saved,carousel_album_video_views"; // older metrics, might just be same as image
-            // Actually for Carousel, strictly it's impressions, reach, saved.
+            // Carousel metrics
+            // Reverting to album-specific metrics as 'impressions' is not supported for albums
+            insightsMetricParam = "carousel_album_impressions,carousel_album_reach,carousel_album_saved,total_interactions";
+        } else {
+            // Image / Default metrics
+            insightsMetricParam = "impressions,shares,reach,saved,total_interactions";
         }
 
-        // Simple approach: Try to fetch common insights. API will ignore or error on invalid ones? 
-        // Best to be specific.
-        // Documentation says: 
-        // Image/Carousel: impressions, reach, saved, total_interactions
-        // Video: impressions, reach, saved, video_views, total_interactions (and 30s views etc)
-        // Reels: plays, reach, total_interactions, saved, various others.
-
-        // Let's stick to basic set that covers most user requests
-        // "Impressions, Views, Likes, Shares"
-        // Likes -> like_count (from media object)
-        // Shares -> not always available as insight, sometimes public metric. 
-        // Note: 'shares' metric exists for some objects.
-
-        let insightsMetricParam = "impressions,reach,saved,total_interactions";
-        if (mediaType === "VIDEO" || mediaType === "REELS") {
-            insightsMetricParam += ",video_views,plays"; // hope API handles 'plays' if it's Reel
+        let insightsData;
+        try {
+            const insightsRes = await fetch(
+                `https://graph.instagram.com/v24.0/${postId}/insights?metric=${insightsMetricParam}&access_token=${accessToken}`
+            );
+            insightsData = await insightsRes.json();
+        } catch (e) {
+            insightsData = { error: { message: "Network or parsing error", details: e.message } };
         }
-
-        const insightsRes = await fetch(
-            `https://graph.facebook.com/v24.0/${postId}/insights?metric=${insightsMetricParam}&access_token=${accessToken}`
-        );
-        const insightsData = await insightsRes.json();
-
-        // If specific metrics fail (e.g. video_views on image), we might need to retry with safer list 
-        // or just handle the error.
-        // However, Graph API often returns partial data or error if ONE metric is invalid.
 
         let finalInsights = [];
         if (insightsData.data) {
             finalInsights = insightsData.data;
         } else if (insightsData.error) {
-            // Fallback: try simpler metrics if complex one failed
-            console.warn("Instagram API Insights Warning:", insightsData.error);
-            // Try very basic
-            const basicRes = await fetch(
-                `https://graph.facebook.com/v24.0/${postId}/insights?metric=impressions,reach,saved&access_token=${accessToken}`
-            );
-            const basicData = await basicRes.json();
-            if (basicData.data) finalInsights = basicData.data;
+            console.warn("Instagram API Insights Warning (Primary Metrics):", insightsData.error);
+
+            // FALLBACK: Try a minimal safe set of metrics if specific ones fail
+            // 'saved' and 'total_interactions' are generally safe for all types
+            // We'll also try 'reach' as it's very common.
+            const fallbackMetricParam = "saved,total_interactions";
+            try {
+                const fallbackRes = await fetch(
+                    `https://graph.instagram.com/v24.0/${postId}/insights?metric=${fallbackMetricParam}&access_token=${accessToken}`
+                );
+                const fallbackData = await fallbackRes.json();
+                if (fallbackData.data) {
+                    finalInsights = fallbackData.data;
+                } else {
+                    console.warn("Instagram API Insights Warning (Fallback Metrics):", fallbackData.error);
+                }
+            } catch (fallbackErr) {
+                console.warn("Instagram API Insights Fallback Failed:", fallbackErr);
+            }
         }
 
         return {

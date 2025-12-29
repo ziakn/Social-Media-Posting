@@ -576,6 +576,7 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
         status: "published",
         isPublished: true,
         metrics: data.metrics,
+        instagramPostId: data.instagramPostId,
         content: data.content
       });
     });
@@ -594,6 +595,7 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
         scheduledAt: data.scheduledAt?.toDate?.() || null,
         status: "scheduled",
         isPublished: false,
+        instagramPostId: data.instagramPostId,
         content: data.content
       });
     });

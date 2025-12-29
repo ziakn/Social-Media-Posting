@@ -8,8 +8,18 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import {
     Heart,
     MessageCircle,
@@ -19,7 +29,14 @@ import {
     Bookmark,
     Users,
     Play,
-    TrendingUp
+    TrendingUp,
+    Calendar,
+    Info,
+    Instagram,
+    ExternalLink,
+    Layers,
+    MoreVertical,
+    ImageIcon
 } from "lucide-react";
 import { getInstagramPostAnalytics } from "@/app/actions/social/instagram/getAnalytics";
 import { toast } from "sonner";
@@ -64,6 +81,27 @@ export default function InstagramAnalyticsModal({
         }
     };
 
+    // Helper function to get media URL from post object
+    const getMediaUrl = () => {
+        if (!post) return null;
+
+        // Direct mediaUrl property
+        if (post.mediaUrl) return post.mediaUrl;
+
+        // Check content.media array
+        if (post.content?.media && Array.isArray(post.content.media) && post.content.media.length > 0) {
+            return post.content.media[0].url;
+        }
+
+        // Check content.image
+        if (post.content?.image?.url) return post.content.image.url;
+
+        // Check content.video
+        if (post.content?.video?.url) return post.content.video.url;
+
+        return null;
+    };
+
     const getMetricValue = (name) => {
         if (!data?.insights) return 0;
         const metric = data.insights.find(m => m.name === name);
@@ -82,49 +120,37 @@ export default function InstagramAnalyticsModal({
             label: "Impressions",
             value: getMetricValue("impressions"),
             icon: Eye,
-            color: "text-blue-600",
-            bg: "bg-blue-50",
-            desc: "Total number of times your post was seen"
+            desc: "Total views"
         },
         {
             label: "Reach",
             value: getMetricValue("reach"),
             icon: Users,
-            color: "text-purple-600",
-            bg: "bg-purple-50",
-            desc: "Unique accounts that saw your post"
+            desc: "Unique accounts"
         },
         {
             label: "Likes",
             value: data?.like_count || 0,
             icon: Heart,
-            color: "text-pink-600",
-            bg: "bg-pink-50",
-            desc: "Total likes on your post"
+            desc: "Total likes"
         },
         {
             label: "Comments",
             value: data?.comments_count || 0,
             icon: MessageCircle,
-            color: "text-green-600",
-            bg: "bg-green-50",
-            desc: "Total comments on your post"
+            desc: "Total comments"
         },
         {
             label: "Saved",
-            value: getMetricValue("saved"), // 'saved' is an insight metric
+            value: getMetricValue("saved"),
             icon: Bookmark,
-            color: "text-orange-600",
-            bg: "bg-orange-50",
-            desc: "Number of times your post was saved"
+            desc: "Total saves"
         },
         {
             label: "Engagement",
             value: (data?.like_count || 0) + (data?.comments_count || 0) + (getMetricValue("saved") || 0),
             icon: TrendingUp,
-            color: "text-indigo-600",
-            bg: "bg-indigo-50",
-            desc: "Total interactions (Likes + Comments + Saves)"
+            desc: "Interactions"
         }
     ];
 
@@ -135,118 +161,214 @@ export default function InstagramAnalyticsModal({
             label: "Video Views",
             value: views,
             icon: Play,
-            color: "text-red-600",
-            bg: "bg-red-50",
-            desc: "Number of times your video was viewed"
+            desc: "Total plays"
         });
     }
 
-    // Note: Shares are tricky. If we have it in insights 'shares', use it.
+    // Shares
     const shares = getMetricValue("shares");
     if (shares > 0) {
         metrics.push({
             label: "Shares",
             value: shares,
             icon: Share2,
-            color: "text-teal-600",
-            bg: "bg-teal-50",
-            desc: "Number of times your post was shared"
+            desc: "Total shares"
         });
     }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl p-0 overflow-hidden bg-gray-50/50 border-0 shadow-2xl rounded-3xl">
-                <div className="bg-white border-b px-8 py-6">
-                    <DialogHeader className="space-y-2">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2.5 bg-gradient-to-br from-pink-500 to-purple-600 rounded-xl shadow-lg shadow-pink-500/20">
-                                <BarChart3 className="h-6 w-6 text-white" />
-                            </div>
-                            <div>
-                                <DialogTitle className="text-2xl font-black text-gray-900">Post Analytics</DialogTitle>
-                                <DialogDescription className="text-sm font-medium text-gray-500">
-                                    Detailed performance insights for your publication
-                                </DialogDescription>
-                            </div>
+            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden">
+                {/* Header */}
+                <div className="px-6 py-4 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-gradient-to-br from-pink-500 to-purple-600 rounded-lg">
+                            <Instagram className="h-5 w-5 text-white" />
                         </div>
-                    </DialogHeader>
+                        <DialogTitle className="text-xl font-semibold">Post Analytics</DialogTitle>
+                    </div>
                 </div>
 
-                <ScrollArea className="max-h-[85vh]">
-                    <div className="p-8">
-                        {loading ? (
-                            <div className="space-y-8">
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {[...Array(4)].map((_, i) => (
-                                        <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-                                    ))}
+                {/* Two Column Layout */}
+                <div className="flex h-[calc(90vh-73px)] overflow-hidden">
+                    {/* Left Column - Metrics & Details */}
+                    <ScrollArea className="flex-1 border-r">
+                        <div className="p-6 space-y-6">
+                            {loading ? (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        {[...Array(6)].map((_, i) => (
+                                            <Skeleton key={i} className="h-20 w-full" />
+                                        ))}
+                                    </div>
+                                    <Skeleton className="h-32 w-full" />
                                 </div>
-                                <Skeleton className="h-64 w-full rounded-2xl" />
-                            </div>
-                        ) : (
-                            <div className="space-y-8">
-                                {/* Top Cards Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                                    {metrics.map((metric, i) => (
-                                        <div key={i} className="relative group overflow-hidden bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className={cn("p-2.5 rounded-xl transition-colors", metric.bg)}>
-                                                    <metric.icon className={cn("h-5 w-5", metric.color)} />
+                            ) : (
+                                <>
+                                    {/* Metrics Grid */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                                            Performance Metrics
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {metrics.map((metric, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex items-center gap-3 px-4 py-3 bg-muted/30 border border-border/60 rounded-lg hover:bg-muted/50 transition-colors"
+                                                >
+                                                    <div className="p-2 bg-background rounded-md">
+                                                        <metric.icon className="h-4 w-4 text-primary" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-xl font-bold">{formatNumber(metric.value)}</div>
+                                                        <p className="text-xs text-muted-foreground truncate">{metric.label}</p>
+                                                    </div>
                                                 </div>
-                                                <span className={cn("text-2xl font-black tracking-tight", metric.color)}>
-                                                    {formatNumber(metric.value)}
-                                                </span>
-                                            </div>
-                                            <h3 className="font-bold text-gray-700 text-sm mb-1">{metric.label}</h3>
-                                            <p className="text-xs text-gray-400 font-medium leading-relaxed">{metric.desc}</p>
-
-                                            {/* Decorative gradient */}
-                                            <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-transparent via-gray-100 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
 
-                                {/* Post Preview (Optional but nice context) */}
-                                <div className="flex flex-col md:flex-row gap-8 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                                    <div className="w-full md:w-1/3 shrink-0">
-                                        <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 relative shadow-inner border border-gray-100">
-                                            {post?.mediaUrl ? (
-                                                post.postType === 'video' ? (
-                                                    <video src={post.mediaUrl} className="w-full h-full object-cover" controls />
-                                                ) : <img src={post.mediaUrl} className="w-full h-full object-cover" alt="Post" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs font-black uppercase tracking-wider">No Media Preview</div>
+                                    <Separator />
+
+                                    {/* Post Information */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                                            Post Information
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {/* Post Type & Status */}
+                                            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/60">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-medium text-muted-foreground">Type:</span>
+                                                    <Badge variant="outline" className="capitalize text-xs">
+                                                        {post?.postType === 'video' ? (
+                                                            <><Play className="h-3 w-3 mr-1" /> Reel</>
+                                                        ) : post?.postType === 'carousel' ? (
+                                                            <><Layers className="h-3 w-3 mr-1" /> Carousel</>
+                                                        ) : (
+                                                            <><Eye className="h-3 w-3 mr-1" /> Image</>
+                                                        )}
+                                                    </Badge>
+                                                </div>
+                                                <Badge variant={post?.status === 'published' ? 'default' : 'secondary'}>
+                                                    {post?.status || 'Published'}
+                                                </Badge>
+                                            </div>
+
+                                            {/* Published Date */}
+                                            <div className="p-3 bg-muted/30 rounded-lg border border-border/60">
+                                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+                                                    <Calendar className="h-4 w-4" />
+                                                    Published Date
+                                                </div>
+                                                <div className="text-sm font-medium pl-6">
+                                                    {post?.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    }) : "N/A"}
+                                                </div>
+                                            </div>
+
+                                            {/* Caption */}
+                                            <div className="p-3 bg-muted/30 rounded-lg border border-border/60">
+                                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                                                    <MessageCircle className="h-4 w-4" />
+                                                    Caption
+                                                </div>
+                                                <ScrollArea className="h-[120px] w-full">
+                                                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90 pl-6">
+                                                        {post?.caption || "No caption provided"}
+                                                    </p>
+                                                </ScrollArea>
+                                            </div>
+
+                                            {/* View on Instagram */}
+                                            {data?.permalink && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() => window.open(data.permalink, '_blank')}
+                                                >
+                                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                                    View on Instagram
+                                                </Button>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex-1 space-y-4">
-                                        <div>
-                                            <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Caption</h4>
-                                            <p className="text-sm text-gray-600 font-medium leading-relaxed whitespace-pre-wrap max-h-40 overflow-y-auto custom-scrollbar p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                                {post?.caption || "No caption provided"}
-                                            </p>
+                                </>
+                            )}
+                        </div>
+                    </ScrollArea>
+
+                    {/* Right Column - Instagram Preview */}
+                    <div className="w-[420px] bg-muted/20 flex items-center justify-center p-6">
+                        {loading ? (
+                            <Skeleton className="w-[340px] h-[600px] rounded-3xl" />
+                        ) : (
+                            <div className="w-[340px] bg-background rounded-3xl shadow-2xl border-8 border-border/40 overflow-hidden">
+                                {/* Instagram Header */}
+                                <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                                            <Instagram className="h-4 w-4 text-white" />
                                         </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="p-4 bg-pink-50 rounded-xl border border-pink-100">
-                                                <div className="text-xs font-black text-pink-400 uppercase tracking-wider mb-1">Published On</div>
-                                                <div className="text-sm font-bold text-pink-900">
-                                                    {post?.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, { dateStyle: "long" }) : "N/A"}
-                                                </div>
-                                            </div>
-                                            <div className="p-4 bg-purple-50 rounded-xl border border-purple-100">
-                                                <div className="text-xs font-black text-purple-400 uppercase tracking-wider mb-1">Status</div>
-                                                <div className="text-sm font-bold text-purple-900 capitalize">
-                                                    {post?.status || "Published"}
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <span className="text-sm font-semibold">@instagram_user</span>
                                     </div>
+                                    <MoreVertical className="h-5 w-5 text-muted-foreground" />
+                                </div>
+
+                                {/* Media Preview */}
+                                <div className="aspect-square relative bg-muted/40">
+                                    {getMediaUrl() ? (
+                                        post.postType === 'video' || post.postType === 'reels' || post.postType === 'reel' ? (
+                                            <video
+                                                src={getMediaUrl()}
+                                                className="w-full h-full object-cover"
+                                                controls
+                                                playsInline
+                                            />
+                                        ) : (
+                                            <img
+                                                src={getMediaUrl()}
+                                                className="w-full h-full object-cover"
+                                                alt="Post"
+                                            />
+                                        )
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                            <Info className="h-12 w-12 mb-2 opacity-40" />
+                                            <span className="text-xs">No Preview</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Instagram Actions */}
+                                <div className="px-4 py-3 space-y-2 bg-background">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <Heart className="h-6 w-6" />
+                                            <MessageCircle className="h-6 w-6" />
+                                            <Share2 className="h-6 w-6" />
+                                        </div>
+                                        <Bookmark className="h-6 w-6" />
+                                    </div>
+                                    <div className="text-sm">
+                                        <span className="font-semibold">@instagram_user</span>
+                                        <span className="text-muted-foreground ml-2">
+                                            {post?.caption ?
+                                                (post.caption.length > 50 ? post.caption.substring(0, 50) + '...' : post.caption)
+                                                : 'Write a caption...'}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">JUST NOW</div>
                                 </div>
                             </div>
                         )}
                     </div>
-                </ScrollArea>
+                </div>
             </DialogContent>
         </Dialog>
     );
