@@ -17,7 +17,7 @@ import {
     startOfToday,
     isBefore,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Clock, Globe, Eye, Edit, Trash2, Send, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Clock, Globe, Eye, Edit, Trash2, Send, Loader2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -256,10 +256,16 @@ export default function FullCalendar({
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="start" className="w-40">
                                                 {isPublished ? (
-                                                    <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'view')}>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        <span>View Post</span>
-                                                    </DropdownMenuItem>
+                                                    <>
+                                                        <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'analytics')}>
+                                                            <BarChart3 className="mr-2 h-4 w-4 text-blue-600" />
+                                                            <span className="font-semibold text-blue-600">Analytics</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'view')}>
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            <span>View Post</span>
+                                                        </DropdownMenuItem>
+                                                    </>
                                                 ) : (
                                                     <>
                                                         <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'edit')}>

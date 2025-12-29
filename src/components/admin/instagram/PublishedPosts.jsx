@@ -60,7 +60,8 @@ import { getDateTime } from "@/lib/utils";
 import CalendarViewComponent from "@/components/admin/instagram/CalendarViewComponent";
 import InstagramViewComponent from "@/components/admin/instagram/InstagramViewComponent";
 import ListingViewComponent from "@/components/admin/instagram/ListingViewComponent";
-import InstagramPreview from "@/components/admin/instagram/InstagramPreview"; // Assuming this stays or logic is integrated? 
+import InstagramPreview from "@/components/admin/instagram/InstagramPreview";
+import InstagramAnalyticsModal from "@/components/admin/instagram/InstagramAnalyticsModal";
 // Note: Keeping InstagramPreview import assuming it's complex enough to stay separate, or should it be merged too? 
 // User said "CreatePost module in this file". InstagramPreview is a child of CreatePost. I will import it for now.
 
@@ -423,6 +424,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const [createInitialData, setCreateInitialData] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+  const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
 
   const handleDelete = async (postId) => {
     try {
@@ -454,6 +456,10 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const handlePostClick = (post, action = 'edit') => {
     if (action === 'delete') {
       setDeleteDialog({ open: true, postId: post.id, postStatus: post.status });
+      return;
+    }
+    if (action === 'analytics') {
+      setAnalyticsModal({ open: true, post });
       return;
     }
     // Map post to initialData format
@@ -604,6 +610,13 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+
+      {/* Analytics Modal */}
+      <InstagramAnalyticsModal
+        open={analyticsModal.open}
+        onOpenChange={(open) => setAnalyticsModal(prev => ({ ...prev, open }))}
+        post={analyticsModal.post}
+      />
+    </div >
   );
 }

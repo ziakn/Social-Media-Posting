@@ -162,6 +162,7 @@ export async function getPublishedPosts({
 
       allPosts.push({
         id: docSnap.id,
+        pageId: data.pageId,
         postType: data.postType,
         caption: data.content?.caption || "",
         mediaUrl: getMediaUrl(data),

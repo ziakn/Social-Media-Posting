@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
     Search, TrendingUp, Heart, MessageCircle, Eye, ChevronRight, X, Filter,
-    Layers, Play, Edit, MoreVertical, Send, Trash2, Loader2, Video
+    Layers, Play, Edit, MoreVertical, Send, Trash2, Loader2, Video, BarChart3
 } from "lucide-react";
 import { getPublishedPosts, getPublishedPostsStats } from "@/app/actions/social/instagram/getPosts";
 import { fetchInstagramAccounts } from "@/app/actions/social/instagram/getPages";
@@ -141,8 +141,8 @@ export default function ListingViewComponent({
         }
     };
 
-    const onEditClick = (post) => {
-        if (onEdit) onEdit(post);
+    const onEditClick = (post, action = 'edit') => {
+        if (onEdit) onEdit(post, action);
     };
 
     const handlePublishNow = async (e, post) => {
@@ -392,10 +392,16 @@ export default function ListingViewComponent({
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                             <DropdownMenuContent align="start" className="w-40">
                                                 {post.status === 'published' ? (
-                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }}>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        <span>View Post</span>
-                                                    </DropdownMenuItem>
+                                                    <>
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }}>
+                                                            <BarChart3 className="mr-2 h-4 w-4 text-blue-600" />
+                                                            <span className="font-semibold text-blue-600">Analytics</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }}>
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            <span>View Post</span>
+                                                        </DropdownMenuItem>
+                                                    </>
                                                 ) : (
                                                     <>
                                                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }}>
