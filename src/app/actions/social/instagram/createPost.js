@@ -120,6 +120,7 @@ export async function getInstagramAccount(pageId) {
 async function saveToFirestore(postData, userId) {
   const postRef = await addDoc(collection(db, "instagram_posts"), {
     ...postData,
+    delete: 0,
     userId,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

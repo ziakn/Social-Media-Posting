@@ -99,9 +99,9 @@ export async function getPublishedPosts({
 
     // Status filter
     if (filters.status === "all") {
-      // No status constraint (fetches all: published, scheduled, draft)
-      // You might want to exclude deleted?
-      constraints.push(where("delete", "!=", 1));
+      // No status constraint (fetches all: published, scheduled)
+      // We handle delete check explicitly in the loop or assume soft-delete implies delete=1
+      // constraints.push(where("delete", "!=", 1)); // Removed to avoid excluding docs without delete field
     } else if (filters.status) {
       constraints.push(where("status", "==", filters.status));
     } else {
@@ -175,9 +175,11 @@ export async function getPublishedPosts({
           comments: data.metrics?.comments || 0,
           reach: data.metrics?.reach || 0,
           engagement: data.metrics?.engagement || 0,
+          engagement: data.metrics?.engagement || 0,
           views: data.metrics?.views || 0
         },
-        status: data.status
+        status: data.status,
+        content: data.content
       });
     });
 
@@ -450,9 +452,11 @@ export async function getScheduledInstagramPosts({
           comments: data.metrics?.comments || 0,
           reach: data.metrics?.reach || 0,
           engagement: data.metrics?.engagement || 0,
+          engagement: data.metrics?.engagement || 0,
           views: data.metrics?.views || 0
         },
         status: data.status,
+        content: data.content,
         pageName: data.pageName,
         pageProfilePicture: data.pageProfilePicture
       });

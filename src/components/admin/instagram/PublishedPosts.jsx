@@ -43,7 +43,7 @@ import {
   Trash2, MoreVertical, X, Filter, Layers, ImageIcon, Film, Play, Edit,
   List, Grid, Calendar as CalendarIcon, Plus, Video, Grid3X3, Upload,
   Music, Instagram, Zap, Clock, Users, ChevronUp, ChevronDown, Loader2, Check,
-  ArrowLeft
+  ArrowLeft, Send, History
 } from "lucide-react";
 
 // Server Actions
@@ -53,6 +53,7 @@ import {
 import { fetchInstagramAccounts } from "@/app/actions/social/instagram/getPages";
 import { updateInstagramPost } from "@/app/actions/social/instagram/updatePost";
 import { deleteInstagramPost } from "@/app/actions/social/instagram/deletePost";
+import { publishInstagramPostNow } from "@/app/actions/social/instagram/publishPost";
 import { getDateTime } from "@/lib/utils";
 
 // Internal Components (formerly separate files)
@@ -72,7 +73,6 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
   const [accounts, setAccounts] = useState([]);
 
   // Dialog states
-  const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 });
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
 
   // Filter state
@@ -233,6 +233,27 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
     }
   };
 
+  // Handle Publish Now
+  const [publishingId, setPublishingId] = useState(null);
+
+  const handlePublishNow = async (e, post) => {
+    e.stopPropagation();
+    try {
+      setPublishingId(post.id);
+      const result = await publishInstagramPostNow(post.id);
+      if (result.success) {
+        toast.success("Post published successfully!");
+        setRefreshTrigger(prev => prev + 1); // Trigger refresh
+      } else {
+        toast.error(result.message || "Failed to publish post");
+      }
+    } catch (error) {
+      toast.error("An error occurred while publishing");
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
   const formatDate = (date) => {
     if (!date) return "N/A";
     try {
@@ -364,14 +385,12 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
             </div>
             <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
               <div className="flex-1 flex flex-wrap gap-3">
-                <Select value={filters.postType} onValueChange={(value) => handleFilterChange("postType", value)}>
-                  <SelectTrigger className="w-full lg:w-[150px]"><SelectValue placeholder="Post Type" /></SelectTrigger>
+                <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
+                  <SelectTrigger className="w-full lg:w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="image">Image</SelectItem>
-                    <SelectItem value="video">Video</SelectItem>
-                    <SelectItem value="carousel">Carousel</SelectItem>
-                    <SelectItem value="story">Story</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="published">Published</SelectItem>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={filters.pageId} onValueChange={(value) => handleFilterChange("pageId", value)}>
@@ -387,22 +406,13 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={`${filters.sortBy}-${filters.sortOrder}`} onValueChange={handleSortChange}>
-                  <SelectTrigger className="w-full lg:w-[180px]"><SelectValue placeholder="Sort by" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date-desc">Newest First</SelectItem>
-                    <SelectItem value="date-asc">Oldest First</SelectItem>
-                    <SelectItem value="likes-desc">Most Liked</SelectItem>
-                    <SelectItem value="comments-desc">Most Commented</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
             {/* Active Filters */}
-            {(filters.postType !== "all" || filters.pageId !== "all" || filters.searchQuery) && (
+            {(filters.status !== "all" || filters.pageId !== "all" || filters.searchQuery) && (
               <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-lg">
                 <span className="text-sm text-gray-600">Active filters:</span>
-                {filters.postType !== "all" && <Badge variant="secondary" className="gap-1">Type: {filters.postType} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("postType", "all")} /></Badge>}
+                {filters.status !== "all" && <Badge variant="secondary" className="gap-1">Status: {filters.status} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("status", "all")} /></Badge>}
                 {filters.pageId !== "all" && <Badge variant="secondary" className="gap-1">Page: {accounts.find(p => p.igUserId === filters.pageId)?.username || filters.pageId} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("pageId", "all")} /></Badge>}
                 {filters.searchQuery && <Badge variant="secondary" className="gap-1">Search: {filters.searchQuery} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("searchQuery", "")} /></Badge>}
               </div>
@@ -438,7 +448,7 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
             </TableHeader>
             <TableBody>
               {posts.map((post) => (
-                <TableRow key={post.id} className="cursor-pointer hover:bg-gray-50" onClick={() => setViewDialog({ open: true, post, currentSlide: 0 })}>
+                <TableRow key={post.id} className={cn("cursor-pointer hover:bg-gray-50", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
                   <TableCell>
                     <div className="h-16 w-16 rounded-md overflow-hidden bg-gray-100 border border-gray-200 relative">
                       {post.mediaUrl ? (
@@ -449,6 +459,11 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
                           </div>
                         ) : (<img src={post.mediaUrl} alt="" className="h-full w-full object-cover" />)
                       ) : (<div className="h-full w-full flex items-center justify-center text-xs text-gray-400">No Media</div>)}
+                      {publishingId === post.id && (
+                        <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                          <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="max-w-[300px]">
@@ -473,10 +488,28 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleViewOnInstagram(post.instagramPostId || post.id); }}><ExternalLink className="mr-2 h-4 w-4" /> View</DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600" onClick={(e) => { e.stopPropagation(); setDeleteDialog({ open: true, postId: post.id }); }}><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                      <DropdownMenuContent align="start" className="w-40">
+                        {post.status === 'published' ? (
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>View Post</span>
+                          </DropdownMenuItem>
+                        ) : (
+                          <>
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              <span>Edit Post</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="text-purple-600 focus:text-purple-700 focus:bg-purple-50">
+                              <Send className="mr-2 h-4 w-4" />
+                              <span>Publish Now</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50" onClick={(e) => { e.stopPropagation(); setDeleteDialog({ open: true, postId: post.id }); }}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              <span>Delete Post</span>
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -488,7 +521,7 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {posts.map((post) => (
-            <Card key={post.id} className="group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col cursor-pointer" onClick={() => setViewDialog({ open: true, post, currentSlide: 0 })}>
+            <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
               <div className="absolute inset-0 z-0 bg-gray-50">
                 {post.mediaUrl ? (
                   <>
@@ -509,16 +542,39 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-gray-50"><span className="text-gray-400">No Media</span></div>
                 )}
+                {publishingId === post.id && (
+                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+                    <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                  </div>
+                )}
               </div>
               <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50 text-gray-700 border border-gray-100"><MoreVertical className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleViewOnInstagram(post.instagramPostId)}><ExternalLink className="mr-2 h-4 w-4" /> View on Instagram</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEditClick(post)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600" onClick={() => setDeleteDialog({ open: true, postId: post.id })}><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                  <DropdownMenuContent align="start" className="w-40">
+                    {post.status === 'published' ? (
+                      <DropdownMenuItem onClick={() => onEditClick(post)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        <span>View Post</span>
+                      </DropdownMenuItem>
+                    ) : (
+                      <>
+                        <DropdownMenuItem onClick={() => onEditClick(post)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Edit Post</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="text-purple-600 focus:text-purple-700 focus:bg-purple-50">
+                          <Send className="mr-2 h-4 w-4" />
+                          <span>Publish Now</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50" onClick={() => setDeleteDialog({ open: true, postId: post.id })}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Delete Post</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -528,9 +584,13 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
                     {post.postType === 'video' && <Film className="h-3 w-3 text-purple-600" />}
                     {post.postType === 'image' && <ImageIcon className="h-3 w-3 text-blue-600" />}
                     {post.postType === 'carousel' && <Layers className="h-3 w-3 text-orange-600" />}
+                    {post.postType === 'story' && <History className="h-3 w-3 text-pink-600" />}
                     <span className="text-[10px] font-semibold text-gray-700 capitalize">{post.postType}</span>
                   </div>
                 )}
+                <div className={cn("backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5", post.status === 'published' ? "bg-green-100/90 text-green-700" : "bg-blue-100/90 text-blue-700")}>
+                  <span className="text-[10px] font-semibold capitalize">{post.status || 'published'}</span>
+                </div>
               </div>
               <div className="absolute inset-x-0 bottom-0 p-3 z-10 pointer-events-none text-white">
                 <div className="flex flex-col gap-1">
@@ -556,90 +616,6 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
         </div>
       )}
 
-      {/* View Post Dialog */}
-      <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-[900px] p-0 overflow-hidden bg-white" showCloseButton={false}>
-          <div className="flex flex-col md:flex-row h-[80vh] md:h-[600px]">
-            <div className="w-full md:w-[60%] bg-black flex items-center justify-center relative bg-gray-950">
-              {(() => {
-                const post = viewDialog.post;
-                if (!post) return null;
-                let mediaList = [];
-                if (post.content?.media) {
-                  mediaList = Array.isArray(post.content.media) ? post.content.media : [post.content.media];
-                } else if (post.carouselMedia && post.carouselMedia.length > 0) {
-                  mediaList = post.carouselMedia;
-                } else if (post.mediaUrl) {
-                  mediaList = [{ url: post.mediaUrl, type: post.postType === 'video' ? 'video' : 'image' }];
-                }
-                const currentMedia = mediaList[viewDialog.currentSlide || 0];
-                if (!currentMedia) return <div className="text-white">No media</div>;
-                return (
-                  <div className="relative w-full h-full flex items-center justify-center group">
-                    {currentMedia.type === 'video' || (post.postType === 'video' && !post.content?.media) ? (
-                      <video src={currentMedia.url} controls className="max-w-full max-h-full" />
-                    ) : (
-                      <img src={currentMedia.url} alt="Post Content" className={`max-w-full max-h-full object-contain ${post.postType === 'story' ? 'scale-90' : ''}`} />
-                    )}
-                    {mediaList.length > 1 && (
-                      <>
-                        <Button
-                          variant="ghost" size="icon" className="absolute left-2 text-white hover:bg-white/20 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewDialog(prev => ({ ...prev, currentSlide: Math.max(0, (prev.currentSlide || 0) - 1) }));
-                          }}
-                          disabled={viewDialog.currentSlide === 0}
-                        ><ChevronRight className="h-6 w-6 rotate-180" /></Button>
-                        <Button
-                          variant="ghost" size="icon" className="absolute right-2 text-white hover:bg-white/20 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewDialog(prev => ({ ...prev, currentSlide: Math.min(mediaList.length - 1, (prev.currentSlide || 0) + 1) }));
-                          }}
-                          disabled={viewDialog.currentSlide === mediaList.length - 1}
-                        ><ChevronRight className="h-6 w-6" /></Button>
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-            <div className="w-full md:w-[40%] flex flex-col h-full bg-white border-l border-gray-100">
-              <div className="p-4 border-b flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8"><AvatarImage src={viewDialog.post?.pageId} /><AvatarFallback>IG</AvatarFallback></Avatar>
-                  <div>
-                    <h4 className="text-sm font-semibold text-gray-900 leading-none">Instagram Post</h4>
-                    <p className="text-xs text-gray-500 mt-1">{viewDialog.post && formatDate(viewDialog.post.createdAt)}</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => setViewDialog(prev => ({ ...prev, open: false }))}><X className="h-4 w-4" /></Button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{viewDialog.post?.caption || "No caption provided."}</p>
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                  <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                    <Heart className="h-5 w-5 text-red-500 mb-1" />
-                    <span className="text-lg font-bold text-gray-900">{formatNumber(viewDialog.post?.metrics?.likes)}</span>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">Likes</span>
-                  </div>
-                  <div className="flex flex-col items-center p-3 bg-gray-50 rounded-lg">
-                    <MessageCircle className="h-5 w-5 text-blue-500 mb-1" />
-                    <span className="text-lg font-bold text-gray-900">{formatNumber(viewDialog.post?.metrics?.comments)}</span>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">Comments</span>
-                  </div>
-                </div>
-              </div>
-              <div className="p-4 border-t bg-gray-50 space-y-2">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => handleViewOnInstagram(viewDialog.post?.instagramPostId)}>
-                  <ExternalLink className="mr-2 h-4 w-4" /> View on Instagram
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
       {/* Delete and Edit Dialogs */}
       <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
         <AlertDialogContent>
@@ -647,7 +623,7 @@ function PostListing({ pageId: initialPageId, viewMode = "grid", initialStatus =
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete the post from our records.
-              {viewDialog.post?.status === 'published' && " Note: This will not delete the post from Instagram."}
+              {posts.find(p => p.id === deleteDialog.postId)?.status === 'published' && " Note: This will not delete the post from Instagram."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1012,7 +988,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
 // -----------------------------------------------------------------------------
 // MAIN COMPONENT (Formerly ManageInstagramPosts page)
 // -----------------------------------------------------------------------------
-export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid", initialStatus = "published" }) {
+export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid", initialStatus = "all" }) {
   const [activeTab, setActiveTab] = useState("calendar");
   const [isCreating, setIsCreating] = useState(false);
   const [calendarPosts, setCalendarPosts] = useState([]);
@@ -1020,6 +996,23 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [createInitialData, setCreateInitialData] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+
+  const handleDelete = async (postId) => {
+    try {
+      const result = await deleteInstagramPost(postId);
+      if (result.success) {
+        toast.success(result.message);
+        setCalendarPosts(prev => prev.filter(p => p.id !== postId));
+        setRefreshTrigger(prev => prev + 1); // Refresh list views
+      } else {
+        toast.error(result.message);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      toast.error("Failed to delete post");
+    }
+  };
 
   // Fetch calendar posts when that tab is active or date changes
   useEffect(() => {
@@ -1046,7 +1039,11 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
     setIsCreating(true);
   };
 
-  const handlePostClick = (post) => {
+  const handlePostClick = (post, action = 'edit') => {
+    if (action === 'delete') {
+      setDeleteDialog({ open: true, postId: post.id });
+      return;
+    }
     // Map post to initialData format
     const isScheduled = post.status === 'scheduled';
     const initialData = {
@@ -1134,7 +1131,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
         </TabsContent>
 
         <TabsContent value="instagram" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <PostListing viewMode="grid" initialStatus="published" pageId={initialPageId} refreshTrigger={refreshTrigger} onEdit={handlePostClick} />
+          <PostListing viewMode="grid" initialStatus="all" pageId={initialPageId} refreshTrigger={refreshTrigger} onEdit={handlePostClick} />
         </TabsContent>
 
         <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1174,6 +1171,24 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Dialog for Calendar View */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the post from our records.
+              {/* Note: We don't have full post object easily available here without fetching or storing in state on click, 
+                  but we can assume it's a standard check. The List view has more context. */}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleDelete(deleteDialog.postId)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
