@@ -163,43 +163,51 @@ export default function ListingViewComponent({
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Stats Cards */}
             {stats && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <Card className="bg-white border-blue-100 shadow-sm border-2">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center"><Layers className="h-5 w-5 text-blue-600" /></div>
-                            <div>
-                                <div className="text-sm font-black text-gray-500 uppercase tracking-tighter">Total Facebook Posts</div>
-                                <div className="text-2xl font-black text-gray-900">{stats.totalPosts || 0}</div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                                <Filter className="h-5 w-5 text-blue-600" />
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-white border-indigo-100 shadow-sm border-2">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center"><Eye className="h-5 w-5 text-indigo-600" /></div>
                             <div>
-                                <div className="text-sm font-black text-gray-500 uppercase tracking-tighter">Organic Reach</div>
-                                <div className="text-2xl font-black text-gray-900">{formatNumber(stats.totalReach || 0)}</div>
+                                <div className="text-2xl font-black text-gray-900 leading-none mb-1">{stats.totalPosts || 0}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Facebook Posts</div>
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-white border-blue-100 shadow-sm border-2">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-blue-100 flex items-center justify-center"><ThumbsUp className="h-5 w-5 text-blue-600" /></div>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                                <Heart className="h-5 w-5 text-blue-600" />
+                            </div>
                             <div>
-                                <div className="text-sm font-black text-gray-500 uppercase tracking-tighter">Total Engagements</div>
-                                <div className="text-2xl font-black text-gray-900">{formatNumber(stats.totalEngagements || 0)}</div>
+                                <div className="text-2xl font-black text-gray-900 leading-none mb-1">{formatNumber(stats.totalEngagements || 0)}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Engagements</div>
                             </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-white border-cyan-100 shadow-sm border-2">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-cyan-100 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-cyan-600" /></div>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                                <MessageCircle className="h-5 w-5 text-indigo-600" />
+                            </div>
                             <div>
-                                <div className="text-sm font-black text-gray-500 uppercase tracking-tighter">Engagement Rate</div>
-                                <div className="text-2xl font-black text-gray-900">{stats.avgEngagementRate || 0}%</div>
+                                <div className="text-2xl font-black text-gray-900 leading-none mb-1">{formatNumber(stats.totalComments || 0)}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Comments</div>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
+                    <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-4">
+                            <div className="h-10 w-10 rounded-xl bg-cyan-50 flex items-center justify-center">
+                                <BarChart3 className="h-5 w-5 text-cyan-600" />
+                            </div>
+                            <div>
+                                <div className="text-2xl font-black text-gray-900 leading-none mb-1">{stats.avgEngagementRate || 0}%</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Engagement Rate</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -225,14 +233,13 @@ export default function ListingViewComponent({
                                     <SelectItem value="scheduled">Scheduled</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Select value={filters.postType} onValueChange={(v) => handleFilterChange("postType", v)}>
-                                <SelectTrigger className="w-[130px] rounded-xl"><SelectValue placeholder="Type" /></SelectTrigger>
+                            <Select value={filters.pageId} onValueChange={(v) => handleFilterChange("pageId", v)}>
+                                <SelectTrigger className="w-[180px] rounded-xl"><SelectValue placeholder="Page" /></SelectTrigger>
                                 <SelectContent className="rounded-xl">
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    <SelectItem value="text">Text Only</SelectItem>
-                                    <SelectItem value="images">Images</SelectItem>
-                                    <SelectItem value="video">Video</SelectItem>
-                                    <SelectItem value="carousel">Carousel</SelectItem>
+                                    <SelectItem value="all">All Pages</SelectItem>
+                                    {pages.map((p) => (
+                                        <SelectItem key={p.pageId} value={p.pageId}>{p.pageName}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                             <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500 hover:text-blue-600 rounded-lg">
@@ -240,6 +247,15 @@ export default function ListingViewComponent({
                             </Button>
                         </div>
                     </div>
+                    {/* Active Filters */}
+                    {(filters.status !== "all" || filters.pageId !== "all" || filters.searchQuery) && (
+                        <div className="flex flex-wrap items-center gap-2 pt-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mr-1">Active:</span>
+                            {filters.status !== "all" && <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 text-[10px] font-bold py-0">{filters.status}</Badge>}
+                            {filters.pageId !== "all" && <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 text-[10px] font-bold py-0">{pages.find(p => p.pageId === filters.pageId)?.pageName || filters.pageId}</Badge>}
+                            {filters.searchQuery && <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 text-[10px] font-bold py-0">"{filters.searchQuery}"</Badge>}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -249,11 +265,11 @@ export default function ListingViewComponent({
                     <Table>
                         <TableHeader className="bg-gray-50/50">
                             <TableRow className="hover:bg-transparent border-gray-100">
-                                <TableHead className="w-[100px] font-black text-gray-400 uppercase tracking-widest text-[10px]">Media</TableHead>
-                                <TableHead className="font-black text-gray-400 uppercase tracking-widest text-[10px]">Caption & Page</TableHead>
-                                <TableHead className="font-black text-gray-400 uppercase tracking-widest text-[10px]">Status</TableHead>
-                                <TableHead className="font-black text-gray-400 uppercase tracking-widest text-[10px]">Metrics</TableHead>
-                                <TableHead className="font-black text-gray-400 uppercase tracking-widest text-[10px]">Date</TableHead>
+                                <TableHead className="w-[100px] font-bold">Media</TableHead>
+                                <TableHead className="font-bold">Caption & Page</TableHead>
+                                <TableHead className="font-bold">Status</TableHead>
+                                <TableHead className="font-bold">Metrics</TableHead>
+                                <TableHead className="font-bold">Date</TableHead>
                                 <TableHead className="w-[100px] text-right"></TableHead>
                             </TableRow>
                         </TableHeader>
@@ -317,7 +333,16 @@ export default function ListingViewComponent({
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="text-xs font-black text-gray-900 tracking-tight">{formatDate(post.scheduledAt || post.createdAt)}</div>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-gray-900">
+                                                    {post.scheduledAt ? format(new Date(post.scheduledAt), "MMM dd, yyyy") :
+                                                        post.createdAt ? format(new Date(post.createdAt), "MMM dd, yyyy") : "Draft"}
+                                                </span>
+                                                <span className="text-[10px] font-medium text-gray-400">
+                                                    {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm a") :
+                                                        post.createdAt ? format(new Date(post.createdAt), "h:mm a") : ""}
+                                                </span>
+                                            </div>
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <DropdownMenu>
@@ -360,8 +385,8 @@ export default function ListingViewComponent({
 
             {pagination.hasMore && (
                 <div className="flex justify-center pt-8">
-                    <Button onClick={handleLoadMore} disabled={loading} variant="outline" className="rounded-xl px-12 font-black border-2 border-blue-50 hover:bg-blue-50 hover:text-blue-600">
-                        {loading ? "Discovering..." : "Load More Posts"}
+                    <Button onClick={handleLoadMore} disabled={loading} variant="outline" className="w-full sm:w-auto min-w-[200px]">
+                        {loading ? "Loading..." : "Load More Posts"}
                     </Button>
                 </div>
             )}

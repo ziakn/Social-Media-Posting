@@ -103,7 +103,7 @@ async function createFacebookPostBase({
       scheduledTime,
       additionalData,
       facebookPostId: fbData.id,
-      status: scheduledTime ? "scheduled" : "posted",
+      status: scheduledTime ? "scheduled" : "published",
     });
 
     return {

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
     Search, TrendingUp, Heart, MessageCircle, Eye, ChevronRight, X, Filter,
-    Layers, ImageIcon, Film, Play, Edit, MoreVertical, Send, Trash2, History, Loader2, BarChart3, Share2, Facebook
+    Layers, ImageIcon, Film, Play, Edit, MoreVertical, Send, Trash2, History, Loader2, BarChart3, Share2, Facebook, ThumbsUp, Globe
 } from "lucide-react";
 import { getFacebookPosts, getUserFacebookPages, publishFacebookPostNow } from "@/app/actions/social/facebook/facebookPostsActions";
 
@@ -178,59 +178,67 @@ export default function FacebookViewComponent({
     }
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-6">
             {/* Header Stats */}
             <Card className="bg-gradient-to-r from-blue-50 via-white to-indigo-50 border border-gray-200 shadow-sm">
                 <CardContent className="p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                         <div>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 shadow-lg shadow-blue-100">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
                                     <TrendingUp className="h-5 w-5 text-white" />
                                 </div>
-                                <CardTitle className="text-2xl font-black text-gray-900">
+                                <CardTitle className="text-2xl font-bold text-gray-900">
                                     Facebook Presence
                                 </CardTitle>
                             </div>
-                            <CardDescription className="text-gray-600 pl-13 font-medium">
+                            <CardDescription className="text-gray-600 pl-13">
                                 Analyze your Facebook impact and audience engagement
                             </CardDescription>
                         </div>
                         {stats && (
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full lg:w-auto">
-                                <div className="bg-white/80 backdrop-blur-sm border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                                <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center"><Layers className="h-4 w-4 text-blue-600" /></div>
+                                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                            <Layers className="h-4 w-4 text-blue-600" />
+                                        </div>
                                         <div className="text-left">
-                                            <div className="text-xl font-black text-gray-900">{stats.totalPosts || 0}</div>
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Posts</div>
+                                            <div className="text-xl font-bold text-gray-900">{stats.totalPosts || 0}</div>
+                                            <div className="text-xs text-gray-500">Total Posts</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white/80 backdrop-blur-sm border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                                <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center"><Eye className="h-4 w-4 text-indigo-600" /></div>
+                                        <div className="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center">
+                                            <Heart className="h-4 w-4 text-red-600" />
+                                        </div>
                                         <div className="text-left">
-                                            <div className="text-xl font-black text-gray-900">{formatNumber(stats.totalReach || 0)}</div>
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Reach</div>
+                                            <div className="text-xl font-bold text-gray-900">{formatNumber(stats.totalEngagements || 0)}</div>
+                                            <div className="text-xs text-gray-500">Engagements</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white/80 backdrop-blur-sm border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                                <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center"><Heart className="h-4 w-4 text-blue-600" /></div>
+                                        <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                                            <MessageCircle className="h-4 w-4 text-green-600" />
+                                        </div>
                                         <div className="text-left">
-                                            <div className="text-xl font-black text-gray-900">{formatNumber(stats.totalEngagements || 0)}</div>
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Engaged</div>
+                                            <div className="text-xl font-bold text-gray-900">{formatNumber(stats.totalComments || 0)}</div>
+                                            <div className="text-xs text-gray-500">Comments</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-white/80 backdrop-blur-sm border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+                                <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-full bg-cyan-100 flex items-center justify-center"><BarChart3 className="h-4 w-4 text-cyan-600" /></div>
+                                        <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                            <BarChart3 className="h-4 w-4 text-purple-600" />
+                                        </div>
                                         <div className="text-left">
-                                            <div className="text-xl font-black text-gray-900">{stats.avgEngagementRate || 0}%</div>
-                                            <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Avg Rate</div>
+                                            <div className="text-xl font-bold text-gray-900">{stats.avgEngagementRate || 0}%</div>
+                                            <div className="text-xs text-gray-500">Avg. Eng.</div>
                                         </div>
                                     </div>
                                 </div>
@@ -245,18 +253,20 @@ export default function FacebookViewComponent({
                 <CardContent className="p-6">
                     <div className="space-y-6">
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-                            <div className="flex-1 w-full relative group">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 group-focus-within:text-blue-500 transition-colors" />
-                                <Input
-                                    placeholder="Search posts..."
-                                    value={filters.searchQuery}
-                                    onChange={(e) => handleFilterChange("searchQuery", e.target.value)}
-                                    className="pl-9 w-full lg:w-96 rounded-xl border-gray-200 focus:ring-blue-500"
-                                />
+                            <div className="flex-1 w-full">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                    <Input
+                                        placeholder="Search posts..."
+                                        value={filters.searchQuery}
+                                        onChange={(e) => handleFilterChange("searchQuery", e.target.value)}
+                                        className="pl-9 w-full lg:w-96"
+                                    />
+                                </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2 text-gray-500 hover:text-blue-600 rounded-lg">
-                                    <X className="h-4 w-4" /> Reset
+                                <Button variant="outline" size="sm" onClick={clearFilters} className="gap-2">
+                                    <X className="h-4 w-4" /> Clear Filters
                                 </Button>
                             </div>
                         </div>
@@ -278,16 +288,16 @@ export default function FacebookViewComponent({
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange("sortBy", value)}>
-                                <SelectTrigger className="w-[160px] rounded-xl"><SelectValue placeholder="Sort By" /></SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                    <SelectItem value="newest">Newest First</SelectItem>
-                                    <SelectItem value="oldest">Oldest First</SelectItem>
-                                    <SelectItem value="engagement_high">High Engagement</SelectItem>
-                                    <SelectItem value="reach_high">Top Reach</SelectItem>
-                                </SelectContent>
-                            </Select>
                         </div>
+                        {/* Active Filters */}
+                        {(filters.status !== "all" || filters.pageId !== "all" || filters.searchQuery) && (
+                            <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                                <span className="text-sm text-gray-600">Active filters:</span>
+                                {filters.status !== "all" && <Badge variant="secondary" className="gap-1">Status: {filters.status} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("status", "all")} /></Badge>}
+                                {filters.pageId !== "all" && <Badge variant="secondary" className="gap-1">Page: {pages.find(p => p.pageId === filters.pageId)?.pageName || filters.pageId} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("pageId", "all")} /></Badge>}
+                                {filters.searchQuery && <Badge variant="secondary" className="gap-1">Search: {filters.searchQuery} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("searchQuery", "")} /></Badge>}
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -305,32 +315,91 @@ export default function FacebookViewComponent({
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {posts.map((post) => {
                         const firstMedia = post.mediaUrls?.[0]?.url;
                         return (
-                            <Card key={post.id} className={cn("group relative border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden bg-white aspect-square flex flex-col cursor-pointer rounded-2xl", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
-                                <div className="absolute inset-0 z-0 bg-gray-50 transition-transform duration-700 group-hover:scale-105">
+                            <Card key={post.id} className={cn("group flex flex-col border-gray-200 shadow-sm hover:shadow-md transition-all duration-300 bg-white rounded-xl overflow-hidden cursor-default", publishingId === post.id && "opacity-70 pointer-events-none")}>
+                                {/* Header */}
+                                <div className="p-4 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="h-10 w-10 rounded-full bg-gray-100 border border-gray-100 overflow-hidden flex-shrink-0">
+                                            {post.pageProfilePicture ? (
+                                                <img src={post.pageProfilePicture} alt="" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-600 font-bold">
+                                                    {post.pageName?.[0] || 'F'}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-bold text-gray-900 leading-tight hover:underline cursor-pointer">{post.pageName || "Facebook Page"}</span>
+                                            <div className="flex items-center gap-1 text-[11px] text-gray-500 font-medium">
+                                                <span>{formatDate(post.scheduledAt || post.createdAt)}</span>
+                                                <span>•</span>
+                                                <Globe className="h-2.5 w-2.5" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn("px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter", post.status === 'published' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700")}>
+                                            {post.status || 'published'}
+                                        </div>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100 text-gray-400 group-hover:text-gray-600"><MoreVertical className="h-4 w-4" /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-44 rounded-xl shadow-xl border-gray-100 p-1">
+                                                {post.status === 'published' ? (
+                                                    <>
+                                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="rounded-lg gap-2 text-xs font-bold">
+                                                            <Eye className="h-4 w-4" /> View Details
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="rounded-lg gap-2 text-xs font-bold text-blue-600 focus:text-blue-700">
+                                                            <BarChart3 className="h-4 w-4" /> View Analytics
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="rounded-lg gap-2 text-xs font-bold"><Edit className="h-4 w-4" /> Edit Post</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="rounded-lg gap-2 text-xs font-bold text-blue-600 focus:text-blue-700 focus:bg-blue-50"><Send className="h-4 w-4" /> Publish Now</DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => onEditClick(post, 'delete')} className="rounded-lg gap-2 text-xs font-bold text-red-600 focus:text-red-700 focus:bg-red-50"><Trash2 className="h-4 w-4" /> Delete Post</DropdownMenuItem>
+                                                    </>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                </div>
+
+                                {/* Caption */}
+                                <div className="px-4 pb-3" onClick={() => onEditClick(post)}>
+                                    <p className="text-sm text-gray-800 line-clamp-3 whitespace-pre-wrap leading-relaxed">
+                                        {post.message || post.caption || ""}
+                                    </p>
+                                </div>
+
+                                {/* Media */}
+                                <div className="relative bg-gray-50 border-y border-gray-50 cursor-pointer overflow-hidden" onClick={() => onEditClick(post)}>
                                     {firstMedia ? (
-                                        <>
+                                        <div className="aspect-video w-full flex items-center justify-center bg-black overflow-hidden">
                                             {post.postType === 'video' ? (
-                                                <div className="w-full h-full bg-black relative">
-                                                    <video src={firstMedia} className="w-full h-full object-cover opacity-90" muted />
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <div className="bg-white/30 backdrop-blur-md p-3 rounded-full shadow-lg border border-white/20"><Play className="h-6 w-6 text-white fill-white" /></div>
+                                                <div className="w-full h-full relative group/media">
+                                                    <video src={firstMedia} className="w-full h-full object-contain" muted />
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity bg-black/20">
+                                                        <div className="bg-white/90 p-3 rounded-full shadow-lg"><Play className="h-6 w-6 text-gray-900 fill-gray-900" /></div>
                                                     </div>
                                                 </div>
                                             ) : (
-                                                <img src={firstMedia} alt="" className="w-full h-full object-cover" />
+                                                <img src={firstMedia} alt="" className="w-full h-full object-contain" />
                                             )}
-                                            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
-                                        </>
+                                        </div>
                                     ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center bg-blue-50 p-6 text-center">
-                                            <Facebook className="h-10 w-10 text-blue-100 mb-2" />
-                                            <p className="text-xs font-bold text-blue-300 uppercase tracking-widest">Text Post</p>
+                                        <div className="py-12 flex flex-col items-center justify-center text-blue-100">
+                                            <Facebook className="h-16 w-16 mb-2 opacity-50" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest text-blue-200">Facebook Status Update</span>
                                         </div>
                                     )}
+
                                     {publishingId === post.id && (
                                         <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 backdrop-blur-[2px]">
                                             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -338,54 +407,35 @@ export default function FacebookViewComponent({
                                     )}
                                 </div>
 
-                                <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0" onClick={(e) => e.stopPropagation()}>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-lg hover:bg-gray-50 text-gray-700 border-none"><MoreVertical className="h-4 w-4" /></Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-xl border-gray-100 p-1">
-                                            {post.status === 'published' ? (
-                                                <>
-                                                    <DropdownMenuItem onClick={() => onEditClick(post)} className="rounded-lg gap-2">
-                                                        <Eye className="h-4 w-4" /> View Details
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="rounded-lg gap-2 text-blue-600 focus:text-blue-700">
-                                                        <BarChart3 className="h-4 w-4" /> View Analytics
-                                                    </DropdownMenuItem>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <DropdownMenuItem onClick={() => onEditClick(post)} className="rounded-lg gap-2"><Edit className="h-4 w-4" /> Edit Post</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="text-blue-600 focus:text-blue-700 focus:bg-blue-50 rounded-lg gap-2"><Send className="h-4 w-4" /> Publish Now</DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => onEditClick(post, 'delete')} className="text-red-600 focus:text-red-700 focus:bg-red-50 rounded-lg gap-2"><Trash2 className="h-4 w-4" /> Delete Post</DropdownMenuItem>
-                                                </>
-                                            )}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-
-                                <div className="absolute top-3 left-3 z-20 flex flex-col items-start gap-1.5 pointer-events-none">
-                                    <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2.5 py-1 flex items-center gap-1.5 border border-white/50">
-                                        {post.postType === 'video' ? <Film className="h-3 w-3 text-indigo-600" /> :
-                                            post.postType === 'images' ? <ImageIcon className="h-3 w-3 text-blue-600" /> :
-                                                post.postType === 'carousel' ? <Layers className="h-3 w-3 text-blue-600" /> :
-                                                    <History className="h-3 w-3 text-blue-600" />}
-                                        <span className="text-[9px] font-black uppercase tracking-wider text-gray-700">{post.postType || 'post'}</span>
-                                    </div>
-                                    <div className={cn("backdrop-blur-sm shadow-sm rounded-full px-2.5 py-1 text-[9px] font-black border border-white/50 uppercase tracking-wider", post.status === 'published' ? "bg-green-500/90 text-white" : "bg-blue-600/90 text-white")}>
-                                        {post.status || 'published'}
-                                    </div>
-                                </div>
-
-                                <div className="absolute inset-x-0 bottom-0 p-4 z-10 pointer-events-none">
-                                    <div className="space-y-2">
-                                        <p className="text-xs line-clamp-2 font-bold text-white drop-shadow-lg leading-snug">{post.message || post.caption || "No message content"}</p>
-                                        <div className="flex items-center gap-4 text-[10px] font-black text-blue-50/90 drop-shadow-md">
-                                            <div className="flex items-center gap-1"><ThumbsUp className="h-3 w-3" /> {formatNumber(post.metrics?.likes)}</div>
-                                            <div className="flex items-center gap-1"><MessageCircle className="h-3 w-3" /> {formatNumber(post.metrics?.comments)}</div>
-                                            <div className="flex items-center gap-1"><Share2 className="h-3 w-3" /> {formatNumber(post.metrics?.shares)}</div>
-                                            <span className="ml-auto opacity-70">{formatDate(post.createdAt)}</span>
+                                {/* Footer / Engagements */}
+                                <div className="p-3 border-t border-gray-100 bg-white">
+                                    <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100">
+                                        <div className="flex items-center -space-x-1">
+                                            <div className="w-4 h-4 rounded-full bg-blue-500 flex items-center justify-center ring-2 ring-white z-10">
+                                                <ThumbsUp className="h-2.5 w-2.5 text-white fill-white" />
+                                            </div>
+                                            <div className="w-4 h-4 rounded-full bg-red-500 flex items-center justify-center ring-2 ring-white">
+                                                <Heart className="h-2.5 w-2.5 text-white fill-white" />
+                                            </div>
+                                            <span className="ml-5 text-[11px] text-gray-500 font-medium">
+                                                {post.metrics?.likes > 0 ? formatNumber(post.metrics.likes) : ""}
+                                            </span>
                                         </div>
+                                        <div className="flex items-center gap-3 text-[11px] text-gray-500">
+                                            {post.metrics?.comments > 0 && <span>{formatNumber(post.metrics.comments)} comments</span>}
+                                            {post.metrics?.shares > 0 && <span>{formatNumber(post.metrics.shares)} shares</span>}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between px-1">
+                                        <button className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors text-xs font-bold text-gray-600">
+                                            <ThumbsUp className="h-4 w-4" /> Like
+                                        </button>
+                                        <button className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors text-xs font-bold text-gray-600">
+                                            <MessageCircle className="h-4 w-4" /> Comment
+                                        </button>
+                                        <button className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md hover:bg-gray-100 transition-colors text-xs font-bold text-gray-600">
+                                            <Share2 className="h-4 w-4" /> Share
+                                        </button>
                                     </div>
                                 </div>
                             </Card>
@@ -396,8 +446,8 @@ export default function FacebookViewComponent({
 
             {pagination.hasMore && (
                 <div className="flex justify-center pt-8">
-                    <Button onClick={handleLoadMore} disabled={loading} variant="outline" size="lg" className="rounded-2xl px-12 font-black border-2 border-blue-50 hover:bg-blue-50 hover:text-blue-600 transition-all">
-                        {loading ? "Discovering..." : "Load More Experience"}
+                    <Button onClick={handleLoadMore} disabled={loading} variant="outline" size="lg" className="w-full sm:w-auto min-w-[200px]">
+                        {loading ? "Loading..." : "Load More Posts"}
                         {!loading && <ChevronRight className="ml-2 h-4 w-4" />}
                     </Button>
                 </div>

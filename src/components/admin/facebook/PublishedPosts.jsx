@@ -74,10 +74,14 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
   const isEditing = !!initialData?.id;
   const isReadOnly = initialData?.readOnly || false;
 
-  const [postType, setPostType] = useState(initialData?.postType || "text");
+  const getInitialPostType = (type) => {
+    if (!type) return "text";
+    return type;
+  };
+  const [postType, setPostType] = useState(getInitialPostType(initialData?.postType));
   const [postContent, setPostContent] = useState({
-    message: initialData?.message || "",
-    media: initialData?.mediaUrls || [],
+    message: initialData?.message || initialData?.content?.caption || "",
+    media: initialData?.mediaUrls || (initialData?.content?.media ? (Array.isArray(initialData.content.media) ? initialData.content.media : [initialData.content.media]) : []),
     link: initialData?.additionalData?.link || "",
   });
 
@@ -236,24 +240,24 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         <div className="p-4 lg:p-8 space-y-6 lg:space-y-8">
           {/* Channel Selection */}
           <div className="space-y-3 px-2">
-            <div className="flex items-center gap-2 opacity-50">
-              <Facebook className="h-4 w-4 text-blue-600" />
-              <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest"> Facebook Pages </h3>
+            <div className="flex items-center gap-2 opacity-40">
+              <Facebook className="h-2.5 w-2.5 text-blue-600" />
+              <h3 className="text-[8px] font-black text-gray-900 uppercase tracking-[0.3em]"> Channel Selection </h3>
             </div>
             <div className="flex flex-wrap gap-4 items-center">
               {pages.map((page) => {
                 const isSelected = selectedPage === page.pageId;
                 return (
-                  <div key={page.pageId} onClick={() => !isReadOnly && setSelectedPage(page.pageId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-blue-500 bg-blue-50 shadow-lg" : "w-12 h-12 border-gray-100 opacity-60")}>
+                  <div key={page.pageId} onClick={() => !isReadOnly && setSelectedPage(page.pageId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-blue-500 bg-blue-50 shadow-lg" : "w-12 h-12 border-gray-100 opacity-60", isReadOnly && "cursor-default")}>
                     <div className="w-10 h-10 relative">
-                      <Avatar className="w-full h-full">
-                        <AvatarImage src={page.profilePicture} />
-                        <AvatarFallback className="bg-blue-600 text-white font-bold">{page.pageName[0]}</AvatarFallback>
-                      </Avatar>
-                      {isSelected && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-1 border-2 border-white"><Check className="h-2 w-2" /></div>}
-                    </div>
-                    <div className={cn("absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50", isSelected && "opacity-100")}>
-                      {page.pageName}
+                      <div className={cn("w-full h-full rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 p-[2px]", isSelected && "animate-spin-slow")}>
+                        <div className="w-full h-full rounded-full bg-white p-[2px]">
+                          <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-black overflow-hidden text-xs">
+                            {page.profilePicture ? <img src={page.profilePicture} alt="" className="w-full h-full object-cover" /> : page.pageName.charAt(0)}
+                          </div>
+                        </div>
+                      </div>
+                      {isSelected && <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full p-1"><Check className="h-2 w-2" /></div>}
                     </div>
                   </div>
                 );
@@ -264,38 +268,43 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
           <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-6 lg:gap-8 items-start">
             <div className="space-y-6">
               {/* Scheduling */}
-              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm space-y-3">
+              <div className="bg-white rounded-xl p-2.5 border border-gray-100 shadow-sm flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    <h3 className="text-sm font-black text-gray-900 leading-none">Smart Scheduler</h3>
+                    <Clock className="h-3.5 w-3.5 text-blue-600" />
+                    <h3 className="text-xs font-black text-gray-900 leading-none">Smart Scheduler</h3>
                   </div>
-                  <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-blue-600" />
+                  <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-blue-600 scale-75" />
                 </div>
                 {scheduling.schedule && (
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-50">
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-50">
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button disabled={isReadOnly} variant="outline" className="w-full h-10 rounded-lg text-sm justify-start px-3 font-medium"><CalendarIcon className="mr-2 h-4 w-4 text-blue-500" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}</Button>
+                        <Button disabled={isReadOnly} variant="outline" className="w-full h-8 rounded-lg text-xs justify-start px-2"><CalendarIcon className="mr-1.5 h-3 w-3 text-blue-500" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}</Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 border-0 rounded-2xl" align="start"><Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus /></PopoverContent>
+                      <PopoverContent className="w-auto p-0 border-0 rounded-3xl" align="start"><Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus /></PopoverContent>
                     </Popover>
-                    <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-10 rounded-lg text-sm" />
+                    <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-8 rounded-lg text-xs" />
                   </div>
                 )}
               </div>
 
               {/* Content Editor */}
-              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
+              <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">Post Format</h3>
-                  <div className="flex gap-1 bg-gray-50 p-1 rounded-xl">
+                  <h3 className="text-sm font-black text-gray-900 uppercase">Format</h3>
+                  <div className="flex gap-1 bg-gray-50 p-1 rounded-lg">
                     {["text", "images", "video", "link"].map(type => (
                       <button
                         key={type}
                         disabled={isReadOnly || isEditing}
                         onClick={() => { setPostType(type); setPostContent(prev => ({ ...prev, media: [] })); }}
-                        className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all", postType === type ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-600")}
+                        className={cn(
+                          "px-4 py-1.5 rounded-md text-[9px] font-black uppercase transition-all",
+                          postType === type
+                            ? "bg-white text-blue-600 shadow-sm ring-1 ring-black/5 opacity-100"
+                            : "text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                        )}
                       >
                         {type}
                       </button>
@@ -303,21 +312,26 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                   </div>
                 </div>
 
-                <SocialCaptionEditor disabled={isReadOnly} value={postContent.message} onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))} placeholder="What's the story today?" platform="facebook" className="min-h-[160px] rounded-2xl bg-gray-50/50 border-none p-6 text-base font-medium" />
+                <SocialCaptionEditor disabled={isReadOnly} value={postContent.message} onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))} placeholder="What's the story today?" platform="facebook" className="rounded-xl border-gray-50 bg-gray-50/50 p-4 font-medium text-sm text-gray-800" />
+                <div className="flex justify-end">
+                  <span className={cn("text-[10px] font-black uppercase", postContent.message.length > 63206 ? "text-red-500" : "text-gray-300")}>
+                    {postContent.message.length} / 63206
+                  </span>
+                </div>
 
                 {postType === "link" && (
                   <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase text-gray-400">Target URL</Label>
-                    <Input disabled={isReadOnly} placeholder="https://..." value={postContent.link} onChange={(e) => setPostContent(prev => ({ ...prev, link: e.target.value }))} className="rounded-xl h-12 bg-gray-50/50 border-none px-4" />
+                    <Label className="text-[10px] font-black uppercase text-gray-400">Target URL</Label>
+                    <Input disabled={isReadOnly} placeholder="https://..." value={postContent.link} onChange={(e) => setPostContent(prev => ({ ...prev, link: e.target.value }))} className="rounded-xl h-10 bg-gray-50/50 border-none px-4 text-sm" />
                   </div>
                 )}
 
                 {(postType === "images" || postType === "carousel" || postType === "video") && (
                   <div className="space-y-4">
-                    <Label className="text-xs font-black uppercase text-gray-400">Media Assets</Label>
-                    <Button disabled={isReadOnly} variant="outline" onClick={() => openGallery(postType === "video" ? ["video"] : ["image", "video"])} className="h-32 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-blue-500 hover:bg-blue-50 flex flex-col gap-3 transition-all group">
-                      <div className="p-3 bg-gray-50 rounded-full group-hover:bg-blue-100 transition-colors"><ImageIcon className="h-6 w-6 text-blue-600" /></div>
-                      <span className="text-xs font-black uppercase text-gray-600 tracking-widest">Select From Gallery</span>
+                    <Label className="text-sm font-bold text-gray-900">Media</Label>
+                    <Button disabled={isReadOnly} variant="outline" onClick={() => openGallery(postType === "video" ? ["video"] : ["image", "video"])} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-blue-500 hover:bg-blue-50 flex flex-col gap-2">
+                      <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-blue-600" /></div>
+                      <span className="text-xs font-black uppercase text-gray-600">Select Media</span>
                     </Button>
                   </div>
                 )}
@@ -330,21 +344,21 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
               </div>
 
               {postContent.media.length > 0 && (
-                <div className="hidden lg:flex flex-col items-center py-4 bg-white rounded-2xl border border-gray-100 shadow-sm w-20 shrink-0 h-fit">
-                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('up')} className="h-6 w-6 text-gray-300 hover:text-blue-600 mb-2">
+                <div className="hidden lg:flex flex-col items-center py-2 bg-white rounded-2xl border border-gray-100 shadow-sm w-20 shrink-0 h-fit">
+                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('up')} className="h-6 w-6 text-gray-400 hover:text-blue-600 mb-2">
                     <ChevronUp className="h-4 w-4" />
                   </Button>
-                  <div ref={selectionScrollRef} className="flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[400px] px-2">
+                  <div ref={selectionScrollRef} className="flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[450px] px-2">
                     {postContent.media.map((item, index) => (
-                      <div key={index} className={cn("relative group shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer", currentSlide === index ? "border-blue-500 ring-4 ring-blue-50 scale-105" : "border-transparent opacity-60 hover:opacity-100")} onClick={() => setCurrentSlide(index)}>
+                      <div key={index} className={cn("relative group shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer", currentSlide === index ? "border-blue-500 ring-2 ring-blue-100 scale-105 shadow-md" : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-200")} onClick={() => setCurrentSlide(index)}>
                         {item.type?.startsWith('video') ? <div className="w-full h-full bg-black flex items-center justify-center"><Play className="h-4 w-4 text-white fill-white" /></div> : <img src={item.url} className="w-full h-full object-cover" alt="" />}
                         {!isReadOnly && (
-                          <div onClick={(e) => { e.stopPropagation(); removeMedia(index); }} className="absolute inset-0 bg-red-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="h-5 w-5 text-white" /></div>
+                          <div onClick={(e) => { e.stopPropagation(); removeMedia(index); }} className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-[1px]"><Trash2 className="h-5 w-5 text-white" /></div>
                         )}
                       </div>
                     ))}
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('down')} className="h-6 w-6 text-gray-300 hover:text-blue-600 mt-2">
+                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('down')} className="h-6 w-6 text-gray-400 hover:text-blue-600 mt-2">
                     <ChevronDown className="h-4 w-4" />
                   </Button>
                 </div>
@@ -355,10 +369,10 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       </div>
 
       {!isReadOnly && (
-        <div className="p-6 border-t bg-white flex justify-end gap-3 px-8 shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-          <Button disabled={isPending} onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl px-12 h-12 shadow-lg shadow-blue-100 transition-all active:scale-95">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />)}
-            {isEditing ? "Save Changes" : (scheduling.schedule ? "Schedule for later" : "Post to Facebook Now")}
+        <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
+          <Button disabled={isPending} onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-12 h-11">
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />)}
+            {isEditing ? "Save Changes" : (scheduling.schedule ? "Schedule Post" : "Publish Now")}
           </Button>
         </div>
       )}
@@ -414,63 +428,68 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 min-h-screen pb-20">
-      {/* Dynamic Shell Header */}
-      <div className="relative overflow-hidden rounded-[2rem] bg-white border border-gray-100 shadow-2xl p-6 md:p-10">
-        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-64 h-64 bg-gradient-to-tr from-cyan-100/10 to-blue-200/10 rounded-full blur-2xl pointer-events-none" />
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      {/* Premium Compact Header */}
+      <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg shadow-blue-50/20 p-5 lg:p-6">
+        {/* Background Decorative Elements */}
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-gradient-to-br from-blue-200/10 to-indigo-200/10 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-4">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 shadow-sm animate-bounce-subtle">
-              <Facebook className="h-4 w-4" />
-              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Meta Business Suite 2.0</span>
+        <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600">
+              <Facebook className="h-3 w-3" />
+              <span className="text-[9px] font-black uppercase tracking-wider">Meta Business Academy</span>
             </div>
 
-            <div className="space-y-1">
-              <h1 className="text-3xl lg:text-5xl font-black tracking-tighter text-gray-900 leading-none">
-                Content <span className="text-blue-600">Studio</span>
+            <div className="space-y-0.5">
+              <h1 className="text-2xl lg:text-3xl font-black tracking-tight bg-gradient-to-r from-gray-900 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Content Studio
               </h1>
-              <p className="text-gray-500 max-w-md text-sm font-medium leading-relaxed italic opacity-80">
-                Orchestrate your Facebook identity with world-class publishing tools.
+              <p className="text-gray-500 max-w-md text-xs font-medium leading-relaxed">
+                Elevate your social presence with precision scheduling and analytics.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex items-center gap-4">
+            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm">
+                  <img src={`https://i.pravatar.cc/150?u=${i + 15}`} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+
             <Button
               onClick={() => {
                 setCreateInitialData(null);
                 setIsCreating(true);
               }}
-              className="group relative px-8 h-14 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.25)] transition-all duration-300 hover:scale-[1.05] active:scale-95 flex items-center gap-3 overflow-hidden"
+              className="group relative px-6 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-xl shadow-xl shadow-blue-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
             >
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 origin-left transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
-              <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-500" />
-              <span className="text-base tracking-tight">Compose Masterpiece</span>
+              <div className="relative flex items-center gap-2">
+                <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                <span className="text-sm">Compose Masterpiece</span>
+              </div>
             </Button>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
-              <History className="h-3 w-3" />
-              <span>Last sync: Just now</span>
-            </div>
           </div>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-white/50 backdrop-blur-md border border-gray-100 p-1.5 rounded-[1.25rem] shadow-sm mb-10 h-auto inline-flex gap-1">
-          <TabsTrigger value="calendar" className="rounded-xl px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-lg font-black text-gray-400 gap-2 transition-all">
-            <CalendarIcon className="h-4 w-4" /> Calendar
+        <TabsList className="bg-white border border-gray-100 p-1 rounded-xl shadow-sm mb-6 h-auto inline-flex">
+          <TabsTrigger value="calendar" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 font-bold text-gray-500 gap-2">
+            <CalendarIcon className="h-4 w-4" /> Calendar View
           </TabsTrigger>
-          <TabsTrigger value="facebook" className="rounded-xl px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-lg font-black text-gray-400 gap-2 transition-all">
+          <TabsTrigger value="facebook" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-600 font-bold text-gray-500 gap-2">
             <Grid className="h-4 w-4" /> Facebook View
           </TabsTrigger>
-          <TabsTrigger value="listing" className="rounded-xl px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-lg font-black text-gray-400 gap-2 transition-all">
+          <TabsTrigger value="listing" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 font-bold text-gray-500 gap-2">
             <List className="h-4 w-4" /> Listing View
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="calendar" className="outline-none">
+        <TabsContent value="calendar" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <FacebookCalendarViewComponent
             onDateClick={handleDateClick}
             onPostClick={handlePostClick}
@@ -478,7 +497,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           />
         </TabsContent>
 
-        <TabsContent value="facebook" className="outline-none">
+        <TabsContent value="facebook" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <FacebookViewComponent
             pageId={initialPageId}
             initialStatus="all"
@@ -487,7 +506,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           />
         </TabsContent>
 
-        <TabsContent value="listing" className="outline-none">
+        <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <FacebookListingViewComponent
             pageId={initialPageId}
             initialStatus="all"
@@ -497,7 +516,6 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
         </TabsContent>
       </Tabs>
 
-      {/* Editor Modal */}
       <Dialog
         open={isCreating}
         onOpenChange={(open) => {
@@ -507,18 +525,16 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           }
         }}
       >
-        <DialogContent className="!w-[90vw] !max-w-[1240px] h-[90vh] overflow-hidden p-0 border-none bg-transparent shadow-none" showCloseButton={false}>
+        <DialogContent className="!w-[80vw] !max-w-[80vw] h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none" showCloseButton={false}>
           {isCreating && (
-            <div className="bg-white w-full h-full rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
-              <div className="px-8 py-4 bg-white border-b border-gray-50 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-4">
-                  <div className="p-2.5 bg-blue-600 rounded-2xl shadow-lg shadow-blue-100"><Facebook className="h-5 w-5 text-white" /></div>
-                  <div>
-                    <DialogTitle className="text-xl font-black text-gray-900 leading-none tracking-tight">Post Designer</DialogTitle>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Creative Mode</p>
-                  </div>
+            <div className="bg-white w-full h-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+              {/* Modal Header */}
+              <div className="px-6 py-3 bg-white border-b border-gray-100 flex items-center justify-between font-sans shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-blue-600 rounded-lg shadow-md"><Facebook className="h-3.5 w-3.5 text-white" /></div>
+                  <div><DialogTitle className="text-sm font-black text-gray-900 leading-none">Post Creator</DialogTitle></div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)} className="rounded-full h-10 w-10 hover:bg-red-50 hover:text-red-500 transition-colors"><X className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)} className="rounded-full hover:bg-gray-100"><X className="h-5 w-5 text-gray-400" /></Button>
               </div>
               <CreatePostForm
                 initialData={createInitialData}

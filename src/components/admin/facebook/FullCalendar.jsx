@@ -141,11 +141,25 @@ export default function FullCalendar({
                     return (
                         <div key={day.toString()} className={cn("bg-white p-2 transition-all duration-200 relative group flex flex-col", mini ? "min-h-[70px]" : "min-h-[140px]", !isSelectedMonth && "bg-gray-50/50", "hover:bg-gray-50/80 cursor-default")}>
                             <div className={cn("flex items-center justify-between mb-1", mini && "mb-0.5")}>
-                                <span className={cn("inline-flex items-center justify-center transition-colors font-medium rounded-full", mini ? "w-4 h-4 text-[9px]" : "w-7 h-7 text-sm", isTodayDate ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-100" : isSelectedMonth ? "text-gray-700 font-semibold" : "text-gray-300")}>
+                                <span className={cn(
+                                    "inline-flex items-center justify-center transition-colors font-medium rounded-full",
+                                    mini ? "w-4 h-4 text-[9px]" : "w-7 h-7 text-sm",
+                                    isTodayDate
+                                        ? "bg-blue-600 text-white shadow-md ring-2 ring-blue-100"
+                                        : isSelectedMonth
+                                            ? "text-gray-700 font-semibold"
+                                            : "text-gray-300"
+                                )}
+                                >
                                     {format(day, "d")}
                                 </span>
                                 {onDateClick && !isBefore(day, startOfToday()) && (
-                                    <Button variant="ghost" size="icon" className={cn("opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full hover:bg-blue-100 hover:text-blue-600", mini ? "h-5 w-5" : "h-7 w-7")} onClick={() => onDateClick(day)}>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className={cn("opacity-0 group-hover:opacity-100 transition-all duration-200 rounded-full hover:bg-blue-100 hover:text-blue-600", mini ? "h-5 w-5" : "h-7 w-7")}
+                                        onClick={() => onDateClick(day)}
+                                    >
                                         <Plus className={cn(mini ? "h-3 w-3" : "h-4 w-4")} />
                                     </Button>
                                 )}
@@ -159,7 +173,17 @@ export default function FullCalendar({
                                     return (
                                         <DropdownMenu key={post.id}>
                                             <DropdownMenuTrigger asChild>
-                                                <div className={cn("flex items-center gap-1.5 p-1 rounded-lg text-[10px] cursor-pointer transition-all duration-200 border shadow-sm relative bg-white hover:shadow-md hover:scale-[1.02] active:scale-95", mini && "gap-1 p-0.5 text-[8px]", isProcessing && "opacity-70 pointer-events-none")}>
+                                                <div
+                                                    className={cn(
+                                                        "flex items-center gap-1.5 p-1 rounded-lg text-[10px] cursor-pointer transition-all duration-200 border shadow-sm relative",
+                                                        mini && "gap-1 p-0.5 text-[8px]",
+                                                        "bg-white hover:shadow-md hover:scale-[1.02] active:scale-95",
+                                                        post.postType === "video" ? "border-purple-200 bg-purple-50/30" :
+                                                            post.postType === "carousel" ? "border-blue-200 bg-blue-50/30" :
+                                                                "border-blue-200 bg-blue-50/30",
+                                                        isProcessing && "opacity-70 pointer-events-none"
+                                                    )}
+                                                >
                                                     <div className={cn("relative flex-shrink-0 rounded-md overflow-hidden bg-gray-100 border border-gray-200", mini ? "w-4 h-4" : "w-7 h-7")}>
                                                         {post.mediaUrls?.[0]?.url ? (
                                                             <img src={post.mediaUrls[0].url} alt="" className="w-full h-full object-cover" />

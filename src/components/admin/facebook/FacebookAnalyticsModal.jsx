@@ -182,17 +182,17 @@ export default function FacebookAnalyticsModal({
                             <Facebook className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                            <DialogTitle className="text-2xl font-black text-gray-900 tracking-tight">Post Insights</DialogTitle>
-                            <DialogDescription className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">Performance Intelligence</DialogDescription>
+                            <DialogTitle className="text-2xl font-semibold text-gray-900 tracking-tight">Post Insights</DialogTitle>
+                            <DialogDescription className="text-xs font-medium text-muted-foreground mt-0.5">Performance Intelligence</DialogDescription>
                         </div>
                     </div>
                     <div className="flex items-center gap-6">
                         {lastRefreshed && (
                             <div className="hidden sm:flex flex-col items-end">
-                                <span className="text-[10px] uppercase font-black text-gray-400 tracking-widest leading-tight">
+                                <span className="text-[10px] uppercase font-semibold text-muted-foreground/60 leading-tight">
                                     Last Sync
                                 </span>
-                                <span className="text-xs font-bold text-gray-900">
+                                <span className="text-xs font-medium text-muted-foreground">
                                     {formatDistanceToNow(new Date(lastRefreshed), { addSuffix: true })}
                                 </span>
                             </div>
@@ -200,7 +200,7 @@ export default function FacebookAnalyticsModal({
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-11 px-6 rounded-xl gap-2 font-black border-2 border-blue-50 hover:bg-blue-50 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+                            className="h-11 px-6 rounded-xl gap-2 font-semibold border-2 border-blue-50 hover:bg-blue-50 hover:text-blue-600 transition-all shadow-sm active:scale-95"
                             onClick={() => loadAnalytics(true)}
                             disabled={loading || refreshing}
                         >
@@ -241,8 +241,8 @@ export default function FacebookAnalyticsModal({
                                                     <div className="p-1.5 bg-blue-50 w-fit rounded-lg mb-2">
                                                         <metric.icon className="h-4 w-4 text-blue-600" />
                                                     </div>
-                                                    <div className="text-2xl font-black text-gray-900 tracking-tighter">{typeof metric.value === 'number' ? formatNumber(metric.value) : metric.value}</div>
-                                                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">{metric.label}</p>
+                                                    <div className="text-2xl font-bold text-gray-900 tracking-tighter">{typeof metric.value === 'number' ? formatNumber(metric.value) : metric.value}</div>
+                                                    <p className="text-xs text-muted-foreground">{metric.label}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -252,12 +252,12 @@ export default function FacebookAnalyticsModal({
 
                                     {/* Detailed Post Context */}
                                     <div className="space-y-4">
-                                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Content Metadata</h3>
+                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Content Metadata</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-1">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Post Type</span>
+                                                <span className="text-xs text-muted-foreground">Post Type</span>
                                                 <div className="flex items-center gap-2 pt-1">
-                                                    <Badge variant="outline" className="rounded-lg h-7 font-black text-[10px] gap-1.5 bg-blue-50 text-blue-600 border-blue-100">
+                                                    <Badge variant="outline" className="rounded-lg h-7 font-semibold text-xs gap-1.5 bg-blue-50 text-blue-600 border-blue-100">
                                                         {post?.postType === 'video' ? <><Play className="h-3 w-3 fill-current" /> VIDEO REEL</> :
                                                             post?.postType === 'images' ? <><ImageIcon className="h-3 w-3" /> IMAGE GALLERY</> :
                                                                 <><Layers className="h-3 w-3" /> TEXT STATUS</>}
@@ -265,7 +265,7 @@ export default function FacebookAnalyticsModal({
                                                 </div>
                                             </div>
                                             <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-1">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Published On</span>
+                                                <span className="text-xs text-muted-foreground">Published On</span>
                                                 <div className="flex items-center gap-2 pt-1 font-bold text-sm text-gray-700">
                                                     <Calendar className="h-4 w-4 text-gray-400" />
                                                     {post?.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, {
@@ -278,7 +278,7 @@ export default function FacebookAnalyticsModal({
                                         <div className="bg-white p-6 rounded-2xl border border-gray-100 space-y-4">
                                             <div className="flex items-center gap-2">
                                                 <MessageCircle className="h-4 w-4 text-gray-400" />
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Original Caption</span>
+                                                <span className="text-xs text-muted-foreground">Original Caption</span>
                                             </div>
                                             <ScrollArea className="max-h-[150px]">
                                                 <p className="text-[15px] font-medium leading-relaxed text-gray-700 whitespace-pre-wrap italic opacity-80 pl-2 border-l-4 border-blue-100">
@@ -290,7 +290,7 @@ export default function FacebookAnalyticsModal({
                                         {data?.permalink_url && (
                                             <Button
                                                 variant="outline"
-                                                className="w-full h-14 rounded-2xl font-black text-base border-2 hover:bg-facebook-blue hover:text-white hover:border-facebook-blue transition-all group active:scale-[0.98]"
+                                                className="w-full h-14 rounded-2xl font-semibold text-base border-2 hover:bg-facebook-blue hover:text-white hover:border-facebook-blue transition-all group active:scale-[0.98]"
                                                 onClick={() => window.open(data.permalink_url, '_blank')}
                                             >
                                                 <ExternalLink className="h-5 w-5 mr-3 group-hover:rotate-12 transition-transform" />
@@ -321,8 +321,8 @@ export default function FacebookAnalyticsModal({
                                             </div>
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-black text-gray-900 leading-none">Social Portal</span>
-                                            <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider flex items-center gap-1">2h • <Users className="h-2 w-2" /></span>
+                                            <span className="text-sm font-semibold text-gray-900 leading-none">Social Portal</span>
+                                            <span className="text-[10px] font-medium text-gray-400 mt-1 uppercase tracking-wider flex items-center gap-1">2h • <Users className="h-2 w-2" /></span>
                                         </div>
                                     </div>
                                     <MoreVertical className="h-5 w-5 text-gray-300" />
@@ -339,7 +339,7 @@ export default function FacebookAnalyticsModal({
                                     ) : (
                                         <div className="flex flex-col items-center justify-center h-full text-gray-200">
                                             <Info className="h-16 w-16 mb-4 opacity-20" />
-                                            <span className="text-xs font-black uppercase tracking-[0.2em] opacity-30">No Media</span>
+                                            <span className="text-xs font-semibold uppercase tracking-[0.2em] opacity-30">No Media</span>
                                         </div>
                                     )}
                                 </div>
@@ -350,9 +350,9 @@ export default function FacebookAnalyticsModal({
                                         <div className="flex items-center -space-x-1.5">
                                             <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center border-2 border-white shadow-sm"><ThumbsUp className="h-2.5 w-2.5 text-white fill-white" /></div>
                                             <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center border-2 border-white shadow-sm"><Heart className="h-2.5 w-2.5 text-white fill-white" /></div>
-                                            <span className="pl-3.5 text-xs font-bold text-gray-500">{formatNumber(data?.summary?.likes || 0)}</span>
+                                            <span className="pl-3.5 text-xs font-semibold text-gray-500">{formatNumber(data?.summary?.likes || 0)}</span>
                                         </div>
-                                        <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{formatNumber(data?.summary?.comments || 0)} comments</div>
+                                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{formatNumber(data?.summary?.comments || 0)} comments</div>
                                     </div>
                                     <Separator className="bg-gray-50" />
                                     <div className="flex items-center justify-around py-1">

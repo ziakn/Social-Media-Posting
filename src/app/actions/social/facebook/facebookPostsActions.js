@@ -81,11 +81,26 @@ export async function getFacebookPosts({
 
     // Build base query
     let constraints = [
-      where("userId", "==", user.id),
-      limit(pageSize + 1)
+      where("platform", "==", "facebook"),
+      where("userId", "==", user.id)
     ];
 
-    // Apply sorting
+    // Apply filters (Equality filters)
+    if (filters.postType && filters.postType !== 'all') {
+      constraints.push(where("postType", "==", filters.postType));
+    }
+
+    if (filters.pageId && filters.pageId !== 'all') {
+      constraints.push(where("pageId", "==", filters.pageId));
+    }
+
+    if (filters.status && filters.status !== 'all') {
+      if (filters.status === 'published' || filters.status === 'scheduled' || filters.status === 'draft') {
+        constraints.push(where("status", "==", filters.status));
+      }
+    }
+
+    // Determine sort field and order
     let sortField = "createdAt";
     let sortDirection = "desc";
 
@@ -98,53 +113,13 @@ export async function getFacebookPosts({
     } else if (sortBy === "engagement_high") {
       sortField = "metrics.engagements";
       sortDirection = "desc";
-    } else if (sortBy === "engagement_low") {
-      sortField = "metrics.engagements";
-      sortDirection = "asc";
     } else if (sortBy === "reach_high") {
       sortField = "metrics.reach";
       sortDirection = "desc";
-    } else if (sortBy === "reach_low") {
-      sortField = "metrics.reach";
-      sortDirection = "asc";
-    } else if (sortBy === "scheduled") {
-      sortField = "scheduledAt";
-      sortDirection = "asc";
     }
 
     constraints.push(orderBy(sortField, sortDirection));
-
-    // Apply filters
-    if (filters.postType && filters.postType !== 'all') {
-      constraints.unshift(where("postType", "==", filters.postType));
-    }
-
-    if (filters.status && filters.status !== 'all') {
-      if (filters.status === 'published') {
-        constraints.unshift(where("status", "==", "published"));
-      } else if (filters.status === 'scheduled') {
-        constraints.unshift(where("scheduledAt", ">", new Date()));
-      } else if (filters.status === 'draft') {
-        constraints.unshift(where("status", "==", "draft"));
-      }
-    }
-
-    if (filters.startDate) {
-      constraints.unshift(where("createdAt", ">=", new Date(filters.startDate)));
-    }
-
-    if (filters.endDate) {
-      constraints.unshift(where("createdAt", "<=", new Date(filters.endDate)));
-    }
-
-    if (filters.pageId && filters.pageId !== 'all') {
-      constraints.unshift(where("pageId", "==", filters.pageId));
-    }
-
-    if (filters.minEngagementRate) {
-      constraints.unshift(where("metrics.engagementRate", ">=", parseFloat(filters.minEngagementRate)));
-    }
-
+    constraints.push(limit(pageSize * 5)); // Fetch more for client-side filtering (deleted/search)
     // Filter out deleted posts logic (application level or if possible query level)
     // Since existing posts might not have 'deleted' field, we can't easily query using != 1 without an index or backfill.
     // We will filter efficiently in memory after fetching or try to use a constraint if possible.
@@ -171,14 +146,19 @@ export async function getFacebookPosts({
 
     const snapshot = await getDocs(q);
 
-    // Determine if more pages exist
-    const hasMore = snapshot.docs.length > pageSize;
-    const docsToProcess = snapshot.docs.slice(0, pageSize);
-
-    const posts = await Promise.all(docsToProcess.map(async (docSnap) => {
+    // Filter out deleted posts and apply search
+    const allPosts = await Promise.all(snapshot.docs.map(async (docSnap) => {
       const data = docSnap.data();
 
-      // Get page details
+      // Skip soft-deleted posts
+      if (data.deleted === 1) return null;
+
+      // Apply client-side search filter
+      const message = (data.message || data.caption || "").toLowerCase();
+      const searchQuery = (filters.searchQuery || "").toLowerCase();
+      if (searchQuery && !message.includes(searchQuery)) return null;
+
+      // Get page details (cached or fetched)
       let pageName = "Unknown Page";
       let pageProfilePicture = null;
       let pageCategory = null;
@@ -249,9 +229,7 @@ export async function getFacebookPosts({
           clicks: data.metrics?.clicks || 0,
           impressions: data.metrics?.impressions || 0
         },
-        // Determine status
         status: data.scheduledAt && new Date(data.scheduledAt) > new Date() ? 'scheduled' : 'published',
-        // Serialize Firestore Timestamps
         createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
         scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
@@ -259,9 +237,12 @@ export async function getFacebookPosts({
       };
     }));
 
-    // Filter out deleted posts
-    const activePosts = posts.filter(p => p.deleted !== 1);
+    const activePosts = allPosts.filter(p => p !== null);
 
+    // For simplicity with hybrid search/pagination, we'll slice here
+    // In a real high-volume app, we'd need a more complex solution (Algolia/Typesense)
+    const posts = activePosts.slice(0, pageSize);
+    const hasMore = activePosts.length > pageSize;
     const lastVisible = posts.length > 0 ? posts[posts.length - 1].id : null;
 
     // Calculate statistics
@@ -763,72 +744,55 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
       baseConstraints.push(where("pageId", "==", pageId));
     }
 
-    // Build Published Query
-    let pubConstraints = [
-      ...baseConstraints,
-      where("status", "==", "published")
-    ];
+    // Build Queries for Published, Posted, and Scheduled
+    const buildQuery = (statusValue, dateField) => {
+      let qConstraints = [
+        ...baseConstraints,
+        where("status", "==", statusValue)
+      ];
+      if (startDate) qConstraints.push(where(dateField, ">=", startDate));
+      if (endDate) qConstraints.push(where(dateField, "<=", endDate));
+      qConstraints.push(orderBy(dateField, statusValue === "published" || statusValue === "posted" ? "desc" : "asc"));
+      if (!startDate) qConstraints.push(limit(1000));
+      return query(collection(db, "facebook_posts"), ...qConstraints);
+    };
 
-    if (startDate) pubConstraints.push(where("createdAt", ">=", startDate));
-    if (endDate) pubConstraints.push(where("createdAt", "<=", endDate));
+    const pubQuery = buildQuery("published", "createdAt");
+    const postedQuery = buildQuery("posted", "createdAt"); // Supporting legacy status
+    const schedQuery = buildQuery("scheduled", "scheduledAt");
 
-    pubConstraints.push(orderBy("createdAt", "desc"));
-    if (!startDate) pubConstraints.push(limit(1000));
-
-    const pubQuery = query(collection(db, "facebook_posts"), ...pubConstraints);
-
-    // Build Scheduled Query
-    let schedConstraints = [
-      ...baseConstraints,
-      where("status", "==", "scheduled")
-    ];
-
-    if (startDate) schedConstraints.push(where("scheduledAt", ">=", startDate));
-    if (endDate) schedConstraints.push(where("scheduledAt", "<=", endDate));
-
-    schedConstraints.push(orderBy("scheduledAt", "asc"));
-    if (!startDate) schedConstraints.push(limit(1000));
-
-    const schedQuery = query(collection(db, "facebook_posts"), ...schedConstraints);
-
-    const [pubSnap, schedSnap] = await Promise.all([
+    const [pubSnap, postedSnap, schedSnap] = await Promise.allSettled([
       getDocs(pubQuery),
+      getDocs(postedQuery),
       getDocs(schedQuery)
     ]);
 
     const allPosts = [];
 
-    // Process Published
-    pubSnap.forEach(docSnap => {
-      const data = docSnap.data();
-      if (data.deleted === 1) return;
+    const processSnap = (snapResult, statusLabel, isPublished) => {
+      if (snapResult.status === 'fulfilled') {
+        snapResult.value.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.deleted === 1) return;
 
-      allPosts.push({
-        id: docSnap.id,
-        ...data,
-        scheduledAt: data.createdAt?.toDate?.() || data.createdAt || new Date(),
-        status: "published",
-        isPublished: true,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-      });
-    });
+          allPosts.push({
+            id: docSnap.id,
+            ...data,
+            scheduledAt: isPublished
+              ? (data.createdAt?.toDate?.() || data.createdAt || new Date())
+              : (data.scheduledAt?.toDate?.() || data.scheduledAt || null),
+            status: statusLabel,
+            isPublished: isPublished,
+            createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+            updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+          });
+        });
+      }
+    };
 
-    // Process Scheduled
-    schedSnap.forEach(docSnap => {
-      const data = docSnap.data();
-      if (data.deleted === 1) return;
-
-      allPosts.push({
-        id: docSnap.id,
-        ...data,
-        scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt || null,
-        status: "scheduled",
-        isPublished: false,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-      });
-    });
+    processSnap(pubSnap, "published", true);
+    processSnap(postedSnap, "published", true); // Treat legacy 'posted' as 'published'
+    processSnap(schedSnap, "scheduled", false);
 
     return { success: true, posts: allPosts };
   } catch (error) {
