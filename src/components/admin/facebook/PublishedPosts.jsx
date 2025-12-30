@@ -1,1125 +1,560 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { format, parseISO } from "date-fns";
+import { useState, useRef, useTransition, useEffect, useCallback } from "react";
+import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
+  Card, CardContent, CardHeader, CardTitle, CardDescription
 } from "@/components/ui/card";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
+import {
+  Tabs, TabsList, TabsTrigger, TabsContent
+} from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
+import GalleryModal from "@/components/gallery/GalleryModal";
+
+// Icons
 import {
-  Eye,
-  Heart,
-  MessageCircle,
-  Share2,
-  BarChart3,
-  Calendar as CalendarIcon,
-  MoreHorizontal,
-  TrendingUp,
-  Users,
-  Clock,
-  Filter,
-  Download,
-  Loader2,
-  Search,
-  ChevronRight,
-  Image as ImageIcon,
-  Film,
-  Link,
-  FileText,
-  AlertCircle,
-  Facebook,
-  ExternalLink,
-  Edit,
-  Trash2,
-  Copy,
-  CalendarDays,
-  RefreshCw,
-  Layers,
-  Download as DownloadIcon,
-  EyeOff,
-  Eye as EyeOn,
-  Pause,
-  Play,
-  FileDown,
-  ChevronDown,
-  Check,
-  X,
-  Sparkles,
+  Search, TrendingUp, ThumbsUp, MessageCircle, Eye, ChevronRight, ExternalLink,
+  Trash2, MoreVertical, X, Filter, Layers, ImageIcon, Film, Play, Edit,
+  List, Grid, Calendar as CalendarIcon, Plus, Video, Grid3X3, Upload,
+  Facebook, Zap, Clock, Users, ChevronUp, ChevronDown, Loader2, Check,
+  ArrowLeft, Send, History, Share2, Globe, FileText, Link2
 } from "lucide-react";
+
+// Server Actions
 import {
-  getFacebookPosts,
-  deleteFacebookPost,
-  updatePostSchedule,
-  duplicateFacebookPost,
-  exportPostsToCSV,
-  getPostsStatistics,
-  getUserFacebookPages,
-  updateFacebookPost
+  getFacebookPosts, deleteFacebookPost, updatePostSchedule, publishFacebookPostNow, getUserFacebookPages
 } from "@/app/actions/social/facebook/facebookPostsActions";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import {
+  createFacebookTextPost,
+  createFacebookImagePost,
+  createFacebookVideoPost,
+  createFacebookLinkPost,
+  createFacebookPollPost
+} from "@/app/actions/social/facebook/createPost";
+import { getDateTime } from "@/lib/utils";
 
-const postTypeConfig = {
-  text: { icon: FileText, color: "bg-gray-100 text-gray-800 border-gray-200", label: "Text" },
-  image: { icon: ImageIcon, color: "bg-blue-100 text-blue-800 border-blue-200", label: "Image" },
-  video: { icon: Film, color: "bg-purple-100 text-purple-800 border-purple-200", label: "Video" },
-  link: { icon: Link, color: "bg-green-100 text-green-800 border-green-200", label: "Link" },
-  carousel: { icon: Layers, color: "bg-orange-100 text-orange-800 border-orange-200", label: "Carousel" },
-};
+// Internal Components
+import FacebookCalendarViewComponent from "@/components/admin/facebook/FacebookCalendarViewComponent";
+import FacebookViewComponent from "@/components/admin/facebook/FacebookViewComponent";
+import FacebookListingViewComponent from "@/components/admin/facebook/FacebookListingViewComponent";
+import FacebookPreview from "@/components/admin/facebook/FacebookPreview";
+import FacebookAnalyticsModal from "@/components/admin/facebook/FacebookAnalyticsModal";
 
-const statusConfig = {
-  published: { icon: EyeOn, color: "bg-green-100 text-green-800 border-green-200", label: "Published" },
-  scheduled: { icon: CalendarDays, color: "bg-blue-100 text-blue-800 border-blue-200", label: "Scheduled" },
-  draft: { icon: FileText, color: "bg-gray-100 text-gray-800 border-gray-200", label: "Draft" },
-  paused: { icon: Pause, color: "bg-yellow-100 text-yellow-800 border-yellow-200", label: "Paused" },
-};
+// -----------------------------------------------------------------------------
+// CREATE POST FORM
+// -----------------------------------------------------------------------------
+function CreatePostForm({ initialData = null, onSuccess = null }) {
+  const [isPending, startTransition] = useTransition();
+  const isEditing = !!initialData?.id;
+  const isReadOnly = initialData?.readOnly || false;
 
-export default function PublishedPosts() {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    status: "all",
-    postType: "all",
-    pageId: "all",
-    startDate: "",
-    endDate: "",
-    minEngagementRate: "",
-  });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
-  const [selectedPost, setSelectedPost] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [statistics, setStatistics] = useState(null);
-  const [facebookPages, setFacebookPages] = useState([]);
-  const [exporting, setExporting] = useState(false);
-
-  // Dialog states
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
-  const [editDialog, setEditDialog] = useState({ open: false, postId: null, message: "" });
-  const [viewDialog, setViewDialog] = useState({ open: false, post: null, currentSlide: 0 }); // Added viewDialog
-  const [scheduleDialog, setScheduleDialog] = useState({ open: false, postId: null, date: new Date(), time: "12:00" });
-  const [dateRange, setDateRange] = useState({ from: undefined, to: undefined });
-
-  const [pagination, setPagination] = useState({
-    hasMore: false,
-    lastVisible: null,
-    pageSize: 12,
-    totalCount: 0
+  const [postType, setPostType] = useState(initialData?.postType || "text");
+  const [postContent, setPostContent] = useState({
+    message: initialData?.message || "",
+    media: initialData?.mediaUrls || [],
+    link: initialData?.additionalData?.link || "",
   });
 
-  // Load Facebook pages for filter
+  const [scheduling, setScheduling] = useState({
+    schedule: !!initialData?.scheduledAt,
+    date: initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date(),
+    time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00",
+  });
+
+  const [pages, setPages] = useState([]);
+  const [selectedPage, setSelectedPage] = useState(initialData?.pageId || null);
+
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryMediaType, setGalleryMediaType] = useState("image");
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const selectionScrollRef = useRef(null);
+
   useEffect(() => {
-    const loadFacebookPages = async () => {
-      try {
-        const result = await getUserFacebookPages();
-        if (result.success) {
-          setFacebookPages(result.pages);
+    async function loadPages() {
+      const res = await getUserFacebookPages();
+      if (res.success) {
+        setPages(res.pages || []);
+        if (!selectedPage && res.pages.length > 0) {
+          setSelectedPage(res.pages[0].pageId);
         }
-      } catch (error) {
-        console.error("Error loading Facebook pages:", error);
       }
-    };
-    loadFacebookPages();
+    }
+    loadPages();
   }, []);
 
-  // Load posts with pagination
-  const loadPosts = useCallback(async (reset = false, lastDocId = null) => {
-    try {
-      setLoading(true);
+  const openGallery = (types) => {
+    setGalleryMediaType(types);
+    setGalleryOpen(true);
+  };
 
-      const result = await getFacebookPosts({
-        pageSize: pagination.pageSize,
-        lastDocId: reset ? null : lastDocId,
-        filters,
-        sortBy
+  const handleGallerySelect = (selectedItems) => {
+    const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
+    const newMedia = items.map(item => ({
+      url: item.fileUrl, name: item.fileName, size: item.fileSize,
+      type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image'),
+      mimeType: item.fileType, file: null
+    }));
+
+    if (postType === "video") {
+      setPostContent(prev => ({ ...prev, media: [newMedia[0]] }));
+      setGalleryOpen(false);
+      setCurrentSlide(0);
+      return;
+    }
+
+    const maxMedia = 10;
+    const totalMedia = postContent.media.length + newMedia.length;
+    if (totalMedia > maxMedia) {
+      toast.error(`You can upload maximum ${maxMedia} items`);
+      return;
+    }
+    setPostContent(prev => ({
+      ...prev,
+      media: [...prev.media, ...newMedia].slice(0, maxMedia)
+    }));
+    setGalleryOpen(false);
+  };
+
+  const removeMedia = (index) => {
+    setPostContent(prev => ({
+      ...prev,
+      media: prev.media.filter((_, i) => i !== index)
+    }));
+    if (currentSlide >= postContent.media.length - 1) {
+      setCurrentSlide(Math.max(0, postContent.media.length - 2));
+    }
+  };
+
+  const scrollSelection = (direction) => {
+    if (selectionScrollRef.current) {
+      const scrollAmount = 80;
+      selectionScrollRef.current.scrollBy({
+        top: direction === 'up' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
       });
+    }
+  };
 
-      if (result.success) {
-        if (reset || !lastDocId) {
-          setPosts(result.posts || []);
-        } else {
-          setPosts(prev => [...prev, ...result.posts]);
+  const handleSubmit = async () => {
+    if (!selectedPage) return toast.error("Please select a Facebook page first");
+    if (postType === "text" && !postContent.message.trim()) return toast.error("Please add a message for your post");
+    if ((postType === "images" || postType === "carousel") && postContent.media.length === 0) return toast.error("Please add at least one image");
+    if (postType === "video" && !postContent.media.length) return toast.error("Please add a video");
+    if (postType === "link" && !postContent.link) return toast.error("Please add a link");
+
+    startTransition(async () => {
+      try {
+        let result;
+        const scheduledTime = scheduling.schedule ? getDateTime(scheduling.date, scheduling.time) : null;
+
+        const commonProps = {
+          pageId: selectedPage,
+          message: postContent.message,
+          scheduledTime,
+          additionalData: {
+            ...(postType === 'link' && { link: postContent.link }),
+          },
+        };
+
+        if (isEditing) {
+          // Simplified update: Facebook usually just allows updating the message or schedule
+          if (scheduling.schedule !== !!initialData?.scheduledAt || scheduling.time !== format(new Date(initialData.scheduledAt), "HH:mm")) {
+            result = await updatePostSchedule(initialData.id, scheduledTime);
+          }
+          // Also handle message update
+          if (postContent.message !== initialData.message) {
+            result = await import("@/app/actions/social/facebook/facebookPostsActions").then(m => m.updateFacebookPost(initialData.id, postContent.message));
+          }
+
+          if (result?.success) {
+            toast.success("Post updated successfully!");
+            if (onSuccess) onSuccess(result);
+          } else if (result) {
+            toast.error(result.message || "Failed to update post");
+          }
+          return;
         }
 
-        setStatistics(result.statistics);
-        setPagination(prev => ({
-          ...prev,
-          hasMore: result.pagination?.hasMore || false,
-          lastVisible: result.pagination?.lastVisible || null,
-          totalCount: result.pagination?.total || 0
-        }));
-      } else {
-        toast.error(result.message || "Failed to load posts");
+        switch (postType) {
+          case "text":
+            result = await createFacebookTextPost(commonProps);
+            break;
+          case "images":
+          case "carousel":
+            result = await createFacebookImagePost({ ...commonProps, mediaUrls: postContent.media });
+            break;
+          case "video":
+            result = await createFacebookVideoPost({ ...commonProps, mediaUrls: postContent.media });
+            break;
+          case "link":
+            result = await createFacebookLinkPost(commonProps);
+            break;
+        }
+
+        if (result.success) {
+          toast.success(scheduling.schedule ? "Post scheduled!" : "Post published!");
+          if (onSuccess) onSuccess(result);
+        } else {
+          toast.error(result.message || "Failed to create post");
+        }
+      } catch (error) {
+        console.error("Submit error:", error);
+        toast.error(error.message || "An unexpected error occurred");
       }
-    } catch (error) {
-      console.error("Error loading posts:", error);
-      toast.error("Error loading posts");
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.pageSize, filters, sortBy]);
-
-  // Load statistics
-  const loadStatistics = async () => {
-    try {
-      const result = await getPostsStatistics();
-      if (result.success) {
-        setStatistics(result.statistics);
-      }
-    } catch (error) {
-      console.error("Error loading statistics:", error);
-    }
+    });
   };
 
-  useEffect(() => {
-    loadPosts(true);
-    loadStatistics();
-  }, [filters, sortBy]);
+  return (
+    <div className="w-full h-full flex flex-col bg-gray-50 overflow-hidden">
+      <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="p-4 lg:p-8 space-y-6 lg:space-y-8">
+          {/* Channel Selection */}
+          <div className="space-y-3 px-2">
+            <div className="flex items-center gap-2 opacity-50">
+              <Facebook className="h-4 w-4 text-blue-600" />
+              <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest"> Facebook Pages </h3>
+            </div>
+            <div className="flex flex-wrap gap-4 items-center">
+              {pages.map((page) => {
+                const isSelected = selectedPage === page.pageId;
+                return (
+                  <div key={page.pageId} onClick={() => !isReadOnly && setSelectedPage(page.pageId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-blue-500 bg-blue-50 shadow-lg" : "w-12 h-12 border-gray-100 opacity-60")}>
+                    <div className="w-10 h-10 relative">
+                      <Avatar className="w-full h-full">
+                        <AvatarImage src={page.profilePicture} />
+                        <AvatarFallback className="bg-blue-600 text-white font-bold">{page.pageName[0]}</AvatarFallback>
+                      </Avatar>
+                      {isSelected && <div className="absolute -bottom-1 -right-1 bg-blue-500 text-white rounded-full p-1 border-2 border-white"><Check className="h-2 w-2" /></div>}
+                    </div>
+                    <div className={cn("absolute -bottom-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] px-2 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50", isSelected && "opacity-100")}>
+                      {page.pageName}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-  // Apply search filter
-  const filteredAndSortedPosts = posts.filter(post => {
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        (post.message?.toLowerCase().includes(query)) ||
-        (post.caption?.toLowerCase().includes(query)) ||
-        (post.pageName?.toLowerCase().includes(query))
-      );
-    }
-    return post.status === "published";
-  });
+          <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-6 lg:gap-8 items-start">
+            <div className="space-y-6">
+              {/* Scheduling */}
+              <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    <h3 className="text-sm font-black text-gray-900 leading-none">Smart Scheduler</h3>
+                  </div>
+                  <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-blue-600" />
+                </div>
+                {scheduling.schedule && (
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-50">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button disabled={isReadOnly} variant="outline" className="w-full h-10 rounded-lg text-sm justify-start px-3 font-medium"><CalendarIcon className="mr-2 h-4 w-4 text-blue-500" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}</Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 border-0 rounded-2xl" align="start"><Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus /></PopoverContent>
+                    </Popover>
+                    <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-10 rounded-lg text-sm" />
+                  </div>
+                )}
+              </div>
 
-  // Helper functions
-  const formatNumber = (num) => {
-    if (!num && num !== 0) return "0";
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
-  };
+              {/* Content Editor */}
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">Post Format</h3>
+                  <div className="flex gap-1 bg-gray-50 p-1 rounded-xl">
+                    {["text", "images", "video", "link"].map(type => (
+                      <button
+                        key={type}
+                        disabled={isReadOnly || isEditing}
+                        onClick={() => { setPostType(type); setPostContent(prev => ({ ...prev, media: [] })); }}
+                        className={cn("px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all", postType === type ? "bg-white text-blue-600 shadow-sm" : "text-gray-400 hover:text-gray-600")}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-  const formatDate = (timestamp) => {
-    if (!timestamp) return "N/A";
-    try {
-      const date = parseISO(timestamp);
-      return format(date, "MMM dd, yyyy 'at' h:mm a");
-    } catch {
-      return "N/A";
-    }
-  };
+                <SocialCaptionEditor disabled={isReadOnly} value={postContent.message} onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))} placeholder="What's the story today?" platform="facebook" className="min-h-[160px] rounded-2xl bg-gray-50/50 border-none p-6 text-base font-medium" />
 
-  const getEngagementRate = (post) => {
-    if (!post.metrics) return "0";
-    return post.metrics.engagementRate?.toFixed(1) || "0";
-  };
+                {postType === "link" && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase text-gray-400">Target URL</Label>
+                    <Input disabled={isReadOnly} placeholder="https://..." value={postContent.link} onChange={(e) => setPostContent(prev => ({ ...prev, link: e.target.value }))} className="rounded-xl h-12 bg-gray-50/50 border-none px-4" />
+                  </div>
+                )}
 
-  const handleLoadMore = () => {
-    if (pagination.hasMore && pagination.lastVisible) {
-      loadPosts(false, pagination.lastVisible);
-    }
-  };
+                {(postType === "images" || postType === "carousel" || postType === "video") && (
+                  <div className="space-y-4">
+                    <Label className="text-xs font-black uppercase text-gray-400">Media Assets</Label>
+                    <Button disabled={isReadOnly} variant="outline" onClick={() => openGallery(postType === "video" ? ["video"] : ["image", "video"])} className="h-32 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-blue-500 hover:bg-blue-50 flex flex-col gap-3 transition-all group">
+                      <div className="p-3 bg-gray-50 rounded-full group-hover:bg-blue-100 transition-colors"><ImageIcon className="h-6 w-6 text-blue-600" /></div>
+                      <span className="text-xs font-black uppercase text-gray-600 tracking-widest">Select From Gallery</span>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-  const handlePostClick = (post) => {
-    setViewDialog({ open: true, post, currentSlide: 0 });
-  };
+            <div className="lg:sticky top-0 flex gap-4">
+              <div className="flex-1 min-w-0">
+                <FacebookPreview postType={postType} content={postContent} page={pages.find(p => p.pageId === selectedPage)} currentSlide={currentSlide} />
+              </div>
 
-  // Post actions
+              {postContent.media.length > 0 && (
+                <div className="hidden lg:flex flex-col items-center py-4 bg-white rounded-2xl border border-gray-100 shadow-sm w-20 shrink-0 h-fit">
+                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('up')} className="h-6 w-6 text-gray-300 hover:text-blue-600 mb-2">
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <div ref={selectionScrollRef} className="flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[400px] px-2">
+                    {postContent.media.map((item, index) => (
+                      <div key={index} className={cn("relative group shrink-0 w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer", currentSlide === index ? "border-blue-500 ring-4 ring-blue-50 scale-105" : "border-transparent opacity-60 hover:opacity-100")} onClick={() => setCurrentSlide(index)}>
+                        {item.type?.startsWith('video') ? <div className="w-full h-full bg-black flex items-center justify-center"><Play className="h-4 w-4 text-white fill-white" /></div> : <img src={item.url} className="w-full h-full object-cover" alt="" />}
+                        {!isReadOnly && (
+                          <div onClick={(e) => { e.stopPropagation(); removeMedia(index); }} className="absolute inset-0 bg-red-600/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="h-5 w-5 text-white" /></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => scrollSelection('down')} className="h-6 w-6 text-gray-300 hover:text-blue-600 mt-2">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {!isReadOnly && (
+        <div className="p-6 border-t bg-white flex justify-end gap-3 px-8 shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+          <Button disabled={isPending} onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-black rounded-xl px-12 h-12 shadow-lg shadow-blue-100 transition-all active:scale-95">
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />)}
+            {isEditing ? "Save Changes" : (scheduling.schedule ? "Schedule for later" : "Post to Facebook Now")}
+          </Button>
+        </div>
+      )}
+      <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={postType !== 'video'} maxSelection={10} />
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// MAIN ENTRY POINT
+// -----------------------------------------------------------------------------
+export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid" }) {
+  const [activeTab, setActiveTab] = useState("calendar");
+  const [isCreating, setIsCreating] = useState(false);
+  const [createInitialData, setCreateInitialData] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+  const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
+
   const handleDelete = async (postId) => {
     try {
       const result = await deleteFacebookPost(postId);
       if (result.success) {
-        toast.success(result.message);
-        setPosts(prev => prev.filter(post => post.id !== postId));
-        loadStatistics(); // Refresh statistics
+        toast.success("Post deleted successfully!");
+        setRefreshTrigger(prev => prev + 1);
       } else {
-        toast.error(result.message);
+        toast.error(result.message || "Failed to delete post");
       }
     } catch (error) {
-      console.error("Error deleting post:", error);
-      toast.error("Failed to delete post");
+      toast.error("An error occurred during deletion");
     }
   };
 
-  const handleDuplicate = async (postId) => {
-    try {
-      const result = await duplicateFacebookPost(postId);
-      if (result.success) {
-        toast.success(result.message);
-        loadPosts(true); // Refresh list
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      console.error("Error duplicating post:", error);
-      toast.error("Failed to duplicate post");
-    }
-  };
-
-  const handleScheduleUpdate = async (postId, newDate, newTime) => {
-    try {
-      const scheduledAt = new Date(`${format(newDate, "yyyy-MM-dd")}T${newTime}`);
-      const result = await updatePostSchedule(postId, scheduledAt.toISOString());
-      if (result.success) {
-        toast.success(result.message);
-        loadPosts(true); // Refresh list
-        setScheduleDialog({ open: false, postId: null, date: new Date(), time: "12:00" });
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      console.error("Error scheduling post:", error);
-      toast.error("Failed to schedule post");
-    }
-  };
-
-  const handleUpdate = async () => {
-    try {
-      const { postId, message } = editDialog;
-      if (!postId || !message.trim()) return;
-
-      const result = await updateFacebookPost(postId, message);
-      if (result.success) {
-        toast.success(result.message);
-        // Update local state
-        setPosts(prev => prev.map(p => p.id === postId ? { ...p, message: message } : p));
-        setEditDialog({ open: false, postId: null, message: "" });
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      console.error("Error updating post:", error);
-      toast.error("Failed to update post");
-    }
-  };
-
-  const handleExport = async () => {
-    try {
-      setExporting(true);
-      const result = await exportPostsToCSV(filters);
-      if (result.success) {
-        // Create download link
-        const blob = new Blob([result.csv], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = result.filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-
-        toast.success("Posts exported successfully");
-      } else {
-        toast.error(result.message);
-      }
-    } catch (error) {
-      console.error("Error exporting posts:", error);
-      toast.error("Failed to export posts");
-    } finally {
-      setExporting(false);
-    }
-  };
-
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      status: "all",
-      postType: "all",
-      pageId: "all",
-      startDate: "",
-      endDate: "",
-      minEngagementRate: "",
+  const handleDateClick = (date) => {
+    setCreateInitialData({
+      scheduledAt: date,
+      readOnly: false
     });
-    setSearchQuery("");
+    setIsCreating(true);
   };
 
-  const PostTypeBadge = ({ type }) => {
-    const config = postTypeConfig[type] || postTypeConfig.text;
-    const Icon = config.icon;
-
-    return (
-      <Badge variant="outline" className={`${config.color} flex items-center gap-1`}>
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
+  const handlePostClick = (post, action = 'edit') => {
+    if (action === 'delete') {
+      setDeleteDialog({ open: true, postId: post.id });
+      return;
+    }
+    if (action === 'analytics') {
+      setAnalyticsModal({ open: true, post });
+      return;
+    }
+    setCreateInitialData({ ...post, readOnly: post.status === 'published' });
+    setIsCreating(true);
   };
-
-  const StatusBadge = ({ status }) => {
-    const config = statusConfig[status] || statusConfig.published;
-    const Icon = config.icon;
-
-    return (
-      <Badge variant="outline" className={`${config.color} flex items-center gap-1`}>
-        <Icon className="h-3 w-3" />
-        {config.label}
-      </Badge>
-    );
-  };
-
-  // Loading skeleton
-  if (loading && posts.length === 0) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-32 w-full" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="overflow-hidden">
-              <CardHeader>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2 mt-2" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Skeleton className="h-40 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      {/* Header Stats */}
-      <Card className="bg-gradient-to-r from-blue-50 via-white to-purple-50 border border-gray-200 shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600">
-                  <BarChart3 className="h-5 w-5 text-white" />
-                </div>
-                <CardTitle className="text-2xl font-bold text-gray-900">
-                  Published Posts
-                </CardTitle>
-              </div>
-              <CardDescription className="text-gray-600 pl-13">
-                Track performance and engagement across all your social media posts
-              </CardDescription>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 min-h-screen pb-20">
+      {/* Dynamic Shell Header */}
+      <div className="relative overflow-hidden rounded-[2rem] bg-white border border-gray-100 shadow-2xl p-6 md:p-10">
+        <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-96 h-96 bg-gradient-to-br from-blue-200/20 to-indigo-200/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-64 h-64 bg-gradient-to-tr from-cyan-100/10 to-blue-200/10 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-4">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 shadow-sm animate-bounce-subtle">
+              <Facebook className="h-4 w-4" />
+              <span className="text-[10px] font-black uppercase tracking-[0.2em]">Meta Business Suite 2.0</span>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 min-w-[400px]">
-              <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                    <FileText className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xl font-bold text-gray-900">
-                      {statistics?.totalPosts || 0}
-                    </div>
-                    <div className="text-xs text-gray-500">Total Posts</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Eye className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xl font-bold text-gray-900">
-                      {formatNumber(statistics?.totalReach || 0)}
-                    </div>
-                    <div className="text-xs text-gray-500">Total Reach</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                    <Heart className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xl font-bold text-gray-900">
-                      {formatNumber(statistics?.totalEngagements || 0)}
-                    </div>
-                    <div className="text-xs text-gray-500">Engagements</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-amber-600" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-xl font-bold text-gray-900">
-                      {statistics?.avgEngagementRate || 0}%
-                    </div>
-                    <div className="text-xs text-gray-500">Avg. Rate</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Advanced Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            {/* Search and Quick Actions */}
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              <div className="flex-1 w-full">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search posts by caption, page name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 w-full lg:w-96"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearFilters}
-                  className="gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Clear Filters
-                </Button>
-                {/* Removed Export and More Filters dropdown */}
-              </div>
-            </div>
-
-            {/* Filter Tabs and Controls */}
-            {/* Removed status tabs, only showing published posts */}
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-              {/* Only show published posts, no tabs */}
-              <div className="hidden" />
-              <div className="flex-1 flex flex-wrap gap-3">
-                <Select value={filters.postType} onValueChange={(value) => handleFilterChange("postType", value)}>
-                  <SelectTrigger className="w-full lg:w-[150px]">
-                    <SelectValue placeholder="Post Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="text">Text</SelectItem>
-                    <SelectItem value="image">Image</SelectItem>
-                    <SelectItem value="video">Video</SelectItem>
-                    <SelectItem value="link">Link</SelectItem>
-                    <SelectItem value="carousel">Carousel</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={filters.pageId} onValueChange={(value) => handleFilterChange("pageId", value)}>
-                  <SelectTrigger className="w-full lg:w-[180px]">
-                    <SelectValue placeholder="Facebook Page" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Pages</SelectItem>
-                    {facebookPages.map((page) => (
-                      <SelectItem key={page.pageId} value={page.pageId}>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-4 w-4">
-                            <AvatarImage src={page.profilePicture} />
-                            <AvatarFallback>{page.pageName?.[0]}</AvatarFallback>
-                          </Avatar>
-                          <span className="truncate">{page.pageName}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full lg:w-[180px]">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">Newest First</SelectItem>
-                    <SelectItem value="oldest">Oldest First</SelectItem>
-                    <SelectItem value="engagement_high">Engagement (High to Low)</SelectItem>
-                    <SelectItem value="engagement_low">Engagement (Low to High)</SelectItem>
-                    <SelectItem value="reach_high">Reach (High to Low)</SelectItem>
-                    <SelectItem value="reach_low">Reach (Low to High)</SelectItem>
-                    <SelectItem value="scheduled">Scheduled Date</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Active Filters */}
-            {(filters.postType !== "all" || filters.pageId !== "all" || filters.minEngagementRate || filters.startDate || filters.endDate) && (
-              <div className="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-600">Active filters:</span>
-                {filters.postType !== "all" && (
-                  <Badge variant="secondary" className="gap-1">
-                    Type: {filters.postType}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => handleFilterChange("postType", "all")}
-                    />
-                  </Badge>
-                )}
-                {filters.pageId !== "all" && (
-                  <Badge variant="secondary" className="gap-1">
-                    Page: {facebookPages.find(p => p.pageId === filters.pageId)?.pageName || filters.pageId}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => handleFilterChange("pageId", "all")}
-                    />
-                  </Badge>
-                )}
-                {filters.minEngagementRate && (
-                  <Badge variant="secondary" className="gap-1">
-                    Engagement: {filters.minEngagementRate}%+
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => handleFilterChange("minEngagementRate", "")}
-                    />
-                  </Badge>
-                )}
-                {filters.startDate && (
-                  <Badge variant="secondary" className="gap-1">
-                    From: {format(new Date(filters.startDate), "MMM dd")}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => handleFilterChange("startDate", "")}
-                    />
-                  </Badge>
-                )}
-                {filters.endDate && (
-                  <Badge variant="secondary" className="gap-1">
-                    To: {format(new Date(filters.endDate), "MMM dd")}
-                    <X
-                      className="h-3 w-3 cursor-pointer"
-                      onClick={() => handleFilterChange("endDate", "")}
-                    />
-                  </Badge>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-
-
-      {/* Posts Grid */}
-      {
-        filteredAndSortedPosts.length === 0 ? (
-          <Card className="border-dashed">
-            <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                {searchQuery ? "No matching posts found" : "No posts available"}
-              </h3>
-              <p className="text-muted-foreground mb-6">
-                {searchQuery ? "Try adjusting your search or filters" : "Create your first post to get started"}
+            <div className="space-y-1">
+              <h1 className="text-3xl lg:text-5xl font-black tracking-tighter text-gray-900 leading-none">
+                Content <span className="text-blue-600">Studio</span>
+              </h1>
+              <p className="text-gray-500 max-w-md text-sm font-medium leading-relaxed italic opacity-80">
+                Orchestrate your Facebook identity with world-class publishing tools.
               </p>
-              <Button onClick={clearFilters} variant="outline">
-                Clear All Filters
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
-              {filteredAndSortedPosts.map((post) => (
-                <Card
-                  key={post.id}
-                  className="group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col"
-                >
-                  {/* Full Card Media/Background */}
-                  <div className="absolute inset-0 z-0 bg-gray-50 cursor-pointer" onClick={() => handlePostClick(post)}>
-                    {post.mediaUrls?.[0]?.url ? (
-                      <>
-                        {post.mediaUrls[0].type?.startsWith('video/') ? (
-                          <div className="w-full h-full bg-black relative">
-                            <video src={post.mediaUrls[0].url} className="w-full h-full object-cover opacity-90" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className="bg-white/30 backdrop-blur-md p-3 rounded-full shadow-lg group-hover:scale-110 transition-transform">
-                                <Play className="h-6 w-6 text-white fill-white" />
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <img
-                            src={post.mediaUrls[0].url}
-                            alt="Post media"
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                            onError={(e) => {
-                              e.currentTarget.src = "https://via.placeholder.com/400x225?text=No+Image";
-                            }}
-                          />
-                        )}
-
-                        {/* Subtle Gradient Overlay for Content Readability */}
-                        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                      </>
-                    ) : (
-                      // Text Post - Clean Light Style
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 border-2 border-dashed border-gray-100 p-6 text-center">
-                        <FileText className="h-8 w-8 mb-2 text-gray-300" />
-                        <p className="text-xs font-medium line-clamp-4 text-gray-600">
-                          {post.message || "No content"}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Top Actions (Floating - Invisible until hover) */}
-                  <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50 text-gray-700 border border-gray-100">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handlePostClick(post)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setEditDialog({
-                          open: true,
-                          postId: post.id,
-                          message: post.message || post.caption || ""
-                        })}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        {/* <DropdownMenuItem onClick={() => handleDuplicate(post.id)}>
-                          <Copy className="mr-2 h-4 w-4" />
-                          Duplicate
-                        </DropdownMenuItem> */}
-                        {post.status === 'published' && (
-                          <DropdownMenuItem onClick={() => setScheduleDialog({
-                            open: true,
-                            postId: post.id,
-                            date: new Date(),
-                            time: "12:00"
-                          })}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            Reschedule
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, postId: post.id })} className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  {/* Status Flag (Minimal) */}
-                  <div className="absolute top-3 left-3 z-20 pointer-events-none flex flex-col items-start gap-1">
-                    {post.status !== 'published' && (
-                      <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5">
-                        <Clock className="h-3 w-3 text-yellow-600" />
-                        <span className="text-[10px] font-semibold text-gray-700 capitalize">
-                          {post.status}
-                        </span>
-                      </div>
-                    )}
-                    {post.metrics?.engagementRate > 0 && (
-                      <div className="bg-emerald-500/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-0.5 text-white flex items-center gap-1">
-                        <span className="text-[9px] font-bold">
-                          {post.metrics.engagementRate.toFixed(1)}%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bottom Content Overlay */}
-                  <div className="absolute inset-x-0 bottom-0 p-3 z-10 pointer-events-none text-white">
-                    <div className="flex flex-col gap-1">
-                      {/* Page Name */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-bold tracking-wide drop-shadow-sm">
-                          {post.pageName || "Page Name"}
-                        </span>
-                        {post.mediaUrls?.length > 1 && (
-                          <span className="text-[10px] bg-black/40 px-1.5 rounded-full backdrop-blur-sm flex items-center gap-0.5">
-                            <Layers className="h-3 w-3" /> +{post.mediaUrls.length - 1}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Caption */}
-                      {post.mediaUrls?.[0]?.url && (
-                        <p className="text-xs line-clamp-2 leading-snug font-medium text-gray-100 drop-shadow-md">
-                          {post.message || "No caption"}
-                        </p>
-                      )}
-
-                      {/* Footer Metadata */}
-                      <div className="flex items-center justify-between text-[10px] text-gray-300 font-medium pt-1">
-                        <div className="flex gap-2.5">
-                          <span className="flex items-center gap-1"><Heart className="h-3 w-3 text-white" /> {formatNumber(post.metrics?.likes || 0)}</span>
-                          <span className="flex items-center gap-1"><Eye className="h-3 w-3 text-white" /> {formatNumber(post.metrics?.reach || 0)}</span>
-                        </div>
-                        <span>{formatDate(post.createdAt || post.scheduledAt).split(' at')[0]}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="flex items-center justify-between pt-6 border-t font-medium text-sm text-gray-500">
-              <div>
-                Showing {filteredAndSortedPosts.length} of {pagination.totalCount} posts
-              </div>
-
-              {pagination.hasMore && (
-                <Button
-                  onClick={handleLoadMore}
-                  variant="outline"
-                  disabled={loading}
-                  className="gap-2"
-                >
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      Load More
-                      <ChevronRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-          </>
-        )
-      }
-
-      {/* Post Detail Dialog (Professional Split View) */}
-      <Dialog open={viewDialog.open} onOpenChange={(open) => setViewDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="sm:max-w-[1100px] p-0 overflow-hidden bg-white" showCloseButton={false}>
-          <div className="flex flex-col md:flex-row h-[85vh] md:h-[650px]">
-            {/* Media Section (Left - 65%) */}
-            <div className="w-full md:w-[65%] bg-black flex items-center justify-center relative bg-gray-950">
-              {/* Media Renderer */}
-              {(() => {
-                const post = viewDialog.post;
-                if (!post) return null;
-
-                const media = post.mediaUrls || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.postType }] : []);
-                const currentMedia = media[viewDialog.currentSlide || 0];
-
-                if (!currentMedia) {
-                  // Fallback for text-only
-                  return (
-                    <div className="flex flex-col items-center justify-center p-12 text-center text-gray-500">
-                      <FileText className="h-16 w-16 mb-4 opacity-50" />
-                      <p>No media available</p>
-                    </div>
-                  );
-                }
-
-                const isVideo = currentMedia.type?.includes('video') || post.postType === 'video';
-
-                return (
-                  <div className="relative w-full h-full flex items-center justify-center group">
-                    {isVideo ? (
-                      <video
-                        src={currentMedia.url}
-                        controls
-                        className="w-full h-full object-contain"
-                      />
-                    ) : (
-                      <img
-                        src={currentMedia.url}
-                        alt={`Slide ${viewDialog.currentSlide + 1}`}
-                        className="w-full h-full object-contain"
-                      />
-                    )}
-
-                    {/* Navigation Controls (if multiple) */}
-                    {media.length > 1 && (
-                      <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewDialog(prev => ({
-                              ...prev,
-                              currentSlide: Math.max(0, (prev.currentSlide || 0) - 1)
-                            }));
-                          }}
-                          disabled={(viewDialog.currentSlide || 0) === 0}
-                        >
-                          <ChevronRight className="h-8 w-8 rotate-180" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all scale-90 hover:scale-100"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewDialog(prev => ({
-                              ...prev,
-                              currentSlide: Math.min(media.length - 1, (prev.currentSlide || 0) + 1)
-                            }));
-                          }}
-                          disabled={(viewDialog.currentSlide || 0) === media.length - 1}
-                        >
-                          <ChevronRight className="h-8 w-8" />
-                        </Button>
-
-                        {/* Slide Counter */}
-                        <div className="absolute top-4 right-4 bg-black/60 text-white text-xs px-2 py-1 rounded-md backdrop-blur-md">
-                          {(viewDialog.currentSlide || 0) + 1} / {media.length}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Details Section (Right - 35%) */}
-            <div className="w-full md:w-[35%] flex flex-col h-full bg-white border-l border-gray-100">
-              {/* Header */}
-              <div className="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full border border-gray-200 p-0.5">
-                    <Avatar className="h-full w-full">
-                      <AvatarImage src={viewDialog.post?.pageProfilePicture} />
-                      <AvatarFallback>{viewDialog.post?.pageName?.[0]}</AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div>
-                    <div className="text-sm font-bold text-gray-900">{viewDialog.post?.pageName || "Facebook Page"}</div>
-                    <div className="text-xs text-gray-500 flex items-center gap-1">
-                      {viewDialog.post && formatDate(viewDialog.post.createdAt || viewDialog.post.scheduledAt)}
-                      <span>•</span>
-                      <Facebook className="h-3 w-3 text-blue-600" />
-                    </div>
-                  </div>
-                </div>
-                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setViewDialog({ open: false, post: null })}>
-                  <X className="h-5 w-5 text-gray-500" />
-                </Button>
-              </div>
-
-              {/* Caption Area (Scrollable) */}
-              <div className="flex-1 p-5 overflow-y-auto">
-                <p className="text-[15px] text-gray-800 whitespace-pre-wrap leading-relaxed">
-                  {viewDialog.post?.message || viewDialog.post?.caption || "No caption"}
-                </p>
-              </div>
-
-              {/* Metrics & Actions (Fixed Bottom) */}
-              <div className="p-4 border-t border-gray-100 bg-gray-50/50 space-y-4 shrink-0">
-                <div className="grid grid-cols-3 gap-2 text-center">
-                  <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                    <div className="text-lg font-bold text-blue-600">{formatNumber(viewDialog.post?.metrics?.reach || 0)}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Reach</div>
-                  </div>
-                  <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                    <div className="text-lg font-bold text-red-500">{formatNumber(viewDialog.post?.metrics?.likes || 0)}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Likes</div>
-                  </div>
-                  <div className="bg-white p-2 rounded-lg border border-gray-100 shadow-sm">
-                    <div className="text-lg font-bold text-green-500">{formatNumber(viewDialog.post?.metrics?.comments || 0)}</div>
-                    <div className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Comments</div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700"
-                    asChild
-                  >
-                    <a href={`https://facebook.com/${viewDialog.post?.facebookPostId}`} target="_blank" rel="noreferrer">
-                      <ExternalLink className="h-3 w-3 mr-2" />
-                      View on Facebook
-                    </a>
-                  </Button>
-                </div>
-              </div>
             </div>
           </div>
+
+          <div className="flex flex-col items-center gap-4">
+            <Button
+              onClick={() => {
+                setCreateInitialData(null);
+                setIsCreating(true);
+              }}
+              className="group relative px-8 h-14 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.25)] transition-all duration-300 hover:scale-[1.05] active:scale-95 flex items-center gap-3 overflow-hidden"
+            >
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 origin-left transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+              <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform duration-500" />
+              <span className="text-base tracking-tight">Compose Masterpiece</span>
+            </Button>
+            <div className="flex items-center gap-1 text-[10px] font-bold text-gray-400">
+              <History className="h-3 w-3" />
+              <span>Last sync: Just now</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="bg-white/50 backdrop-blur-md border border-gray-100 p-1.5 rounded-[1.25rem] shadow-sm mb-10 h-auto inline-flex gap-1">
+          <TabsTrigger value="calendar" className="rounded-xl px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-lg font-black text-gray-400 gap-2 transition-all">
+            <CalendarIcon className="h-4 w-4" /> Calendar
+          </TabsTrigger>
+          <TabsTrigger value="facebook" className="rounded-xl px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-lg font-black text-gray-400 gap-2 transition-all">
+            <Grid className="h-4 w-4" /> Facebook View
+          </TabsTrigger>
+          <TabsTrigger value="listing" className="rounded-xl px-6 py-3 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-lg font-black text-gray-400 gap-2 transition-all">
+            <List className="h-4 w-4" /> Listing View
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="calendar" className="outline-none">
+          <FacebookCalendarViewComponent
+            onDateClick={handleDateClick}
+            onPostClick={handlePostClick}
+            refreshTrigger={refreshTrigger}
+          />
+        </TabsContent>
+
+        <TabsContent value="facebook" className="outline-none">
+          <FacebookViewComponent
+            pageId={initialPageId}
+            initialStatus="all"
+            refreshTrigger={refreshTrigger}
+            onEdit={handlePostClick}
+          />
+        </TabsContent>
+
+        <TabsContent value="listing" className="outline-none">
+          <FacebookListingViewComponent
+            pageId={initialPageId}
+            initialStatus="all"
+            refreshTrigger={refreshTrigger}
+            onEdit={handlePostClick}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Editor Modal */}
+      <Dialog
+        open={isCreating}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreating(false);
+            setCreateInitialData(null);
+          }
+        }}
+      >
+        <DialogContent className="!w-[90vw] !max-w-[1240px] h-[90vh] overflow-hidden p-0 border-none bg-transparent shadow-none" showCloseButton={false}>
+          {isCreating && (
+            <div className="bg-white w-full h-full rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col animate-in zoom-in-95 duration-300">
+              <div className="px-8 py-4 bg-white border-b border-gray-50 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="p-2.5 bg-blue-600 rounded-2xl shadow-lg shadow-blue-100"><Facebook className="h-5 w-5 text-white" /></div>
+                  <div>
+                    <DialogTitle className="text-xl font-black text-gray-900 leading-none tracking-tight">Post Designer</DialogTitle>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Creative Mode</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)} className="rounded-full h-10 w-10 hover:bg-red-50 hover:text-red-500 transition-colors"><X className="h-5 w-5" /></Button>
+              </div>
+              <CreatePostForm
+                initialData={createInitialData}
+                onSuccess={() => {
+                  setIsCreating(false);
+                  setCreateInitialData(null);
+                  setRefreshTrigger(prev => prev + 1);
+                }}
+              />
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}>
-        <AlertDialogContent>
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Post</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this post? This action cannot be undone.
-              The post will be permanently removed from Facebook as well.
+            <AlertDialogTitle className="text-2xl font-black tracking-tight text-gray-900">Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500 font-medium pt-2 leading-relaxed">
+              This action cannot be undone. This will permanently remove the post from our servers and attempt to delete it from Facebook.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteDialog.postId) {
-                  handleDelete(deleteDialog.postId);
-                  setDeleteDialog({ open: false, postId: null });
-                }
-              }}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete Post
-            </AlertDialogAction>
+          <AlertDialogFooter className="pt-6">
+            <AlertDialogCancel className="rounded-xl border-gray-100 font-black tracking-tight h-12 px-6">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleDelete(deleteDialog.postId)} className="bg-red-600 hover:bg-red-700 text-white font-black rounded-xl h-12 px-8 shadow-lg shadow-red-100">Delete Permanently</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Schedule Dialog */}
-      <Dialog open={scheduleDialog.open} onOpenChange={(open) => setScheduleDialog({ ...scheduleDialog, open })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Schedule Post</DialogTitle>
-            <DialogDescription>
-              Choose a new date and time for this post.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(scheduleDialog.date, "PPP")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={scheduleDialog.date}
-                    onSelect={(date) => date && setScheduleDialog({ ...scheduleDialog, date })}
-                    initialFocus
-                    disabled={(date) => date < new Date()}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="time">Time</Label>
-              <Input
-                type="time"
-                value={scheduleDialog.time}
-                onChange={(e) => setScheduleDialog({ ...scheduleDialog, time: e.target.value })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setScheduleDialog({ open: false, postId: null, date: new Date(), time: "12:00" })}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={() => handleScheduleUpdate(scheduleDialog.postId, scheduleDialog.date, scheduleDialog.time)}
-            >
-              Schedule Post
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog({ ...editDialog, open })}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Post</DialogTitle>
-            <DialogDescription>
-              Update the content of your post.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                value={editDialog.message}
-                onChange={(e) => setEditDialog({ ...editDialog, message: e.target.value })}
-                placeholder="What's on your mind?"
-                className="min-h-[100px]"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditDialog({ open: false, postId: null, message: "" })}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUpdate}
-              disabled={!editDialog.message.trim()}
-            >
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div >
+      {/* Analytics Modal */}
+      <FacebookAnalyticsModal
+        open={analyticsModal.open}
+        onOpenChange={(open) => setAnalyticsModal(prev => ({ ...prev, open }))}
+        post={analyticsModal.post}
+      />
+    </div>
   );
 }

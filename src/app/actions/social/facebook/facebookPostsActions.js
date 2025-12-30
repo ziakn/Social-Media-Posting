@@ -698,3 +698,141 @@ export async function getPostsStatistics() {
     return { success: false, message: error.message };
   }
 }
+
+// Publish a scheduled post now
+export async function publishFacebookPostNow(postId) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+
+    const user = await verifyToken(token);
+    if (!user) {
+      return { success: false, message: "Invalid token" };
+    }
+
+    const postRef = doc(db, "facebook_posts", postId);
+    const postSnap = await getDoc(postRef);
+
+    if (!postSnap.exists()) {
+      return { success: false, message: "Post not found" };
+    }
+
+    const postData = postSnap.data();
+    if (postData.userId !== user.id) {
+      return { success: false, message: "Unauthorized" };
+    }
+
+    // Update status in Firestore first to reflect in UI
+    await updateDoc(postRef, {
+      status: 'published',
+      publishedAt: new Date(),
+      updatedAt: new Date(),
+      scheduledAt: null // It's no longer scheduled
+    });
+
+    revalidatePath("/admin/social/facebook/posts");
+
+    return { success: true, message: "Post published successfully!" };
+
+  } catch (error) {
+    console.error("Error publishing post now:", error);
+    return { success: false, message: error.message };
+  }
+}
+
+/**
+ * Get all Facebook posts (published and scheduled) for calendar view
+ */
+export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    const user = await verifyToken(token);
+
+    if (!user) {
+      return { success: false, message: "Invalid or expired token", posts: [] };
+    }
+
+    // Base constraints
+    const baseConstraints = [
+      where("platform", "==", "facebook"),
+      where("userId", "==", user.id)
+    ];
+
+    if (pageId && pageId !== 'all') {
+      baseConstraints.push(where("pageId", "==", pageId));
+    }
+
+    // Build Published Query
+    let pubConstraints = [
+      ...baseConstraints,
+      where("status", "==", "published")
+    ];
+
+    if (startDate) pubConstraints.push(where("createdAt", ">=", startDate));
+    if (endDate) pubConstraints.push(where("createdAt", "<=", endDate));
+
+    pubConstraints.push(orderBy("createdAt", "desc"));
+    if (!startDate) pubConstraints.push(limit(1000));
+
+    const pubQuery = query(collection(db, "facebook_posts"), ...pubConstraints);
+
+    // Build Scheduled Query
+    let schedConstraints = [
+      ...baseConstraints,
+      where("status", "==", "scheduled")
+    ];
+
+    if (startDate) schedConstraints.push(where("scheduledAt", ">=", startDate));
+    if (endDate) schedConstraints.push(where("scheduledAt", "<=", endDate));
+
+    schedConstraints.push(orderBy("scheduledAt", "asc"));
+    if (!startDate) schedConstraints.push(limit(1000));
+
+    const schedQuery = query(collection(db, "facebook_posts"), ...schedConstraints);
+
+    const [pubSnap, schedSnap] = await Promise.all([
+      getDocs(pubQuery),
+      getDocs(schedQuery)
+    ]);
+
+    const allPosts = [];
+
+    // Process Published
+    pubSnap.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.deleted === 1) return;
+
+      allPosts.push({
+        id: docSnap.id,
+        ...data,
+        scheduledAt: data.createdAt?.toDate?.() || data.createdAt || new Date(),
+        status: "published",
+        isPublished: true,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+      });
+    });
+
+    // Process Scheduled
+    schedSnap.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.deleted === 1) return;
+
+      allPosts.push({
+        id: docSnap.id,
+        ...data,
+        scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt || null,
+        status: "scheduled",
+        isPublished: false,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+      });
+    });
+
+    return { success: true, posts: allPosts };
+  } catch (error) {
+    console.error("Error fetching Facebook calendar posts:", error);
+    return { success: false, message: error.message, posts: [] };
+  }
+}
