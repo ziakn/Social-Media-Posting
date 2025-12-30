@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
@@ -54,7 +54,7 @@ function getSafeMetrics(mediaType, productType) {
     ];
 }
 
-export async function getInstagramPostAnalytics(pageId, postId) {
+export async function getInstagramPostAnalytics(pageId, postId, refresh = false) {
     try {
         /* ---------------- AUTH ---------------- */
         const cookieStore = await cookies();
@@ -63,6 +63,35 @@ export async function getInstagramPostAnalytics(pageId, postId) {
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
+        }
+
+        /* ---------------- DATABASE LOOKUP ---------------- */
+        let postDocId = null;
+        let cachedData = null;
+
+        const postQ = query(
+            collection(db, "instagram_posts"),
+            where("userId", "==", user.id),
+            where("instagramPostId", "==", postId)
+        );
+
+        const postSnapshot = await getDocs(postQ);
+        if (!postSnapshot.empty) {
+            const docSnap = postSnapshot.docs[0];
+            postDocId = docSnap.id;
+            const data = docSnap.data();
+
+            // If we have cached analytics and it's not a forced refresh, return them
+            if (!refresh && data.analytics) {
+                console.log("Returning cached Instagram analytics for", postId);
+                return {
+                    success: true,
+                    data: data.analytics,
+                    cached: true,
+                    lastRefreshed: data.analyticsFetchedAt?.toDate?.() || null
+                };
+            }
+            cachedData = data;
         }
 
         /* ---------------- ACCOUNT ---------------- */
@@ -134,13 +163,47 @@ export async function getInstagramPostAnalytics(pageId, postId) {
             }
         }
 
+        const finalData = {
+            ...mediaData,
+            insights
+        };
+
+        /* ---------------- UPDATE DATABASE ---------------- */
+        if (postDocId) {
+            try {
+                // Extract useful metrics for easy access in lists
+                const getInsightValue = (name) => {
+                    const insight = insights.find(i => i.name === name);
+                    return insight?.values?.[0]?.value || 0;
+                };
+
+                const updatePayload = {
+                    analytics: finalData,
+                    analyticsFetchedAt: new Date(),
+                    metrics: {
+                        likes: mediaData.like_count || 0,
+                        comments: mediaData.comments_count || 0,
+                        reach: getInsightValue("reach"),
+                        views: getInsightValue("plays") || getInsightValue("impressions") || 0,
+                        engagement: (mediaData.like_count || 0) + (mediaData.comments_count || 0) + getInsightValue("total_interactions")
+                    }
+                };
+
+                // Use updateDoc to update only specific fields, avoiding serverTimestamp for updatedAt
+                const postRef = doc(db, "instagram_posts", postDocId);
+                await updateDoc(postRef, updatePayload);
+                console.log("Successfully updated Instagram analytics in DB for post:", postId);
+            } catch (dbErr) {
+                console.error("Failed to update post analytics in DB:", dbErr);
+            }
+        }
+
         /* ---------------- RESPONSE ---------------- */
         return {
             success: true,
-            data: {
-                ...mediaData,
-                insights
-            }
+            data: finalData,
+            cached: false,
+            lastRefreshed: new Date()
         };
 
     } catch (err) {

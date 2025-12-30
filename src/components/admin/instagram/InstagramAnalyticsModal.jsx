@@ -36,11 +36,13 @@ import {
     ExternalLink,
     Layers,
     MoreVertical,
-    ImageIcon
+    ImageIcon,
+    RotateCw
 } from "lucide-react";
 import { getInstagramPostAnalytics } from "@/app/actions/social/instagram/getAnalytics";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
 
 export default function InstagramAnalyticsModal({
     open,
@@ -48,7 +50,9 @@ export default function InstagramAnalyticsModal({
     post
 }) {
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [data, setData] = useState(null);
+    const [lastRefreshed, setLastRefreshed] = useState(null);
 
     useEffect(() => {
         if (open && post?.instagramPostId && post?.pageId) {
@@ -56,28 +60,35 @@ export default function InstagramAnalyticsModal({
         }
     }, [open, post]);
 
-    const loadAnalytics = async () => {
+    const loadAnalytics = async (forceRefresh = false) => {
         try {
-            setLoading(true);
-            const res = await getInstagramPostAnalytics(post.pageId, post.instagramPostId);
+            if (forceRefresh) setRefreshing(true);
+            else setLoading(true);
+
+            const res = await getInstagramPostAnalytics(post.pageId, post.instagramPostId, forceRefresh);
 
             if (res.success) {
                 setData(res.data);
+                setLastRefreshed(res.lastRefreshed);
+                if (forceRefresh) toast.success("Analytics refreshed");
             } else {
                 toast.error(res.message || "Failed to load analytics");
                 // Fallback to basic metrics from post object if API fails
-                setData({
-                    like_count: post.metrics?.likes || 0,
-                    comments_count: post.metrics?.comments || 0,
-                    media_type: post.postType === 'video' ? 'VIDEO' : 'IMAGE',
-                    insights: []
-                });
+                if (!data) {
+                    setData({
+                        like_count: post.metrics?.likes || 0,
+                        comments_count: post.metrics?.comments || 0,
+                        media_type: post.postType === 'video' ? 'VIDEO' : 'IMAGE',
+                        insights: []
+                    });
+                }
             }
         } catch (err) {
             console.error(err);
             toast.error("An error occurred while loading analytics");
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
     };
 
@@ -186,6 +197,28 @@ export default function InstagramAnalyticsModal({
                             <Instagram className="h-5 w-5 text-white" />
                         </div>
                         <DialogTitle className="text-xl font-semibold">Post Analytics</DialogTitle>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        {lastRefreshed && (
+                            <div className="hidden sm:flex flex-col items-end">
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 leading-tight">
+                                    Last Updated
+                                </span>
+                                <span className="text-xs font-medium text-muted-foreground">
+                                    {formatDistanceToNow(new Date(lastRefreshed), { addSuffix: true })}
+                                </span>
+                            </div>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 gap-2"
+                            onClick={() => loadAnalytics(true)}
+                            disabled={loading || refreshing}
+                        >
+                            <RotateCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+                            {refreshing ? "Refreshing..." : "Refresh"}
+                        </Button>
                     </div>
                 </div>
 
