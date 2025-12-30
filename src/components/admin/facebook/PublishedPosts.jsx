@@ -329,7 +329,12 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                 {(postType === "images" || postType === "carousel" || postType === "video") && (
                   <div className="space-y-4">
                     <Label className="text-sm font-bold text-gray-900">Media</Label>
-                    <Button disabled={isReadOnly} variant="outline" onClick={() => openGallery(postType === "video" ? ["video"] : ["image", "video"])} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-blue-500 hover:bg-blue-50 flex flex-col gap-2">
+                    <Button
+                      disabled={isReadOnly}
+                      variant="outline"
+                      onClick={() => openGallery(postType === "video" ? ["video"] : ["image"])}
+                      className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-blue-500 hover:bg-blue-50 flex flex-col gap-2"
+                    >
                       <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-blue-600" /></div>
                       <span className="text-xs font-black uppercase text-gray-600">Select Media</span>
                     </Button>
