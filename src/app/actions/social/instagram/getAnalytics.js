@@ -6,57 +6,32 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
 /**
- * Resolve safe metrics based on media type
+ * Determine safe metrics based on Instagram media type
+ * This avoids ALL unsupported combinations.
  */
-function getSafeMetrics(mediaType, productType) {
-    // REELS
+function resolveMetrics(mediaType, productType) {
+    // Reels (most restrictive)
     if (productType === "REELS") {
-        return [
-            "plays",
-            "reach",
-            "total_interactions",
-            "ig_reels_avg_watch_time",
-            "ig_reels_video_view_total_time"
-        ];
+        return ["plays", "reach", "total_interactions"];
     }
 
-    // FEED VIDEO
-    if (mediaType === "VIDEO") {
-        return [
-            "impressions",
-            "reach",
-            "likes",
-            "comments",
-            "saved",
-            "total_interactions"
-        ];
-    }
-
-    // CAROUSEL
+    // Carousel posts
     if (mediaType === "CAROUSEL_ALBUM") {
-        return [
-            "impressions",
-            "reach",
-            "likes",
-            "comments",
-            "total_interactions"
-        ];
+        return ["reach", "total_interactions"];
     }
 
-    // IMAGE (default)
-    return [
-        "impressions",
-        "reach",
-        "likes",
-        "comments",
-        "saved",
-        "total_interactions"
-    ];
+    // Video (non-reel)
+    if (mediaType === "VIDEO") {
+        return ["impressions", "reach", "total_interactions"];
+    }
+
+    // Image posts
+    return ["impressions", "reach", "total_interactions"];
 }
 
 export async function getInstagramPostAnalytics(pageId, postId, refresh = false) {
     try {
-        /* ---------------- AUTH ---------------- */
+        /* ---------- AUTH ---------- */
         const cookieStore = await cookies();
         const token = cookieStore.get("token")?.value;
         const user = await verifyToken(token);
@@ -65,37 +40,34 @@ export async function getInstagramPostAnalytics(pageId, postId, refresh = false)
             return { success: false, message: "Invalid or expired token" };
         }
 
-        /* ---------------- DATABASE LOOKUP ---------------- */
-        let postDocId = null;
-        let cachedData = null;
-
-        const postQ = query(
+        /* ---------- LOAD CACHED DATA ---------- */
+        const postQuery = query(
             collection(db, "instagram_posts"),
             where("userId", "==", user.id),
             where("instagramPostId", "==", postId)
         );
 
-        const postSnapshot = await getDocs(postQ);
-        if (!postSnapshot.empty) {
-            const docSnap = postSnapshot.docs[0];
-            postDocId = docSnap.id;
-            const data = docSnap.data();
+        const postSnap = await getDocs(postQuery);
 
-            // If we have cached analytics and it's not a forced refresh, return them
-            if (!refresh && data.analytics) {
-                console.log("Returning cached Instagram analytics for", postId);
+        let postDocId = null;
+        let cachedData = null;
+
+        if (!postSnap.empty) {
+            postDocId = postSnap.docs[0].id;
+            cachedData = postSnap.docs[0].data();
+
+            if (!refresh && cachedData.analytics) {
                 return {
                     success: true,
-                    data: data.analytics,
+                    data: cachedData.analytics,
                     cached: true,
-                    lastRefreshed: data.analyticsFetchedAt?.toDate?.() || null
+                    lastRefreshed: cachedData.analyticsFetchedAt?.toDate?.() || null
                 };
             }
-            cachedData = data;
         }
 
-        /* ---------------- ACCOUNT ---------------- */
-        const q = query(
+        /* ---------- ACCOUNT TOKEN ---------- */
+        const accountQuery = query(
             collection(db, "socialAccounts"),
             where("userId", "==", user.id),
             where("accountId", "==", pageId),
@@ -103,21 +75,16 @@ export async function getInstagramPostAnalytics(pageId, postId, refresh = false)
             where("status", "==", "active")
         );
 
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
+        const accountSnap = await getDocs(accountQuery);
+        if (accountSnap.empty) {
             return { success: false, message: "Instagram account not linked" };
         }
 
-        const accountData = snapshot.docs[0].data();
-        const accessToken = accountData.accessToken;
+        const accessToken = accountSnap.docs[0].data().accessToken;
 
-        if (!accessToken) {
-            return { success: false, message: "Missing access token" };
-        }
-
-        /* ---------------- MEDIA INFO ---------------- */
+        /* ---------- MEDIA INFO ---------- */
         const mediaRes = await fetch(
-            `https://graph.instagram.com/v24.0/${postId}?fields=media_type,media_product_type,like_count,comments_count,timestamp,permalink,shortcode&access_token=${accessToken}`
+            `https://graph.instagram.com/v24.0/${postId}?fields=media_type,media_product_type,like_count,comments_count,permalink,timestamp&access_token=${accessToken}`
         );
 
         const mediaData = await mediaRes.json();
@@ -126,82 +93,54 @@ export async function getInstagramPostAnalytics(pageId, postId, refresh = false)
             return { success: false, message: mediaData.error.message };
         }
 
-        const mediaType = mediaData.media_type;
-        const mediaProductType = mediaData.media_product_type;
+        /* ---------- SAFE METRICS ---------- */
+        const metrics = resolveMetrics(
+            mediaData.media_type,
+            mediaData.media_product_type
+        );
 
-        /* ---------------- METRICS ---------------- */
-        const metrics = getSafeMetrics(mediaType, mediaProductType);
+        const insightsRes = await fetch(
+            `https://graph.instagram.com/v24.0/${postId}/insights?metric=${metrics.join(",")}&access_token=${accessToken}`
+        );
 
-        let insights = [];
+        const insightsJson = await insightsRes.json();
+        const insights = insightsJson?.data || [];
 
-        try {
-            const insightsRes = await fetch(
-                `https://graph.instagram.com/v24.0/${postId}/insights?metric=${metrics.join(",")}&access_token=${accessToken}`
-            );
+        /* ---------- NORMALIZE ---------- */
+        const getMetric = (key) =>
+            insights.find(i => i.name === key)?.values?.[0]?.value ?? 0;
 
-            const insightsJson = await insightsRes.json();
-
-            if (insightsJson?.data) {
-                insights = insightsJson.data;
-            } else {
-                throw insightsJson.error;
-            }
-        } catch (err) {
-            console.warn("Primary insights failed:", err?.message);
-
-            // Fallback – guaranteed-safe metrics
-            try {
-                const fallbackRes = await fetch(
-                    `https://graph.instagram.com/v24.0/${postId}/insights?metric=reach,total_interactions&access_token=${accessToken}`
-                );
-
-                const fallbackJson = await fallbackRes.json();
-                insights = fallbackJson.data || [];
-            } catch (fallbackErr) {
-                console.warn("Fallback failed:", fallbackErr?.message);
-                insights = [];
-            }
-        }
-
-        const finalData = {
+        const analyticsPayload = {
             ...mediaData,
             insights
         };
 
-        /* ---------------- UPDATE DATABASE ---------------- */
+        const metricsPayload = {
+            likes: mediaData.like_count || 0,
+            comments: mediaData.comments_count || 0,
+            reach: getMetric("reach"),
+            views:
+                getMetric("plays") ||
+                getMetric("impressions") ||
+                getMetric("reach"),
+            engagement:
+                (mediaData.like_count || 0) +
+                (mediaData.comments_count || 0) +
+                getMetric("total_interactions")
+        };
+
+        /* ---------- UPDATE DATABASE ---------- */
         if (postDocId) {
-            try {
-                // Extract useful metrics for easy access in lists
-                const getInsightValue = (name) => {
-                    const insight = insights.find(i => i.name === name);
-                    return insight?.values?.[0]?.value || 0;
-                };
-
-                const updatePayload = {
-                    analytics: finalData,
-                    analyticsFetchedAt: new Date(),
-                    metrics: {
-                        likes: mediaData.like_count || 0,
-                        comments: mediaData.comments_count || 0,
-                        reach: getInsightValue("reach"),
-                        views: getInsightValue("plays") || getInsightValue("impressions") || 0,
-                        engagement: (mediaData.like_count || 0) + (mediaData.comments_count || 0) + getInsightValue("total_interactions")
-                    }
-                };
-
-                // Use updateDoc to update only specific fields, avoiding serverTimestamp for updatedAt
-                const postRef = doc(db, "instagram_posts", postDocId);
-                await updateDoc(postRef, updatePayload);
-                console.log("Successfully updated Instagram analytics in DB for post:", postId);
-            } catch (dbErr) {
-                console.error("Failed to update post analytics in DB:", dbErr);
-            }
+            await updateDoc(doc(db, "instagram_posts", postDocId), {
+                analytics: analyticsPayload,
+                analyticsFetchedAt: new Date(),
+                metrics: metricsPayload
+            });
         }
 
-        /* ---------------- RESPONSE ---------------- */
         return {
             success: true,
-            data: finalData,
+            data: analyticsPayload,
             cached: false,
             lastRefreshed: new Date()
         };
