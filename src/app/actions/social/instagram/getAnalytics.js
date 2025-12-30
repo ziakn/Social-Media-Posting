@@ -5,8 +5,58 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
+/**
+ * Resolve safe metrics based on media type
+ */
+function getSafeMetrics(mediaType, productType) {
+    // REELS
+    if (productType === "REELS") {
+        return [
+            "plays",
+            "reach",
+            "total_interactions",
+            "ig_reels_avg_watch_time",
+            "ig_reels_video_view_total_time"
+        ];
+    }
+
+    // FEED VIDEO
+    if (mediaType === "VIDEO") {
+        return [
+            "impressions",
+            "reach",
+            "likes",
+            "comments",
+            "saved",
+            "total_interactions"
+        ];
+    }
+
+    // CAROUSEL
+    if (mediaType === "CAROUSEL_ALBUM") {
+        return [
+            "impressions",
+            "reach",
+            "likes",
+            "comments",
+            "total_interactions"
+        ];
+    }
+
+    // IMAGE (default)
+    return [
+        "impressions",
+        "reach",
+        "likes",
+        "comments",
+        "saved",
+        "total_interactions"
+    ];
+}
+
 export async function getInstagramPostAnalytics(pageId, postId) {
     try {
+        /* ---------------- AUTH ---------------- */
         const cookieStore = await cookies();
         const token = cookieStore.get("token")?.value;
         const user = await verifyToken(token);
@@ -15,7 +65,7 @@ export async function getInstagramPostAnalytics(pageId, postId) {
             return { success: false, message: "Invalid or expired token" };
         }
 
-        // 1. Get Access Token for the Page
+        /* ---------------- ACCOUNT ---------------- */
         const q = query(
             collection(db, "socialAccounts"),
             where("userId", "==", user.id),
@@ -26,94 +76,75 @@ export async function getInstagramPostAnalytics(pageId, postId) {
 
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
-            return { success: false, message: "Instagram account not linked or active" };
+            return { success: false, message: "Instagram account not linked" };
         }
 
         const accountData = snapshot.docs[0].data();
         const accessToken = accountData.accessToken;
 
         if (!accessToken) {
-            return { success: false, message: "Access token missing for this account" };
+            return { success: false, message: "Missing access token" };
         }
 
-        // 2. Determine Metrics based on media type (we might not know media type yet, so we can try to fetch media fields first)
-        // First, fetch basic media fields including media_type and media_product_type
-        const mediaFields = "media_type,media_product_type,like_count,comments_count,timestamp,permalink,shortcode";
+        /* ---------------- MEDIA INFO ---------------- */
         const mediaRes = await fetch(
-            `https://graph.instagram.com/v24.0/${postId}?fields=${mediaFields}&access_token=${accessToken}`
+            `https://graph.instagram.com/v24.0/${postId}?fields=media_type,media_product_type,like_count,comments_count,timestamp,permalink,shortcode&access_token=${accessToken}`
         );
+
         const mediaData = await mediaRes.json();
 
-        if (mediaData.error) {
-            console.error("Instagram API Error (Media):", mediaData.error);
+        if (mediaData?.error) {
             return { success: false, message: mediaData.error.message };
         }
 
         const mediaType = mediaData.media_type;
         const mediaProductType = mediaData.media_product_type;
-        let insightsMetricParam = "";
 
-        // Determine metrics based on media type and product type
-        if (mediaProductType === "REELS") {
-            // Reels metrics - use 'plays' instead of 'impressions'
-            insightsMetricParam = "plays,shares,reach,saved,total_interactions";
-        } else if (mediaType === "VIDEO") {
-            // Feed videos - use 'impressions' for feed videos
-            insightsMetricParam = "impressions,shares,reach,saved,total_interactions";
-        } else if (mediaType === "CAROUSEL_ALBUM") {
-            // Carousel metrics
-            // Reverting to album-specific metrics as 'impressions' is not supported for albums
-            insightsMetricParam = "carousel_album_impressions,carousel_album_reach,carousel_album_saved,total_interactions";
-        } else {
-            // Image / Default metrics
-            insightsMetricParam = "impressions,shares,reach,saved,total_interactions";
-        }
+        /* ---------------- METRICS ---------------- */
+        const metrics = getSafeMetrics(mediaType, mediaProductType);
 
-        let insightsData;
+        let insights = [];
+
         try {
             const insightsRes = await fetch(
-                `https://graph.instagram.com/v24.0/${postId}/insights?metric=${insightsMetricParam}&access_token=${accessToken}`
+                `https://graph.instagram.com/v24.0/${postId}/insights?metric=${metrics.join(",")}&access_token=${accessToken}`
             );
-            insightsData = await insightsRes.json();
-        } catch (e) {
-            insightsData = { error: { message: "Network or parsing error", details: e.message } };
-        }
 
-        let finalInsights = [];
-        if (insightsData.data) {
-            finalInsights = insightsData.data;
-        } else if (insightsData.error) {
-            console.warn("Instagram API Insights Warning (Primary Metrics):", insightsData.error);
+            const insightsJson = await insightsRes.json();
 
-            // FALLBACK: Try a minimal safe set of metrics if specific ones fail
-            // 'saved' and 'total_interactions' are generally safe for all types
-            // We'll also try 'reach' as it's very common.
-            const fallbackMetricParam = "saved,total_interactions";
+            if (insightsJson?.data) {
+                insights = insightsJson.data;
+            } else {
+                throw insightsJson.error;
+            }
+        } catch (err) {
+            console.warn("Primary insights failed:", err?.message);
+
+            // Fallback – guaranteed-safe metrics
             try {
                 const fallbackRes = await fetch(
-                    `https://graph.instagram.com/v24.0/${postId}/insights?metric=${fallbackMetricParam}&access_token=${accessToken}`
+                    `https://graph.instagram.com/v24.0/${postId}/insights?metric=reach,total_interactions&access_token=${accessToken}`
                 );
-                const fallbackData = await fallbackRes.json();
-                if (fallbackData.data) {
-                    finalInsights = fallbackData.data;
-                } else {
-                    console.warn("Instagram API Insights Warning (Fallback Metrics):", fallbackData.error);
-                }
+
+                const fallbackJson = await fallbackRes.json();
+                insights = fallbackJson.data || [];
             } catch (fallbackErr) {
-                console.warn("Instagram API Insights Fallback Failed:", fallbackErr);
+                console.warn("Fallback failed:", fallbackErr?.message);
+                insights = [];
             }
         }
 
+        /* ---------------- RESPONSE ---------------- */
         return {
             success: true,
             data: {
                 ...mediaData,
-                insights: finalInsights
+                insights
             }
         };
 
     } catch (err) {
-        console.error("Error in getInstagramPostAnalytics:", err);
+        console.error("getInstagramPostAnalytics error:", err);
         return { success: false, message: err.message };
     }
 }
