@@ -40,7 +40,7 @@ export async function getFacebookPostAnalytics(pageId, postId, refresh = false) 
                     success: true,
                     data: cachedData.analytics,
                     cached: true,
-                    lastRefreshed: cachedData.analyticsFetchedAt?.toDate?.() || null
+                    lastRefreshed: cachedData.analyticsFetchedAt?.toDate?.()?.toISOString() || cachedData.analyticsFetchedAt?.toISOString?.() || null
                 };
             }
         }
@@ -75,7 +75,7 @@ export async function getFacebookPostAnalytics(pageId, postId, refresh = false) 
         // 1. Basic counts (likes, comments, shares)
         const fields = "message,created_time,permalink_url,shares,reactions.summary(true),comments.summary(true)";
         const postRes = await fetch(
-            `https://graph.facebook.com/v21.0/${postId}?fields=${fields}&access_token=${pageAccessToken}`
+            `https://graph.facebook.com/v24.0/${postId}?fields=${fields}&access_token=${pageAccessToken}`
         );
         const postData = await postRes.json();
 
@@ -93,7 +93,7 @@ export async function getFacebookPostAnalytics(pageId, postId, refresh = false) 
         let insights = [];
         try {
             const insightsRes = await fetch(
-                `https://graph.facebook.com/v21.0/${postId}/insights?metric=${metrics.join(",")}&access_token=${pageAccessToken}`
+                `https://graph.facebook.com/v24.0/${postId}/insights?metric=${metrics.join(",")}&access_token=${pageAccessToken}`
             );
             const insightsJson = await insightsRes.json();
             insights = insightsJson?.data || [];
@@ -147,7 +147,7 @@ export async function getFacebookPostAnalytics(pageId, postId, refresh = false) 
             success: true,
             data: analyticsPayload,
             cached: false,
-            lastRefreshed: new Date()
+            lastRefreshed: new Date().toISOString()
         };
 
     } catch (err) {

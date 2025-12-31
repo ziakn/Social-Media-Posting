@@ -38,12 +38,22 @@ import {
     MoreVertical,
     ImageIcon,
     RotateCw,
-    X
+    X,
+    Heart,
+    FileText
 } from "lucide-react";
 import { getFacebookPostAnalytics } from "@/app/actions/social/facebook/getAnalytics";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
+import {
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer,
+    Tooltip as RechartsTooltip,
+    Legend
+} from 'recharts';
 
 export default function FacebookAnalyticsModal({
     open,
@@ -162,11 +172,21 @@ export default function FacebookAnalyticsModal({
         }
     ];
 
-    if (data?.summary?.reach > 0) {
-        const eng = (data.summary.likes + data.summary.comments + data.summary.shares);
+    // Chart Data for Engagement Breakdown
+    const engagementData = [
+        { name: "Likes", value: data?.summary?.likes || 0, color: "#1877F2" },
+        { name: "Comments", value: data?.summary?.comments || 0, color: "#10b981" },
+        { name: "Shares", value: data?.summary?.shares || 0, color: "#f59e0b" },
+    ].filter(item => item.value > 0);
+
+    // Add Engagement Rate if we have reach
+    const totalEngagements = (data?.summary?.likes || 0) + (data?.summary?.comments || 0) + (data?.summary?.shares || 0);
+    const reachValue = data?.summary?.reach || 0;
+
+    if (reachValue > 0) {
         metrics.push({
             label: "Engagement Rate",
-            value: ((eng / data.summary.reach) * 100).toFixed(2) + "%",
+            value: ((totalEngagements / reachValue) * 100).toFixed(2) + "%",
             icon: TrendingUp,
             desc: "Interaction per reach"
         });
@@ -250,39 +270,90 @@ export default function FacebookAnalyticsModal({
 
                                     <Separator className="bg-gray-100" />
 
+                                    {/* Engagement Chart */}
+                                    {engagementData.length > 0 && (
+                                        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-1.5 bg-blue-50 rounded-lg">
+                                                        <BarChart3 className="h-4 w-4 text-blue-600" />
+                                                    </div>
+                                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Engagement Breakdown</h3>
+                                                </div>
+                                                <Badge variant="outline" className="bg-gray-50 text-[10px] font-bold border-gray-100 uppercase tracking-tighter">
+                                                    {totalEngagements} Total Actions
+                                                </Badge>
+                                            </div>
+
+                                            <div className="h-[200px] w-full flex items-center justify-center">
+                                                <ResponsiveContainer width="100%" height="100%">
+                                                    <PieChart>
+                                                        <Pie
+                                                            data={engagementData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={60}
+                                                            outerRadius={80}
+                                                            paddingAngle={5}
+                                                            dataKey="value"
+                                                            stroke="none"
+                                                        >
+                                                            {engagementData.map((entry, index) => (
+                                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                                            ))}
+                                                        </Pie>
+                                                        <RechartsTooltip
+                                                            contentStyle={{
+                                                                borderRadius: '12px',
+                                                                border: 'none',
+                                                                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
+                                                                fontSize: '12px',
+                                                                fontWeight: '700'
+                                                            }}
+                                                        />
+                                                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
+                                                    </PieChart>
+                                                </ResponsiveContainer>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* Detailed Post Context */}
                                     <div className="space-y-4">
-                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-4">Content Metadata</h3>
+                                        <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 opacity-50">Content Intelligence</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-1">
-                                                <span className="text-xs text-muted-foreground">Post Type</span>
+                                            <div className="bg-white p-5 rounded-2xl border border-gray-100 space-y-2 group hover:border-blue-100 transition-colors">
+                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Post Type</span>
                                                 <div className="flex items-center gap-2 pt-1">
-                                                    <Badge variant="outline" className="rounded-lg h-7 font-semibold text-xs gap-1.5 bg-blue-50 text-blue-600 border-blue-100">
+                                                    <Badge variant="outline" className="rounded-lg h-7 font-black text-[10px] gap-1.5 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-tighter shadow-sm">
                                                         {post?.postType === 'video' ? <><Play className="h-3 w-3 fill-current" /> VIDEO REEL</> :
-                                                            post?.postType === 'images' ? <><ImageIcon className="h-3 w-3" /> IMAGE GALLERY</> :
-                                                                <><Layers className="h-3 w-3" /> TEXT STATUS</>}
+                                                            post?.postType === 'photo' || post?.postType === 'image' ? <><ImageIcon className="h-3 w-3" /> IMAGE POST</> :
+                                                                post?.postType === 'carousel' ? <><Layers className="h-3 w-3" /> CAROUSEL POST</> :
+                                                                    <><FileText className="h-3 w-3" /> TEXT STATUS</>}
                                                     </Badge>
                                                 </div>
                                             </div>
-                                            <div className="bg-white p-4 rounded-2xl border border-gray-100 space-y-1">
-                                                <span className="text-xs text-muted-foreground">Published On</span>
+                                            <div className="bg-white p-5 rounded-2xl border border-gray-100 space-y-2 group hover:border-blue-100 transition-colors">
+                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Published On</span>
                                                 <div className="flex items-center gap-2 pt-1 font-bold text-sm text-gray-700">
-                                                    <Calendar className="h-4 w-4 text-gray-400" />
-                                                    {post?.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, {
-                                                        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                                                    }) : "Unknown Date"}
+                                                    <Calendar className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                                    <span className="tracking-tight">
+                                                        {post?.publishedAt || post?.createdAt ? format(new Date(post.publishedAt || post.createdAt), "MMM dd, yyyy 'at' p") : "Unknown Date"}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="bg-white p-6 rounded-2xl border border-gray-100 space-y-4">
-                                            <div className="flex items-center gap-2">
-                                                <MessageCircle className="h-4 w-4 text-gray-400" />
-                                                <span className="text-xs text-muted-foreground">Original Caption</span>
+                                        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4 hover:border-blue-100 transition-colors">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <MessageCircle className="h-4 w-4 text-gray-400" />
+                                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Original Caption</span>
+                                                </div>
                                             </div>
                                             <ScrollArea className="max-h-[150px]">
-                                                <p className="text-[15px] font-medium leading-relaxed text-gray-700 whitespace-pre-wrap italic opacity-80 pl-2 border-l-4 border-blue-100">
-                                                    {post?.message || post?.caption || "No caption provided for this post."}
+                                                <p className="text-sm font-medium leading-relaxed text-gray-700 whitespace-pre-wrap pl-3 border-l-2 border-blue-100 transition-all group-hover:border-blue-500">
+                                                    {post?.message || post?.caption || "No caption provided."}
                                                 </p>
                                             </ScrollArea>
                                         </div>

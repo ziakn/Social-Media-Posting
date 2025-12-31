@@ -245,6 +245,7 @@ export async function getFacebookPosts({
         createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
         scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
+        publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
         analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
         deleted: data.delete || 0
       };
@@ -861,12 +862,13 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
             id: docSnap.id,
             ...data,
             scheduledAt: isPublished
-              ? (data.createdAt?.toDate?.() || data.createdAt || new Date())
-              : (data.scheduledAt?.toDate?.() || data.scheduledAt || null),
+              ? (data.createdAt?.toDate?.()?.toISOString() || data.createdAt || new Date().toISOString())
+              : (data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt || null),
             status: statusLabel,
             isPublished: isPublished,
             createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+            publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
             analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
           });
         });

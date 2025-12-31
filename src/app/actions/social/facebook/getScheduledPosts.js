@@ -125,8 +125,7 @@ export async function getScheduledPosts({
                 scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
                 createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
                 updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-                createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-                updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+                publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
                 analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
                 deleted: data.delete || 0
             };

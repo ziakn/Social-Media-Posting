@@ -293,6 +293,7 @@ async function savePostToFirestore({
     postType,
     status,
     scheduledAt: scheduledTime || null,
+    publishedAt: status === 'published' ? serverTimestamp() : null,
     facebookPostId,
     additionalData: {
       ...additionalData,
