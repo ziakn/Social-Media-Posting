@@ -46,14 +46,6 @@ import { getFacebookPostAnalytics } from "@/app/actions/social/facebook/getAnaly
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
-import {
-    PieChart,
-    Pie,
-    Cell,
-    ResponsiveContainer,
-    Tooltip as RechartsTooltip,
-    Legend
-} from 'recharts';
 
 export default function FacebookAnalyticsModal({
     open,
@@ -133,6 +125,8 @@ export default function FacebookAnalyticsModal({
         return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(num);
     };
 
+    const totalEngagements = (data?.summary?.likes || 0) + (data?.summary?.comments || 0) + (data?.summary?.shares || 0);
+
     const metrics = [
         {
             label: "Impressions",
@@ -165,52 +159,29 @@ export default function FacebookAnalyticsModal({
             desc: "Total shares"
         },
         {
-            label: "Clicks",
-            value: data?.summary?.clicks || 0,
-            icon: MousePointer2,
-            desc: "Post clicks"
+            label: "Engagement",
+            value: totalEngagements,
+            icon: TrendingUp,
+            desc: "Interactions"
         }
     ];
 
-    // Chart Data for Engagement Breakdown
-    const engagementData = [
-        { name: "Likes", value: data?.summary?.likes || 0, color: "#1877F2" },
-        { name: "Comments", value: data?.summary?.comments || 0, color: "#10b981" },
-        { name: "Shares", value: data?.summary?.shares || 0, color: "#f59e0b" },
-    ].filter(item => item.value > 0);
-
-    // Add Engagement Rate if we have reach
-    const totalEngagements = (data?.summary?.likes || 0) + (data?.summary?.comments || 0) + (data?.summary?.shares || 0);
-    const reachValue = data?.summary?.reach || 0;
-
-    if (reachValue > 0) {
-        metrics.push({
-            label: "Engagement Rate",
-            value: ((totalEngagements / reachValue) * 100).toFixed(2) + "%",
-            icon: TrendingUp,
-            desc: "Interaction per reach"
-        });
-    }
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden border-none shadow-2xl rounded-[2rem]">
+            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden">
                 {/* Header */}
-                <div className="px-8 py-6 border-b flex items-center justify-between bg-white shrink-0">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-facebook-blue rounded-2xl shadow-lg shadow-blue-100">
-                            <Facebook className="h-6 w-6 text-white" />
+                <div className="px-6 py-4 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-lg">
+                            <Facebook className="h-5 w-5 text-white" />
                         </div>
-                        <div>
-                            <DialogTitle className="text-2xl font-semibold text-gray-900 tracking-tight">Post Insights</DialogTitle>
-                            <DialogDescription className="text-xs font-medium text-muted-foreground mt-0.5">Performance Intelligence</DialogDescription>
-                        </div>
+                        <DialogTitle className="text-xl font-semibold">Post Analytics</DialogTitle>
                     </div>
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                         {lastRefreshed && (
                             <div className="hidden sm:flex flex-col items-end">
-                                <span className="text-[10px] uppercase font-semibold text-muted-foreground/60 leading-tight">
-                                    Last Sync
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground/60 leading-tight">
+                                    Last Updated
                                 </span>
                                 <span className="text-xs font-medium text-muted-foreground">
                                     {formatDistanceToNow(new Date(lastRefreshed), { addSuffix: true })}
@@ -220,216 +191,200 @@ export default function FacebookAnalyticsModal({
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-11 px-6 rounded-xl gap-2 font-semibold border-2 border-blue-50 hover:bg-blue-50 hover:text-blue-600 transition-all shadow-sm active:scale-95"
+                            className="h-9 gap-2"
                             onClick={() => loadAnalytics(true)}
                             disabled={loading || refreshing}
                         >
                             <RotateCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-                            {refreshing ? "Updating..." : "Refresh Stats"}
+                            {refreshing ? "Refreshing..." : "Refresh"}
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)} className="rounded-full h-11 w-11 hover:bg-red-50 hover:text-red-500 transition-colors"><X className="h-6 w-6" /></Button>
                     </div>
                 </div>
 
-                {/* Main Content Area */}
-                <div className="flex h-[calc(90vh-93px)] overflow-hidden bg-gray-50/50">
-                    {/* Metrics Panel */}
-                    <ScrollArea className="flex-1 border-r border-gray-100">
-                        <div className="p-8 space-y-8">
+                {/* Two Column Layout */}
+                <div className="flex h-[calc(90vh-73px)] overflow-hidden">
+                    {/* Left Column - Metrics & Details */}
+                    <ScrollArea className="flex-1 border-r">
+                        <div className="p-6 space-y-6">
                             {loading ? (
-                                <div className="space-y-8">
-                                    <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-3">
                                         {[...Array(6)].map((_, i) => (
-                                            <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+                                            <Skeleton key={i} className="h-20 w-full" />
                                         ))}
                                     </div>
-                                    <Skeleton className="h-40 w-full rounded-2xl" />
+                                    <Skeleton className="h-32 w-full" />
                                 </div>
                             ) : (
                                 <>
-                                    {/* High-Impact Stat Cards */}
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                        {metrics.map((metric, i) => (
-                                            <div
-                                                key={i}
-                                                className="group relative bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
-                                            >
-                                                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-                                                    <metric.icon className="h-12 w-12 text-blue-600" />
-                                                </div>
-                                                <div className="relative space-y-1">
-                                                    <div className="p-1.5 bg-blue-50 w-fit rounded-lg mb-2">
-                                                        <metric.icon className="h-4 w-4 text-blue-600" />
+                                    {/* Metrics Grid */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                                            Performance Metrics
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            {metrics.map((metric, i) => (
+                                                <div
+                                                    key={i}
+                                                    className="flex items-center gap-3 px-4 py-3 bg-muted/30 border border-border/60 rounded-lg hover:bg-muted/50 transition-colors"
+                                                >
+                                                    <div className="p-2 bg-background rounded-md">
+                                                        <metric.icon className="h-4 w-4 text-primary" />
                                                     </div>
-                                                    <div className="text-2xl font-bold text-gray-900 tracking-tighter">{typeof metric.value === 'number' ? formatNumber(metric.value) : metric.value}</div>
-                                                    <p className="text-xs text-muted-foreground">{metric.label}</p>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="text-xl font-bold">{formatNumber(metric.value)}</div>
+                                                        <p className="text-xs text-muted-foreground truncate">{metric.label}</p>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
 
-                                    <Separator className="bg-gray-100" />
+                                    <Separator />
 
-                                    {/* Engagement Chart */}
-                                    {engagementData.length > 0 && (
-                                        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-6">
-                                            <div className="flex items-center justify-between">
+                                    {/* Post Information */}
+                                    <div>
+                                        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                                            Post Information
+                                        </h3>
+                                        <div className="space-y-4">
+                                            {/* Post Type & Status */}
+                                            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/60">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="p-1.5 bg-blue-50 rounded-lg">
-                                                        <BarChart3 className="h-4 w-4 text-blue-600" />
-                                                    </div>
-                                                    <h3 className="text-sm font-bold text-gray-900 uppercase tracking-tight">Engagement Breakdown</h3>
+                                                    <span className="text-sm font-medium text-muted-foreground">Type:</span>
+                                                    <Badge variant="outline" className="capitalize text-xs">
+                                                        {post?.postType === 'video' ? (
+                                                            <><Play className="h-3 w-3 mr-1" /> Video</>
+                                                        ) : post?.postType === 'carousel' ? (
+                                                            <><Layers className="h-3 w-3 mr-1" /> Carousel</>
+                                                        ) : (
+                                                            <><ImageIcon className="h-3 w-3 mr-1" /> Image</>
+                                                        )}
+                                                    </Badge>
                                                 </div>
-                                                <Badge variant="outline" className="bg-gray-50 text-[10px] font-bold border-gray-100 uppercase tracking-tighter">
-                                                    {totalEngagements} Total Actions
+                                                <Badge variant={post?.status === 'published' ? 'default' : 'secondary'}>
+                                                    {post?.status || 'Published'}
                                                 </Badge>
                                             </div>
 
-                                            <div className="h-[200px] w-full flex items-center justify-center">
-                                                <ResponsiveContainer width="100%" height="100%">
-                                                    <PieChart>
-                                                        <Pie
-                                                            data={engagementData}
-                                                            cx="50%"
-                                                            cy="50%"
-                                                            innerRadius={60}
-                                                            outerRadius={80}
-                                                            paddingAngle={5}
-                                                            dataKey="value"
-                                                            stroke="none"
-                                                        >
-                                                            {engagementData.map((entry, index) => (
-                                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                                            ))}
-                                                        </Pie>
-                                                        <RechartsTooltip
-                                                            contentStyle={{
-                                                                borderRadius: '12px',
-                                                                border: 'none',
-                                                                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                                                                fontSize: '12px',
-                                                                fontWeight: '700'
-                                                            }}
-                                                        />
-                                                        <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase' }} />
-                                                    </PieChart>
-                                                </ResponsiveContainer>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Detailed Post Context */}
-                                    <div className="space-y-4">
-                                        <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 opacity-50">Content Intelligence</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="bg-white p-5 rounded-2xl border border-gray-100 space-y-2 group hover:border-blue-100 transition-colors">
-                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Post Type</span>
-                                                <div className="flex items-center gap-2 pt-1">
-                                                    <Badge variant="outline" className="rounded-lg h-7 font-black text-[10px] gap-1.5 bg-blue-50 text-blue-600 border-blue-100 uppercase tracking-tighter shadow-sm">
-                                                        {post?.postType === 'video' ? <><Play className="h-3 w-3 fill-current" /> VIDEO REEL</> :
-                                                            post?.postType === 'photo' || post?.postType === 'image' ? <><ImageIcon className="h-3 w-3" /> IMAGE POST</> :
-                                                                post?.postType === 'carousel' ? <><Layers className="h-3 w-3" /> CAROUSEL POST</> :
-                                                                    <><FileText className="h-3 w-3" /> TEXT STATUS</>}
-                                                    </Badge>
+                                            {/* Published Date */}
+                                            <div className="p-3 bg-muted/30 rounded-lg border border-border/60">
+                                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
+                                                    <Calendar className="h-4 w-4" />
+                                                    Published Date
+                                                </div>
+                                                <div className="text-sm font-medium pl-6">
+                                                    {post?.publishedAt || post?.createdAt ? format(new Date(post.publishedAt || post.createdAt), "MMMM dd, yyyy • HH:mm") : "N/A"}
                                                 </div>
                                             </div>
-                                            <div className="bg-white p-5 rounded-2xl border border-gray-100 space-y-2 group hover:border-blue-100 transition-colors">
-                                                <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-none">Published On</span>
-                                                <div className="flex items-center gap-2 pt-1 font-bold text-sm text-gray-700">
-                                                    <Calendar className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                                                    <span className="tracking-tight">
-                                                        {post?.publishedAt || post?.createdAt ? format(new Date(post.publishedAt || post.createdAt), "MMM dd, yyyy 'at' p") : "Unknown Date"}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
 
-                                        <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4 hover:border-blue-100 transition-colors">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <MessageCircle className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Original Caption</span>
+                                            {/* Caption */}
+                                            <div className="p-3 bg-muted/30 rounded-lg border border-border/60">
+                                                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-2">
+                                                    <MessageCircle className="h-4 w-4" />
+                                                    Caption
                                                 </div>
+                                                <ScrollArea className="h-[120px] w-full">
+                                                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90 pl-6">
+                                                        {post?.message || post?.caption || "No caption provided"}
+                                                    </p>
+                                                </ScrollArea>
                                             </div>
-                                            <ScrollArea className="max-h-[150px]">
-                                                <p className="text-sm font-medium leading-relaxed text-gray-700 whitespace-pre-wrap pl-3 border-l-2 border-blue-100 transition-all group-hover:border-blue-500">
-                                                    {post?.message || post?.caption || "No caption provided."}
-                                                </p>
-                                            </ScrollArea>
-                                        </div>
 
-                                        {data?.permalink_url && (
-                                            <Button
-                                                variant="outline"
-                                                className="w-full h-14 rounded-2xl font-semibold text-base border-2 hover:bg-facebook-blue hover:text-white hover:border-facebook-blue transition-all group active:scale-[0.98]"
-                                                onClick={() => window.open(data.permalink_url, '_blank')}
-                                            >
-                                                <ExternalLink className="h-5 w-5 mr-3 group-hover:rotate-12 transition-transform" />
-                                                Interact on Facebook
-                                            </Button>
-                                        )}
+                                            {/* View on Facebook */}
+                                            {data?.permalink_url && (
+                                                <Button
+                                                    variant="outline"
+                                                    className="w-full"
+                                                    onClick={() => window.open(data.permalink_url, '_blank')}
+                                                >
+                                                    <ExternalLink className="h-4 w-4 mr-2" />
+                                                    View on Facebook
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </>
                             )}
                         </div>
                     </ScrollArea>
 
-                    {/* Visual Preview Sidecar */}
-                    <div className="hidden lg:flex w-[450px] bg-white items-center justify-center p-8">
+                    {/* Right Column - Facebook Preview */}
+                    <div className="w-[420px] bg-muted/20 flex items-center justify-center p-6">
                         {loading ? (
-                            <Skeleton className="w-[360px] h-[580px] rounded-[3rem] shadow-2xl" />
+                            <Skeleton className="w-[340px] h-[600px] rounded-3xl" />
                         ) : (
-                            <div className="w-[360px] bg-white rounded-[2.5rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.15)] border-[10px] border-gray-950 overflow-hidden relative">
-                                {/* Mobile-style Status Bar Area */}
-                                <div className="h-6 bg-gray-950" />
-
-                                {/* FB Post Header */}
-                                <div className="px-5 py-4 flex items-center justify-between border-b border-gray-50">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-facebook-blue to-blue-800 flex items-center justify-center p-0.5 shadow-md">
-                                            <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                                                <Facebook className="h-6 w-6 text-facebook-blue fill-current" />
-                                            </div>
+                            <div className="w-[340px] bg-background rounded-3xl shadow-2xl border-8 border-border/40 overflow-hidden">
+                                {/* Facebook Header */}
+                                <div className="px-4 py-3 border-b flex items-center justify-between bg-background">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
+                                            <Facebook className="h-4 w-4 text-white" />
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-gray-900 leading-none">Social Portal</span>
-                                            <span className="text-[10px] font-medium text-gray-400 mt-1 uppercase tracking-wider flex items-center gap-1">2h • <Users className="h-2 w-2" /></span>
-                                        </div>
+                                        <span className="text-sm font-semibold">Facebook User</span>
                                     </div>
-                                    <MoreVertical className="h-5 w-5 text-gray-300" />
+                                    <MoreVertical className="h-5 w-5 text-muted-foreground" />
                                 </div>
 
-                                {/* Media Content */}
-                                <div className="aspect-square relative bg-gray-100 flex items-center justify-center overflow-hidden">
+                                {/* Media Preview */}
+                                <div className="aspect-square relative bg-muted/40">
                                     {getMediaUrl() ? (
                                         post.postType === 'video' ? (
-                                            <video src={getMediaUrl()} className="w-full h-full object-cover" controls playsInline />
+                                            <video
+                                                src={getMediaUrl()}
+                                                className="w-full h-full object-cover"
+                                                controls
+                                                playsInline
+                                            />
                                         ) : (
-                                            <img src={getMediaUrl()} className="w-full h-full object-cover" alt="" />
+                                            <img
+                                                src={getMediaUrl()}
+                                                className="w-full h-full object-cover"
+                                                alt="Post"
+                                            />
                                         )
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full text-gray-200">
-                                            <Info className="h-16 w-16 mb-4 opacity-20" />
-                                            <span className="text-xs font-semibold uppercase tracking-[0.2em] opacity-30">No Media</span>
+                                        <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                                            <Info className="h-12 w-12 mb-2 opacity-40" />
+                                            <span className="text-xs">No Preview</span>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Interaction Area */}
-                                <div className="px-5 py-4 space-y-4 bg-white">
+                                {/* Facebook Actions */}
+                                <div className="px-4 py-3 space-y-3 bg-background">
                                     <div className="flex items-center justify-between">
-                                        <div className="flex items-center -space-x-1.5">
-                                            <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center border-2 border-white shadow-sm"><ThumbsUp className="h-2.5 w-2.5 text-white fill-white" /></div>
-                                            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center border-2 border-white shadow-sm"><Heart className="h-2.5 w-2.5 text-white fill-white" /></div>
-                                            <span className="pl-3.5 text-xs font-semibold text-gray-500">{formatNumber(data?.summary?.likes || 0)}</span>
+                                        <div className="flex items-center -space-x-1">
+                                            <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center border-2 border-background">
+                                                <ThumbsUp className="h-2.5 w-2.5 text-white fill-white" />
+                                            </div>
+                                            <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center border-2 border-background">
+                                                <Heart className="h-2.5 w-2.5 text-white fill-white" />
+                                            </div>
+                                            <span className="pl-2 text-xs font-medium text-muted-foreground">
+                                                {formatNumber(data?.summary?.likes || 0)}
+                                            </span>
                                         </div>
-                                        <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{formatNumber(data?.summary?.comments || 0)} comments</div>
+                                        <span className="text-xs text-muted-foreground">
+                                            {formatNumber(data?.summary?.comments || 0)} comments
+                                        </span>
                                     </div>
-                                    <Separator className="bg-gray-50" />
+
+                                    <Separator />
+
                                     <div className="flex items-center justify-around py-1">
-                                        <ThumbsUp className="h-5 w-5 text-gray-300" />
-                                        <MessageCircle className="h-5 w-5 text-gray-300" />
-                                        <Share2 className="h-5 w-5 text-gray-300" />
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <ThumbsUp className="h-5 w-5" />
+                                            <span className="text-xs font-semibold">Like</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <MessageCircle className="h-5 w-5" />
+                                            <span className="text-xs font-semibold">Comment</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <Share2 className="h-5 w-5" />
+                                            <span className="text-xs font-semibold">Share</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

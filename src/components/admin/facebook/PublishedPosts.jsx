@@ -470,6 +470,10 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
     setIsCreating(true);
   };
 
+  const handleRefresh = useCallback(() => {
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       {/* Premium Compact Header */}
@@ -537,6 +541,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
             onDateClick={handleDateClick}
             onPostClick={handlePostClick}
             refreshTrigger={refreshTrigger}
+            onRefresh={handleRefresh}
           />
         </TabsContent>
 
@@ -546,6 +551,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
             initialStatus="all"
             refreshTrigger={refreshTrigger}
             onEdit={handlePostClick}
+            onRefresh={handleRefresh}
           />
         </TabsContent>
 
@@ -555,6 +561,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
             initialStatus="all"
             refreshTrigger={refreshTrigger}
             onEdit={handlePostClick}
+            onRefresh={handleRefresh}
           />
         </TabsContent>
       </Tabs>

@@ -8,6 +8,7 @@ import { getAllCalendarPosts } from "@/app/actions/social/facebook/facebookPosts
 export default function FacebookCalendarViewComponent({
     onDateClick,
     onPostClick,
+    onRefresh,
     refreshTrigger = 0
 }) {
     const [calendarPosts, setCalendarPosts] = useState([]);
@@ -39,6 +40,7 @@ export default function FacebookCalendarViewComponent({
                 onMonthChange={setCalendarDate}
                 onDateClick={onDateClick}
                 onPostClick={onPostClick}
+                onRefresh={onRefresh}
             />
         </div>
     );

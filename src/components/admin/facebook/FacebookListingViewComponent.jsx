@@ -26,7 +26,8 @@ export default function ListingViewComponent({
     pageId: initialPageId,
     initialStatus = "all",
     refreshTrigger = 0,
-    onEdit = null
+    onEdit = null,
+    onRefresh = null
 }) {
     const [posts, setPosts] = useState([]);
     const [stats, setStats] = useState(null);
@@ -132,7 +133,8 @@ export default function ListingViewComponent({
             const result = await publishFacebookPostNow(post.id);
             if (result.success) {
                 toast.success("Post published successfully!");
-                loadPosts(true);
+                if (onRefresh) onRefresh();
+                else loadPosts(true);
             } else {
                 toast.error(result.message || "Failed to publish post");
             }
@@ -296,7 +298,7 @@ export default function ListingViewComponent({
                                 </TableRow>
                             ) : (
                                 posts.map((post) => (
-                                    <TableRow key={post.id} className="group hover:bg-blue-50/30 transition-colors border-gray-50">
+                                    <TableRow key={post.id} className={cn("group hover:bg-blue-50/30 transition-colors border-gray-50", publishingId === post.id && "opacity-70 pointer-events-none")}>
                                         <TableCell>
                                             <div className="h-12 w-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
                                                 {post.mediaUrls?.[0]?.url ? (
@@ -307,6 +309,11 @@ export default function ListingViewComponent({
                                                     )
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-200"><Facebook className="h-6 w-6" /></div>
+                                                )}
+                                                {publishingId === post.id && (
+                                                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10 backdrop-blur-[1px]">
+                                                        <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+                                                    </div>
                                                 )}
                                             </div>
                                         </TableCell>

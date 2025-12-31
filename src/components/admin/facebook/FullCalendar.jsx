@@ -34,6 +34,7 @@ export default function FullCalendar({
     onDateClick,
     onPostClick,
     onMonthChange,
+    onRefresh,
     className,
     mini = false
 }) {
@@ -47,6 +48,7 @@ export default function FullCalendar({
             const result = await publishFacebookPostNow(post.id);
             if (result.success) {
                 toast.success("Post published successfully!");
+                if (onRefresh) onRefresh();
             } else {
                 toast.error(result.message || "Failed to publish post");
             }
