@@ -19,6 +19,13 @@ import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { fetchFacebookPages } from "./getPages";
+import {
+  handleImagePost,
+  handleTextPost,
+  handleVideoPost,
+  handlePollPost,
+  handleLinkPost
+} from "./createPost";
 
 // Get user's Facebook pages for filtering
 export async function getUserFacebookPages() {
@@ -53,9 +60,14 @@ export async function getUserFacebookPages() {
       }
     });
 
+    // Deduplicate pages by pageId
+    const uniquePages = Array.from(
+      new Map(pages.map(page => [page.pageId, page])).values()
+    );
+
     return {
       success: true,
-      pages: pages.sort((a, b) => a.pageName.localeCompare(b.pageName))
+      pages: uniquePages.sort((a, b) => a.pageName.localeCompare(b.pageName))
     };
   } catch (err) {
     console.error("Error fetching Facebook pages:", err);
@@ -151,7 +163,7 @@ export async function getFacebookPosts({
       const data = docSnap.data();
 
       // Skip soft-deleted posts
-      if (data.deleted === 1) return null;
+      if (data.delete === 1) return null;
 
       // Apply client-side search filter
       const message = (data.message || data.caption || "").toLowerCase();
@@ -229,11 +241,12 @@ export async function getFacebookPosts({
           clicks: data.metrics?.clicks || 0,
           impressions: data.metrics?.impressions || 0
         },
-        status: data.scheduledAt && new Date(data.scheduledAt) > new Date() ? 'scheduled' : 'published',
+        status: data.facebookPostId ? 'published' : (data.scheduledAt ? 'scheduled' : (data.status || 'published')),
         createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
         updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
         scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
-        deleted: data.deleted || 0
+        analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
+        deleted: data.delete || 0
       };
     }));
 
@@ -339,7 +352,7 @@ export async function deleteFacebookPost(postId) {
 
     // Soft delete
     await updateDoc(postRef, {
-      deleted: 1,
+      delete: 1,
       updatedAt: new Date()
     });
 
@@ -353,7 +366,7 @@ export async function deleteFacebookPost(postId) {
 }
 
 // Update a post
-export async function updateFacebookPost(postId, message) {
+export async function updateFacebookPost(postId, message, mediaUrls = null, additionalData = null) {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("token")?.value;
@@ -376,7 +389,7 @@ export async function updateFacebookPost(postId, message) {
       return { success: false, message: "Unauthorized" };
     }
 
-    // Update on Facebook if it has an ID
+    // Update on Facebook only if it has an ID (already published)
     if (postData.facebookPostId && postData.pageId) {
       const { pages } = await fetchFacebookPages();
       const page = pages.find(p => p.pageId === postData.pageId);
@@ -401,10 +414,20 @@ export async function updateFacebookPost(postId, message) {
     }
 
     // Update in Firestore
-    await updateDoc(postRef, {
+    const updateData = {
       message: message,
       updatedAt: new Date()
-    });
+    };
+
+    if (mediaUrls !== null) {
+      updateData.mediaUrls = (mediaUrls && mediaUrls.length > 0) ? mediaUrls : null;
+    }
+
+    if (additionalData !== null) {
+      updateData.additionalData = additionalData;
+    }
+
+    await updateDoc(postRef, updateData);
 
     revalidatePath("/admin/social/facebook/posts");
 
@@ -438,9 +461,9 @@ export async function updatePostSchedule(postId, scheduledAt) {
     }
 
     await updateDoc(postRef, {
-      scheduledAt: new Date(scheduledAt),
+      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
       updatedAt: new Date(),
-      status: 'scheduled'
+      status: scheduledAt ? 'scheduled' : 'published' // If no schedule, assume it should be published (or handle as draft)
     });
 
     revalidatePath("/admin/social/facebook/posts");
@@ -703,17 +726,76 @@ export async function publishFacebookPostNow(postId) {
       return { success: false, message: "Unauthorized" };
     }
 
-    // Update status in Firestore first to reflect in UI
+    // Call Facebook API if not already published
+    let facebookPostId = postData.facebookPostId;
+
+    if (!facebookPostId) {
+      const { pages } = await fetchFacebookPages();
+      const page = pages.find((p) => String(p.pageId) === String(postData.pageId));
+
+      if (!page || !page.accessToken) {
+        return { success: false, message: "Page access token not found" };
+      }
+
+      const accessToken = page.accessToken;
+      const baseBody = {
+        message: postData.message?.trim() || '',
+        access_token: accessToken,
+        published: true,
+      };
+
+      let fbData;
+      const postType = postData.postType || 'text';
+
+      switch (postType) {
+        case "images":
+          if (postData.mediaUrls?.length > 0) {
+            fbData = await handleImagePost(postData.pageId, postData.message, postData.mediaUrls, accessToken, baseBody);
+          } else {
+            fbData = await handleTextPost(postData.pageId, baseBody);
+          }
+          break;
+
+        case "video":
+          if (postData.mediaUrls?.length > 0) {
+            fbData = await handleVideoPost(postData.pageId, postData.message, postData.mediaUrls[0], accessToken, baseBody);
+          } else {
+            return { success: false, message: "No video provided" };
+          }
+          break;
+
+        case "poll":
+          fbData = await handlePollPost(postData.pageId, postData.message, postData.additionalData, baseBody);
+          break;
+
+        case "link":
+          fbData = await handleLinkPost(postData.pageId, postData.message, postData.additionalData, baseBody);
+          break;
+
+        default:
+          fbData = await handleTextPost(postData.pageId, baseBody);
+          break;
+      }
+
+      if (fbData.error) {
+        throw new Error(fbData.error.message);
+      }
+      facebookPostId = fbData.id;
+    }
+
+    // Update status in Firestore
     await updateDoc(postRef, {
       status: 'published',
+      facebookPostId: facebookPostId,
       publishedAt: new Date(),
       updatedAt: new Date(),
       scheduledAt: null // It's no longer scheduled
     });
 
     revalidatePath("/admin/social/facebook/posts");
+    revalidatePath("/admin/social/facebook/calendar");
 
-    return { success: true, message: "Post published successfully!" };
+    return { success: true, message: "Post published successfully!", facebookPostId };
 
   } catch (error) {
     console.error("Error publishing post now:", error);
@@ -773,7 +855,7 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
       if (snapResult.status === 'fulfilled') {
         snapResult.value.forEach(docSnap => {
           const data = docSnap.data();
-          if (data.deleted === 1) return;
+          if (data.delete === 1) return;
 
           allPosts.push({
             id: docSnap.id,
@@ -785,6 +867,7 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
             isPublished: isPublished,
             createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
             updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
+            analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
           });
         });
       }

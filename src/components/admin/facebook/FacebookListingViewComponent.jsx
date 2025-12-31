@@ -322,7 +322,7 @@ export default function ListingViewComponent({
                                         </TableCell>
                                         <TableCell>
                                             <Badge className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-tighter", post.status === 'published' ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200" : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200")}>
-                                                {post.status || "published"}
+                                                {post.status}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
@@ -335,12 +335,12 @@ export default function ListingViewComponent({
                                         <TableCell>
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-gray-900">
-                                                    {post.scheduledAt ? format(new Date(post.scheduledAt), "MMM dd, yyyy") :
-                                                        post.createdAt ? format(new Date(post.createdAt), "MMM dd, yyyy") : "Draft"}
+                                                    {post.status === 'scheduled' ? (post.scheduledAt ? format(new Date(post.scheduledAt), "MMM dd, yyyy") : "N/A") :
+                                                        (post.createdAt ? format(new Date(post.createdAt), "MMM dd, yyyy") : "N/A")}
                                                 </span>
                                                 <span className="text-[10px] font-medium text-gray-400">
-                                                    {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm a") :
-                                                        post.createdAt ? format(new Date(post.createdAt), "h:mm a") : ""}
+                                                    {post.status === 'scheduled' ? (post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm a") : "") :
+                                                        (post.createdAt ? format(new Date(post.createdAt), "h:mm a") : "")}
                                                 </span>
                                             </div>
                                         </TableCell>

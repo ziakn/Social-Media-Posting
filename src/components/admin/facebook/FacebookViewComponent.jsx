@@ -335,7 +335,7 @@ export default function FacebookViewComponent({
                                         <div className="flex flex-col">
                                             <span className="text-sm font-bold text-gray-900 leading-tight hover:underline cursor-pointer">{post.pageName || "Facebook Page"}</span>
                                             <div className="flex items-center gap-1 text-[11px] text-gray-500 font-medium">
-                                                <span>{formatDate(post.scheduledAt || post.createdAt)}</span>
+                                                <span>{formatDate(post.status === 'scheduled' ? post.scheduledAt : post.createdAt)}</span>
                                                 <span>•</span>
                                                 <Globe className="h-2.5 w-2.5" />
                                             </div>
@@ -343,7 +343,7 @@ export default function FacebookViewComponent({
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className={cn("px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-tighter", post.status === 'published' ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700")}>
-                                            {post.status || 'published'}
+                                            {post.status}
                                         </div>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>

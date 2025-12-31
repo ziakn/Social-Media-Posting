@@ -39,7 +39,12 @@ export async function fetchFacebookPages() {
       }
     });
 
-    return { success: true, pages };
+    // Deduplicate pages by pageId
+    const uniquePages = Array.from(
+      new Map(pages.map(page => [page.pageId, page])).values()
+    );
+
+    return { success: true, pages: uniquePages };
   } catch (err) {
     console.error("Error fetching Facebook pages:", err);
     return { success: false, message: err.message, pages: [] };

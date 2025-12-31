@@ -127,7 +127,8 @@ export async function getScheduledPosts({
                 updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
                 createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
                 updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-                deleted: data.deleted || 0
+                analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
+                deleted: data.delete || 0
             };
         }));
 
@@ -178,7 +179,7 @@ export async function updateScheduledPost(postId, updates) {
         }
 
         const postData = postSnap.data();
-        if (postData.deleted === 1) {
+        if (postData.delete === 1) {
             return { success: false, message: "Cannot edit deleted post" };
         }
 
@@ -253,7 +254,7 @@ export async function deleteScheduledPost(postId) {
 
         // Soft delete
         await updateDoc(postRef, {
-            deleted: 1,
+            delete: 1,
             updatedAt: new Date()
         });
 

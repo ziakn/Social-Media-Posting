@@ -48,7 +48,7 @@ import {
 
 // Server Actions
 import {
-  getFacebookPosts, deleteFacebookPost, updatePostSchedule, publishFacebookPostNow, getUserFacebookPages
+  getFacebookPosts, deleteFacebookPost, updatePostSchedule, publishFacebookPostNow, getUserFacebookPages, updateFacebookPost
 } from "@/app/actions/social/facebook/facebookPostsActions";
 import {
   createFacebookTextPost,
@@ -104,9 +104,6 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       const res = await getUserFacebookPages();
       if (res.success) {
         setPages(res.pages || []);
-        if (!selectedPage && res.pages.length > 0) {
-          setSelectedPage(res.pages[0].pageId);
-        }
       }
     }
     loadPages();
@@ -187,20 +184,61 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         };
 
         if (isEditing) {
-          // Simplified update: Facebook usually just allows updating the message or schedule
-          if (scheduling.schedule !== !!initialData?.scheduledAt || scheduling.time !== format(new Date(initialData.scheduledAt), "HH:mm")) {
-            result = await updatePostSchedule(initialData.id, scheduledTime);
-          }
-          // Also handle message update
-          if (postContent.message !== initialData.message) {
-            result = await import("@/app/actions/social/facebook/facebookPostsActions").then(m => m.updateFacebookPost(initialData.id, postContent.message));
+          let scheduleChanged = false;
+          let messageChanged = false;
+          let mediaChanged = false;
+          let linkChanged = false;
+
+          // Robust check for schedule change
+          const oldTime = initialData?.scheduledAt ? new Date(initialData.scheduledAt).getTime() : null;
+          const newTime = scheduledTime ? scheduledTime.getTime() : null;
+
+          if (oldTime !== newTime) {
+            scheduleChanged = true;
           }
 
-          if (result?.success) {
+          if (postContent.message !== initialData.message) {
+            messageChanged = true;
+          }
+
+          // Check for media changes
+          const oldMedia = JSON.stringify(initialData?.mediaUrls || []);
+          const newMedia = JSON.stringify(postContent.media || []);
+          if (oldMedia !== newMedia) {
+            mediaChanged = true;
+          }
+
+          // Check for link changes
+          if (postType === 'link' && postContent.link !== initialData?.additionalData?.link) {
+            linkChanged = true;
+          }
+
+          if (!scheduleChanged && !messageChanged && !mediaChanged && !linkChanged) {
+            toast.info("No changes detected");
+            if (onSuccess) onSuccess();
+            return;
+          }
+
+          try {
+            if (scheduleChanged) {
+              result = await updatePostSchedule(initialData.id, scheduledTime);
+              if (!result.success) throw new Error(result.message);
+            }
+            if (messageChanged || mediaChanged || linkChanged) {
+              const updatedAdditionalData = linkChanged ? { ...initialData.additionalData, link: postContent.link } : null;
+              result = await updateFacebookPost(
+                initialData.id,
+                postContent.message,
+                mediaChanged ? postContent.media : null,
+                updatedAdditionalData
+              );
+              if (!result.success) throw new Error(result.message);
+            }
+
             toast.success("Post updated successfully!");
             if (onSuccess) onSuccess(result);
-          } else if (result) {
-            toast.error(result.message || "Failed to update post");
+          } catch (err) {
+            toast.error(err.message || "Failed to update post");
           }
           return;
         }
@@ -565,7 +603,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           </AlertDialogHeader>
           <AlertDialogFooter className="pt-6">
             <AlertDialogCancel className="rounded-xl border-gray-100 font-black tracking-tight h-12 px-6">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleDelete(deleteDialog.postId)} className="bg-red-600 hover:bg-red-700 text-white font-black rounded-xl h-12 px-8 shadow-lg shadow-red-100">Delete Permanently</AlertDialogAction>
+            <AlertDialogAction onClick={() => handleDelete(deleteDialog.postId)} className="bg-red-600 hover:bg-red-700 text-white font-black rounded-xl h-12 px-8 shadow-lg shadow-red-100">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

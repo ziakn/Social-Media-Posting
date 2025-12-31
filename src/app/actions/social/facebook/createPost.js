@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, collection } from "firebase/firestore";
 import { fetchFacebookPages } from "./getPages";
 
 import { readFile } from 'fs/promises';
@@ -13,7 +13,7 @@ import path from 'path';
 /**
  * Enhanced base function to create a Facebook post
  */
-async function createFacebookPostBase({
+export async function createFacebookPostBase({
   pageId,
   message,
   mediaUrls = [], // Now expects pre-uploaded URLs
@@ -56,43 +56,51 @@ async function createFacebookPostBase({
     };
 
     // Post type specific logic
-    switch (postType) {
-      case "images":
-        if (mediaUrls.length > 0) {
-          fbData = await handleImagePost(pageId, message, mediaUrls, accessToken, baseBody);
-        } else {
-          // Fallback to text post if no images
+    if (scheduledTime) {
+      // Skip Facebook API if scheduled
+      fbData = { id: null };
+    } else {
+      switch (postType) {
+        case "images":
+          if (mediaUrls.length > 0) {
+            fbData = await handleImagePost(pageId, message, mediaUrls, accessToken, baseBody);
+          } else {
+            // Fallback to text post if no images
+            fbData = await handleTextPost(pageId, baseBody);
+          }
+          break;
+
+        case "video":
+          if (mediaUrls.length > 0) {
+            fbData = await handleVideoPost(pageId, message, mediaUrls[0], accessToken, baseBody);
+          } else {
+            return { success: false, message: "No video provided" };
+          }
+          break;
+
+        case "poll":
+          fbData = await handlePollPost(pageId, message, additionalData, baseBody);
+          break;
+
+        case "link":
+          fbData = await handleLinkPost(pageId, message, additionalData, baseBody);
+          break;
+
+        default:
           fbData = await handleTextPost(pageId, baseBody);
-        }
-        break;
+          break;
+      }
 
-      case "video":
-        if (mediaUrls.length > 0) {
-          fbData = await handleVideoPost(pageId, message, mediaUrls[0], accessToken, baseBody);
-        } else {
-          return { success: false, message: "No video provided" };
-        }
-        break;
-
-      case "poll":
-        fbData = await handlePollPost(pageId, message, additionalData, baseBody);
-        break;
-
-      case "link":
-        fbData = await handleLinkPost(pageId, message, additionalData, baseBody);
-        break;
-
-      default:
-        fbData = await handleTextPost(pageId, baseBody);
-        break;
-    }
-
-    if (fbData.error) {
-      throw new Error(fbData.error.message);
+      if (fbData.error) {
+        throw new Error(fbData.error.message);
+      }
     }
 
     // Save to Firestore
-    const postId = fbData.id || `facebook_${Date.now()}`;
+    // Generate a proper Firestore ID
+    const postRef = doc(collection(db, "facebook_posts"));
+    const postId = postRef.id;
+
     await savePostToFirestore({
       postId,
       userId,
@@ -126,7 +134,7 @@ async function createFacebookPostBase({
 }
 
 // Handler functions for different post types
-async function handleImagePost(pageId, message, mediaUrls, accessToken, baseBody) {
+export async function handleImagePost(pageId, message, mediaUrls, accessToken, baseBody) {
   const attachedMedia = [];
 
   // Upload each image to Facebook
@@ -176,7 +184,7 @@ async function handleImagePost(pageId, message, mediaUrls, accessToken, baseBody
   return await fbResponse.json();
 }
 
-async function handleVideoPost(pageId, message, video, accessToken, baseBody) {
+export async function handleVideoPost(pageId, message, video, accessToken, baseBody) {
   const formData = new FormData();
   formData.append("description", message || '');
   formData.append("access_token", accessToken);
@@ -208,7 +216,7 @@ async function handleVideoPost(pageId, message, video, accessToken, baseBody) {
   return await fbResponse.json();
 }
 
-async function handlePollPost(pageId, message, additionalData, baseBody) {
+export async function handlePollPost(pageId, message, additionalData, baseBody) {
   const pollOptions = additionalData.options?.filter((o) => o.trim() !== "") || [];
 
   const pollMessage = `${message || ''}
@@ -234,7 +242,7 @@ ${pollOptions.map((o) => `• ${o}`).join("\n")}
   return await fbResponse.json();
 }
 
-async function handleLinkPost(pageId, message, additionalData, baseBody) {
+export async function handleLinkPost(pageId, message, additionalData, baseBody) {
   const fbResponse = await fetch(
     `https://graph.facebook.com/${pageId}/feed`,
     {
@@ -250,7 +258,7 @@ async function handleLinkPost(pageId, message, additionalData, baseBody) {
   return await fbResponse.json();
 }
 
-async function handleTextPost(pageId, baseBody) {
+export async function handleTextPost(pageId, baseBody) {
   const fbResponse = await fetch(
     `https://graph.facebook.com/${pageId}/feed`,
     {
@@ -277,6 +285,7 @@ async function savePostToFirestore({
 }) {
   await setDoc(doc(db, "facebook_posts", postId), {
     platform: "facebook",
+    delete: 0,
     pageId,
     userId,
     message: message?.trim() || '',
