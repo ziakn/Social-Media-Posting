@@ -8,6 +8,7 @@ import { getAllCalendarPosts } from "@/app/actions/social/instagram/getPosts";
 export default function CalendarViewComponent({
     onDateClick,
     onPostClick,
+    onRefresh,
     refreshTrigger = 0
 }) {
     const [calendarPosts, setCalendarPosts] = useState([]);
@@ -39,6 +40,7 @@ export default function CalendarViewComponent({
                 onMonthChange={setCalendarDate}
                 onDateClick={onDateClick}
                 onPostClick={onPostClick}
+                onRefresh={onRefresh}
             />
         </div>
     );

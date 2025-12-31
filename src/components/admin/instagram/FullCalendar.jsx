@@ -34,6 +34,7 @@ export default function FullCalendar({
     onDateClick,
     onPostClick,
     onMonthChange,
+    onRefresh,
     className,
     mini = false
 }) {
@@ -47,9 +48,7 @@ export default function FullCalendar({
             const result = await publishInstagramPostNow(post.id);
             if (result.success) {
                 toast.success("Post published successfully!");
-                // Trigger a refresh if needed - since posts are passed as props, 
-                // the parent should ideally re-fetch or we should have a refresh callback.
-                // For now, we rely on the parent's data management.
+                if (onRefresh) onRefresh();
             } else {
                 toast.error(result.message || "Failed to publish post");
             }

@@ -28,7 +28,8 @@ export default function ListingViewComponent({
     pageId: initialPageId,
     initialStatus = "all",
     refreshTrigger = 0,
-    onEdit = null
+    onEdit = null,
+    onRefresh = null
 }) {
     const [posts, setPosts] = useState([]);
     const [stats, setStats] = useState(null);
@@ -152,7 +153,8 @@ export default function ListingViewComponent({
             const result = await publishInstagramPostNow(post.id);
             if (result.success) {
                 toast.success("Post published successfully!");
-                loadPosts(true);
+                if (onRefresh) onRefresh();
+                else loadPosts(true);
             } else {
                 toast.error(result.message || "Failed to publish post");
             }
