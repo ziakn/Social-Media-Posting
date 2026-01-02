@@ -211,14 +211,15 @@ export default function TwitterFullCalendar({
                                             <DropdownMenuContent align="start" className="w-40">
                                                 {isPublished ? (
                                                     <>
-                                                        <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'view')}>
-                                                            <Eye className="mr-2 h-4 w-4" />
-                                                            <span>View Tweet</span>
-                                                        </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'analytics')} className="text-blue-600 focus:text-blue-700">
                                                             <BarChart3 className="mr-2 h-4 w-4" />
                                                             <span>View Analytics</span>
                                                         </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => onPostClick && onPostClick(post, 'view')}>
+                                                            <Eye className="mr-2 h-4 w-4" />
+                                                            <span>View Tweet</span>
+                                                        </DropdownMenuItem>
+
                                                     </>
                                                 ) : (
                                                     <>

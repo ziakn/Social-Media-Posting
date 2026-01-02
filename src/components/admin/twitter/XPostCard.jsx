@@ -96,12 +96,13 @@ export default function XPostCard({
                             <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-xl border-gray-100">
                                 {post.status === 'posted' ? (
                                     <>
-                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-black rounded-lg">
-                                            <Eye className="h-4 w-4" /> View Post
-                                        </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2.5 text-xs font-black text-blue-600 rounded-lg">
                                             <BarChart3 className="h-4 w-4" /> View Analytics
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-black rounded-lg">
+                                            <Eye className="h-4 w-4" /> View Post
+                                        </DropdownMenuItem>
+
                                     </>
                                 ) : (
                                     <>
