@@ -40,6 +40,7 @@ import { XLogo } from "@/components/icons/XLogo";
 import { toast } from "sonner";
 import { cn, formatNumber } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
+import { getTwitterPostAnalytics } from "@/app/actions/social/twitter/getAnalytics";
 
 export default function TwitterAnalyticsModal({
     open,
@@ -50,6 +51,7 @@ export default function TwitterAnalyticsModal({
     const [refreshing, setRefreshing] = useState(false);
     const [data, setData] = useState(null);
     const [lastRefreshed, setLastRefreshed] = useState(null);
+    const [isRateLimited, setIsRateLimited] = useState(false);
 
     useEffect(() => {
         if (open && post?.id) {
@@ -81,7 +83,12 @@ export default function TwitterAnalyticsModal({
             if (res.success) {
                 setData(res.data);
                 setLastRefreshed(res.lastRefreshed);
-                if (forceRefresh) toast.success("Analytics refreshed");
+                setIsRateLimited(!!res.isRateLimited);
+                if (res.isRateLimited) {
+                    toast.warning(res.message || "Twitter rate limit reached. Showing cached data.");
+                } else if (forceRefresh) {
+                    toast.success("Analytics refreshed");
+                }
             } else {
                 toast.error(res.message || "Failed to load analytics");
                 if (!data) {
@@ -166,6 +173,12 @@ export default function TwitterAnalyticsModal({
                             <XLogo className="h-5 w-5 text-white" />
                         </div>
                         <DialogTitle className="text-xl font-semibold">Tweet Analytics</DialogTitle>
+                        {isRateLimited && (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 gap-1 px-2 py-0.5 ml-2 h-auto">
+                                <Info className="h-3 w-3" />
+                                Cached
+                            </Badge>
+                        )}
                     </div>
                     <div className="flex items-center gap-4">
                         {lastRefreshed && (

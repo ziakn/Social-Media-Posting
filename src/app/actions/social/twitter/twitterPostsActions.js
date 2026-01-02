@@ -182,9 +182,12 @@ export async function getTwitterPublishedPosts({
                 id: doc.id,
                 ...data,
                 postType,
-                createdAt: data.createdAt?.toDate?.() || null,
-                updatedAt: data.updatedAt?.toDate?.() || null,
-                scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt,
+                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt?.toISOString?.() || null,
+                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt?.toISOString?.() || null,
+                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt?.toISOString?.() || data.scheduledAt || null,
+                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt?.toISOString?.() || data.publishedAt || null,
+                lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate?.toISOString?.() || null,
+                tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt?.toISOString?.() || null,
                 deleted: data.deleted || 0
             };
         });
@@ -292,9 +295,11 @@ export async function getTwitterScheduledPosts({
                 id: doc.id,
                 ...data,
                 postType,
-                createdAt: data.createdAt?.toDate?.() || null,
-                updatedAt: data.updatedAt?.toDate?.() || null,
-                scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt,
+                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt?.toISOString?.() || null,
+                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt?.toISOString?.() || null,
+                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt?.toISOString?.() || data.scheduledAt || null,
+                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt?.toISOString?.() || data.publishedAt || null,
+                tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt?.toISOString?.() || null,
                 deleted: data.deleted || 0
             };
         });
