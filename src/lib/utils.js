@@ -5,6 +5,11 @@ export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
+export function formatNumber(num) {
+  if (!num) return 0;
+  return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(num);
+}
+
 /**
  * Helper to construct Date object correctly from date string/object and time string
  * Ensures we get YYYY-MM-DD from the date and combine it with the time

@@ -203,10 +203,15 @@ export async function createTwitterPost({
  * Helper to upload media to Twitter v2 (Direct Blob/Chunked)
  */
 export async function handleTwitterMediaUpload(media, accessToken) {
-    const { url, type: rawMimeType } = media;
+    const { url, mimeType: rawMimeType, type: genericType } = media;
 
-    // Normalize MIME type and detect category
-    let mimeType = rawMimeType || "image/jpeg";
+    // Prioritize explicit mimeType, fallback to detection or default
+    let mimeType = rawMimeType;
+    if (!mimeType) {
+        // Fallback for cases where mimeType might be missing
+        mimeType = url.endsWith('.mp4') ? "video/mp4" : "image/jpeg";
+    }
+    // Normalize logic
     if (mimeType === "image/jpg") mimeType = "image/jpeg";
 
     const isVideo = mimeType.startsWith("video");
@@ -230,9 +235,11 @@ export async function handleTwitterMediaUpload(media, accessToken) {
             buffer = await readFile(filePath);
         }
 
-        console.log(`[Twitter] Preparing native upload for ${mimeType} (${buffer.length} bytes)`);
+        console.log(`[Twitter] Preparing v2 upload for ${mimeType} (${buffer.length} bytes)`);
 
-        // 1. INITIALIZE (X API v2)
+        // 1. INITIALIZE (api.twitter.com/2/media/upload)
+        // Using the v2-style endpoint which seems to accept OAuth 2.0 Bearer tokens for some users/tiers
+        // Previous error "media_type does not have a value in the enumeration" confirms this endpoint validates input
         const initRes = await fetch("https://api.twitter.com/2/media/upload/initialize", {
             method: "POST",
             headers: {
@@ -241,15 +248,14 @@ export async function handleTwitterMediaUpload(media, accessToken) {
             },
             body: JSON.stringify({
                 total_bytes: buffer.length,
-                media_type: mimeType, // Native MIME type from client
+                media_type: mimeType, // Corrected: sending valid MIME type
                 media_category: mediaCategory,
             }),
         });
 
         const initData = await handleTwitterResponse(initRes, "initialize media upload");
 
-        // Comprehensive ID extraction for X API v2 and v1.1
-        // PRIORITY: Prioritize string-based IDs to avoid JSON precision loss in JS numbers
+        // Comprehensive ID extraction
         const mediaId =
             initData.data?.id_string ||
             initData.data?.media_id_string ||
@@ -264,26 +270,25 @@ export async function handleTwitterMediaUpload(media, accessToken) {
             throw new Error(`Media ID missing from INIT response.`);
         }
 
-        // Ensure it's treated as a string everywhere
         const mediaIdStr = String(mediaId);
         console.log(`[Twitter] Media initialized with ID: ${mediaIdStr}`);
 
-        // 2. APPEND (Chunked upload for robustness)
-        const CHUNK_SIZE = 4.5 * 1024 * 1024; // 4.5MB to stay safely under 5MB limit
+        // 2. APPEND (Chunked)
+        const CHUNK_SIZE = 4.5 * 1024 * 1024; // 4.5MB
         let segmentIndex = 0;
 
         for (let i = 0; i < buffer.length; i += CHUNK_SIZE) {
             const chunk = buffer.slice(i, i + CHUNK_SIZE);
-            const chunkBlob = new Blob([chunk], { type: mimeType }); // Native MIME type for each segment
+            const chunkBlob = new Blob([chunk], { type: mimeType });
 
             const appendData = new FormData();
             appendData.append("segment_index", segmentIndex.toString());
-
-            // Use appropriate filename extension based on MIME type
+            // Extension based on mimeType
             const extension = mimeType.split('/')[1] || (isVideo ? "mp4" : "jpg");
             appendData.append("media", chunkBlob, `media.${extension}`);
 
-            console.log(`[Twitter] Appending segment ${segmentIndex} (${chunk.length} bytes) as ${mimeType}...`);
+            console.log(`[Twitter] Appending segment ${segmentIndex} (${chunk.length} bytes)...`);
+
             const appendRes = await fetch(`https://api.twitter.com/2/media/upload/${mediaIdStr}/append`, {
                 method: "POST",
                 headers: {
@@ -293,6 +298,7 @@ export async function handleTwitterMediaUpload(media, accessToken) {
             });
 
             if (!appendRes.ok) {
+                // v2 might return JSON error
                 await handleTwitterResponse(appendRes, `append media segment ${segmentIndex}`);
             }
             segmentIndex++;
@@ -309,17 +315,16 @@ export async function handleTwitterMediaUpload(media, accessToken) {
 
         const finalizeData = await handleTwitterResponse(finalizeRes, "finalize media upload");
 
-        // 4. STATUS CHECK (For videos/GIFs/Larger images)
+        // 4. STATUS CHECK (For videos/GIFs)
         const processingInfo = finalizeData.data?.processing_info || finalizeData.processing_info;
         if (processingInfo || isVideo || isGif) {
             let state = (processingInfo?.state || "pending").toLowerCase();
             let checkInterval = (processingInfo?.check_after_secs || 5) * 1000;
 
-            console.log(`[Twitter] Initial video processing state: ${state}`);
+            console.log(`[Twitter] Initial processing state: ${state}`);
 
-            // Even if "succeeded" immediately, we MUST wait for propagation
+            // Safety wait for "succeeded" to propagate
             if (state === "succeeded") {
-                console.log("[Twitter] Video already succeeded, but adding propagation delay...");
                 await new Promise(resolve => setTimeout(resolve, 5000));
             }
 
@@ -328,10 +333,9 @@ export async function handleTwitterMediaUpload(media, accessToken) {
 
             while ((state === "pending" || state === "in_progress") && attempts < maxAttempts) {
                 attempts++;
-                console.log(`[Twitter] Waiting for video processing... (${state}) - polling in ${checkInterval / 1000}s (Attempt ${attempts}/${maxAttempts})`);
+                console.log(`[Twitter] Polling status... (Attempt ${attempts}/${maxAttempts})`);
                 await new Promise(resolve => setTimeout(resolve, checkInterval));
 
-                // Note: Correct v2 STATUS endpoint often requires query param media_id
                 const statusRes = await fetch(`https://api.twitter.com/2/media/upload?media_id=${mediaIdStr}`, {
                     method: "GET",
                     headers: {
@@ -341,43 +345,41 @@ export async function handleTwitterMediaUpload(media, accessToken) {
 
                 if (statusRes.ok) {
                     const statusData = await statusRes.json();
-                    // Handle various response patterns (v2 can wrap in data or be at top level)
                     const info = statusData.data?.processing_info || statusData.processing_info || (statusData.data?.state ? statusData.data : null);
 
                     if (info) {
                         state = (info.state || state).toLowerCase();
                         checkInterval = (info.check_after_secs || 5) * 1000;
-                    } else {
-                        console.warn("[Twitter] Polling response missing processing_info, retrying...");
+                    } else if (statusData.data?.media_id || statusData.media_id) {
+                        // Fallback success assumption if media object exists but no processing info?
+                        // Better to stick with 'succeeded' check if possible.
+                        if (!info) console.warn("[Twitter] Polling: No processing info found.");
                     }
 
-                    console.log(`[Twitter] Current polling state: ${state}`);
+                    console.log(`[Twitter] Status: ${state}`);
 
                     if (state === "failed") {
-                        const errorMsg = info?.error?.message || "Video processing failed on Twitter's side.";
-                        console.error("[Twitter] Video processing failed:", info);
+                        const errorMsg = info?.error?.message || "Processing failed";
                         throw new Error(`Twitter video processing failed: ${errorMsg}`);
                     }
 
                     if (state === "succeeded") {
-                        console.log("[Twitter] Video processing succeeded! Adding 6s safety delay for full propagation...");
+                        console.log("[Twitter] Video processing succeeded! Allow propagation...");
                         await new Promise(resolve => setTimeout(resolve, 6000));
                         break;
                     }
+
                 } else {
-                    const errorData = await statusRes.json().catch(() => ({}));
-                    console.error("[Twitter] Media STATUS check failed:", errorData);
-                    // For 4xx, retry a few times unless it's obvious (like 401/403)
+                    console.warn("[Twitter] Status check failed");
                     if (statusRes.status === 404) {
-                        console.warn("[Twitter] Status endpoint returned 404, maybe using different path... trying fallback path in next attempt");
-                        // Future: try fallback to /2/media/upload/{id} ?
+                        // Sometimes 404 means handled by different server?
                     }
                 }
             }
 
-            if (attempts >= maxAttempts) {
-                console.warn("[Twitter] Video processing polling timed out before success.");
-                throw new Error("Video processing timed out on Twitter. Please try again.");
+            if (state !== "succeeded" && attempts >= maxAttempts) {
+                console.warn("[Twitter] Processing polling timed out.");
+                throw new Error("Video processing timed out.");
             }
         }
 
