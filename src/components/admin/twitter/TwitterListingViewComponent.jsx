@@ -324,8 +324,8 @@ export default function TwitterListingViewComponent({
                                             <div className="space-y-1">
                                                 <p className="text-sm font-bold text-gray-900 truncate max-w-md">{post.message || post.caption || "No content"}</p>
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className="text-[11px] font-bold text-gray-700 truncate max-w-[100px]">{post.name || "X User"}</span>
-                                                    <Badge variant="outline" className="text-[9px] font-black uppercase text-black bg-black border-sky-100 rounded-md py-0 px-1.5">{post.username ? `@${post.username}` : "N/A"}</Badge>
+                                                    {/* <span className="text-[11px] font-bold text-gray-700 truncate max-w-[100px]">{post.name || "X User"}</span> */}
+                                                    <Badge variant="outline" className="text-[9px] font-black uppercase text-white bg-black border-sky-100 rounded-md py-0 px-1.5">{post.username ? `@${post.username}` : "N/A"}</Badge>
                                                     <div className="w-1 h-1 rounded-full bg-gray-300" />
                                                     <span className="text-[10px] text-gray-400 flex items-center gap-1 font-medium"><Globe className="h-2.5 w-2.5" /> {post.postType || "text"}</span>
                                                 </div>
@@ -363,19 +363,20 @@ export default function TwitterListingViewComponent({
                                                 <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-xl border-gray-100">
                                                     {post.status === 'posted' ? (
                                                         <>
+                                                            <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2.5 text-xs font-black text-blue-600 rounded-lg">
+                                                                <BarChart3 className="h-4 w-4" /> View Analytics
+                                                            </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-black rounded-lg">
                                                                 <Eye className="h-4 w-4" /> View Post
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2.5 text-xs font-black text-black rounded-lg">
-                                                                <BarChart3 className="h-4 w-4" /> View Analytics
-                                                            </DropdownMenuItem>
+
                                                         </>
                                                     ) : (
                                                         <>
                                                             <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-black rounded-lg">
                                                                 <Edit className="h-4 w-4" /> Edit Post
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="gap-2.5 text-xs font-black text-black rounded-lg">
+                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="gap-2.5 text-xs font-black text-blue-600 rounded-lg">
                                                                 <Send className="h-4 w-4" /> Publish Now
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => onEditClick(post, 'delete')} className="gap-2.5 text-xs font-black text-red-600 rounded-lg">

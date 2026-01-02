@@ -455,19 +455,19 @@ export default function PublishedPosts({ accountId: initialAccountId, viewMode =
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
             {/* Premium Compact Header */}
-            <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg shadow-sky-50/20 p-5 lg:p-6">
+            <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-xl shadow-gray-100 p-5 lg:p-6">
                 {/* Background Decorative Elements */}
-                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-gradient-to-br from-sky-200/10 to-indigo-200/10 rounded-full blur-2xl pointer-events-none" />
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-gray-50 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
-                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-blue-50 border border-sky-100 text-blue-500">
-                            <XLogo className="h-3 w-3" />
-                            <span className="text-[9px] font-black uppercase tracking-wider">X Content Studio</span>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black border border-gray-800 text-white shadow-sm">
+                            <XLogo className="h-3 w-3 text-white fill-white" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-white">X Content Studio</span>
                         </div>
 
-                        <div className="space-y-0.5">
-                            <h1 className="text-2xl lg:text-3xl font-black tracking-tight bg-gradient-to-r from-gray-900 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                        <div className="space-y-1">
+                            <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-gray-900">
                                 X Post Manager
                             </h1>
                             <p className="text-gray-500 max-w-md text-xs font-medium leading-relaxed">
@@ -477,14 +477,12 @@ export default function PublishedPosts({ accountId: initialAccountId, viewMode =
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* Proactively showing some profile pics if available or placeholders -> REMOVED to avoid confusion */}
-
                         <Button
                             onClick={() => {
                                 setCreateInitialData(null);
                                 setIsCreating(true);
                             }}
-                            className="group relative px-6 h-11 bg-black text-white hover:bg-gray-800 hover:to-indigo-600 text-white font-black rounded-xl shadow-xl shadow-gray-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                            className="group relative px-6 h-11 bg-black hover:bg-gray-900 text-white font-black rounded-xl shadow-lg shadow-gray-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 border-0"
                         >
                             <div className="relative flex items-center gap-2">
                                 <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />

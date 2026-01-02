@@ -93,25 +93,25 @@ export default function XPostCard({
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 rounded-xl shadow-xl border-gray-100">
+                            <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-xl border-gray-100">
                                 {post.status === 'posted' ? (
                                     <>
-                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-bold rounded-lg cursor-pointer">
-                                            <Eye className="h-4 w-4" /> View Details
+                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-black rounded-lg">
+                                            <Eye className="h-4 w-4" /> View Post
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2.5 text-xs font-bold text-black rounded-lg cursor-pointer">
+                                        <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2.5 text-xs font-black text-blue-600 rounded-lg">
                                             <BarChart3 className="h-4 w-4" /> View Analytics
                                         </DropdownMenuItem>
                                     </>
                                 ) : (
                                     <>
-                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-bold rounded-lg cursor-pointer">
+                                        <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 text-xs font-black rounded-lg">
                                             <Edit className="h-4 w-4" /> Edit Post
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={(e) => onPublishNow(e, post)} className="gap-2.5 text-xs font-bold text-black rounded-lg cursor-pointer">
+                                        <DropdownMenuItem onClick={(e) => onPublishNow(e, post)} className="gap-2.5 text-xs font-black text-blue-600 rounded-lg">
                                             <Send className="h-4 w-4" /> Publish Now
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => onEditClick(post, 'delete')} className="gap-2.5 text-xs font-bold text-red-600 rounded-lg cursor-pointer">
+                                        <DropdownMenuItem onClick={() => onEditClick(post, 'delete')} className="gap-2.5 text-xs font-black text-red-600 rounded-lg">
                                             <Trash2 className="h-4 w-4" /> Delete Post
                                         </DropdownMenuItem>
                                     </>
