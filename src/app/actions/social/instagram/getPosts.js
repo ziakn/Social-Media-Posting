@@ -168,14 +168,13 @@ export async function getPublishedPosts({
         mediaUrl: getMediaUrl(data),
         carouselMedia: data.postType === "carousel" ? data.content?.images : [],
         mediaType: data.postType,
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-        scheduledAt: data.scheduledAt?.toDate?.() || null,
+        createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt?.toISOString?.() || new Date().toISOString(),
+        scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt?.toISOString?.() || null,
         instagramPostId: data.instagramPostId,
         metrics: {
           likes: data.metrics?.likes || 0,
           comments: data.metrics?.comments || 0,
           reach: data.metrics?.reach || 0,
-          engagement: data.metrics?.engagement || 0,
           engagement: data.metrics?.engagement || 0,
           views: data.metrics?.views || 0
         },
@@ -445,14 +444,13 @@ export async function getScheduledInstagramPosts({
         mediaUrl: getMediaUrl(data),
         carouselMedia: data.postType === "carousel" ? data.content?.images : [],
         mediaType: data.postType,
-        createdAt: data.createdAt?.toDate?.() || new Date(),
-        scheduledAt: data.scheduledAt?.toDate?.() || null,
+        createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt?.toISOString?.() || new Date().toISOString(),
+        scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt?.toISOString?.() || null,
         instagramPostId: data.instagramPostId,
         metrics: {
           likes: data.metrics?.likes || 0,
           comments: data.metrics?.comments || 0,
           reach: data.metrics?.reach || 0,
-          engagement: data.metrics?.engagement || 0,
           engagement: data.metrics?.engagement || 0,
           views: data.metrics?.views || 0
         },
@@ -572,7 +570,7 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
         postType: data.postType,
         caption: data.content?.caption || "",
         mediaUrl: getMediaUrl(data),
-        scheduledAt: data.createdAt?.toDate?.() || new Date(), // Use created date for calendar placement
+        scheduledAt: data.createdAt?.toDate?.().toISOString() || data.createdAt?.toISOString?.() || new Date().toISOString(), // Use created date for calendar placement
         status: "published",
         isPublished: true,
         metrics: data.metrics,
@@ -592,7 +590,7 @@ export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
         postType: data.postType,
         caption: data.content?.caption || "",
         mediaUrl: getMediaUrl(data),
-        scheduledAt: data.scheduledAt?.toDate?.() || null,
+        scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt?.toISOString?.() || null,
         status: "scheduled",
         isPublished: false,
         instagramPostId: data.instagramPostId,

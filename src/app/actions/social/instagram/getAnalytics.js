@@ -90,7 +90,7 @@ export async function getInstagramPostAnalytics(pageId, postId, refresh = false)
                     success: true,
                     data: cachedData.analytics,
                     cached: true,
-                    lastRefreshed: cachedData.analyticsFetchedAt?.toDate?.() || null
+                    lastRefreshed: cachedData.analyticsFetchedAt?.toDate?.().toISOString() || cachedData.analyticsFetchedAt?.toISOString?.() || null
                 };
             }
         }
@@ -201,7 +201,7 @@ export async function getInstagramPostAnalytics(pageId, postId, refresh = false)
             success: true,
             data: analyticsPayload,
             cached: false,
-            lastRefreshed: new Date()
+            lastRefreshed: new Date().toISOString()
         };
 
     } catch (err) {

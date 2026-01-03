@@ -76,6 +76,30 @@ async function getThreadsAccount(userId, platformUserId) {
 /**
  * Create Threads Post
  */
+
+/**
+ * Get all connected Threads accounts for the current user
+ */
+export async function getUserThreadsAccounts() {
+    try {
+        const user = await getAuthenticatedUser();
+        const q = query(
+            collection(db, "socialAccounts"),
+            where("userId", "==", user.id),
+            where("platform", "==", "threads"),
+            where("status", "==", "active")
+        );
+        const snapshot = await getDocs(q);
+        const accounts = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        return { success: true, accounts };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+}
+
 export async function createThreadsPost({ pageId, text, mediaUrl, mediaType, scheduling }) {
     const user = await getAuthenticatedUser();
     const { accountId, accessToken } = await getThreadsAccount(user.id, pageId);
