@@ -15,6 +15,7 @@ import {
   Link2,
   Image,
   Globe,
+  CreditCard,
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -174,6 +175,20 @@ export default function AdminLayout({ children }) {
                   <Globe size={18} />
                   {sidebarOpen && (
                     <span className="text-sm font-medium">Platforms</span>
+                  )}
+                </Link>
+              </li>
+            )}
+            {hasPermission('view_billing') || true && ( // Allow view for now or check for a specific permission
+              <li key="/pricing">
+                <Link
+                  href="/pricing"
+                  className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                    }`}
+                >
+                  <CreditCard size={18} />
+                  {sidebarOpen && (
+                    <span className="text-sm font-medium">Billing</span>
                   )}
                 </Link>
               </li>

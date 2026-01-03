@@ -46,8 +46,8 @@ export default function Navbar({ user }) {
         {/* Dropdown menu */}
         {showMenu && (
           <div className="absolute right-0 mt-10 w-48 bg-white border rounded-md shadow-lg z-50">
-            <button className={menuItemClass()} onClick={() => alert('Profile clicked')}>
-              Profile
+            <button className={menuItemClass()} onClick={() => router.push('/pricing')}>
+              Billing
             </button>
             <button className={menuItemClass(true)} onClick={handleLogout}>
               Logout

@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  CreditCard,
 } from "lucide-react";
 
 export default function Sidebar() {
@@ -18,6 +19,7 @@ export default function Sidebar() {
   const menuItems = [
     { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
     { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
+    { label: "Pricing", href: "/pricing", icon: <CreditCard size={18} /> },
     { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
   ];
 
