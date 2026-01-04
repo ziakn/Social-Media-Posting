@@ -60,6 +60,8 @@ export default function ThreadsPreview({
                             </div>
                         )}
 
+
+
                         {/* Media */}
                         <div className="relative group">
                             {currentItem ? (
@@ -94,10 +96,12 @@ export default function ThreadsPreview({
                         </div>
 
                         {/* Footer Info */}
-                        <div className="flex items-center gap-2 text-[13px] text-gray-400 font-medium">
-                            <span>0 replies</span>
-                            <span>·</span>
-                            <span>0 likes</span>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2 text-[13px] text-gray-400 font-medium">
+                                <span>0 replies</span>
+                                <span>·</span>
+                                <span>0 likes</span>
+                            </div>
                         </div>
                     </div>
                 </div>

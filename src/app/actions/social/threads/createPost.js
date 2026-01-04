@@ -106,48 +106,113 @@ export async function getUserThreadsAccounts() {
     }
 }
 
-export async function createThreadsPost({ pageId, text, mediaUrl, mediaType, scheduling }) {
-    const user = await getAuthenticatedUser();
-    const { accountId, accessToken } = await getThreadsAccount(user.id, pageId);
+/**
+ * Create Threads Post
+ */
+export async function createThreadsPost({ pageId, text, media = [], topicTag, linkAttachment, replyControl, scheduling }) {
+    try {
+        const user = await getAuthenticatedUser();
+        const { accountId, accessToken } = await getThreadsAccount(user.id, pageId);
 
-    // 1. Create Media Container
-    const params = {
-        media_type: mediaType || "TEXT",
-    };
+        // If scheduling, save to Firestore and exit
+        if (scheduling) {
+            const postRef = await addDoc(collection(db, "threads_posts"), {
+                userId: user.id,
+                accountId: accountId,
+                platform: "threads",
+                content: { text, media, topicTag, linkAttachment, replyControl },
+                status: "scheduled",
+                scheduledAt: scheduling,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            return { success: true, message: "Thread scheduled successfully", firestoreId: postRef.id };
+        }
 
-    if (text) params.text = text;
-    if (mediaUrl) {
-        if (mediaType === "IMAGE") params.image_url = mediaUrl;
-        if (mediaType === "VIDEO") params.video_url = mediaUrl;
+        let threadsPostId = null;
+        let creationId = null;
+
+        // Determine if it's a carousel (2-20 items)
+        if (media.length > 1) {
+            // 1. Create individual media containers
+            const childIds = [];
+            for (const item of media) {
+                const childParams = {
+                    is_carousel_item: true,
+                    media_type: item.type?.toUpperCase() || "IMAGE",
+                };
+                if (childParams.media_type === "IMAGE") childParams.image_url = item.url;
+                if (childParams.media_type === "VIDEO") childParams.video_url = item.url;
+
+                const childContainer = await makeThreadsRequest(`/${accountId}/threads`, childParams, accessToken);
+                childIds.push(childContainer.id);
+            }
+
+            // Carousel processing wait
+            await new Promise(r => setTimeout(r, 15000));
+
+            // 2. Create carousel container
+            const carouselParams = {
+                media_type: "CAROUSEL",
+                children: childIds.join(","),
+            };
+            if (text) carouselParams.text = text;
+            if (topicTag) carouselParams.topic_tag = topicTag;
+            if (replyControl && replyControl !== "everyone") carouselParams.reply_control = replyControl;
+
+            const carouselContainer = await makeThreadsRequest(`/${accountId}/threads`, carouselParams, accessToken);
+            creationId = carouselContainer.id;
+        } else {
+            // Single post (Text, Image, or Video)
+            const params = {};
+
+            if (media.length === 1) {
+                const item = media[0];
+                params.media_type = item.type?.toUpperCase() || "IMAGE";
+                if (params.media_type === "IMAGE") params.image_url = item.url;
+                if (params.media_type === "VIDEO") params.video_url = item.url;
+            } else {
+                params.media_type = "TEXT";
+            }
+
+            if (text) params.text = text;
+            if (topicTag) params.topic_tag = topicTag;
+            if (params.media_type === "TEXT" && linkAttachment) params.link_attachment = linkAttachment;
+            if (replyControl && replyControl !== "everyone") params.reply_control = replyControl;
+
+            const container = await makeThreadsRequest(`/${accountId}/threads`, params, accessToken);
+            creationId = container.id;
+        }
+
+        // Wait for media processing (Threads recommends ~30s, we'll wait 20s)
+        if (media.length > 0) {
+            console.log("Waiting for Threads media processing...");
+            await new Promise(r => setTimeout(r, 20000));
+        }
+
+        // 3. Publish container
+        const publishResult = await makeThreadsRequest(`/${accountId}/threads_publish`, {
+            creation_id: creationId
+        }, accessToken);
+        threadsPostId = publishResult.id;
+
+        // 4. Save to Firestore
+        const postRef = await addDoc(collection(db, "threads_posts"), {
+            userId: user.id,
+            accountId: accountId,
+            platform: "threads",
+            content: { text, media, topicTag, linkAttachment, replyControl },
+            threadsCreationId: creationId,
+            threadsPostId: threadsPostId,
+            status: "published",
+            publishedAt: serverTimestamp(),
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        return { success: true, threadsPostId: threadsPostId, firestoreId: postRef.id };
+    } catch (error) {
+        console.error("Create Threads Post Error:", error);
+        return { success: false, message: error.message };
     }
-
-    const container = await makeThreadsRequest(`/${accountId}/threads`, params, accessToken);
-    const creationId = container.id;
-
-    // Threads recommends waiting ~30s for media processing, 
-    // but for text it's instant. For media we might need to poll.
-    if (mediaType === "IMAGE" || mediaType === "VIDEO") {
-        console.log("Waiting for Threads media processing...");
-        await new Promise(r => setTimeout(r, 10000)); // Wait 10s initially
-    }
-
-    // 2. Publish container
-    const publishResult = await makeThreadsRequest(`/${accountId}/threads_publish`, {
-        creation_id: creationId
-    }, accessToken);
-
-    // 3. Save to Firestore
-    const postRef = await addDoc(collection(db, "threads_posts"), {
-        userId: user.id,
-        accountId: accountId,
-        platform: "threads",
-        content: { text, mediaUrl, mediaType },
-        threadsCreationId: creationId,
-        threadsPostId: publishResult.id,
-        status: "published",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
-
-    return { success: true, threadsPostId: publishResult.id, firestoreId: postRef.id };
 }
