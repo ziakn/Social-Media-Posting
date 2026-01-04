@@ -36,7 +36,8 @@ export async function POST(request) {
 
         await writeFile(filepath, buffer);
 
-        const publicUrl = `${relativeUploadDir}/${filename}`;
+        const origin = request.nextUrl.origin;
+        const publicUrl = `${origin}${relativeUploadDir}/${filename}`;
 
         return NextResponse.json({
             url: publicUrl,

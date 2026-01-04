@@ -83,7 +83,7 @@ export async function getThreadsPosts({
                 if (!message.includes(filters.searchQuery.toLowerCase())) return;
             }
 
-            allPosts.push({
+            const serializedPost = {
                 id: docSnap.id,
                 ...data,
                 createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
@@ -91,7 +91,11 @@ export async function getThreadsPosts({
                 scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
                 publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
                 lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate || null,
-            });
+            };
+
+            // Ensure no raw Timestamps remain if they were nested or added later
+            // (Though Threads posts currently only have these top-level ones)
+            allPosts.push(serializedPost);
         });
 
         // Manual Pagination (matching Instagram pattern)
@@ -216,9 +220,10 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
             return {
                 id: doc.id,
                 ...data,
-                scheduledAt: date?.toDate?.().toISOString() || date || null,
+                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
                 createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
                 updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
                 status: data.status || "published"
             };
         }).filter(Boolean);

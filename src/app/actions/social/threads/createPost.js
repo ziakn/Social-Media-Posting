@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 
 /**
  * Make request to Threads Graph API
@@ -109,7 +110,15 @@ export async function getUserThreadsAccounts() {
 /**
  * Create Threads Post
  */
-export async function createThreadsPost({ pageId, text, media = [], topicTag, linkAttachment, replyControl, scheduling }) {
+export async function createThreadsPost({
+    pageId,
+    text = "",
+    media = [],
+    topicTag = null,
+    linkAttachment = null,
+    replyControl = "everyone",
+    scheduling = null
+}) {
     try {
         const user = await getAuthenticatedUser();
         const { accountId, accessToken } = await getThreadsAccount(user.id, pageId);
@@ -136,13 +145,16 @@ export async function createThreadsPost({ pageId, text, media = [], topicTag, li
         if (media.length > 1) {
             // 1. Create individual media containers
             const childIds = [];
-            for (const item of media) {
+            for (let i = 0; i < media.length; i++) {
+                const item = media[i];
+                const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type, i) : getAbsoluteUrl(item.url);
+
                 const childParams = {
                     is_carousel_item: true,
                     media_type: item.type?.toUpperCase() || "IMAGE",
                 };
-                if (childParams.media_type === "IMAGE") childParams.image_url = item.url;
-                if (childParams.media_type === "VIDEO") childParams.video_url = item.url;
+                if (childParams.media_type === "IMAGE") childParams.image_url = mediaUrl;
+                if (childParams.media_type === "VIDEO") childParams.video_url = mediaUrl;
 
                 const childContainer = await makeThreadsRequest(`/${accountId}/threads`, childParams, accessToken);
                 childIds.push(childContainer.id);
@@ -168,9 +180,11 @@ export async function createThreadsPost({ pageId, text, media = [], topicTag, li
 
             if (media.length === 1) {
                 const item = media[0];
+                const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type) : getAbsoluteUrl(item.url);
+
                 params.media_type = item.type?.toUpperCase() || "IMAGE";
-                if (params.media_type === "IMAGE") params.image_url = item.url;
-                if (params.media_type === "VIDEO") params.video_url = item.url;
+                if (params.media_type === "IMAGE") params.image_url = mediaUrl;
+                if (params.media_type === "VIDEO") params.video_url = mediaUrl;
             } else {
                 params.media_type = "TEXT";
             }

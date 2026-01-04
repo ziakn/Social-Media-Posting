@@ -60,6 +60,8 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
     const [postContent, setPostContent] = useState({
         message: initialData?.content?.text || initialData?.message || "",
         media: initialData?.content?.media || initialData?.mediaUrls || (initialData?.content?.mediaUrl ? [{ url: initialData.content.mediaUrl, type: initialData.content.mediaType }] : []),
+        topicTag: initialData?.content?.topicTag || null,
+        replyControl: initialData?.content?.replyControl || "everyone",
     });
 
     const [scheduling, setScheduling] = useState({
@@ -140,6 +142,8 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
                     pageId: selectedAccount,
                     text: postContent.message,
                     media: postContent.media,
+                    topicTag: postContent.topicTag,
+                    replyControl: postContent.replyControl,
                     scheduling: scheduledTime
                 });
 
@@ -274,6 +278,45 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
                                         <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-black">Select Media</span>
                                         <span className="text-[9px] text-gray-400 font-medium">Drag & drop or browse from gallery</span>
                                     </Button>
+                                </div>
+
+                                <Separator className="bg-gray-50/50" />
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Topic Tag */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Topic Tag</Label>
+                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">(One Only)</span>
+                                        </div>
+                                        <Input
+                                            disabled={isReadOnly}
+                                            placeholder="e.g. Technology"
+                                            value={postContent.topicTag || ""}
+                                            onChange={(e) => setPostContent(prev => ({ ...prev, topicTag: e.target.value }))}
+                                            className="h-11 rounded-xl border-gray-100 bg-gray-50/50 px-4 font-bold text-xs focus:bg-white transition-all shadow-inner"
+                                        />
+                                        <p className="text-[9px] text-gray-400 font-medium italic">No periods (.) or ampersands (&) allowed</p>
+                                    </div>
+
+                                    {/* Reply Controls */}
+                                    <div className="space-y-3">
+                                        <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Who can reply</Label>
+                                        <Select
+                                            disabled={isReadOnly}
+                                            value={postContent.replyControl}
+                                            onValueChange={(val) => setPostContent(prev => ({ ...prev, replyControl: val }))}
+                                        >
+                                            <SelectTrigger className="h-11 rounded-xl border-gray-100 bg-gray-50/50 px-4 font-bold text-xs focus:bg-white transition-all shadow-inner">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-2xl border-gray-100 shadow-xl">
+                                                <SelectItem value="everyone" className="text-xs font-bold py-3">Everyone</SelectItem>
+                                                <SelectItem value="accounts_you_follow" className="text-xs font-bold py-3">Accounts you follow</SelectItem>
+                                                <SelectItem value="mentioned_only" className="text-xs font-bold py-3">Mentioned accounts only</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
