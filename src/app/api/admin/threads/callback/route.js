@@ -44,7 +44,11 @@ export async function GET(request) {
 
         const tokenData = await tokenRes.json();
         if (tokenData.error) {
-            return NextResponse.json({ error: tokenData.error.message }, { status: 400 });
+            console.error("Threads Access Token Error:", tokenData.error);
+            return NextResponse.json({
+                error: tokenData.error.message || "Failed to exchange code for token",
+                details: tokenData.error
+            }, { status: 400 });
         }
 
         const shortLivedUserToken = tokenData.access_token;
@@ -73,7 +77,11 @@ export async function GET(request) {
         const profileData = await profileRes.json();
 
         if (profileData.error) {
-            return NextResponse.json({ error: profileData.error.message }, { status: 400 });
+            console.error("Threads Profile Fetch Error:", profileData.error);
+            return NextResponse.json({
+                error: profileData.error.message || "Failed to fetch profile",
+                details: profileData.error
+            }, { status: 400 });
         }
 
         // 4. Check if account already exists

@@ -28,21 +28,21 @@ export async function disconnectThreadsAccount() {
             return { success: false, message: "No active Threads account found" };
         }
 
-        // Deactivate or delete all found Threads accounts for this user
-        const disconnectPromises = snapshot.docs.map(doc =>
-            // Option 1: Soft delete (set status to inactive)
-            // updateDoc(doc.ref, { status: "inactive", disconnectedAt: new Date() })
-
-            // Option 2: Hard delete (remove document) - often cleaner for "Disconnect" actions unless history is needed
-            deleteDoc(doc.ref)
+        // Deactivate all found Threads accounts for this user (Soft Delete)
+        const disconnectPromises = snapshot.docs.map(docSnap =>
+            updateDoc(docSnap.ref, {
+                status: "inactive",
+                disconnectedAt: new Date(),
+                accessToken: ""
+            })
         );
 
         await Promise.all(disconnectPromises);
 
-        return { success: true, message: "Threads account disconnected successfully" };
+        return { success: true, message: "Threads disconnected successfully" };
 
     } catch (error) {
         console.error("Error disconnecting Threads account:", error);
-        return { success: false, message: "Failed to disconnect Threads account" };
+        return { success: false, message: error.message };
     }
 }
