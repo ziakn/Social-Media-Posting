@@ -24,6 +24,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
 import GalleryModal from "@/components/gallery/GalleryModal";
+import { Separator } from "@/components/ui/separator";
 
 // Icons
 import {
@@ -55,7 +56,6 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
     const isEditing = !!initialData?.id;
     const isReadOnly = initialData?.readOnly || false;
 
-    const [postType, setPostType] = useState(initialData?.postType || "text");
     const [postContent, setPostContent] = useState({
         message: initialData?.content?.text || initialData?.message || "",
         media: initialData?.mediaUrls || (initialData?.content?.mediaUrl ? [{ url: initialData.content.mediaUrl, type: initialData.content.mediaType }] : []),
@@ -65,6 +65,7 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
         schedule: !!initialData?.scheduledAt,
         date: initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date(),
         time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
     });
 
     const [accounts, setAccounts] = useState([]);
@@ -81,7 +82,8 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
             if (res.success) {
                 setAccounts(res.accounts || []);
                 if (res.accounts.length > 0 && !selectedAccount) {
-                    // We don't auto-select here to force user choice if multiple
+                    // Auto-select first account if only one
+                    if (res.accounts.length === 1) setSelectedAccount(res.accounts[0].accountId);
                 }
             }
         }
@@ -92,12 +94,14 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
         const newMedia = items.map(item => ({
             url: item.fileUrl,
+            name: item.fileName,
+            size: item.fileSize,
             type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image')
         }));
 
         setPostContent(prev => ({
             ...prev,
-            media: [...prev.media, ...newMedia].slice(0, 10) // Threads up to 10
+            media: [...prev.media, ...newMedia].slice(0, 10)
         }));
         setGalleryOpen(false);
     };
@@ -107,17 +111,29 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
             ...prev,
             media: prev.media.filter((_, i) => i !== index)
         }));
+        if (currentSlide >= postContent.media.length - 1) {
+            setCurrentSlide(Math.max(0, postContent.media.length - 2));
+        }
+    };
+
+    const scrollSelection = (direction) => {
+        if (selectionScrollRef.current) {
+            const scrollAmount = 80;
+            selectionScrollRef.current.scrollBy({
+                top: direction === 'up' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
+        }
     };
 
     const handleSubmit = async () => {
         if (!selectedAccount) return toast.error("Please select a Threads account");
-        if (!postContent.message.trim() && postContent.media.length === 0) return toast.error("Post must have text or media");
+        if (!postContent.message.trim() && postContent.media.length === 0) return toast.error("Thread must have text or media");
 
         startTransition(async () => {
             try {
                 const scheduledTime = scheduling.schedule ? getDateTime(scheduling.date, scheduling.time) : null;
 
-                // For simplified Threads module, we assume single media for now as per createPost.js
                 const result = await createThreadsPost({
                     pageId: selectedAccount,
                     text: postContent.message,
@@ -127,7 +143,7 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
                 });
 
                 if (result.success) {
-                    toast.success(scheduling.schedule ? "Thread scheduled!" : "Thread published!");
+                    toast.success(scheduling.schedule ? "Thread scheduled!" : (isEditing ? "Post updated!" : "Thread published!"));
                     onSuccess?.();
                 } else {
                     toast.error(result.message || "Failed to create thread");
@@ -138,142 +154,171 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
         });
     };
 
+    const characterCount = postContent.message.length;
+    const maxCharacters = 500; // Threads limit
+
     return (
         <div className="w-full h-full flex flex-col bg-gray-50 overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-8">
-                <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-8">
-                    <div className="space-y-6">
-                        {/* Accounts */}
-                        <div className="bg-white rounded-[24px] p-6 border border-gray-100 shadow-sm">
-                            <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-4">Select Account</h3>
-                            <div className="flex flex-wrap gap-3">
-                                {accounts.map(acc => (
-                                    <div
-                                        key={acc.id}
-                                        onClick={() => setSelectedAccount(acc.accountId)}
-                                        className={cn(
-                                            "flex items-center gap-2 p-2 rounded-full border cursor-pointer transition-all",
-                                            selectedAccount === acc.accountId ? "border-black bg-black text-white" : "border-gray-100 bg-gray-50 hover:border-gray-300"
-                                        )}
-                                    >
-                                        <Avatar className="h-7 w-7">
-                                            <AvatarImage src={acc.profilePicture} />
-                                            <AvatarFallback>{acc.username?.[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-xs font-bold pr-2">{acc.username}</span>
-                                    </div>
-                                ))}
-                            </div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-4 lg:p-8 space-y-6 lg:space-y-8">
+                    {/* Account Selection */}
+                    <div className="space-y-3 px-2">
+                        <div className="flex items-center gap-2 opacity-40">
+                            <ThreadsLogo className="h-3 w-3 text-black" />
+                            <h3 className="text-[8px] font-black text-gray-900 uppercase tracking-[0.3em]"> Profile Selection </h3>
                         </div>
-
-                        {/* Composer */}
-                        <div className="bg-white rounded-[24px] p-6 border border-gray-100 shadow-sm space-y-4">
-                            <SocialCaptionEditor
-                                value={postContent.message}
-                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
-                                placeholder="Start a thread..."
-                                platform="threads"
-                                className="min-h-[150px] text-lg font-medium border-none p-0 focus-visible:ring-0 shadow-none"
-                            />
-
-                            <div className="flex items-center gap-4">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="rounded-full h-9 px-4 font-bold border-gray-200"
-                                    onClick={() => {
-                                        setGalleryMediaType(["image", "video"]);
-                                        setGalleryOpen(true);
-                                    }}
-                                >
-                                    <ImageIcon className="h-4 w-4 mr-2" />
-                                    Add Media
-                                </Button>
-                            </div>
-
-                            {postContent.media.length > 0 && (
-                                <div className="grid grid-cols-2 gap-2 mt-4">
-                                    {postContent.media.map((m, i) => (
-                                        <div key={i} className="relative aspect-square rounded-xl overflow-hidden group">
-                                            <img src={m.url} className="w-full h-full object-cover" />
-                                            <button
-                                                onClick={() => removeMedia(i)}
-                                                className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                            >
-                                                <X className="h-3 w-3" />
-                                            </button>
+                        <div className="flex flex-wrap gap-4 items-center">
+                            {accounts.map((acc) => {
+                                const isSelected = selectedAccount === acc.accountId;
+                                return (
+                                    <div key={acc.id} onClick={() => !isReadOnly && setSelectedAccount(acc.accountId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-black bg-white shadow-lg" : "w-12 h-12 border-gray-100 opacity-60", isReadOnly && "cursor-default")}>
+                                        <div className="w-10 h-10 relative">
+                                            <div className={cn("w-full h-full rounded-full bg-black p-[2px]", isSelected && "animate-spin-slow")}>
+                                                <div className="w-full h-full rounded-full bg-white p-[2px]">
+                                                    <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-black overflow-hidden">
+                                                        {acc.profilePicture ? <img src={acc.profilePicture} alt="" className="w-full h-full object-cover" /> : acc.username?.charAt(0)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {isSelected && <div className="absolute -top-1 -right-1 bg-black text-white rounded-full p-1"><Check className="h-2 w-2" /></div>}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Scheduling */}
-                        <div className="bg-white rounded-[24px] p-6 border border-gray-100 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Clock className="h-4 w-4 text-gray-400" />
-                                    <h3 className="text-sm font-bold">Schedule Post</h3>
-                                </div>
-                                <Switch checked={scheduling.schedule} onCheckedChange={(c) => setScheduling(s => ({ ...s, schedule: c }))} />
-                            </div>
-                            {scheduling.schedule && (
-                                <div className="grid grid-cols-2 gap-3">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button variant="outline" className="justify-start font-bold rounded-xl h-11 border-gray-100">
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {format(scheduling.date, "PPP")}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="p-0 border-none rounded-2xl shadow-2xl">
-                                            <Calendar
-                                                mode="single"
-                                                selected={scheduling.date}
-                                                onSelect={(d) => d && setScheduling(s => ({ ...s, date: d }))}
-                                                disabled={{ before: new Date() }}
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                    <Input
-                                        type="time"
-                                        value={scheduling.time}
-                                        onChange={(e) => setScheduling(s => ({ ...s, time: e.target.value }))}
-                                        className="h-11 rounded-xl border-gray-100 font-bold"
-                                    />
-                                </div>
-                            )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    <div className="space-y-6">
-                        <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest text-center">Live Preview</h3>
-                        <ThreadsPreview
-                            content={postContent}
-                            page={accounts.find(a => a.accountId === selectedAccount)}
-                        />
+                    <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-6 lg:gap-8 items-start">
+                        {/* Editor */}
+                        <div className="space-y-6">
+                            {/* Strategy */}
+                            <div className="bg-white rounded-xl p-2.5 border border-gray-100 shadow-sm flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-3.5 w-3.5 text-black" />
+                                        <h3 className="text-xs font-black text-gray-900 leading-none">Smart Scheduler</h3>
+                                    </div>
+                                    <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-black scale-75" />
+                                </div>
+                                {scheduling.schedule && (
+                                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-50">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button disabled={isReadOnly} variant="outline" className="w-full h-8 rounded-lg text-xs justify-start px-2">
+                                                    <CalendarIcon className="mr-1.5 h-3 w-3 text-black" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 border-0 rounded-3xl" align="start">
+                                                <Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-8 rounded-lg text-xs" />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Content */}
+                            <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-black text-gray-900 uppercase">New Thread</h3>
+                                </div>
+                                <SocialCaptionEditor
+                                    disabled={isReadOnly}
+                                    value={postContent.message}
+                                    onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
+                                    placeholder="Start a thread..."
+                                    platform="threads"
+                                    className="rounded-xl border-gray-50 bg-gray-50/50 p-4 font-medium text-sm text-gray-800"
+                                />
+                                <div className="flex justify-end">
+                                    <span className={cn("text-[10px] font-black uppercase", characterCount > maxCharacters ? "text-red-500" : "text-gray-300")}>
+                                        {characterCount} / {maxCharacters}
+                                    </span>
+                                </div>
+
+                                <Separator className="bg-gray-50" />
+                                <div className="space-y-4">
+                                    <Label className="text-sm font-bold text-gray-900">Media</Label>
+                                    <Button disabled={isReadOnly} variant="outline" onClick={() => { setGalleryMediaType(["image", "video"]); setGalleryOpen(true); }} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-black hover:bg-gray-50 flex flex-col gap-2">
+                                        <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-black" /></div>
+                                        <span className="text-xs font-black uppercase text-gray-600">Select Media</span>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Preview & Media Tray */}
+                        <div className="lg:sticky top-0 flex gap-4">
+                            <div className="flex-1 min-w-0">
+                                <ThreadsPreview
+                                    content={postContent}
+                                    page={accounts.find(a => a.accountId === selectedAccount)}
+                                    currentSlide={currentSlide}
+                                />
+                            </div>
+
+                            {/* Media Selection Tray */}
+                            {postContent.media.length > 0 && (
+                                <div className="hidden lg:flex flex-col items-center py-2 bg-white rounded-2xl border border-gray-100 shadow-sm w-20 shrink-0 h-fit">
+                                    <Button variant="ghost" size="icon" onClick={() => scrollSelection('up')} className="h-6 w-6 text-gray-400 hover:text-black mb-2">
+                                        <ChevronUp className="h-4 w-4" />
+                                    </Button>
+
+                                    <div ref={selectionScrollRef} className="flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[450px] px-2">
+                                        {postContent.media.map((item, index) => (
+                                            <div
+                                                key={index}
+                                                className={cn(
+                                                    "relative group shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer",
+                                                    currentSlide === index
+                                                        ? "border-black ring-2 ring-gray-100 scale-105 shadow-md"
+                                                        : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-200"
+                                                )}
+                                                onClick={() => setCurrentSlide(index)}
+                                            >
+                                                {item.type === 'video' ? (
+                                                    <div className="w-full h-full bg-black relative">
+                                                        <video src={item.url} className="w-full h-full object-cover" />
+                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                            <Play className="h-4 w-4 text-white fill-white" />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                                )}
+
+                                                {!isReadOnly && (
+                                                    <div
+                                                        onClick={(e) => { e.stopPropagation(); removeMedia(index); }}
+                                                        className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-[1px]"
+                                                    >
+                                                        <Trash2 className="h-5 w-5 text-white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <Button variant="ghost" size="icon" onClick={() => scrollSelection('down')} className="h-6 w-6 text-gray-400 hover:text-black mt-2">
+                                        <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div className="p-4 bg-white border-t flex justify-end px-12">
-                <Button
-                    disabled={isPending}
-                    onClick={handleSubmit}
-                    className="h-12 px-10 rounded-full bg-black text-white font-black hover:bg-gray-800"
-                >
-                    {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
-                    {scheduling.schedule ? "Schedule Thread" : "Post Thread"}
-                </Button>
-            </div>
-
-            <GalleryModal
-                open={galleryOpen}
-                onOpenChange={setGalleryOpen}
-                onSelect={handleGallerySelect}
-                allowedTypes={galleryMediaType}
-                maxSelection={1} // Match backend for now
-            />
+            {/* Footer */}
+            {!isReadOnly && (
+                <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
+                    <Button disabled={isPending} onClick={handleSubmit} className="bg-black hover:bg-zinc-800 text-white font-bold rounded-xl px-12 h-11">
+                        {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />)}
+                        {isEditing ? "Save Changes" : (scheduling.schedule ? "Schedule Thread" : "Post Thread")}
+                    </Button>
+                </div>
+            )}
+            <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={true} maxSelection={10} />
         </div>
     );
 }
@@ -282,7 +327,7 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
 // MAIN CONTAINER
 // -----------------------------------------------------------------------------
 export default function PublishedPosts({ accountId: initialAccountId }) {
-    const [activeTab, setActiveTab] = useState("threads");
+    const [activeTab, setActiveTab] = useState("calendar");
     const [isCreating, setIsCreating] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
@@ -294,7 +339,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
         } else if (action === 'delete') {
             setDeleteDialog({ open: true, postId: post.id });
         } else {
-            // Edit not implemented for Threads API yet, but we can show composer
+            // Edit not implemented for Threads API yet
             setIsCreating(true);
         }
     };
@@ -310,92 +355,120 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
         setDeleteDialog({ open: false, postId: null });
     };
 
+    const handleRefresh = useCallback(() => {
+        setRefreshTrigger(prev => prev + 1);
+    }, []);
+
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50/50 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+            {/* Premium Compact Header - Matching Instagram's Studio Style */}
+            <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg shadow-gray-50/20 p-5 lg:p-6">
+                {/* Background Decorative Elements */}
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-gradient-to-br from-gray-200/10 to-gray-400/10 rounded-full blur-2xl pointer-events-none" />
 
-                <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-black rounded-full border border-gray-800 text-white">
-                        <ThreadsLogo className="h-3 w-3" />
-                        <span className="text-[10px] font-black uppercase tracking-widest">Threads Studio</span>
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-black border border-gray-800 text-white">
+                            <ThreadsLogo className="h-3 w-3" />
+                            <span className="text-[9px] font-black uppercase tracking-wider">Threads Business Academy</span>
+                        </div>
+
+                        <div className="space-y-0.5">
+                            <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-gray-900">
+                                Content Studio
+                            </h1>
+                            <p className="text-gray-500 max-w-md text-xs font-medium leading-relaxed">
+                                Elevate your threads presence with precision scheduling and performance intelligence.
+                            </p>
+                        </div>
                     </div>
-                    <h1 className="text-3xl font-black tracking-tight text-gray-900">Threads Manager</h1>
-                    <p className="text-gray-500 font-medium text-sm">Create, schedule and analyze your Threads content.</p>
-                </div>
 
-                <Button
-                    onClick={() => setIsCreating(true)}
-                    className="h-14 px-8 bg-black text-white hover:bg-gray-800 rounded-2xl font-black shadow-xl shadow-gray-100 gap-2 text-base transition-all hover:scale-[1.02] active:scale-95 border-0"
-                >
-                    <Plus className="h-5 w-5" />
-                    Compose Thread
-                </Button>
+                    <div className="flex items-center gap-4">
+                        <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm">
+                                    <img src={`https://i.pravatar.cc/150?u=${i + 30}`} alt="" className="w-full h-full object-cover" />
+                                </div>
+                            ))}
+                        </div>
+
+                        <Button
+                            onClick={() => setIsCreating(true)}
+                            className="group relative px-6 h-11 bg-black hover:bg-gray-800 text-white font-black rounded-xl shadow-xl shadow-gray-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                        >
+                            <div className="relative flex items-center gap-2">
+                                <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                <span className="text-sm">Compose Masterpiece</span>
+                            </div>
+                        </Button>
+                    </div>
+                </div>
             </div>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="bg-white border p-1 rounded-2xl mb-8">
-                    <TabsTrigger value="calendar" className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-gray-100 gap-2">
-                        <CalendarIcon className="h-4 w-4" /> Calendar
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="bg-white border border-gray-100 p-1 rounded-xl shadow-sm mb-6 h-auto inline-flex">
+                    <TabsTrigger value="calendar" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-purple-50 data-[state=active]:text-purple-600 font-bold text-gray-500 gap-2">
+                        <CalendarIcon className="h-4 w-4" /> Calendar View
                     </TabsTrigger>
-                    <TabsTrigger value="threads" className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-gray-100 gap-2">
-                        <LayoutGrid className="h-4 w-4" /> Feed View
+                    <TabsTrigger value="threads" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-black data-[state=active]:text-white font-bold text-gray-500 gap-2">
+                        <LayoutGrid className="h-4 w-4" /> Threads View
                     </TabsTrigger>
-                    <TabsTrigger value="listing" className="rounded-xl px-6 py-2.5 font-bold data-[state=active]:bg-gray-100 gap-2">
-                        <List className="h-4 w-4" /> Listing
+                    <TabsTrigger value="listing" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 font-bold text-gray-500 gap-2">
+                        <List className="h-4 w-4" /> Listing View
                     </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="calendar">
+                <TabsContent value="calendar" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <ThreadsCalendarViewComponent
-                        onDateClick={() => setIsCreating(true)}
+                        onDateClick={(date) => {
+                            // This would ideally prepopulate date, but composer needs to be updated to accept it
+                            setIsCreating(true);
+                        }}
                         onPostClick={handleEdit}
                         refreshTrigger={refreshTrigger}
-                        onRefresh={() => setRefreshTrigger(p => p + 1)}
+                        onRefresh={handleRefresh}
                     />
                 </TabsContent>
 
-                <TabsContent value="threads">
+                <TabsContent value="threads" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <ThreadsViewComponent
                         accountId={initialAccountId}
                         refreshTrigger={refreshTrigger}
                         onEdit={handleEdit}
-                        onRefresh={() => setRefreshTrigger(p => p + 1)}
+                        onRefresh={handleRefresh}
                     />
                 </TabsContent>
 
-                <TabsContent value="listing">
+                <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <ThreadsListingViewComponent
                         accountId={initialAccountId}
                         refreshTrigger={refreshTrigger}
                         onEdit={handleEdit}
-                        onRefresh={() => setRefreshTrigger(p => p + 1)}
+                        onRefresh={handleRefresh}
                     />
                 </TabsContent>
             </Tabs>
 
             <Dialog open={isCreating} onOpenChange={setIsCreating}>
-                <DialogContent className="max-w-7xl h-[90vh] p-0 overflow-hidden border-none rounded-[32px]">
-                    <div className="h-full flex flex-col">
-                        <div className="p-4 border-b bg-white flex items-center justify-between px-8">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-black rounded-xl">
-                                    <ThreadsLogo className="h-4 w-4 text-white" />
+                <DialogContent className="!w-[80vw] !max-w-[80vw] h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none" showCloseButton={false}>
+                    {isCreating && (
+                        <div className="bg-white w-full h-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                            {/* Modal Header */}
+                            <div className="px-6 py-3 bg-white border-b border-gray-100 flex items-center justify-between font-sans shrink-0">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-1.5 bg-black rounded-lg shadow-md"><ThreadsLogo className="h-3.5 w-3.5 text-white" /></div>
+                                    <div><DialogTitle className="text-sm font-black text-gray-900 leading-none">Post Creator</DialogTitle></div>
                                 </div>
-                                <DialogTitle className="text-lg font-black tracking-tight">Compose Thread</DialogTitle>
+                                <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)} className="rounded-full hover:bg-gray-100"><X className="h-5 w-5 text-gray-400" /></Button>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)} className="rounded-full hover:bg-gray-100">
-                                <X className="h-5 w-5" />
-                            </Button>
+                            <CreateThreadsPostForm
+                                onSuccess={() => {
+                                    setIsCreating(false);
+                                    setRefreshTrigger(prev => prev + 1);
+                                }}
+                            />
                         </div>
-                        <CreateThreadsPostForm
-                            onSuccess={() => {
-                                setIsCreating(false);
-                                setRefreshTrigger(p => p + 1);
-                            }}
-                        />
-                    </div>
+                    )}
                 </DialogContent>
             </Dialog>
 
@@ -408,9 +481,9 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
             <AlertDialog open={deleteDialog.open} onOpenChange={(o) => setDeleteDialog(p => ({ ...p, open: o }))}>
                 <AlertDialogContent className="rounded-[32px] border-none shadow-2xl">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl font-black">Delete this thread?</AlertDialogTitle>
+                        <AlertDialogTitle className="text-2xl font-black tracking-tight">Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription className="text-gray-500 font-medium pt-2">
-                            This will remove the thread from your history. This action cannot be undone.
+                            This will permanently delete the post from our records.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="pt-6">

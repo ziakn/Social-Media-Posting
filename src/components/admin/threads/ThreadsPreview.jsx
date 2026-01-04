@@ -27,12 +27,19 @@ export default function ThreadsPreview({
                     {/* Header */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 border border-gray-50">
-                                <AvatarImage src={profilePic} />
-                                <AvatarFallback className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400">
-                                    {name[0]}
-                                </AvatarFallback>
-                            </Avatar>
+                            <div className="relative">
+                                <Avatar className="h-9 w-9 border border-gray-50">
+                                    <AvatarImage src={profilePic} />
+                                    <AvatarFallback className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400">
+                                        {name[0]}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 border border-gray-50 shadow-sm">
+                                    <div className="bg-black rounded-full p-0.5">
+                                        <ThreadsLogo className="h-2 w-2 text-white" />
+                                    </div>
+                                </div>
+                            </div>
                             <div className="flex flex-col">
                                 <span className="text-[14px] font-bold text-gray-900 leading-tight">
                                     {name.toLowerCase().replace(/\s/g, '')}
@@ -54,27 +61,36 @@ export default function ThreadsPreview({
                         )}
 
                         {/* Media */}
-                        {currentItem && (
-                            <div className="rounded-xl overflow-hidden border border-gray-50 bg-gray-50 relative aspect-square shadow-sm">
-                                {currentItem.type?.startsWith('video') ? (
-                                    <video src={currentItem.url} className="w-full h-full object-cover" controls />
-                                ) : (
-                                    <img src={currentItem.url} className="w-full h-full object-cover" alt="" />
-                                )}
-                                {isCarousel && (
-                                    <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm font-bold">
-                                        {currentSlide + 1}/{media.length}
+                        <div className="relative group">
+                            {currentItem ? (
+                                <div className="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 relative aspect-square shadow-sm">
+                                    {currentItem.type?.startsWith('video') ? (
+                                        <video src={currentItem.url} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <img src={currentItem.url} className="w-full h-full object-cover" alt="" />
+                                    )}
+                                    {isCarousel && (
+                                        <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm font-bold">
+                                            {currentSlide + 1}/{media.length}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : !postMessage && (
+                                <div className="aspect-square rounded-xl bg-gray-50 border-2 border-dashed border-gray-100 flex flex-col items-center justify-center gap-2 opacity-50">
+                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                        <ThreadsLogo className="h-5 w-5 text-gray-300" />
                                     </div>
-                                )}
-                            </div>
-                        )}
+                                    <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Preview Ready</span>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Actions */}
                         <div className="flex items-center gap-4 py-1 text-gray-900">
-                            <Heart className="h-[20px] w-[20px] stroke-[1.5px]" />
-                            <MessageCircle className="h-[20px] w-[20px] stroke-[1.5px]" />
-                            <Repeat2 className="h-[20px] w-[20px] stroke-[1.5px]" />
-                            <Send className="h-[20px] w-[20px] stroke-[1.5px]" />
+                            <Heart className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
+                            <MessageCircle className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
+                            <Repeat2 className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
+                            <Send className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
                         </div>
 
                         {/* Footer Info */}
@@ -90,10 +106,10 @@ export default function ThreadsPreview({
     };
 
     return (
-        <div className="threads-preview-container w-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="threads-preview-container w-full animate-in fade-in slide-in-from-bottom-4 duration-500 sticky top-8">
             <div className="flex flex-col items-center gap-4">
-                <div className="p-3 bg-gray-50 rounded-2xl">
-                    <ThreadsLogo className="h-6 w-6 text-black" />
+                <div className="p-3 bg-black rounded-2xl shadow-lg">
+                    <ThreadsLogo className="h-6 w-6 text-white" />
                 </div>
                 {renderMedia()}
             </div>

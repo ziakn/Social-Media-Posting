@@ -1,88 +1,47 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import FullCalendar from "@fullcalendar/react";
-import dayGridPlugin from "@fullcalendar/daygrid";
-import timeGridPlugin from "@fullcalendar/timegrid";
-import interactionPlugin from "@fullcalendar/interaction";
+import { useState, useEffect } from "react";
+import { startOfMonth, endOfMonth } from "date-fns";
+import ThreadsFullCalendar from "./ThreadsFullCalendar";
 import { getAllThreadsCalendarPosts } from "@/app/actions/social/threads/threadsPostsActions";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
-import "./threads-calendar.css";
 
 export default function ThreadsCalendarViewComponent({
     onDateClick,
     onPostClick,
-    refreshTrigger,
-    onRefresh
+    onRefresh,
+    refreshTrigger = 0
 }) {
-    const [events, setEvents] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    const loadCalendarPosts = useCallback(async () => {
-        setLoading(true);
-        try {
-            const res = await getAllThreadsCalendarPosts();
-            if (res.success) {
-                const formattedEvents = res.posts.map(post => ({
-                    id: post.id,
-                    title: post.content?.text || post.message || post.caption || "Thread",
-                    start: post.scheduledAt || post.createdAt,
-                    extendedProps: post,
-                    backgroundColor: post.status === 'scheduled' ? '#f5f5f4' : '#000000',
-                    borderColor: post.status === 'scheduled' ? '#e7e5e4' : '#000000',
-                    textColor: post.status === 'scheduled' ? '#57534e' : '#ffffff',
-                    className: `threads-event-${post.status}`
-                }));
-                setEvents(formattedEvents);
-            }
-        } catch (error) {
-            toast.error("Failed to load calendar");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const [calendarPosts, setCalendarPosts] = useState([]);
+    const [loadingCalendar, setLoadingCalendar] = useState(false);
+    const [calendarDate, setCalendarDate] = useState(new Date());
 
     useEffect(() => {
-        loadCalendarPosts();
-    }, [loadCalendarPosts, refreshTrigger]);
+        setLoadingCalendar(true);
+        const startDate = startOfMonth(calendarDate);
+        const endDate = endOfMonth(calendarDate);
 
-    const renderEventContent = (eventInfo) => {
-        const post = eventInfo.event.extendedProps;
-        return (
-            <div className="flex items-center gap-1.5 px-2 py-1 overflow-hidden group cursor-pointer">
-                <div className="shrink-0 scale-75">
-                    <ThreadsLogo className={post.status === 'scheduled' ? "text-stone-400" : "text-white"} />
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-tighter truncate">
-                    {eventInfo.event.title}
-                </span>
-            </div>
-        );
-    };
+        getAllThreadsCalendarPosts({ startDate, endDate }).then(res => {
+            if (res.success) setCalendarPosts(res.posts);
+        }).finally(() => setLoadingCalendar(false));
+    }, [calendarDate, refreshTrigger]);
 
     return (
-        <div className="bg-white rounded-[32px] border border-gray-100 p-8 shadow-sm animate-in fade-in duration-700">
-            <div className="threads-calendar-wrapper">
-                <FullCalendar
-                    plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-                    initialView="dayGridMonth"
-                    headerToolbar={{
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-                    }}
-                    events={events}
-                    eventContent={renderEventContent}
-                    eventClick={(info) => onPostClick(info.event.extendedProps)}
-                    dateClick={(info) => onDateClick(info.date)}
-                    editable={true}
-                    droppable={true}
-                    height="auto"
-                    dayMaxEvents={3}
-                />
-            </div>
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px] relative">
+            {loadingCalendar && (
+                <div className="absolute inset-0 z-10 bg-white/80 flex items-center justify-center backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
+                        <p className="text-sm font-medium text-gray-500">Loading...</p>
+                    </div>
+                </div>
+            )}
+            <ThreadsFullCalendar
+                posts={calendarPosts}
+                onMonthChange={setCalendarDate}
+                onDateClick={onDateClick}
+                onPostClick={onPostClick}
+                onRefresh={onRefresh}
+            />
         </div>
     );
 }

@@ -90,10 +90,16 @@ export async function getUserThreadsAccounts() {
             where("status", "==", "active")
         );
         const snapshot = await getDocs(q);
-        const accounts = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+        const accounts = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt || null,
+                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
+                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+            };
+        });
         return { success: true, accounts };
     } catch (error) {
         return { success: false, message: error.message };

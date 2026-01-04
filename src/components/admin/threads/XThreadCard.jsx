@@ -1,172 +1,145 @@
 import React, { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
-    MoreHorizontal, Heart, MessageCircle, Share2, Play, Layers, Repeat2, BarChart3,
-    Edit, Trash2, Send, Eye, Loader2, ImageIcon
+    Heart, MessageCircle, Play, Layers, Repeat2, BarChart3,
+    Edit, Trash2, Send, Eye, Loader2, ImageIcon, MoreVertical
 } from "lucide-react";
 import { cn, formatNumber } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
 
 export default function XThreadCard({
     post,
-    onEditClick,
-    onPublishNow,
+    onAction, // (post, action) => {}
     publishingId
 }) {
     const isPublishing = publishingId === post.id;
-    const [currentSlide, setCurrentSlide] = useState(0);
-
-    // Data Normalization
-    const name = post.name || "Threads User";
-    const username = post.username || "user";
-    const profilePicture = post.profilePicture;
-    const postMessage = post.content?.text || post.message || post.caption || "";
     const media = post.mediaUrls || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType || post.postType }] : []);
-    const isCarousel = media.length > 1;
-    const timestamp = post.status === 'scheduled' ? post.scheduledAt : post.createdAt;
+    const message = post.message || post.content?.text || post.caption || "";
 
-    // Status Badge Color
-    const getStatusColor = () => {
-        switch (post.status) {
-            case 'published':
-            case 'posted': return "bg-green-100 text-green-700 hover:bg-green-100 border-green-200";
-            case 'scheduled': return "bg-stone-100 text-stone-700 hover:bg-stone-100 border-stone-200";
-            default: return "bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200";
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'published': return <Badge className="bg-green-500/80 text-white border-0 text-[8px] font-black uppercase">Published</Badge>;
+            case 'scheduled': return <Badge className="bg-blue-500/80 text-white border-0 text-[8px] font-black uppercase">Scheduled</Badge>;
+            case 'failed': return <Badge className="bg-red-500/80 text-white border-0 text-[8px] font-black uppercase">Failed</Badge>;
+            default: return null;
         }
     };
 
     return (
-        <div className={cn(
-            "flex flex-col gap-3 p-5 border border-gray-100 bg-white rounded-[24px] shadow-sm hover:shadow-md transition-all duration-300 relative group h-full",
-            isPublishing && "opacity-70 pointer-events-none"
-        )}>
-            {/* Loading Overlay */}
-            {isPublishing && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[1px] rounded-[24px]">
-                    <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="h-6 w-6 animate-spin text-black" />
-                        <span className="text-xs font-bold text-gray-900">Publishing...</span>
+        <Card className="group relative aspect-square overflow-hidden rounded-2xl border-0 shadow-lg hover:shadow-2xl transition-all duration-500 bg-gray-900">
+            {/* Media Content */}
+            <div className="absolute inset-0 z-0">
+                {media.length > 0 ? (
+                    media[0].type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
+                        <div className="w-full h-full relative">
+                            <video src={media[0].url} className="w-full h-full object-cover" muted />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <Play className="h-10 w-10 text-white fill-white/20 backdrop-blur-sm rounded-full p-2.5 border border-white/30" />
+                            </div>
+                        </div>
+                    ) : (
+                        <img src={media[0].url} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    )
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 p-6 text-center">
+                        <ThreadsLogo className="h-10 w-10 text-gray-700 mb-3" />
+                        <p className="text-[11px] font-bold text-gray-500 line-clamp-3 leading-relaxed">{message || "No preview available"}</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Overlays */}
+            <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-between p-4">
+                <div className="flex justify-between items-start">
+                    <div className="flex flex-col gap-1.5 translate-y-[-10px] group-hover:translate-y-0 transition-transform duration-300">
+                        {getStatusBadge(post.status)}
+                    </div>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full bg-black/40 border border-white/20 text-white backdrop-blur-md hover:bg-black/60 translate-y-[-10px] group-hover:translate-y-0 transition-transform duration-300">
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44 rounded-2xl border-none shadow-2xl p-1.5 focus:ring-0">
+                            {post.status === 'published' ? (
+                                <>
+                                    <DropdownMenuItem onClick={() => onAction?.(post, 'analytics')} className="rounded-xl font-bold py-2 gap-2 text-blue-600 px-3">
+                                        <BarChart3 className="h-4 w-4" /> Performance
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onAction?.(post, 'view')} className="rounded-xl font-bold py-2 gap-2 px-3">
+                                        <Eye className="h-4 w-4" /> View Thread
+                                    </DropdownMenuItem>
+                                </>
+                            ) : (
+                                <>
+                                    <DropdownMenuItem onClick={() => onAction?.(post, 'edit')} className="rounded-xl font-bold py-2 gap-2 px-3">
+                                        <Edit className="h-4 w-4" /> Edit Content
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onAction?.(post, 'publish_now')} className="rounded-xl font-bold py-2 gap-2 text-purple-600 px-3">
+                                        <Send className="h-4 w-4" /> Publish Now
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                            <div className="h-px bg-gray-100 my-1" />
+                            <DropdownMenuItem onClick={() => onAction?.(post, 'delete')} className="rounded-xl font-bold py-2 gap-2 text-red-600 px-3">
+                                <Trash2 className="h-4 w-4" /> Delete Post
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
+                <div className="space-y-3 translate-y-[20px] group-hover:translate-y-0 transition-transform duration-300">
+                    <div className="flex items-center gap-4 text-white">
+                        <div className="flex items-center gap-1.5">
+                            <Heart className="h-4 w-4 fill-white" />
+                            <span className="text-sm font-black tracking-tight">{formatNumber(post.metrics?.likes || 0)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <MessageCircle className="h-4 w-4 fill-white text-white" />
+                            <span className="text-sm font-black tracking-tight">{formatNumber(post.metrics?.replies || 0)}</span>
+                        </div>
+                    </div>
+                    <p className="text-[11px] font-bold text-gray-200 line-clamp-2 leading-relaxed">
+                        {message}
+                    </p>
+                </div>
+            </div>
+
+            {/* Carousel Indicator */}
+            {media.length > 1 && (
+                <div className="absolute top-4 left-4 z-20">
+                    <div className="bg-black/40 backdrop-blur-md border border-white/20 p-1.5 rounded-lg">
+                        <Layers className="h-3 w-3 text-white" />
                     </div>
                 </div>
             )}
 
-            <div className="flex items-start gap-3">
-                {/* Left: Avatar with dynamic line */}
-                <div className="flex flex-col items-center shrink-0">
-                    <Avatar className="h-9 w-9 border border-gray-50">
-                        <AvatarImage src={profilePicture} className="object-cover" />
-                        <AvatarFallback className="bg-gray-50 font-bold uppercase text-[10px] text-gray-400">{name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="w-[2px] grow mt-2 bg-gray-100 rounded-full min-h-[40px]" />
+            {/* Publishing Indicator */}
+            {isPublishing && (
+                <div className="absolute inset-0 z-30 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-white" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white">Sending Thread...</span>
                 </div>
+            )}
 
-                {/* Right: Content */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between h-5">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-[14px] font-bold text-gray-900 truncate tracking-tight">{username}</span>
-                            {post.status !== 'published' && post.status !== 'posted' && (
-                                <Badge variant="secondary" className={cn("h-4 px-1 text-[8px] font-extrabold uppercase tracking-tighter rounded border shrink-0", getStatusColor())}>
-                                    {post.status}
-                                </Badge>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-[12px] text-gray-400 font-medium whitespace-nowrap">
-                                {timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: false }).replace('about ', '') : 'Now'}
-                            </span>
-
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-1 text-gray-400 hover:text-black hover:bg-gray-50 rounded-full transition-colors">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-40 rounded-[14px] shadow-xl border-gray-100 p-1.5">
-                                    {(post.status === 'published' || post.status === 'posted') ? (
-                                        <>
-                                            <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2 text-[13px] font-bold text-black rounded-lg">
-                                                <BarChart3 className="h-4 w-4" /> Analytics
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2 text-[13px] font-bold rounded-lg">
-                                                <Eye className="h-4 w-4" /> View Post
-                                            </DropdownMenuItem>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2 text-[13px] font-bold rounded-lg">
-                                                <Edit className="h-4 w-4" /> Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={(e) => onPublishNow(e, post)} className="gap-2 text-[13px] font-bold text-black rounded-lg">
-                                                <Send className="h-4 w-4" /> Publish Now
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => onEditClick(post, 'delete')} className="gap-2 text-[13px] font-bold text-red-600 rounded-lg">
-                                                <Trash2 className="h-4 w-4" /> Delete
-                                            </DropdownMenuItem>
-                                        </>
-                                    )}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-
-                    {/* Message */}
-                    <div className="text-[14px] text-gray-900 leading-normal whitespace-pre-wrap mt-1 mb-3 pr-2">
-                        {postMessage}
-                    </div>
-
-                    {/* Media Container */}
-                    {media.length > 0 && (
-                        <div className="rounded-[16px] overflow-hidden border border-gray-100 mb-3 bg-gray-50 relative aspect-square cursor-pointer group/media shadow-sm" onClick={() => isCarousel && setCurrentSlide(prev => (prev + 1) % media.length)}>
-                            {media[currentSlide]?.type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
-                                <div className="w-full h-full bg-black flex items-center justify-center">
-                                    <video src={media[currentSlide]?.url} className="w-full h-full object-contain" />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-                                        <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30">
-                                            <Play className="h-5 w-5 fill-white text-white ml-0.5" />
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <img src={media[currentSlide]?.url} className="w-full h-full object-cover" alt="" />
-                            )}
-
-                            {isCarousel && (
-                                <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md">
-                                    {currentSlide + 1} / {media.length}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Interaction Bar */}
-                    <div className="flex items-center gap-4 text-gray-900 py-1">
-                        <Heart className="h-[20px] w-[20px] stroke-[1.8px] hover:scale-110 transition-transform cursor-pointer" />
-                        <MessageCircle className="h-[20px] w-[20px] stroke-[1.8px] hover:scale-110 transition-transform cursor-pointer" />
-                        <Repeat2 className="h-[20px] w-[20px] stroke-[1.8px] hover:scale-110 transition-transform cursor-pointer" />
-                        <Send className="h-[20px] w-[20px] stroke-[1.8px] hover:scale-110 transition-transform cursor-pointer" />
-                    </div>
-
-                    {/* Stats */}
-                    <div className="flex items-center gap-2 text-[13px] text-gray-400 font-medium mt-1">
-                        <span>{formatNumber(post.metrics?.replies || 0)} replies</span>
-                        <span>·</span>
-                        <span>{formatNumber(post.metrics?.likes || 0)} likes</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Platform indicator */}
-            <div className="absolute -top-2 -right-2 p-1.5 bg-black rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Platform Badge (Small) */}
+            <div className="absolute top-4 right-4 z-0 group-hover:opacity-0 transition-opacity p-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10">
                 <ThreadsLogo className="h-3 w-3 text-white" />
             </div>
+        </Card>
+    );
+}
+
+// Sub-component wrapper for Card if needed (import Card from ui/card)
+function Card({ children, className }) {
+    return (
+        <div className={cn("bg-white text-gray-950 shadow-sm", className)}>
+            {children}
         </div>
     );
 }
