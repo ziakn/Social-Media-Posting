@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
 import ThreadsPreview from "./ThreadsPreview";
 
+
 export default function ThreadsFullCalendar({
     posts = [],
     accounts = [],
@@ -246,11 +247,10 @@ export default function ThreadsFullCalendar({
                                                     </div>
                                                 </div>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="start" className="w-auto p-0 overflow-hidden border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white rounded-[12px]">
+                                            <DropdownMenuContent align="start" className="w-[540px] p-0 overflow-hidden border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white rounded-[32px]">
                                                 <div className="flex">
                                                     {/* Left side: Threads post design */}
-                                                    <div className="w-[280px] flex-shrink-0 bg-gray-50/50 p-3 border-r border-gray-100/50 animate-in fade-in slide-in-from-left-4 duration-500">
-
+                                                    <div className="w-[320px] flex-shrink-0 bg-gray-50/50 p-4 border-r border-gray-100/50">
                                                         <ThreadsPreview
                                                             postType={post.postType || (media.length > 1 ? "carousel" : "thread")}
                                                             content={{
@@ -264,71 +264,53 @@ export default function ThreadsFullCalendar({
                                                         />
                                                     </div>
 
-                                                    {/* Right side: Dropdown attributes/actions */}
-                                                    <div className="w-40 bg-white p-1.5 flex flex-col gap-0.5 animate-in fade-in slide-in-from-right-4 duration-500">
-
+                                                    {/* Right side: Actions */}
+                                                    <div className="w-[220px] bg-white p-3 flex flex-col justify-center gap-1.5">
                                                         {isPublished ? (
                                                             <>
                                                                 <DropdownMenuItem
-                                                                    onClick={() => onPostClick && onPostClick(post, 'analytics')}
-                                                                    className="flex items-center gap-2.5 py-2 px-2.5 cursor-pointer rounded-xl hover:bg-blue-50/50 transition-all duration-200 group"
+                                                                    onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'analytics'); }}
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
                                                                 >
-                                                                    <div className="p-1.5 bg-blue-50 rounded-lg group-hover:bg-blue-100 group-hover:scale-110 transition-all">
-                                                                        <BarChart3 className="h-3.5 w-3.5 text-blue-600" />
-                                                                    </div>
+                                                                    <BarChart3 className="h-5 w-5 text-gray-900" />
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold text-gray-900 leading-none">Analytics</span>
-                                                                        <span className="text-[9px] text-gray-400 mt-1 font-medium italic">Stats & Engagement</span>
+                                                                        <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
+                                                                        <span className="text-[10px] text-gray-400 font-medium">Stats & Engagement</span>
                                                                     </div>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
-                                                                    onClick={() => onPostClick && onPostClick(post, 'view')}
-                                                                    className="flex items-center gap-2.5 py-2 px-2.5 cursor-pointer rounded-xl hover:bg-gray-50 transition-all duration-200 group"
+                                                                    onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'view'); }}
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
                                                                 >
-                                                                    <div className="p-1.5 bg-gray-50 rounded-lg group-hover:bg-gray-100 group-hover:scale-110 transition-all">
-                                                                        <Eye className="h-3.5 w-3.5 text-gray-900" />
-                                                                    </div>
+                                                                    <Eye className="h-5 w-5 text-gray-900" />
                                                                     <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold text-gray-900 leading-none">View Post</span>
-                                                                        <span className="text-[9px] text-gray-400 mt-1 font-medium italic">Open on Threads</span>
+                                                                        <span className="font-bold text-[13px] text-gray-900">View Details</span>
+                                                                        <span className="text-[10px] text-gray-400 font-medium">Open on Threads</span>
                                                                     </div>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         ) : (
                                                             <>
                                                                 <DropdownMenuItem
-                                                                    onClick={() => onPostClick && onPostClick(post, 'edit')}
-                                                                    className="flex items-center gap-2.5 py-2 px-2.5 cursor-pointer rounded-xl hover:bg-gray-50 transition-all duration-200 group"
+                                                                    onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'edit'); }}
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
                                                                 >
-                                                                    <div className="p-1.5 bg-gray-50 rounded-lg group-hover:bg-gray-100 group-hover:scale-110 transition-all">
-                                                                        <Edit className="h-3.5 w-3.5 text-gray-900" />
-                                                                    </div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold text-gray-900 leading-none">Edit Thread</span>
-                                                                    </div>
+                                                                    <Edit className="h-5 w-5 text-gray-900" />
+                                                                    <span className="font-bold text-[13px] text-gray-900">Edit Thread</span>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
                                                                     onClick={(e) => handlePublishNow(e, post)}
-                                                                    className="flex items-center gap-2.5 py-2 px-2.5 cursor-pointer rounded-xl hover:bg-zinc-50 transition-all duration-200 group"
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group"
                                                                 >
-                                                                    <div className="p-1.5 bg-black rounded-lg group-hover:scale-110 transition-all">
-                                                                        <Send className="h-3.5 w-3.5 text-white" />
-                                                                    </div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold text-gray-900 leading-none italic">Publish Now</span>
-                                                                    </div>
+                                                                    <Send className="h-5 w-5 text-purple-600" />
+                                                                    <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                                 </DropdownMenuItem>
-                                                                <div className="h-px bg-gray-100/50 my-1 mx-2" />
                                                                 <DropdownMenuItem
-                                                                    onClick={() => onPostClick && onPostClick(post, 'delete')}
-                                                                    className="flex items-center gap-2.5 py-2 px-2.5 cursor-pointer rounded-xl hover:bg-red-50 text-red-600 transition-all duration-200 group"
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group"
+                                                                    onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'delete'); }}
                                                                 >
-                                                                    <div className="p-1.5 bg-red-50 rounded-lg group-hover:bg-red-100 group-hover:scale-110 transition-all">
-                                                                        <Trash2 className="h-3.5 w-3.5 text-red-600" />
-                                                                    </div>
-                                                                    <div className="flex flex-col">
-                                                                        <span className="text-xs font-bold leading-none">Delete</span>
-                                                                    </div>
+                                                                    <Trash2 className="h-5 w-5 text-red-600" />
+                                                                    <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}
