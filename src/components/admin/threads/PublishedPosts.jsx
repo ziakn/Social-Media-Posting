@@ -35,7 +35,7 @@ import {
 
 // Server Actions
 import {
-    getThreadsPosts, deleteThreadsPost, getAllThreadsCalendarPosts, publishThreadsPostNow
+    getThreadsPosts, deleteThreadsPost, getAllThreadsCalendarPosts, publishThreadsPostNow, updateThreadsPost
 } from "@/app/actions/social/threads/threadsPostsActions";
 import { createThreadsPost, getUserThreadsAccounts } from "@/app/actions/social/threads/createPost";
 import { getDateTime } from "@/lib/utils";
@@ -138,18 +138,29 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
             try {
                 const scheduledTime = scheduling.schedule ? getDateTime(scheduling.date, scheduling.time) : null;
 
-                const result = await createThreadsPost({
-                    pageId: selectedAccount,
-                    text: postContent.message,
-                    media: postContent.media,
-                    scheduling: scheduledTime
-                });
+                let result;
+                if (isEditing) {
+                    result = await updateThreadsPost({
+                        postId: initialData.id,
+                        accountId: selectedAccount,
+                        text: postContent.message,
+                        media: postContent.media,
+                        scheduling: scheduledTime
+                    });
+                } else {
+                    result = await createThreadsPost({
+                        pageId: selectedAccount,
+                        text: postContent.message,
+                        media: postContent.media,
+                        scheduling: scheduledTime
+                    });
+                }
 
                 if (result.success) {
-                    toast.success(scheduling.schedule ? "Thread scheduled!" : (isEditing ? "Post updated!" : "Thread published!"));
+                    toast.success(scheduling.schedule ? (isEditing ? "Schedule updated!" : "Thread scheduled!") : (isEditing ? "Post updated!" : "Thread published!"));
                     onSuccess?.();
                 } else {
-                    toast.error(result.message || "Failed to create thread");
+                    toast.error(result.message || "Failed to submit thread");
                 }
             } catch (error) {
                 toast.error(error.message);

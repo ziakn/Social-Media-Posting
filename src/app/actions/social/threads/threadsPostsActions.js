@@ -271,3 +271,59 @@ export async function deleteThreadsPost(postId) {
         return { success: false, message: error.message };
     }
 }
+
+/**
+ * Update a scheduled Threads post
+ */
+export async function updateThreadsPost({
+    postId,
+    text,
+    media,
+    scheduling,
+    accountId
+}) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, message: "Unauthorized" };
+        }
+
+        const postRef = doc(db, "threads_posts", postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) {
+            return { success: false, message: "Post not found" };
+        }
+
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) {
+            return { success: false, message: "Unauthorized" };
+        }
+
+        if (postData.status === "published") {
+            return { success: false, message: "Cannot edit published posts" };
+        }
+
+        const updates = {
+            content: { text, media },
+            accountId, // Allow changing account if needed, or keep same
+            updatedAt: serverTimestamp()
+        };
+
+        if (scheduling) {
+            updates.scheduledAt = scheduling;
+            updates.status = "scheduled";
+        }
+
+        await updateDoc(postRef, updates);
+        revalidatePath("/admin/social/threads/posts");
+
+        return { success: true, message: "Post updated successfully" };
+    } catch (error) {
+        console.error("Error updating Threads post:", error);
+        return { success: false, message: error.message };
+    }
+}
