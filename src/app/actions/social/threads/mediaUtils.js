@@ -30,7 +30,7 @@ export function getTestUrl(type, index = 0) {
         const videos = [
             "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
             "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
-            "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4"
         ];
         baseUrl = videos[index % videos.length];
     } else {
