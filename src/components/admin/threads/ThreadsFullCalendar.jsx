@@ -233,12 +233,12 @@ export default function ThreadsFullCalendar({
                                                     </div>
                                                     <div className="flex-1 min-w-0 flex items-center gap-1">
                                                         {isPublished ? (
-                                                            <CheckCircle2 className="h-3 w-3 text-black shrink-0" />
+                                                            <CheckCircle2 className="h-3 w-3 text-green-600 shrink-0" />
                                                         ) : (
                                                             <Clock className="h-3 w-3 text-gray-400 shrink-0" />
                                                         )}
-                                                        <p className="font-bold text-gray-900 truncate tracking-tighter">
-                                                            {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm") : "Draft"}
+                                                        <p className="font-black text-gray-900 truncate tracking-tighter">
+                                                            {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm a") : "Draft"}
                                                         </p>
                                                     </div>
                                                 </div>

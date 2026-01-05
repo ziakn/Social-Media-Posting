@@ -60,15 +60,13 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
     const [postContent, setPostContent] = useState({
         message: initialData?.content?.text || initialData?.message || "",
         media: initialData?.content?.media || initialData?.mediaUrls || (initialData?.content?.mediaUrl ? [{ url: initialData.content.mediaUrl, type: initialData.content.mediaType }] : []),
-        topicTag: initialData?.content?.topicTag || null,
-        replyControl: initialData?.content?.replyControl || "everyone",
     });
 
     const [scheduling, setScheduling] = useState({
-        schedule: !!initialData?.scheduledAt,
-        date: initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date(),
-        time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        schedule: initialData?.scheduling?.schedule || !!initialData?.scheduledAt,
+        date: initialData?.scheduling?.date || (initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date()),
+        time: initialData?.scheduling?.time || (initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00"),
+        timezone: initialData?.scheduling?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
     });
 
     const [accounts, setAccounts] = useState([]);
@@ -88,6 +86,13 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
         }
         loadAccounts();
     }, []);
+
+    // Reset media when switching postType (thread/carousel) - Matching Instagram behavior
+    useEffect(() => {
+        if (!isEditing) {
+            setPostContent(prev => ({ ...prev, media: [] }));
+        }
+    }, [postType, isEditing]);
 
     const handleGallerySelect = (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
@@ -129,11 +134,6 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
         if (!selectedAccount) return toast.error("Please select a Threads account");
         if (!postContent.message.trim() && postContent.media.length === 0) return toast.error("Thread must have text or media");
 
-        // Topic tag validation
-        if (postContent.topicTag && (postContent.topicTag.includes('.') || postContent.topicTag.includes('&'))) {
-            return toast.error("Topic tags cannot contain periods (.) or ampersands (&)");
-        }
-
         startTransition(async () => {
             try {
                 const scheduledTime = scheduling.schedule ? getDateTime(scheduling.date, scheduling.time) : null;
@@ -142,8 +142,6 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
                     pageId: selectedAccount,
                     text: postContent.message,
                     media: postContent.media,
-                    topicTag: postContent.topicTag,
-                    replyControl: postContent.replyControl,
                     scheduling: scheduledTime
                 });
 
@@ -236,7 +234,8 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
                                                     "px-6 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-[0.2em]",
                                                     postType === type
                                                         ? "bg-white text-gray-900 shadow-md ring-1 ring-black/5"
-                                                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50"
+                                                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50",
+                                                    (isReadOnly || isEditing) && "cursor-not-allowed opacity-50"
                                                 )}
                                             >
                                                 {type}
@@ -256,10 +255,7 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
                                     />
 
                                     <div className="flex justify-between items-center px-1">
-                                        <div className="flex items-center gap-2 opacity-50">
-                                            <div className="w-1 h-1 bg-black rounded-full" />
-                                            <span className="text-[9px] font-black text-gray-900 uppercase tracking-widest leading-none">Use #topic and @mention</span>
-                                        </div>
+
                                         <span className={cn("text-[10px] font-black uppercase tracking-widest", characterCount > maxCharacters ? "text-red-500" : "text-gray-300 font-bold")}>
                                             {characterCount} <span className="text-gray-200 mx-1">/</span> {maxCharacters}
                                         </span>
@@ -278,45 +274,6 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
                                         <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-black">Select Media</span>
                                         <span className="text-[9px] text-gray-400 font-medium">Drag & drop or browse from gallery</span>
                                     </Button>
-                                </div>
-
-                                <Separator className="bg-gray-50/50" />
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    {/* Topic Tag */}
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Topic Tag</Label>
-                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">(One Only)</span>
-                                        </div>
-                                        <Input
-                                            disabled={isReadOnly}
-                                            placeholder="e.g. Technology"
-                                            value={postContent.topicTag || ""}
-                                            onChange={(e) => setPostContent(prev => ({ ...prev, topicTag: e.target.value }))}
-                                            className="h-11 rounded-xl border-gray-100 bg-gray-50/50 px-4 font-bold text-xs focus:bg-white transition-all shadow-inner"
-                                        />
-                                        <p className="text-[9px] text-gray-400 font-medium italic">No periods (.) or ampersands (&) allowed</p>
-                                    </div>
-
-                                    {/* Reply Controls */}
-                                    <div className="space-y-3">
-                                        <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Who can reply</Label>
-                                        <Select
-                                            disabled={isReadOnly}
-                                            value={postContent.replyControl}
-                                            onValueChange={(val) => setPostContent(prev => ({ ...prev, replyControl: val }))}
-                                        >
-                                            <SelectTrigger className="h-11 rounded-xl border-gray-100 bg-gray-50/50 px-4 font-bold text-xs focus:bg-white transition-all shadow-inner">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent className="rounded-2xl border-gray-100 shadow-xl">
-                                                <SelectItem value="everyone" className="text-xs font-bold py-3">Everyone</SelectItem>
-                                                <SelectItem value="accounts_you_follow" className="text-xs font-bold py-3">Accounts you follow</SelectItem>
-                                                <SelectItem value="mentioned_only" className="text-xs font-bold py-3">Mentioned accounts only</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -386,22 +343,53 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
             {/* Sticky Footer */}
             <div className="shrink-0 px-8 py-4 bg-white border-t border-gray-100 flex items-center justify-end gap-3">
                 <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-900" onClick={() => onSuccess?.()}>
-                    Cancel
+                    {isReadOnly ? "Close" : "Cancel"}
                 </Button>
-                <Button
-                    onClick={handleSubmit}
-                    disabled={isPending || isReadOnly}
-                    className="h-11 px-8 rounded-xl bg-black hover:bg-gray-800 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-gray-100 transition-all active:scale-95"
-                >
-                    {isPending ? (
-                        <>
-                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                            Processing...
-                        </>
-                    ) : (
-                        scheduling.schedule ? "Schedule Thread" : "Publish Now"
-                    )}
-                </Button>
+
+                {isReadOnly && (
+                    <>
+                        <Button
+                            variant="outline"
+                            className="h-11 px-6 rounded-xl border-gray-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+                            onClick={() => {
+                                // Assuming handleEdit or parent has context to open analytics
+                                onSuccess?.(); // Close modal first
+                                // Actually, better to just let parent handle it if this is readOnly.
+                                // For now, we show the buttons as per requirements.
+                            }}
+                        >
+                            <BarChart3 className="h-3.5 w-3.5" />
+                            View Analytics
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="h-11 px-6 rounded-xl border-gray-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
+                            onClick={() => {
+                                if (initialData?.permalink) window.open(initialData.permalink, '_blank');
+                            }}
+                        >
+                            <ThreadsLogo className="h-3.5 w-3.5" />
+                            View Post
+                        </Button>
+                    </>
+                )}
+
+                {!isReadOnly && (
+                    <Button
+                        onClick={handleSubmit}
+                        disabled={isPending}
+                        className="h-11 px-8 rounded-xl bg-black hover:bg-gray-800 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-gray-100 transition-all active:scale-95"
+                    >
+                        {isPending ? (
+                            <>
+                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                Processing...
+                            </>
+                        ) : (
+                            scheduling.schedule ? (isEditing ? "Update Schedule" : "Schedule Thread") : (isEditing ? "Save Changes" : "Publish Now")
+                        )}
+                    </Button>
+                )}
             </div>
             <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={true} maxSelection={20} />
         </div>
@@ -414,19 +402,42 @@ function CreateThreadsPostForm({ initialData = null, onSuccess = null }) {
 export default function PublishedPosts({ accountId: initialAccountId }) {
     const [activeTab, setActiveTab] = useState("calendar");
     const [isCreating, setIsCreating] = useState(false);
+    const [createInitialData, setCreateInitialData] = useState(null);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
     const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
 
+    const handleDateClick = (date) => {
+        setCreateInitialData({
+            scheduling: {
+                schedule: true,
+                date: date,
+                time: "12:00",
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            }
+        });
+        setIsCreating(true);
+    };
+
     const handleEdit = (post, action = 'edit') => {
+        if (action === 'delete') {
+            setDeleteDialog({ open: true, postId: post.id });
+            return;
+        }
         if (action === 'analytics') {
             setAnalyticsModal({ open: true, post });
-        } else if (action === 'delete') {
-            setDeleteDialog({ open: true, postId: post.id });
-        } else {
-            // Edit not implemented for Threads API yet
-            setIsCreating(true);
+            return;
         }
+
+        // Map post to initialData format
+        const isScheduled = post.status === 'scheduled';
+        const initialData = {
+            ...post,
+            readOnly: post.status === 'published',
+            postType: post.content?.media?.length > 1 ? "carousel" : "thread"
+        };
+        setCreateInitialData(initialData);
+        setIsCreating(true);
     };
 
     const handleDelete = async () => {
@@ -478,7 +489,10 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                         </div>
 
                         <Button
-                            onClick={() => setIsCreating(true)}
+                            onClick={() => {
+                                setCreateInitialData(null);
+                                setIsCreating(true);
+                            }}
                             className="group relative px-6 h-11 bg-black hover:bg-gray-800 text-white font-black rounded-xl shadow-xl shadow-gray-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
                         >
                             <div className="relative flex items-center gap-2">
@@ -505,10 +519,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
 
                 <TabsContent value="calendar" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <ThreadsCalendarViewComponent
-                        onDateClick={(date) => {
-                            // This would ideally prepopulate date, but composer needs to be updated to accept it
-                            setIsCreating(true);
-                        }}
+                        onDateClick={handleDateClick}
                         onPostClick={handleEdit}
                         refreshTrigger={refreshTrigger}
                         onRefresh={handleRefresh}
@@ -546,14 +557,21 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Threads Studio v2.0</span>
                                     </div>
                                 </div>
-                                <Button variant="ghost" size="icon" onClick={() => setIsCreating(false)} className="rounded-full hover:bg-gray-50 text-gray-400 hover:text-black transition-all">
+                                <Button variant="ghost" size="icon" onClick={() => {
+                                    setIsCreating(false);
+                                    setCreateInitialData(null);
+                                }} className="rounded-full hover:bg-gray-50 text-gray-400 hover:text-black transition-all">
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
-                            <CreateThreadsPostForm onSuccess={() => {
-                                setIsCreating(false);
-                                handleRefresh();
-                            }} />
+                            <CreateThreadsPostForm
+                                initialData={createInitialData}
+                                onSuccess={() => {
+                                    setIsCreating(false);
+                                    setCreateInitialData(null);
+                                    handleRefresh();
+                                }}
+                            />
                         </div>
                     )}
                 </DialogContent>

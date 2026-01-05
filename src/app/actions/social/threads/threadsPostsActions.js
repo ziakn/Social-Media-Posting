@@ -215,12 +215,11 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
             const data = doc.data();
             if (data.deleted === 1) return null;
 
-            const date = data.scheduledAt || data.createdAt;
-
+            const displayDate = data.scheduledAt || data.publishedAt || data.createdAt;
             return {
                 id: doc.id,
                 ...data,
-                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
+                scheduledAt: displayDate?.toDate?.().toISOString() || displayDate || null,
                 createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
                 updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
                 publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,

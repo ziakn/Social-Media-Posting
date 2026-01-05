@@ -114,9 +114,7 @@ export async function createThreadsPost({
     pageId,
     text = "",
     media = [],
-    topicTag = null,
     linkAttachment = null,
-    replyControl = "everyone",
     scheduling = null
 }) {
     try {
@@ -129,7 +127,7 @@ export async function createThreadsPost({
                 userId: user.id,
                 accountId: accountId,
                 platform: "threads",
-                content: { text, media, topicTag, linkAttachment, replyControl },
+                content: { text, media, linkAttachment },
                 status: "scheduled",
                 scheduledAt: scheduling,
                 createdAt: serverTimestamp(),
@@ -169,8 +167,6 @@ export async function createThreadsPost({
                 children: childIds.join(","),
             };
             if (text) carouselParams.text = text;
-            if (topicTag) carouselParams.topic_tag = topicTag;
-            if (replyControl && replyControl !== "everyone") carouselParams.reply_control = replyControl;
 
             const carouselContainer = await makeThreadsRequest(`/${accountId}/threads`, carouselParams, accessToken);
             creationId = carouselContainer.id;
@@ -190,9 +186,7 @@ export async function createThreadsPost({
             }
 
             if (text) params.text = text;
-            if (topicTag) params.topic_tag = topicTag;
             if (params.media_type === "TEXT" && linkAttachment) params.link_attachment = linkAttachment;
-            if (replyControl && replyControl !== "everyone") params.reply_control = replyControl;
 
             const container = await makeThreadsRequest(`/${accountId}/threads`, params, accessToken);
             creationId = container.id;
@@ -215,7 +209,7 @@ export async function createThreadsPost({
             userId: user.id,
             accountId: accountId,
             platform: "threads",
-            content: { text, media, topicTag, linkAttachment, replyControl },
+            content: { text, media, linkAttachment },
             threadsCreationId: creationId,
             threadsPostId: threadsPostId,
             status: "published",
