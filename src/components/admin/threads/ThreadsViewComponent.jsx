@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
     Search, TrendingUp, Heart, MessageCircle, Eye, ChevronRight, X, Filter,
-    Layers, ImageIcon, Film, Play, Edit, MoreVertical, Send, Trash2, History, Loader2, BarChart3
+    Layers, ImageIcon, Film, Play, Edit, MoreVertical, Send, Trash2, History, Loader2, BarChart3,
+    Check, Repeat2
 } from "lucide-react";
 import { getThreadsPosts, getThreadsPostsStats, publishThreadsPostNow } from "@/app/actions/social/threads/threadsPostsActions";
 import { getUserThreadsAccounts } from "@/app/actions/social/threads/createPost";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ThreadsViewComponent({
     accountId: initialAccountId,
@@ -341,101 +343,146 @@ export default function ThreadsViewComponent({
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {posts.map((post) => {
-                        const media = post.mediaUrls || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType }] : []);
+                        const media = post.mediaUrls || post.content?.media || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType }] : []) || [];
                         const hasMedia = media.length > 0;
                         const message = post.message || post.content?.text || post.caption || "";
+                        const name = accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Threads User";
 
                         return (
-                            <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden bg-white aspect-square flex flex-col cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
-                                <div className="absolute inset-0 z-0 bg-gray-50">
-                                    {hasMedia ? (
-                                        <>
-                                            {media[0].type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
-                                                <div className="w-full h-full bg-black relative">
-                                                    <video src={media[0].url} className="w-full h-full object-cover opacity-90" muted />
-                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                        <div className="bg-white/30 backdrop-blur-md p-3 rounded-full shadow-lg">
-                                                            <Play className="h-6 w-6 text-white fill-white" />
+                            <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 bg-white p-5 cursor-pointer rounded-2xl", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
+                                <div className="flex gap-3 lg:gap-4 relative">
+                                    {/* Left: Avatar & Thread Line */}
+                                    <div className="flex flex-col items-center shrink-0 w-10 lg:w-12">
+                                        <div className="relative">
+                                            <Avatar className="h-10 w-10 lg:h-12 lg:h-12 border border-gray-50 shadow-sm">
+                                                <AvatarImage src={post.profilePicture} />
+                                                <AvatarFallback className="bg-gray-100 font-bold text-gray-400">
+                                                    {name[0]}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1 border-2 border-white shadow-sm">
+                                                <ThreadsLogo className="h-2 w-2 text-white" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 w-[2px] bg-gray-100 my-2 rounded-full" />
+                                        <div className="flex -space-x-1 mt-1 pb-1">
+                                            {[1, 2].map(i => (
+                                                <div key={i} className="w-3.5 h-3.5 rounded-full border border-white bg-gray-200" />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Right: Content */}
+                                    <div className="flex-1 min-w-0 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="font-bold text-gray-900 text-[14px] lg:text-[15px] hover:underline cursor-pointer">
+                                                    {name.toLowerCase().replace(/\s/g, '')}
+                                                </span>
+                                                <Check className="h-3 w-3 bg-blue-500 text-white rounded-full p-0.5" />
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-gray-400 text-xs font-medium">{formatDate(post.createdAt)}</span>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-400 hover:text-black transition-colors"><MoreVertical className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-44 rounded-xl shadow-xl border-gray-100 p-1">
+                                                        {post.status === 'published' ? (
+                                                            <>
+                                                                <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2.5 font-bold text-blue-600 rounded-lg">
+                                                                    <BarChart3 className="h-4 w-4" /> Analytics
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 font-bold rounded-lg">
+                                                                    <Eye className="h-4 w-4" /> View Details
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 font-bold rounded-lg">
+                                                                    <Edit className="h-4 w-4" /> Edit Thread
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="gap-2.5 font-bold text-purple-600 rounded-lg">
+                                                                    <Send className="h-4 w-4" /> Publish Now
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem className="gap-2.5 font-bold text-red-600 rounded-lg" onClick={() => onEdit(post, 'delete')}>
+                                                                    <Trash2 className="h-4 w-4" /> Delete Thread
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                        </div>
+
+                                        {message && (
+                                            <p className="text-gray-900 text-[14px] lg:text-[15px] leading-relaxed whitespace-pre-wrap font-medium">
+                                                {message}
+                                            </p>
+                                        )}
+
+                                        {hasMedia && (
+                                            <div className="relative rounded-xl overflow-hidden border border-gray-100 bg-gray-50 flex max-h-[400px]">
+                                                {media[0].type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
+                                                    <div className="w-full h-full relative group/media">
+                                                        <video src={media[0].url} className="w-full h-full object-cover" muted />
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/media:opacity-100 transition-opacity">
+                                                            <div className="bg-black/40 backdrop-blur-md p-3 rounded-full shadow-lg">
+                                                                <Play className="h-6 w-6 text-white fill-white" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-sm p-1.5 rounded-lg">
+                                                            <Film className="h-3.5 w-3.5 text-white" />
                                                         </div>
                                                     </div>
-                                                </div>
-                                            ) : (
-                                                <img src={media[0].url} alt="Thread media" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                                            )}
-                                            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                                        </>
-                                    ) : (
-                                        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 p-6 text-center">
-                                            <p className="text-gray-900 text-xs font-semibold line-clamp-6 leading-relaxed">
-                                                {message || "No content"}
-                                            </p>
+                                                ) : (
+                                                    <div className="relative w-full h-full group/media">
+                                                        <img src={media[0].url} alt="Thread media" className="w-full h-full object-cover rounded-xl" />
+                                                        {media.length > 1 && (
+                                                            <div className="absolute top-3 right-3 bg-black/60 text-white text-[10px] px-2 py-1 rounded-full backdrop-blur-sm font-bold">
+                                                                1/{media.length}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <div className="flex items-center gap-5 pt-1 text-gray-900">
+                                            <div className="flex items-center gap-1.5 group/action">
+                                                <Heart className="h-[20px] w-[20px] stroke-[1.5] group-hover/action:text-red-500 transition-colors" />
+                                                <span className="text-xs font-bold text-gray-400 group-hover/action:text-red-500">{formatNumber(post.metrics?.likes)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 group/action">
+                                                <MessageCircle className="h-[20px] w-[20px] stroke-[1.5] group-hover/action:text-blue-500 transition-colors" />
+                                                <span className="text-xs font-bold text-gray-400 group-hover/action:text-blue-500">{formatNumber(post.metrics?.replies)}</span>
+                                            </div>
+                                            <Repeat2 className="h-[20px] w-[20px] stroke-[1.5] hover:text-green-500 transition-colors" />
+                                            <Send className="h-[20px] w-[20px] stroke-[1.5] hover:text-gray-500 transition-colors" />
                                         </div>
-                                    )}
-                                    {publishingId === post.id && (
-                                        <div className="absolute inset-0 bg-white/60 flex items-center justify-center z-10">
+
+                                        <div className="flex items-center gap-2 pt-1">
+                                            <Badge variant="secondary" className={cn("text-[10px] font-black uppercase tracking-wider rounded-md h-5 px-1.5", post.status === 'published' ? "bg-green-50 text-green-600 border-green-100" : "bg-purple-50 text-purple-600 border-purple-100")}>
+                                                {post.status || 'published'}
+                                            </Badge>
+                                            {post.scheduledAt && (
+                                                <Badge variant="secondary" className="bg-gray-50 text-gray-500 border-gray-100 text-[10px] font-black uppercase tracking-wider rounded-md h-5 px-1.5">
+                                                    Scheduled
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                {publishingId === post.id && (
+                                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-50 rounded-2xl">
+                                        <div className="flex flex-col items-center gap-3">
                                             <Loader2 className="h-8 w-8 animate-spin text-black" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => e.stopPropagation()}>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white shadow-sm hover:bg-gray-50 text-gray-700 border border-gray-100"><MoreVertical className="h-4 w-4" /></Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start" className="w-40">
-                                            {post.status === 'published' ? (
-                                                <>
-                                                    <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')}>
-                                                        <BarChart3 className="mr-2 h-4 w-4 text-blue-600" />
-                                                        <span className="font-semibold text-blue-600">Analytics</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => onEditClick(post)}>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        <span>View Post</span>
-                                                    </DropdownMenuItem>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <DropdownMenuItem onClick={() => onEditClick(post)}>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        <span>Edit Post</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="text-purple-600 focus:text-purple-700 focus:bg-purple-50">
-                                                        <Send className="mr-2 h-4 w-4" />
-                                                        <span>Publish Now</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-red-600 focus:text-red-700 focus:bg-red-50" onClick={() => onEdit(post, 'delete')}>
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        <span>Delete Post</span>
-                                                    </DropdownMenuItem>
-                                                </>
-                                            )}
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </div>
-                                <div className="absolute top-3 left-3 z-20 pointer-events-none flex flex-col items-start gap-1">
-                                    {hasMedia && (
-                                        <div className="bg-white/90 backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5">
-                                            {media[0].type?.startsWith('video') ? <Film className="h-3 w-3 text-purple-600" /> : <ImageIcon className="h-3 w-3 text-blue-600" />}
-                                            <span className="text-[10px] font-semibold text-gray-700 capitalize">{media[0].type?.startsWith('video') ? 'Video' : 'Image'}</span>
-                                        </div>
-                                    )}
-                                    <div className={cn("backdrop-blur-sm shadow-sm rounded-full px-2 py-1 flex items-center gap-1.5", post.status === 'published' ? "bg-green-100/90 text-green-700" : "bg-blue-100/90 text-blue-700")}>
-                                        <span className="text-[10px] font-semibold capitalize">{post.status || 'published'}</span>
-                                    </div>
-                                </div>
-                                <div className="absolute inset-x-0 bottom-0 p-3 z-10 pointer-events-none text-white">
-                                    <div className="flex flex-col gap-1">
-                                        <p className="text-xs line-clamp-2 leading-snug font-medium text-gray-100 drop-shadow-md">{message}</p>
-                                        <div className="flex items-center gap-3 mt-1 text-[11px] font-medium text-gray-200">
-                                            <div className="flex items-center gap-1"><Heart className="h-3 w-3 fill-white/20" /> {formatNumber(post.metrics?.likes)}</div>
-                                            <div className="flex items-center gap-1"><MessageCircle className="h-3 w-3 fill-white/20" /> {formatNumber(post.metrics?.replies)}</div>
-                                            <div className="flex items-center gap-1 ml-auto"><span className="text-xs text-white/80">{formatDate(post.createdAt)}</span></div>
+                                            <span className="text-xs font-black uppercase tracking-widest text-black">Publishing...</span>
                                         </div>
                                     </div>
-                                </div>
+                                )}
                             </Card>
                         );
                     })}

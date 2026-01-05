@@ -206,7 +206,8 @@ export default function ThreadsFullCalendar({
                                 {dayPosts.map((post) => {
                                     const isPublished = post.status === "published" || post.isPublished;
                                     const isProcessing = publishingId === post.id;
-                                    const mediaUrl = post.mediaUrls?.[0]?.url || post.mediaUrl;
+                                    const media = post.mediaUrls || post.content?.media || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType }] : []) || [];
+                                    const mediaUrl = media[0]?.url;
 
                                     return (
                                         <DropdownMenu key={post.id}>
@@ -251,10 +252,10 @@ export default function ThreadsFullCalendar({
                                                     <div className="w-[280px] flex-shrink-0 bg-gray-50/50 p-3 border-r border-gray-100/50 animate-in fade-in slide-in-from-left-4 duration-500">
 
                                                         <ThreadsPreview
-                                                            postType={post.postType || (post.mediaUrls?.length > 1 ? "carousel" : "thread")}
+                                                            postType={post.postType || (media.length > 1 ? "carousel" : "thread")}
                                                             content={{
                                                                 message: post.message || post.content?.text || post.caption || "",
-                                                                media: post.mediaUrls || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType }] : [])
+                                                                media: media
                                                             }}
                                                             page={accounts.find(a => a.accountId === post.accountId) || { pageName: post.username || "Threads" }}
                                                             compact={true}

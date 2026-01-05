@@ -24,6 +24,7 @@ import {
 import { getThreadsPosts, getThreadsPostsStats, publishThreadsPostNow } from "@/app/actions/social/threads/threadsPostsActions";
 import { getUserThreadsAccounts } from "@/app/actions/social/threads/createPost";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
 
 export default function ThreadsListingViewComponent({
     accountId: initialAccountId,
@@ -289,103 +290,149 @@ export default function ThreadsListingViewComponent({
 
             {/* Content Container */}
             <Card className="border-none shadow-none bg-transparent">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
                     <Table>
-                        <TableHeader className="bg-gray-50/50">
-                            <TableRow className="hover:bg-transparent border-gray-100">
-                                <TableHead className="w-[100px] font-bold uppercase text-[10px] tracking-wider h-12">Media</TableHead>
-                                <TableHead className="font-bold uppercase text-[10px] tracking-wider h-12">Content & Account</TableHead>
-                                <TableHead className="font-bold uppercase text-[10px] tracking-wider h-12">Status</TableHead>
-                                <TableHead className="font-bold uppercase text-[10px] tracking-wider h-12">Metrics</TableHead>
-                                <TableHead className="font-bold uppercase text-[10px] tracking-wider h-12">Date</TableHead>
-                                <TableHead className="w-[100px] text-right"></TableHead>
+                        <TableHeader className="bg-zinc-50/50 border-b border-gray-50">
+                            <TableRow className="hover:bg-transparent border-none">
+                                <TableHead className="pl-6 font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Preview</TableHead>
+                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Thread Details</TableHead>
+                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Status</TableHead>
+                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Engagement</TableHead>
+                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Date & Time</TableHead>
+                                <TableHead className="pr-6 text-right"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {posts.map((post) => {
                                 const message = post.message || post.content?.text || post.caption || "";
-                                const media = post.mediaUrls || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType }] : []);
+                                const media = post.mediaUrls || post.content?.media || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType }] : []) || [];
                                 const date = post.scheduledAt || post.createdAt;
                                 return (
-                                    <TableRow key={post.id} className={cn("group hover:bg-zinc-50/30 transition-colors border-gray-50 cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
-                                        <TableCell>
-                                            <div className="h-12 w-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
+                                    <TableRow key={post.id} className={cn("group hover:bg-zinc-50/30 transition-all border-gray-50 cursor-pointer h-20", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
+                                        <TableCell className="pl-6">
+                                            <div className="h-14 w-14 rounded-2xl bg-gray-100 overflow-hidden relative border border-gray-100 shadow-sm group-hover:scale-105 transition-transform duration-300">
                                                 {media.length > 0 ? (
                                                     media[0].type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
                                                         <div className="w-full h-full bg-black relative flex items-center justify-center">
                                                             <video src={media[0].url} className="w-full h-full object-cover" muted />
-                                                            <div className="absolute inset-0 flex items-center justify-center"><Play className="h-4 w-4 text-white fill-white" /></div>
+                                                            <div className="absolute inset-0 flex items-center justify-center"><Play className="h-5 w-5 text-white fill-white opacity-80" /></div>
                                                         </div>
                                                     ) : (<img src={media[0].url} alt="" className="h-full w-full object-cover" />)
-                                                ) : (<div className="h-full w-full flex items-center justify-center bg-gray-50 text-gray-200 text-[10px] font-black uppercase">None</div>)}
+                                                ) : (
+                                                    <div className="h-full w-full flex items-center justify-center bg-zinc-50">
+                                                        <ThreadsLogo className="h-6 w-6 text-zinc-200" />
+                                                    </div>
+                                                )}
                                                 {publishingId === post.id && (
-                                                    <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                                                        <Loader2 className="h-4 w-4 animate-spin text-black" />
+                                                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                                        <Loader2 className="h-5 w-5 animate-spin text-black" />
                                                     </div>
                                                 )}
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="space-y-1">
-                                                <p className="text-sm font-bold text-gray-900 truncate max-w-md">{message || "No content provided"}</p>
-                                                <div className="flex items-center gap-1.5">
-                                                    <Badge variant="outline" className="text-[9px] font-black uppercase text-zinc-600 bg-zinc-50 border-zinc-100 rounded-md py-0 px-1.5">
-                                                        @{post.username || "Threads"}
+                                            <div className="space-y-1.5 max-w-md">
+                                                <p className="text-[14px] font-bold text-gray-900 truncate tracking-tight">{message || "No content provided"}</p>
+
+                                                {/* Media Grid */}
+                                                {media.length > 0 && (
+                                                    <div className="flex items-center gap-2 pt-1 pb-2 overflow-x-auto no-scrollbar mask-gradient-right">
+                                                        {media.slice(0, 5).map((item, idx) => (
+                                                            <div key={idx} className="relative shrink-0 h-10 w-10 rounded-lg bg-gray-100 overflow-hidden border border-gray-100">
+                                                                {item.type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
+                                                                    <>
+                                                                        <video src={item.url} className="h-full w-full object-cover" muted />
+                                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                                            <Play className="h-3 w-3 text-white fill-white" />
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <img src={item.url} alt="" className="h-full w-full object-cover" />
+                                                                )}
+                                                                {idx === 4 && media.length > 5 && (
+                                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                                                                        <span className="text-[9px] font-bold text-white">+{media.length - 5}</span>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-full">
+                                                        <Avatar className="h-4 w-4">
+                                                            <AvatarImage src={post.profilePicture} />
+                                                            <AvatarFallback className="text-[6px] font-black">{post.username?.[0]}</AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-tight">@{accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Threads"}</span>
+                                                    </div>
+                                                    <div className="w-1 h-1 rounded-full bg-zinc-200" />
+                                                    <Badge variant="outline" className="text-[9px] font-black uppercase text-zinc-400 border-zinc-100 rounded-md py-0 px-1.5">
+                                                        {post.postType || (media.length > 0 ? (media[0].type?.startsWith('video') ? 'video' : 'image') : 'text')}
                                                     </Badge>
-                                                    <div className="w-1 h-1 rounded-full bg-gray-300" />
-                                                    <span className="text-[10px] text-gray-400 flex items-center gap-1 font-medium capitalize">{post.postType || (media.length > 0 ? (media[0].type?.startsWith('video') ? 'video' : 'image') : 'text')}</span>
                                                 </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge className={cn("rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-tighter", post.status === 'published' ? "bg-green-100 text-green-700 hover:bg-green-100 border-green-200" : "bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200")}>
+                                            <Badge className={cn("rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm", post.status === 'published' ? "bg-green-50 text-green-700 hover:bg-green-50 border-green-100" : "bg-purple-50 text-purple-700 hover:bg-purple-50 border-purple-100")}>
                                                 {post.status || "published"}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-4 text-xs font-bold text-gray-700">
-                                                <div className="flex items-center gap-1"><Heart className="h-3.5 w-3.5 text-red-500" /> {formatNumber(post.metrics?.likes)}</div>
-                                                <div className="flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5 text-blue-500" /> {formatNumber(post.metrics?.replies)}</div>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
+                                                        <Heart className="h-3.5 w-3.5 text-red-500 fill-red-50" /> {formatNumber(post.metrics?.likes)}
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Likes</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
+                                                        <MessageCircle className="h-3.5 w-3.5 text-blue-500 fill-blue-50" /> {formatNumber(post.metrics?.replies)}
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Replies</span>
+                                                </div>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-gray-900">
+                                                <span className="text-[14px] font-bold text-gray-900 tracking-tight">
                                                     {format(new Date(date), "MMM dd, yyyy")}
                                                 </span>
-                                                <span className="text-[10px] font-medium text-gray-400 uppercase tracking-tighter">
+                                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
                                                     {format(new Date(date), "h:mm a")}
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-right">
+                                        <TableCell className="pr-6 text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-zinc-100 text-gray-400 hover:text-black transition-colors"><MoreVertical className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-zinc-100 text-zinc-400 hover:text-black transition-all"><MoreVertical className="h-5 w-5" /></Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-40 rounded-xl shadow-xl border-gray-100 p-1">
+                                                <DropdownMenuContent align="end" className="w-48 rounded-2xl shadow-2xl border-gray-100 p-2">
                                                     {post.status === 'published' ? (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }} className="gap-2.5 text-xs font-black rounded-lg">
-                                                                <BarChart3 className="h-4 w-4 text-blue-600" />
-                                                                <span className="text-blue-600">Analytics</span>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }} className="gap-3 p-3 text-xs font-bold rounded-xl focus:bg-blue-50 focus:text-blue-700">
+                                                                <BarChart3 className="h-4 w-4" />
+                                                                <span>View Analytics</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="gap-2.5 text-xs font-black rounded-lg">
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="gap-3 p-3 text-xs font-bold rounded-xl">
                                                                 <Eye className="h-4 w-4" />
-                                                                <span>View Details</span>
+                                                                <span>Thread Details</span>
                                                             </DropdownMenuItem>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="gap-2.5 text-xs font-black rounded-lg">
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="gap-3 p-3 text-xs font-bold rounded-xl">
                                                                 <Edit className="h-4 w-4" />
-                                                                <span>Edit Post</span>
+                                                                <span>Edit Thread</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="gap-2.5 text-xs font-black text-purple-600 rounded-lg focus:bg-purple-50 focus:text-purple-700">
+                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="gap-3 p-3 text-xs font-bold text-purple-600 rounded-xl focus:bg-purple-50 focus:text-purple-700">
                                                                 <Send className="h-4 w-4" />
                                                                 <span>Publish Now</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="gap-2.5 text-xs font-black text-red-600 rounded-lg focus:bg-red-50 focus:text-red-700" onClick={(e) => { e.stopPropagation(); onEdit(post, 'delete'); }}>
+                                                            <DropdownMenuItem className="gap-3 p-3 text-xs font-bold text-red-600 rounded-xl focus:bg-red-50 focus:text-red-700" onClick={(e) => { e.stopPropagation(); onEdit(post, 'delete'); }}>
                                                                 <Trash2 className="h-4 w-4" />
                                                                 <span>Delete Thread</span>
                                                             </DropdownMenuItem>
