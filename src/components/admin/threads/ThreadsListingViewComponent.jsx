@@ -292,14 +292,14 @@ export default function ThreadsListingViewComponent({
             <Card className="border-none shadow-none bg-transparent">
                 <div className="bg-white rounded-[2rem] border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
                     <Table>
-                        <TableHeader className="bg-zinc-50/50 border-b border-gray-50">
-                            <TableRow className="hover:bg-transparent border-none">
-                                <TableHead className="pl-6 font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Preview</TableHead>
-                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Thread Details</TableHead>
-                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Status</TableHead>
-                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Engagement</TableHead>
-                                <TableHead className="font-black uppercase text-[10px] tracking-[0.1em] text-zinc-400 h-14">Date & Time</TableHead>
-                                <TableHead className="pr-6 text-right"></TableHead>
+                        <TableHeader className="bg-gray-50/50">
+                            <TableRow className="hover:bg-transparent border-gray-100">
+                                <TableHead className="w-[100px] font-bold">Media</TableHead>
+                                <TableHead className="font-bold">Thread & Account</TableHead>
+                                <TableHead className="font-bold">Status</TableHead>
+                                <TableHead className="font-bold">Metrics</TableHead>
+                                <TableHead className="font-bold">Date</TableHead>
+                                <TableHead className="w-[100px] text-right"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -308,9 +308,9 @@ export default function ThreadsListingViewComponent({
                                 const media = post.mediaUrls || post.content?.media || (post.mediaUrl ? [{ url: post.mediaUrl, type: post.mediaType }] : []) || [];
                                 const date = post.scheduledAt || post.createdAt;
                                 return (
-                                    <TableRow key={post.id} className={cn("group hover:bg-zinc-50/30 transition-all border-gray-50 cursor-pointer h-20", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
-                                        <TableCell className="pl-6">
-                                            <div className="h-14 w-14 rounded-2xl bg-gray-100 overflow-hidden relative border border-gray-100 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                                    <TableRow key={post.id} className={cn("group hover:bg-gray-50/50 transition-colors border-gray-50 cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
+                                        <TableCell>
+                                            <div className="h-12 w-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
                                                 {media.length > 0 ? (
                                                     media[0].type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
                                                         <div className="w-full h-full bg-black relative flex items-center justify-center">
@@ -335,29 +335,7 @@ export default function ThreadsListingViewComponent({
                                                 <p className="text-[14px] font-bold text-gray-900 truncate tracking-tight">{message || "No content provided"}</p>
 
                                                 {/* Media Grid */}
-                                                {media.length > 0 && (
-                                                    <div className="flex items-center gap-2 pt-1 pb-2 overflow-x-auto no-scrollbar mask-gradient-right">
-                                                        {media.slice(0, 5).map((item, idx) => (
-                                                            <div key={idx} className="relative shrink-0 h-10 w-10 rounded-lg bg-gray-100 overflow-hidden border border-gray-100">
-                                                                {item.type?.startsWith('video') || post.mediaType === 'VIDEO' ? (
-                                                                    <>
-                                                                        <video src={item.url} className="h-full w-full object-cover" muted />
-                                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                                                            <Play className="h-3 w-3 text-white fill-white" />
-                                                                        </div>
-                                                                    </>
-                                                                ) : (
-                                                                    <img src={item.url} alt="" className="h-full w-full object-cover" />
-                                                                )}
-                                                                {idx === 4 && media.length > 5 && (
-                                                                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                                                        <span className="text-[9px] font-bold text-white">+{media.length - 5}</span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+
 
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-full">
@@ -397,44 +375,44 @@ export default function ThreadsListingViewComponent({
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="text-[14px] font-bold text-gray-900 tracking-tight">
+                                                <span className="text-sm font-bold text-gray-900">
                                                     {format(new Date(date), "MMM dd, yyyy")}
                                                 </span>
-                                                <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
+                                                <span className="text-[10px] font-medium text-gray-400">
                                                     {format(new Date(date), "h:mm a")}
                                                 </span>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="pr-6 text-right">
+                                        <TableCell className="text-right">
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-zinc-100 text-zinc-400 hover:text-black transition-all"><MoreVertical className="h-5 w-5" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black"><MoreVertical className="h-4 w-4" /></Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48 rounded-2xl shadow-2xl border-gray-100 p-2">
+                                                <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
                                                     {post.status === 'published' ? (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }} className="gap-3 p-3 text-xs font-bold rounded-xl focus:bg-blue-50 focus:text-blue-700">
-                                                                <BarChart3 className="h-4 w-4" />
-                                                                <span>View Analytics</span>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <BarChart3 className="h-5 w-5 text-gray-900" />
+                                                                <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="gap-3 p-3 text-xs font-bold rounded-xl">
-                                                                <Eye className="h-4 w-4" />
-                                                                <span>Thread Details</span>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <Eye className="h-5 w-5 text-gray-900" />
+                                                                <span className="font-bold text-[13px] text-gray-900">Thread Details</span>
                                                             </DropdownMenuItem>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="gap-3 p-3 text-xs font-bold rounded-xl">
-                                                                <Edit className="h-4 w-4" />
-                                                                <span>Edit Thread</span>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <Edit className="h-5 w-5 text-gray-900" />
+                                                                <span className="font-bold text-[13px] text-gray-900">Edit Thread</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="gap-3 p-3 text-xs font-bold text-purple-600 rounded-xl focus:bg-purple-50 focus:text-purple-700">
-                                                                <Send className="h-4 w-4" />
-                                                                <span>Publish Now</span>
+                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group">
+                                                                <Send className="h-5 w-5 text-purple-600" />
+                                                                <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="gap-3 p-3 text-xs font-bold text-red-600 rounded-xl focus:bg-red-50 focus:text-red-700" onClick={(e) => { e.stopPropagation(); onEdit(post, 'delete'); }}>
-                                                                <Trash2 className="h-4 w-4" />
-                                                                <span>Delete Thread</span>
+                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEdit(post, 'delete'); }}>
+                                                                <Trash2 className="h-5 w-5 text-red-600" />
+                                                                <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
                                                             </DropdownMenuItem>
                                                         </>
                                                     )}

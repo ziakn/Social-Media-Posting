@@ -386,29 +386,34 @@ export default function ThreadsViewComponent({
                                             <div className="flex items-center gap-3">
                                                 <span className="text-gray-400 text-xs font-medium">{formatDate(post.createdAt)}</span>
                                                 <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full text-gray-400 hover:text-black transition-colors"><MoreVertical className="h-4 w-4" /></Button>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black"><MoreVertical className="h-4 w-4" /></Button>
                                                     </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-44 rounded-xl shadow-xl border-gray-100 p-1">
+                                                    <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
                                                         {post.status === 'published' ? (
                                                             <>
-                                                                <DropdownMenuItem onClick={() => onEditClick(post, 'analytics')} className="gap-2.5 font-bold text-blue-600 rounded-lg">
-                                                                    <BarChart3 className="h-4 w-4" /> Analytics
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                    <BarChart3 className="h-5 w-5 text-gray-900" />
+                                                                    <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 font-bold rounded-lg">
-                                                                    <Eye className="h-4 w-4" /> View Details
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                    <Eye className="h-5 w-5 text-gray-900" />
+                                                                    <span className="font-bold text-[13px] text-gray-900">Thread Details</span>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <DropdownMenuItem onClick={() => onEditClick(post)} className="gap-2.5 font-bold rounded-lg">
-                                                                    <Edit className="h-4 w-4" /> Edit Thread
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                    <Edit className="h-5 w-5 text-gray-900" />
+                                                                    <span className="font-bold text-[13px] text-gray-900">Edit Thread</span>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="gap-2.5 font-bold text-purple-600 rounded-lg">
-                                                                    <Send className="h-4 w-4" /> Publish Now
+                                                                <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group">
+                                                                    <Send className="h-5 w-5 text-purple-600" />
+                                                                    <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="gap-2.5 font-bold text-red-600 rounded-lg" onClick={() => onEdit(post, 'delete')}>
-                                                                    <Trash2 className="h-4 w-4" /> Delete Thread
+                                                                <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEdit(post, 'delete'); }}>
+                                                                    <Trash2 className="h-5 w-5 text-red-600" />
+                                                                    <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}
