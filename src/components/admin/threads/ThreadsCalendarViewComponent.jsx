@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { startOfMonth, endOfMonth } from "date-fns";
 import ThreadsFullCalendar from "./ThreadsFullCalendar";
 import { getAllThreadsCalendarPosts } from "@/app/actions/social/threads/threadsPostsActions";
+import { getUserThreadsAccounts } from "@/app/actions/social/threads/createPost";
 
 export default function ThreadsCalendarViewComponent({
     onDateClick,
@@ -12,8 +13,16 @@ export default function ThreadsCalendarViewComponent({
     refreshTrigger = 0
 }) {
     const [calendarPosts, setCalendarPosts] = useState([]);
+    const [accounts, setAccounts] = useState([]);
     const [loadingCalendar, setLoadingCalendar] = useState(false);
     const [calendarDate, setCalendarDate] = useState(new Date());
+
+    useEffect(() => {
+        // Fetch accounts once
+        getUserThreadsAccounts().then(res => {
+            if (res.success) setAccounts(res.accounts);
+        });
+    }, []);
 
     useEffect(() => {
         setLoadingCalendar(true);
@@ -37,6 +46,7 @@ export default function ThreadsCalendarViewComponent({
             )}
             <ThreadsFullCalendar
                 posts={calendarPosts}
+                accounts={accounts}
                 onMonthChange={setCalendarDate}
                 onDateClick={onDateClick}
                 onPostClick={onPostClick}

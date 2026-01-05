@@ -10,7 +10,10 @@ export default function ThreadsPreview({
     postType,
     content,
     page,
-    currentSlide = 0
+    currentSlide = 0,
+    hideLogo = false,
+    compact = false,
+    noBorder = false
 }) {
     const { message, caption, media = [] } = content;
     const postMessage = message || caption || "";
@@ -22,15 +25,19 @@ export default function ThreadsPreview({
         const currentItem = media[currentSlide];
 
         return (
-            <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-[400px] w-full mx-auto">
-                <div className="p-4 flex flex-col gap-3">
+            <div className={cn(
+                "bg-white overflow-hidden mx-auto",
+                !noBorder && "border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+                compact ? "rounded-xl max-w-[260px]" : "rounded-3xl max-w-[400px] w-full"
+            )}>
+                <div className={cn("flex flex-col gap-2.5", compact ? "p-2.5" : "p-4")}>
                     {/* Header */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="relative">
-                                <Avatar className="h-9 w-9 border border-gray-50">
+                                <Avatar className={cn("border border-gray-50", compact ? "h-7 w-7" : "h-9 w-9")}>
                                     <AvatarImage src={profilePic} />
-                                    <AvatarFallback className="bg-gray-50 text-[10px] uppercase font-bold text-gray-400">
+                                    <AvatarFallback className={cn("bg-gray-50 uppercase font-bold text-gray-400", compact ? "text-[8px]" : "text-[10px]")}>
                                         {name[0]}
                                     </AvatarFallback>
                                 </Avatar>
@@ -41,21 +48,21 @@ export default function ThreadsPreview({
                                 </div>
                             </div>
                             <div className="flex flex-col">
-                                <span className="text-[14px] font-bold text-gray-900 leading-tight">
+                                <span className={cn("font-bold text-gray-900 leading-tight", compact ? "text-[12px]" : "text-[14px]")}>
                                     {name.toLowerCase().replace(/\s/g, '')}
                                 </span>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[13px] text-gray-400 font-medium">1m</span>
-                            <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                            <span className={cn("text-gray-400 font-medium", compact ? "text-[11px]" : "text-[13px]")}>1m</span>
+                            {!compact && <MoreHorizontal className="h-4 w-4 text-gray-400" />}
                         </div>
                     </div>
 
                     {/* Content */}
-                    <div className="flex flex-col gap-3 post-body pl-12 -mt-3">
+                    <div className={cn("flex flex-col gap-2.5 post-body -mt-3", compact ? "pl-9" : "pl-12")}>
                         {postMessage && (
-                            <div className="text-[14px] text-gray-900 leading-normal whitespace-pre-wrap">
+                            <div className={cn("text-gray-900 leading-normal whitespace-pre-wrap", compact ? "text-[12px]" : "text-[14px]")}>
                                 {postMessage}
                             </div>
                         )}
@@ -67,7 +74,14 @@ export default function ThreadsPreview({
                             {currentItem ? (
                                 <div className="rounded-xl overflow-hidden border border-gray-100 bg-gray-50 relative aspect-square shadow-sm">
                                     {currentItem.type?.startsWith('video') ? (
-                                        <video src={currentItem.url} className="w-full h-full object-cover" />
+                                        <video
+                                            src={currentItem.url}
+                                            className="w-full h-full object-cover"
+                                            autoPlay
+                                            muted
+                                            loop
+                                            playsInline
+                                        />
                                     ) : (
                                         <img src={currentItem.url} className="w-full h-full object-cover" alt="" />
                                     )}
@@ -88,16 +102,16 @@ export default function ThreadsPreview({
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-4 py-1 text-gray-900">
-                            <Heart className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
-                            <MessageCircle className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
-                            <Repeat2 className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
-                            <Send className="h-[20px] w-[20px] stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform" />
+                        <div className={cn("flex items-center gap-4 py-1 text-gray-900", compact && "gap-3")}>
+                            <Heart className={cn("stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform", compact ? "h-4 w-4" : "h-[20px] w-[20px]")} />
+                            <MessageCircle className={cn("stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform", compact ? "h-4 w-4" : "h-[20px] w-[20px]")} />
+                            <Repeat2 className={cn("stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform", compact ? "h-4 w-4" : "h-[20px] w-[20px]")} />
+                            <Send className={cn("stroke-[1.5px] cursor-pointer hover:scale-110 transition-transform", compact ? "h-4 w-4" : "h-[20px] w-[20px]")} />
                         </div>
 
                         {/* Footer Info */}
-                        <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2 text-[13px] text-gray-400 font-medium">
+                        <div className="flex flex-col gap-1">
+                            <div className={cn("flex items-center gap-2 text-gray-400 font-medium", compact ? "text-[11px]" : "text-[13px]")}>
                                 <span>0 replies</span>
                                 <span>·</span>
                                 <span>0 likes</span>
@@ -110,11 +124,16 @@ export default function ThreadsPreview({
     };
 
     return (
-        <div className="threads-preview-container w-full animate-in fade-in slide-in-from-bottom-4 duration-500 sticky top-8">
-            <div className="flex flex-col items-center gap-4">
-                <div className="p-3 bg-black rounded-2xl shadow-lg">
-                    <ThreadsLogo className="h-6 w-6 text-white" />
-                </div>
+        <div className={cn(
+            "threads-preview-container animate-in fade-in slide-in-from-bottom-4 duration-500",
+            !compact && "w-full sticky top-8"
+        )}>
+            <div className={cn("flex flex-col items-center gap-4", compact && "gap-0")}>
+                {!hideLogo && (
+                    <div className="p-3 bg-black rounded-2xl shadow-lg">
+                        <ThreadsLogo className="h-6 w-6 text-white" />
+                    </div>
+                )}
                 {renderMedia()}
             </div>
         </div>
