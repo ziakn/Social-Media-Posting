@@ -314,7 +314,6 @@ export async function publishThreadsPostNow(postId) {
 
                     if (status.status === 'FINISHED') break;
                     if (status.status === 'ERROR') {
-                        console.error(`[Threads Debug] Child ${childId} failed:`, JSON.stringify(status, null, 2));
                         throw new Error(`Thread child media error: ${status.error_message || 'Unknown Error'}`);
                     }
                     attempts++;
@@ -354,7 +353,6 @@ export async function publishThreadsPostNow(postId) {
 
         // 4. Poll for container readiness
         if (media.length > 0) {
-            console.log(`Polling status for Threads container ${creationId}...`);
             let attempts = 0;
             const maxAttempts = 30; // Wait up to 60-90s
             while (attempts < maxAttempts) {
@@ -364,7 +362,6 @@ export async function publishThreadsPostNow(postId) {
 
                 if (status.status === 'FINISHED') break;
                 if (status.status === 'ERROR') {
-                    console.error(`[Threads Debug] Container ${creationId} failed:`, JSON.stringify(status, null, 2));
                     throw new Error(`Threads media error: ${status.error_message || 'Unknown Error'}`);
                 }
                 attempts++;
@@ -439,6 +436,7 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
                 createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
                 updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
                 publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
+                lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate || null,
                 status: data.status || "published"
             };
         }).filter(Boolean);

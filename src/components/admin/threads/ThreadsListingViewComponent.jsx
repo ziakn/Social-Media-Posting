@@ -19,12 +19,13 @@ import {
 import {
     Search, TrendingUp, Heart, MessageCircle, Eye, X, Filter,
     Layers, Play, Edit, MoreVertical, Send, Trash2, Loader2, BarChart3,
-    History, ImageIcon, Film
+    History, ImageIcon, Film, MoreHorizontal
 } from "lucide-react";
-import { getThreadsPosts, getThreadsPostsStats, publishThreadsPostNow } from "@/app/actions/social/threads/threadsPostsActions";
+import { getThreadsPosts, getThreadsPostsStats, publishThreadsPostNow, deleteThreadsPost } from "@/app/actions/social/threads/threadsPostsActions";
 import { getUserThreadsAccounts } from "@/app/actions/social/threads/createPost";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
+import ThreadsAnalyticsModal from "./ThreadsAnalyticsModal";
 
 export default function ThreadsListingViewComponent({
     accountId: initialAccountId,
@@ -38,6 +39,11 @@ export default function ThreadsListingViewComponent({
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState([]);
     const [publishingId, setPublishingId] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(null);
+
+    // Analytics Modal State
+    const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
+    const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState(null);
 
     const [filters, setFilters] = useState({
         status: initialStatus,
@@ -163,6 +169,37 @@ export default function ThreadsListingViewComponent({
             toast.error("An error occurred while publishing");
         } finally {
             setPublishingId(null);
+        }
+    };
+
+    const handleOpenAnalytics = (post) => {
+        const account = accounts.find(a => a.accountId === post.accountId);
+        const enrichedPost = {
+            ...post,
+            username: account?.username || post.username || "Threads User",
+            profilePicture: account?.profilePicture || post.profilePicture
+        };
+        setSelectedPostForAnalytics(enrichedPost);
+        setAnalyticsModalOpen(true);
+    };
+
+    const handleDelete = async (e, postId) => {
+        e.stopPropagation();
+        if (!window.confirm("Are you sure you want to delete this post?")) return;
+        try {
+            setDeleteLoading(postId);
+            const result = await deleteThreadsPost(postId);
+            if (result.success) {
+                toast.success("Post deleted successfully!");
+                if (onRefresh) onRefresh();
+                else loadPosts(true);
+            } else {
+                toast.error(result.message || "Failed to delete post");
+            }
+        } catch (error) {
+            toast.error("An error occurred while deleting");
+        } finally {
+            setDeleteLoading(null);
         }
     };
 
@@ -391,7 +428,7 @@ export default function ThreadsListingViewComponent({
                                                 <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
                                                     {post.status === 'published' ? (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                 <BarChart3 className="h-5 w-5 text-gray-900" />
                                                                 <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
                                                             </DropdownMenuItem>
@@ -410,7 +447,7 @@ export default function ThreadsListingViewComponent({
                                                                 <Send className="h-5 w-5 text-purple-600" />
                                                                 <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEdit(post, 'delete'); }}>
+                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => handleDelete(e, post.id)}>
                                                                 <Trash2 className="h-5 w-5 text-red-600" />
                                                                 <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
                                                             </DropdownMenuItem>
@@ -434,6 +471,12 @@ export default function ThreadsListingViewComponent({
                     </Button>
                 </div>
             )}
+            {/* Analytics Modal */}
+            <ThreadsAnalyticsModal
+                open={analyticsModalOpen}
+                onOpenChange={setAnalyticsModalOpen}
+                post={selectedPostForAnalytics}
+            />
         </div>
     );
 }

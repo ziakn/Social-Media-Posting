@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -12,25 +11,24 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Heart,
     MessageCircle,
     Eye,
-    BarChart3,
     Repeat2,
+    Send,
     TrendingUp,
     Calendar,
-    RotateCw,
-    Share2,
     Info,
-    Send
+    RotateCw,
+    MoreHorizontal
 } from "lucide-react";
+import { getThreadsPostAnalytics } from "@/app/actions/social/threads/getAnalytics";
 import { toast } from "sonner";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
-import { getThreadsPostAnalytics } from "@/app/actions/social/threads/getAnalytics";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function ThreadsAnalyticsModal({
     open,
@@ -89,40 +87,45 @@ export default function ThreadsAnalyticsModal({
         }
     };
 
+    const formatNumber = (num) => {
+        if (!num) return 0;
+        return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(num);
+    };
+
     const metrics = [
         {
             label: "Views",
-            value: data?.summary?.views || 0,
+            value: data?.summary?.views || data?.views || 0,
             icon: Eye,
             desc: "Total views"
         },
         {
             label: "Likes",
-            value: data?.summary?.likes || 0,
+            value: data?.summary?.likes || data?.likes || 0,
             icon: Heart,
             desc: "Total likes"
         },
         {
             label: "Replies",
-            value: data?.summary?.replies || 0,
+            value: data?.summary?.replies || data?.replies || 0,
             icon: MessageCircle,
             desc: "Total replies"
         },
         {
             label: "Reposts",
-            value: data?.summary?.reposts || 0,
+            value: data?.summary?.reposts || data?.reposts || 0,
             icon: Repeat2,
             desc: "Total reposts"
         },
         {
             label: "Quotes",
-            value: data?.summary?.quotes || 0,
+            value: data?.summary?.quotes || data?.quotes || 0,
             icon: Send,
             desc: "Total quotes"
         },
         {
             label: "Engagement",
-            value: (data?.summary?.likes || 0) + (data?.summary?.replies || 0),
+            value: (data?.summary?.likes || data?.likes || 0) + (data?.summary?.replies || data?.replies || 0),
             icon: TrendingUp,
             desc: "Core interactions"
         }
@@ -131,9 +134,16 @@ export default function ThreadsAnalyticsModal({
     const getMediaUrl = () => {
         if (!post) return null;
         if (post.mediaUrls?.[0]?.url) return post.mediaUrls[0].url;
+        if (post.content?.media?.[0]?.url) return post.content.media[0].url;
         if (post.mediaUrl) return post.mediaUrl;
         if (post.content?.mediaUrl) return post.content.mediaUrl;
         return null;
+    };
+
+    const isVideo = () => {
+        if (!post) return false;
+        const type = post.postType || post.mediaType || post.content?.media?.[0]?.type || "";
+        return type.toLowerCase().includes("video");
     };
 
     return (
@@ -176,7 +186,7 @@ export default function ThreadsAnalyticsModal({
                 </div>
 
                 <div className="flex h-[calc(90vh-73px)] overflow-hidden">
-                    {/* Left Column */}
+                    {/* Left Column - Metrics */}
                     <ScrollArea className="flex-1 border-r">
                         <div className="p-6 space-y-8">
                             {loading ? (
@@ -202,8 +212,8 @@ export default function ThreadsAnalyticsModal({
                                                         <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-50">
                                                             <metric.icon className="h-4 w-4 text-black" />
                                                         </div>
-                                                        {metric.label === 'Engagement' && (
-                                                            <div className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">+4%</div>
+                                                        {metric.label === 'Engagement' && metric.value > 0 && (
+                                                            <div className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">Active</div>
                                                         )}
                                                     </div>
                                                     <div className="mt-2">
@@ -226,7 +236,7 @@ export default function ThreadsAnalyticsModal({
                                                     <span className="text-[13px] font-bold text-gray-600">Published On</span>
                                                 </div>
                                                 <span className="text-[13px] font-bold text-black">
-                                                    {post?.createdAt ? format(new Date(post.createdAt), "MMM dd, yyyy HH:mm") : "N/A"}
+                                                    {post?.createdAt || post?.publishedAt ? format(new Date(post.publishedAt || post.createdAt), "MMM dd, yyyy HH:mm") : "N/A"}
                                                 </span>
                                             </div>
 
@@ -258,30 +268,65 @@ export default function ThreadsAnalyticsModal({
                                 </div>
                                 <div className="p-5 flex flex-col gap-4">
                                     <div className="flex items-start gap-3">
-                                        <Avatar className="h-10 w-10 border border-gray-50">
+                                        <Avatar className="h-10 w-10 border border-gray-50 sticky top-0">
                                             <AvatarImage src={post?.profilePicture} className="object-cover" />
                                             <AvatarFallback className="bg-gray-100 font-bold text-[10px]">{post?.username?.[0]}</AvatarFallback>
                                         </Avatar>
-                                        <div className="flex-1 flex flex-col">
+                                        <div className="flex-1 flex flex-col min-w-0">
                                             <div className="flex items-center justify-between">
-                                                <span className="text-[14px] font-bold truncate">{post?.username || "user"}</span>
-                                                <span className="text-[12px] text-gray-400">1m</span>
+                                                <div className="flex items-center gap-1 min-w-0">
+                                                    <span className="text-[14px] font-bold truncate text-black">{post?.username || "user"}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <span className="text-[12px] text-gray-400">1m</span>
+                                                    <MoreHorizontal className="h-4 w-4 text-black" />
+                                                </div>
                                             </div>
-                                            <p className="text-[14px] text-gray-900 mt-1 line-clamp-4 font-medium">
-                                                {post?.content?.text || post?.message || post?.caption || ""}
-                                            </p>
+
+                                            <div className="mt-1 space-y-3">
+                                                {(post?.content?.text || post?.message || post?.caption) && (
+                                                    <p className="text-[14px] leading-snug text-black whitespace-pre-wrap font-normal">
+                                                        {post?.content?.text || post?.message || post?.caption}
+                                                    </p>
+                                                )}
+
+                                                {getMediaUrl() && (
+                                                    <div className="rounded-xl overflow-hidden border border-gray-100 w-full shadow-sm">
+                                                        {isVideo() ? (
+                                                            <video
+                                                                src={getMediaUrl()}
+                                                                className="w-full h-auto max-h-[400px] object-cover"
+                                                                controls
+                                                                playsInline
+                                                            />
+                                                        ) : (
+                                                            <img
+                                                                src={getMediaUrl()}
+                                                                className="w-full h-auto max-h-[400px] object-cover"
+                                                                alt="Post content"
+                                                            />
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <div className="flex items-center gap-4 text-black pt-1">
+                                                    <Heart className="h-[20px] w-[20px] stroke-[1.5px]" />
+                                                    <MessageCircle className="h-[20px] w-[20px] stroke-[1.5px] transform -scale-x-100" />
+                                                    <Repeat2 className="h-[20px] w-[20px] stroke-[1.5px]" />
+                                                    <Send className="h-[18px] w-[18px] stroke-[1.5px]" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    {getMediaUrl() && (
-                                        <div className="rounded-2xl overflow-hidden aspect-square border border-gray-50 shadow-sm">
-                                            <img src={getMediaUrl()} className="w-full h-full object-cover" />
-                                        </div>
-                                    )}
-                                    <div className="flex items-center gap-4 text-gray-900 opacity-50">
-                                        <Heart className="h-5 w-5" />
-                                        <MessageCircle className="h-5 w-5" />
-                                        <Repeat2 className="h-5 w-5" />
-                                        <Send className="h-5 w-5" />
+
+                                    <div className="flex items-center gap-2 pl-[52px]">
+                                        <span className="text-[14px] text-gray-400">
+                                            {formatNumber(data?.summary?.replies || data?.replies)} replies
+                                        </span>
+                                        <span className="text-gray-300">•</span>
+                                        <span className="text-[14px] text-gray-400">
+                                            {formatNumber(data?.summary?.likes || data?.likes)} likes
+                                        </span>
                                     </div>
                                 </div>
                             </div>

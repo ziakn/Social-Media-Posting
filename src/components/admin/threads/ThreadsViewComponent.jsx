@@ -18,10 +18,11 @@ import {
     Layers, ImageIcon, Film, Play, Edit, MoreVertical, Send, Trash2, History, Loader2, BarChart3,
     Check, Repeat2
 } from "lucide-react";
-import { getThreadsPosts, getThreadsPostsStats, publishThreadsPostNow } from "@/app/actions/social/threads/threadsPostsActions";
+import { getThreadsPosts, getThreadsPostsStats, publishThreadsPostNow, deleteThreadsPost } from "@/app/actions/social/threads/threadsPostsActions";
 import { getUserThreadsAccounts } from "@/app/actions/social/threads/createPost";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ThreadsAnalyticsModal from "./ThreadsAnalyticsModal";
 
 export default function ThreadsViewComponent({
     accountId: initialAccountId,
@@ -52,6 +53,10 @@ export default function ThreadsViewComponent({
         hasMore: false,
         lastPostId: null
     });
+
+    // Analytics Modal State
+    const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
+    const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState(null);
 
     useEffect(() => {
         const loadAccounts = async () => {
@@ -140,7 +145,18 @@ export default function ThreadsViewComponent({
         }
     };
 
-    const onEditClick = (post, action = 'edit') => {
+    const handleOpenAnalytics = (post) => {
+        const account = accounts.find(a => a.accountId === post.accountId);
+        const enrichedPost = {
+            ...post,
+            username: account?.username || post.username || "Threads User",
+            profilePicture: account?.profilePicture || post.profilePicture
+        };
+        setSelectedPostForAnalytics(enrichedPost);
+        setAnalyticsModalOpen(true);
+    };
+
+    const handleEdit = (post, action = 'edit') => {
         if (onEdit) onEdit(post, action);
     };
 
@@ -160,6 +176,21 @@ export default function ThreadsViewComponent({
             toast.error("An error occurred while publishing");
         } finally {
             setPublishingId(null);
+        }
+    };
+
+    const handleDelete = async (postId) => {
+        try {
+            const result = await deleteThreadsPost(postId);
+            if (result.success) {
+                toast.success("Post deleted successfully!");
+                if (onRefresh) onRefresh();
+                else loadPosts(true);
+            } else {
+                toast.error(result.message || "Failed to delete post");
+            }
+        } catch (error) {
+            toast.error("An error occurred while deleting");
         }
     };
 
@@ -351,7 +382,7 @@ export default function ThreadsViewComponent({
                         const name = accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Threads User";
 
                         return (
-                            <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 bg-white p-5 cursor-pointer rounded-2xl", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
+                            <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 bg-white p-5 cursor-pointer rounded-2xl", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => handleEdit(post)}>
                                 <div className="flex gap-3 lg:gap-4 relative">
                                     {/* Left: Avatar & Thread Line */}
                                     <div className="flex flex-col items-center shrink-0 w-10 lg:w-12">
@@ -392,18 +423,18 @@ export default function ThreadsViewComponent({
                                                     <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
                                                         {post.status === 'published' ? (
                                                             <>
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post, 'analytics'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                     <BarChart3 className="h-5 w-5 text-gray-900" />
                                                                     <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                     <Eye className="h-5 w-5 text-gray-900" />
                                                                     <span className="font-bold text-[13px] text-gray-900">Thread Details</span>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         ) : (
                                                             <>
-                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                     <Edit className="h-5 w-5 text-gray-900" />
                                                                     <span className="font-bold text-[13px] text-gray-900">Edit Thread</span>
                                                                 </DropdownMenuItem>
@@ -411,7 +442,7 @@ export default function ThreadsViewComponent({
                                                                     <Send className="h-5 w-5 text-purple-600" />
                                                                     <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEdit(post, 'delete'); }}>
+                                                                <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>
                                                                     <Trash2 className="h-5 w-5 text-red-600" />
                                                                     <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
                                                                 </DropdownMenuItem>
@@ -502,6 +533,12 @@ export default function ThreadsViewComponent({
                     </Button>
                 </div>
             )}
+            {/* Analytics Modal */}
+            <ThreadsAnalyticsModal
+                open={analyticsModalOpen}
+                onOpenChange={setAnalyticsModalOpen}
+                post={selectedPostForAnalytics}
+            />
         </div>
     );
 }

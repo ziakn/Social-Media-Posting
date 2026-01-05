@@ -1,15 +1,14 @@
-// app/actions/social/threads/getAnalytics.js
 "use server";
 
 import { db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp, query, collection, where, getDocs } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
 /**
  * Fetch analytics for a Threads post
  */
-export async function getThreadsPostAnalytics(accountId, postId, forceRefresh = false) {
+export async function getThreadsPostAnalytics(pageId, postId, forceRefresh = false) {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get("token")?.value;
@@ -28,71 +27,119 @@ export async function getThreadsPostAnalytics(accountId, postId, forceRefresh = 
         }
 
         const postData = postSnap.data();
+
+        // 2. Identify Threads Media ID
+        // It could be stored as threadsPostId
         const threadsPostId = postData.threadsPostId;
 
         if (!threadsPostId) {
-            return { success: false, message: "Threads Post ID not found" };
+            return { success: false, message: "Threads Post ID not found." };
         }
 
-        // 2. Caching logic (30 mins)
+        // 3. Caching logic (30 mins)
         const lastUpdate = postData.lastAnalyticsUpdate?.toDate?.() || new Date(0);
         const now = new Date();
         const needsRefresh = forceRefresh || (now.getTime() - lastUpdate.getTime() > 30 * 60 * 1000);
 
         let metrics = postData.metrics || {};
+        let analyticsData = postData.analytics || {};
 
         if (needsRefresh) {
-            // Find account
-            const accountRef = doc(db, "socialAccounts", accountId || postData.accountId);
-            const accountSnap = await getDoc(accountRef);
+            // Get Account Access Token
+            // Use pageId if provided (which maps to accountId usually), or fallback to post's accountId
+            const targetAccountId = pageId || postData.accountId;
 
-            if (accountSnap.exists()) {
-                const accountData = accountSnap.data();
+            const q = query(
+                collection(db, "socialAccounts"),
+                where("userId", "==", user.id),
+                where("accountId", "==", targetAccountId),
+                where("platform", "==", "threads"),
+                where("status", "==", "active")
+            );
+
+            const accountSnap = await getDocs(q);
+
+            if (!accountSnap.empty) {
+                const accountData = accountSnap.docs[0].data();
                 const accessToken = accountData.accessToken;
 
-                // 3. Call Threads API
-                // GET /{threads-media-id}?fields=metrics
-                const response = await fetch(`https://graph.threads.net/v1.0/${threadsPostId}?fields=like_count,reply_count,repost_count,quote_count,view_count&access_token=${accessToken}`);
-                const data = await response.json();
+                // 4. Call Threads API
 
-                if (response.ok) {
-                    metrics = {
-                        likes: data.like_count || 0,
-                        replies: data.reply_count || 0,
-                        reposts: data.repost_count || 0,
-                        quotes: data.quote_count || 0,
-                        views: data.view_count || 0,
-                    };
+                // A. Basic Media Info (Permalink, etc)
+                const mediaResponse = await fetch(`https://graph.threads.net/v1.0/${threadsPostId}?fields=id,permalink,shortcode,media_type,media_product_type&access_token=${accessToken}`);
+                const mediaInfo = await mediaResponse.json();
 
-                    // Update Firestore
-                    await updateDoc(postRef, {
-                        metrics,
-                        lastAnalyticsUpdate: serverTimestamp(),
-                        updatedAt: serverTimestamp()
-                    });
-                } else if (response.status === 429) {
-                    return {
-                        success: true,
-                        data: {
-                            summary: metrics,
-                            permalink_url: `https://www.threads.net/t/${threadsPostId}`
-                        },
-                        lastRefreshed: lastUpdate.toISOString(),
-                        isRateLimited: true,
-                        message: "Threads rate limit exceeded. Displaying cached data."
-                    };
+                if (!mediaResponse.ok) {
+                    console.error("Threads Media API Error:", mediaInfo);
+                    // If error is 429, handle rate limit?
+                    if (mediaResponse.status === 429) {
+                        return {
+                            success: true,
+                            data: { ...analyticsData, permalink: `https://www.threads.net/t/${threadsPostId}` },
+                            lastRefreshed: lastUpdate.toISOString(),
+                            message: "Rate limit exceeded. Showing cached data."
+                        };
+                    }
                 }
+
+                // B. Insights (Metrics)
+                // Metrics: views, likes, replies, reposts, quotes
+                const insightsResponse = await fetch(`https://graph.threads.net/v1.0/${threadsPostId}/insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`);
+                const insightsData = await insightsResponse.json();
+
+                // Process Metrics
+                const newMetrics = {
+                    likes: 0,
+                    replies: 0,
+                    reposts: 0,
+                    quotes: 0,
+                    views: 0
+                };
+
+                if (insightsData && insightsData.data) {
+                    insightsData.data.forEach(m => {
+                        const val = m.values?.[0]?.value || 0;
+                        if (m.name === 'likes') newMetrics.likes = val;
+                        if (m.name === 'replies') newMetrics.replies = val;
+                        if (m.name === 'reposts') newMetrics.reposts = val;
+                        if (m.name === 'quotes') newMetrics.quotes = val;
+                        if (m.name === 'views') newMetrics.views = val;
+                    });
+                } else if (insightsData.error) {
+                    console.warn("Threads Insights API Warning:", insightsData.error);
+                    // Fallback to what we can get? 
+                    // Often "views" is unavailable for some posts, but likes/replies might be avail via fields if insights fails.
+                    // For now, assume 0 or keep old.
+                }
+
+                // Construct Analytics Data Object (consistent with UI expectations)
+                analyticsData = {
+                    ...mediaInfo, // includes permalink, shortcode
+                    ...newMetrics, // flat metrics for easy access
+                    insights: insightsData.data || [] // raw insights array if needed
+                };
+
+                metrics = newMetrics;
+
+                // Update Firestore
+                await updateDoc(postRef, {
+                    analytics: analyticsData,
+                    metrics: metrics,
+                    lastAnalyticsUpdate: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                });
+            } else {
+                return { success: false, message: "Threads account not found" };
             }
         }
 
-        const analyticsData = {
-            summary: metrics,
-            permalink_url: `https://www.threads.net/t/${threadsPostId}`
-        };
-
         return {
             success: true,
-            data: analyticsData,
+            data: {
+                ...analyticsData,
+                // Ensure permalink is present even if API failed or cache was used
+                permalink: analyticsData.permalink || `https://www.threads.net/t/${threadsPostId}`
+            },
             lastRefreshed: (needsRefresh && !forceRefresh) ? now.toISOString() : lastUpdate.toISOString()
         };
 
