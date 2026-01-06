@@ -417,6 +417,17 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
     const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
+    const [accounts, setAccounts] = useState([]);
+
+    useEffect(() => {
+        const loadAccounts = async () => {
+            const res = await getUserThreadsAccounts();
+            if (res.success) {
+                setAccounts(res.accounts || []);
+            }
+        };
+        loadAccounts();
+    }, []);
 
     const handleDateClick = (date) => {
         setCreateInitialData({
@@ -491,13 +502,26 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
-                            {[1, 2, 3].map((i) => (
-                                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm">
-                                    <img src={`https://i.pravatar.cc/150?u=${i + 30}`} alt="" className="w-full h-full object-cover" />
-                                </div>
-                            ))}
-                        </div>
+                        {accounts.length > 0 && (
+                            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
+                                {accounts.slice(0, 3).map((account, i) => (
+                                    <div key={account.id} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm" title={account.username}>
+                                        {account.profilePicture ? (
+                                            <img src={account.profilePicture} alt={account.username} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-200 text-[10px] font-bold text-gray-500">
+                                                {account.username?.charAt(0).toUpperCase() || "T"}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {accounts.length > 3 && (
+                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-black flex items-center justify-center shadow-sm z-10">
+                                        <span className="text-[10px] font-black text-white">+{accounts.length - 3}</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <Button
                             onClick={() => {
