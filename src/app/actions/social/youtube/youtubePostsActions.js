@@ -141,9 +141,9 @@ export async function getYoutubePublishedPosts({
             return {
                 id: doc.id,
                 ...data,
-                createdAt: data.createdAt?.toDate?.() || null,
-                updatedAt: data.updatedAt?.toDate?.() || null,
-                scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt,
+                createdAt: data.createdAt?.toDate?.().toISOString() || null,
+                updatedAt: data.updatedAt?.toDate?.().toISOString() || null,
+                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
             };
         });
 
@@ -214,9 +214,9 @@ export async function getYoutubeScheduledPosts({
             return {
                 id: doc.id,
                 ...data,
-                createdAt: data.createdAt?.toDate?.() || null,
-                updatedAt: data.updatedAt?.toDate?.() || null,
-                scheduledAt: data.scheduledAt?.toDate?.() || data.scheduledAt,
+                createdAt: data.createdAt?.toDate?.().toISOString() || null,
+                updatedAt: data.updatedAt?.toDate?.().toISOString() || null,
+                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
             };
         });
 

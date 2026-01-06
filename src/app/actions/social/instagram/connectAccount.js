@@ -32,7 +32,7 @@ export async function checkInstagramConnection() {
         id: doc.id,
         displayName: data.username || data.displayName || "Instagram Account",
         username: data.username,
-        tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null,
+        tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || null,
         status: data.status
       });
     });

@@ -35,15 +35,18 @@ export async function checkTwitterConnection() {
                 displayName: data.displayName || (data.username ? `@${data.username}` : "Twitter Account"),
                 username: data.username || "",
                 profilePicture: data.profilePicture || data.profileImage || "",
-                tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null,
+                tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || null,
                 count: snapshot.size,
-                accounts: snapshot.docs.map(d => ({
-                    id: d.id,
-                    name: d.data().displayName || (d.data().username ? `@${d.data().username}` : "Twitter Account"),
-                    username: d.data().username || "",
-                    profilePicture: d.data().profilePicture || d.data().profileImage || "",
-                    tokenExpiresAt: d.data().tokenExpiresAt?.toDate?.() || null
-                }))
+                accounts: snapshot.docs.map(d => {
+                    const accData = d.data();
+                    return {
+                        id: d.id,
+                        displayName: accData.displayName || (accData.username ? `@${accData.username}` : "Twitter Account"),
+                        username: accData.username || "",
+                        profilePicture: accData.profilePicture || accData.profileImage || "",
+                        tokenExpiresAt: accData.tokenExpiresAt?.toDate?.().toISOString() || null
+                    };
+                })
             };
         }
 

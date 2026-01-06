@@ -32,12 +32,16 @@ export async function checkFacebookConnection() {
       accountData = {
         connected: true,
         displayName: data.displayName || "Facebook Account",
-        tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null,
+        tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || null,
         count: snapshot.size,
-        accounts: snapshot.docs.map(d => ({
-          displayName: d.data().displayName,
-          tokenExpiresAt: d.data().tokenExpiresAt?.toDate?.() || null
-        }))
+        accounts: snapshot.docs.map(d => {
+          const accData = d.data();
+          return {
+            id: d.id,
+            displayName: accData.displayName,
+            tokenExpiresAt: accData.tokenExpiresAt?.toDate?.().toISOString() || null
+          };
+        })
       };
     }
 

@@ -242,11 +242,11 @@ export async function getFacebookPosts({
           impressions: data.metrics?.impressions || 0
         },
         status: data.facebookPostId ? 'published' : (data.scheduledAt ? 'scheduled' : (data.status || 'published')),
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
-        scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
-        publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
-        analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || null,
+        scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt || null,
+        publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt || null,
+        analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt || null,
         delete: data.delete || 0
       };
     }));

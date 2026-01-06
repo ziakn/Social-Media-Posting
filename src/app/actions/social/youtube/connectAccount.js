@@ -35,15 +35,18 @@ export async function checkYoutubeConnection() {
                 displayName: data.displayName || "YouTube Channel",
                 username: data.username || "",
                 profilePicture: data.profilePicture || "",
-                tokenExpiresAt: data.tokenExpiresAt?.toDate?.() || null,
+                tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || null,
                 count: snapshot.size,
-                accounts: snapshot.docs.map(d => ({
-                    id: d.id,
-                    name: d.data().displayName || "YouTube Channel",
-                    username: d.data().username || "",
-                    profilePicture: d.data().profilePicture || "",
-                    tokenExpiresAt: d.data().tokenExpiresAt?.toDate?.() || null
-                }))
+                accounts: snapshot.docs.map(d => {
+                    const accData = d.data();
+                    return {
+                        id: d.id,
+                        name: accData.displayName || "YouTube Channel",
+                        username: accData.username || "",
+                        profilePicture: accData.profilePicture || "",
+                        tokenExpiresAt: accData.tokenExpiresAt?.toDate?.().toISOString() || null
+                    };
+                })
             };
         }
 

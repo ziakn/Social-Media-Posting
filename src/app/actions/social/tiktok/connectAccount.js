@@ -1,32 +1,27 @@
+// src/app/actions/social/tiktok/connectAccount.js
 "use server";
 
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
 
-export async function checkThreadsConnection() {
+export async function checkTiktokConnection() {
     try {
         const cookieStore = await cookies();
         const token = cookieStore.get("token")?.value;
         const user = await verifyToken(token);
-
-        if (!user) {
-            return { connected: false };
-        }
+        if (!user) return { connected: false };
 
         const q = query(
             collection(db, "socialAccounts"),
             where("userId", "==", user.id),
-            where("platform", "==", "threads"),
+            where("platform", "==", "tiktok"),
             where("status", "==", "active")
         );
 
         const snapshot = await getDocs(q);
-
-        if (snapshot.empty) {
-            return { connected: false };
-        }
+        if (snapshot.empty) return { connected: false };
 
         const accounts = snapshot.docs.map(doc => {
             const data = doc.data();
@@ -39,23 +34,13 @@ export async function checkThreadsConnection() {
             };
         });
 
-        const mainAccount = accounts[0];
-
         return {
             connected: true,
-            displayName: mainAccount.username || mainAccount.pageName,
-            tokenExpiresAt: mainAccount.tokenExpiresAt,
             count: accounts.length,
-            accounts: accounts.map(acc => ({
-                id: acc.id,
-                displayName: acc.username || acc.pageName,
-                profilePicture: acc.profilePicture,
-                tokenExpiresAt: acc.tokenExpiresAt
-            }))
+            accounts: accounts
         };
-
     } catch (error) {
-        console.error("Error checking Threads connection:", error);
+        console.error("Error checking TikTok connection:", error);
         return { connected: false };
     }
 }
