@@ -6,7 +6,8 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
-import { AtSign, MoreVertical, ArrowRight, RefreshCcw } from "lucide-react";
+import { MoreVertical, ArrowRight, RefreshCcw } from "lucide-react";
+import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -40,8 +41,8 @@ export default function ThreadsAccountsDashboard() {
     if (accounts.length === 0)
         return (
             <div className="container mx-auto py-20 text-center max-w-xl">
-                <div className="bg-neutral-100 rounded-full p-8 mb-6 inline-block shadow-lg">
-                    <AtSign className="h-16 w-16 text-neutral-700" />
+                <div className="bg-black rounded-full p-8 mb-6 inline-block shadow-lg">
+                    <ThreadsLogo className="h-16 w-16 text-white" />
                 </div>
                 <h2 className="text-3xl font-extrabold text-neutral-800 mb-3">No Threads Accounts Found</h2>
                 <p className="text-lg text-muted-foreground mb-8 max-w-md mx-auto">
@@ -52,7 +53,7 @@ export default function ThreadsAccountsDashboard() {
                     size="lg"
                     onClick={() => router.push("/admin/social/connect")}
                 >
-                    <AtSign className="h-6 w-6 text-white" /> Connect Account
+                    <ThreadsLogo className="h-6 w-6 text-white" /> Connect Account
                 </Button>
             </div>
         );
@@ -85,8 +86,8 @@ export default function ThreadsAccountsDashboard() {
                     >
                         <CardHeader className="flex items-center justify-between pb-2">
                             <div className="flex items-center gap-3">
-                                <div className="p-3 bg-neutral-100 rounded-lg">
-                                    <AtSign className="w-6 h-6 text-neutral-700" />
+                                <div className="p-3 bg-black rounded-lg">
+                                    <ThreadsLogo className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-lg text-neutral-800 group-hover:text-neutral-900 transition-colors duration-200">
@@ -141,8 +142,8 @@ export default function ThreadsAccountsDashboard() {
             {/* Info Card */}
             <Card className="mt-12">
                 <CardContent className="p-6 flex items-start gap-3">
-                    <div className="bg-neutral-100 p-2 rounded-lg">
-                        <AtSign className="w-5 h-5 text-neutral-700" />
+                    <div className="bg-black p-2 rounded-lg">
+                        <ThreadsLogo className="w-5 h-5 text-white" />
                     </div>
                     <div>
                         <h4 className="font-semibold mb-1 text-neutral-800">About Threads Integration</h4>

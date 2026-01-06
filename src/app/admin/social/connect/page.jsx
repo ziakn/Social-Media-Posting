@@ -22,7 +22,6 @@ import {
   Check,
   Link,
   MoreVertical,
-  AtSign,
   LogOut,
   Music,
   Youtube,
@@ -30,6 +29,7 @@ import {
   Trash2,
   ExternalLink,
 } from "lucide-react";
+import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
 import {
   Dialog,
   DialogContent,
@@ -49,7 +49,7 @@ const ICONS = {
   telegram: Send,
   bluesky: Globe,
   reddit: MessageSquare,
-  threads: AtSign,
+  threads: ThreadsLogo,
   tiktok: Music,
   youtube: Youtube,
 };
@@ -110,7 +110,7 @@ export default function SocialConnectPage() {
           twitter: "text-[#000000]",
           linkedin: "text-[#0A66C2]",
           whatsapp: "text-[#25D366]",
-          threads: "text-[#000000]",
+          threads: "text-black",
           telegram: "text-[#0088cc]",
           bluesky: "text-[#0085ff]",
           reddit: "text-[#FF4500]",
