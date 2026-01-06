@@ -90,8 +90,8 @@ export async function GET(request) {
 
 async function exchangeCodeForToken(code) {
   const formData = new FormData();
-  formData.append("client_id", process.env.IG_APP_ID);
-  formData.append("client_secret", process.env.IG_APP_SECRET);
+  formData.append("client_id", process.env.INSTAGRAM_APP_ID);
+  formData.append("client_secret", process.env.INSTAGRAM_APP_SECRET);
   formData.append("grant_type", "authorization_code");
   formData.append("redirect_uri", process.env.IG_REDIRECT_URI);
   formData.append("code", code);
@@ -108,7 +108,7 @@ async function exchangeCodeForToken(code) {
 
 async function exchangeForLongLivedToken(shortLivedToken) {
   const res = await fetch(
-    `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.IG_APP_SECRET}&access_token=${shortLivedToken}`
+    `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_APP_SECRET}&access_token=${shortLivedToken}`
   );
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);

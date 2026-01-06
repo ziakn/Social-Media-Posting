@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
     const redirect_uri = process.env.TH_REDIRECT_URI;
-    const app_id = process.env.TH_APP_ID;
+    const app_id = process.env.THREDS_APP_ID;
 
     // Debugging: Check if env vars are loaded
     if (!app_id || !redirect_uri) {
         console.error("Missing Threads Config:", { app_id, redirect_uri });
         return NextResponse.json({
             error: "Configuration Missing",
-            details: "TH_APP_ID or TH_REDIRECT_URI is not defined in environment variables.",
+            details: "THREDS_APP_ID or TH_REDIRECT_URI is not defined in environment variables.",
             debug: {
                 hasAppId: !!app_id,
                 hasRedirectUri: !!redirect_uri

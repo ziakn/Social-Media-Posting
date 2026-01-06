@@ -33,8 +33,8 @@ export async function GET(request) {
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
                 body: new URLSearchParams({
-                    client_id: process.env.TH_APP_ID,
-                    client_secret: process.env.TH_APP_SECRET,
+                    client_id: process.env.THREDS_APP_ID,
+                    client_secret: process.env.THREDS_APP_SECRET,
                     grant_type: "authorization_code",
                     redirect_uri: process.env.TH_REDIRECT_URI,
                     code: code,
@@ -58,7 +58,7 @@ export async function GET(request) {
         const longLivedRes = await fetch(
             `https://graph.threads.net/access_token?` +
             `grant_type=th_exchange_token&` +
-            `client_secret=${process.env.TH_APP_SECRET}&` +
+            `client_secret=${process.env.THREDS_APP_SECRET}&` +
             `access_token=${shortLivedUserToken}`
         );
 
