@@ -7,6 +7,8 @@ import {
     query,
     where,
     orderBy,
+    limit,
+    startAfter,
     getDocs,
     doc,
     getDoc,
@@ -56,21 +58,36 @@ export async function getThreadsPosts({
             constraints.push(where("postType", "==", filters.postType));
         }
 
-        // Date range filters
-        if (filters.dateFrom) {
+        // Date range filters (Note: Only one field can have inequalities in Firestore)
+        // If sorting by createdAt, we can range on it.
+        const orderField = sortBy === "date" ? "createdAt" : sortBy;
+        if (filters.dateFrom && orderField === "createdAt") {
             constraints.push(where("createdAt", ">=", new Date(filters.dateFrom)));
         }
-        if (filters.dateTo) {
+        if (filters.dateTo && orderField === "createdAt") {
             constraints.push(where("createdAt", "<=", new Date(filters.dateTo)));
         }
 
         // Sorting
-        constraints.push(orderBy(sortBy, sortOrder));
+        constraints.push(orderBy(orderField, sortOrder));
+
+        // Cursor for pagination
+        if (lastDocId) {
+            const lastDocRef = doc(db, "threads_posts", lastDocId);
+            const lastDocSnap = await getDoc(lastDocRef);
+            if (lastDocSnap.exists()) {
+                constraints.push(startAfter(lastDocSnap));
+            }
+        }
+
+        // Limit the window for scalability (allow more for search/deleted filtering)
+        const fetchLimit = filters.searchQuery ? pageSize * 10 : pageSize * 2;
+        constraints.push(limit(fetchLimit));
 
         const q = query(collection(db, "threads_posts"), ...constraints);
         const snapshot = await getDocs(q);
 
-        let allPosts = [];
+        let posts = [];
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
 
@@ -83,37 +100,27 @@ export async function getThreadsPosts({
                 if (!message.includes(filters.searchQuery.toLowerCase())) return;
             }
 
-            const serializedPost = {
-                id: docSnap.id,
-                ...data,
-                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
-                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
-                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
-                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
-                lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate || null,
-            };
-
-            // Ensure no raw Timestamps remain if they were nested or added later
-            // (Though Threads posts currently only have these top-level ones)
-            allPosts.push(serializedPost);
+            if (posts.length < pageSize) {
+                posts.push({
+                    id: docSnap.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
+                    updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                    scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
+                    publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
+                    lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate || null,
+                });
+            }
         });
 
-        // Manual Pagination (matching Instagram pattern)
-        let startIndex = 0;
-        if (lastDocId) {
-            const index = allPosts.findIndex(p => p.id === lastDocId);
-            if (index !== -1) startIndex = index + 1;
-        }
-
-        const posts = allPosts.slice(startIndex, startIndex + pageSize);
-        const hasMore = startIndex + pageSize < allPosts.length;
-        const nextLastDocId = posts.length > 0 ? posts[posts.length - 1].id : null;
+        const lastVisibleDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
+        const hasMore = snapshot.docs.length >= fetchLimit;
 
         return {
             success: true,
             posts,
             hasMore,
-            lastPostId: nextLastDocId
+            lastPostId: lastVisibleDoc
         };
 
     } catch (error) {
@@ -143,6 +150,9 @@ export async function getThreadsPostsStats({ accountId = null } = {}) {
             constraints.push(where("accountId", "==", accountId));
         }
 
+        // Limit to 2000 posts for stats to prevent massive fetches. 
+        // For larger scales, an aggregation document strategy is recommended.
+        constraints.push(limit(2000));
         const q = query(collection(db, "threads_posts"), ...constraints);
         const snapshot = await getDocs(q);
 
@@ -382,7 +392,8 @@ export async function publishThreadsPostNow(postId) {
             publishedAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             // Remove scheduling fields if present, or update them to reflect published reality
-            scheduledAt: serverTimestamp()
+            scheduledAt: serverTimestamp(),
+            deleted: 0
         });
 
         revalidatePath("/admin/social/threads/posts");
@@ -420,7 +431,8 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
         const q = query(
             collection(db, "threads_posts"),
             ...constraints,
-            orderBy("createdAt", "desc")
+            orderBy("createdAt", "desc"),
+            limit(1000) // Safety limit for calendar view
         );
 
         const snapshot = await getDocs(q);

@@ -132,6 +132,7 @@ export async function createThreadsPost({
                 scheduledAt: scheduling,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                deleted: 0
             });
             return { success: true, message: "Thread scheduled successfully", firestoreId: postRef.id };
         }
@@ -216,6 +217,7 @@ export async function createThreadsPost({
             publishedAt: serverTimestamp(),
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
+            deleted: 0
         });
 
         return { success: true, threadsPostId: threadsPostId, firestoreId: postRef.id };
