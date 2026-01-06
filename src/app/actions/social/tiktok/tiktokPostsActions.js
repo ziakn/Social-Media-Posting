@@ -180,3 +180,131 @@ export async function getTiktokPostsStats({ accountId = null } = {}) {
         return { success: false, message: error.message };
     }
 }
+
+/**
+ * Publish a scheduled TikTok post immediately
+ */
+export async function publishTiktokPostNow(postId) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) return { success: false, message: "Unauthorized" };
+
+        const postRef = doc(db, "tiktok_posts", postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) return { success: false, message: "Post not found" };
+
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
+
+        // In a real app, trigger TikTok Content Posting API here
+        // For now, we update Firestore status
+        await updateDoc(postRef, {
+            status: "published",
+            publishedAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+
+        revalidatePath("/admin/social/tiktok/posts");
+        return { success: true, message: "Post published successfully" };
+    } catch (error) {
+        console.error("Error publishing TikTok post:", error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Update a scheduled TikTok post
+ */
+export async function updateTiktokPost({ postId, text, media, scheduling, accountId }) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) return { success: false, message: "Unauthorized" };
+
+        const postRef = doc(db, "tiktok_posts", postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) return { success: false, message: "Post not found" };
+
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
+
+        if (postData.status === "published") {
+            return { success: false, message: "Cannot edit published posts" };
+        }
+
+        const updates = {
+            content: { text, media },
+            accountId,
+            updatedAt: serverTimestamp()
+        };
+
+        if (scheduling) {
+            updates.scheduledAt = scheduling;
+            updates.status = "scheduled";
+        } else {
+            updates.status = "published";
+            updates.publishedAt = serverTimestamp();
+        }
+
+        await updateDoc(postRef, updates);
+        revalidatePath("/admin/social/tiktok/posts");
+
+        return { success: true, message: "Post updated successfully" };
+    } catch (error) {
+        console.error("Error updating TikTok post:", error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
+ * Get all TikTok posts for calendar
+ */
+export async function getAllTiktokCalendarPosts({ startDate, endDate } = {}) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) return { success: false, posts: [] };
+
+        let constraints = [
+            where("userId", "==", user.id),
+            where("platform", "==", "tiktok"),
+            where("delete", "==", 0)
+        ];
+
+        const q = query(
+            collection(db, "tiktok_posts"),
+            ...constraints,
+            orderBy("createdAt", "desc"),
+            limit(500)
+        );
+
+        const snapshot = await getDocs(q);
+        const posts = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const displayDate = data.scheduledAt || data.publishedAt || data.createdAt;
+
+            return {
+                id: doc.id,
+                ...data,
+                scheduledAt: displayDate?.toDate?.().toISOString() || displayDate || null,
+                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
+                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
+            };
+        });
+
+        return { success: true, posts };
+    } catch (error) {
+        console.error("Error in getAllTiktokCalendarPosts:", error);
+        return { success: false, posts: [] };
+    }
+}

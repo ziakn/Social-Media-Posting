@@ -57,5 +57,5 @@ export const ROUTES = {
   ADMIN_YOUTUBE: prefix + "social/youtube/posts",
   ADMIN_YOUTUBE_POSTS: prefix + "social/youtube/posts",
   ADMIN_TIKTOK: prefix + "social/tiktok",
-  ADMIN_TIKTOK_POSTS: prefix + "social/tiktok",
+  ADMIN_TIKTOK_POSTS: prefix + "social/tiktok/posts",
 };

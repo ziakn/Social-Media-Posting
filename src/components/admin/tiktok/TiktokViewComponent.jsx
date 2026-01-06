@@ -167,27 +167,66 @@ export default function TiktokViewComponent({
         <div className="space-y-6">
             {/* Stats */}
             {stats && (
-                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                    <Card className="p-4 flex flex-col items-center justify-center gap-1">
-                        <span className="text-2xl font-black">{stats.totalPosts}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Posts</span>
-                    </Card>
-                    <Card className="p-4 flex flex-col items-center justify-center gap-1">
-                        <span className="text-2xl font-black">{formatNumber(stats.totalLikes)}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Likes</span>
-                    </Card>
-                    <Card className="p-4 flex flex-col items-center justify-center gap-1">
-                        <span className="text-2xl font-black">{formatNumber(stats.totalComments)}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Comments</span>
-                    </Card>
-                    <Card className="p-4 flex flex-col items-center justify-center gap-1">
-                        <span className="text-2xl font-black">{formatNumber(stats.totalShares)}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Shares</span>
-                    </Card>
-                    <Card className="p-4 flex flex-col items-center justify-center gap-1">
-                        <span className="text-2xl font-black">{formatNumber(stats.totalViews)}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase">Views</span>
-                    </Card>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                                <Layers className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalPosts)}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Posts</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-red-50 flex items-center justify-center">
+                                <Heart className="h-5 w-5 text-red-600" />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalLikes)}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Likes</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-green-50 flex items-center justify-center">
+                                <MessageCircle className="h-5 w-5 text-green-600" />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalComments)}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Comments</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-orange-50 flex items-center justify-center">
+                                <Share2 className="h-5 w-5 text-orange-600" />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalShares)}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Shares</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-100 p-4 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-purple-50 flex items-center justify-center">
+                                <Play className="h-5 w-5 text-purple-600" />
+                            </div>
+                            <div className="text-left">
+                                <div className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalViews)}</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Views</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             )}
 
