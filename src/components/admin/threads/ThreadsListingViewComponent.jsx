@@ -39,7 +39,6 @@ export default function ThreadsListingViewComponent({
     const [loading, setLoading] = useState(true);
     const [accounts, setAccounts] = useState([]);
     const [publishingId, setPublishingId] = useState(null);
-    const [deleteLoading, setDeleteLoading] = useState(null);
 
     // Analytics Modal State
     const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
@@ -181,26 +180,6 @@ export default function ThreadsListingViewComponent({
         };
         setSelectedPostForAnalytics(enrichedPost);
         setAnalyticsModalOpen(true);
-    };
-
-    const handleDelete = async (e, postId) => {
-        e.stopPropagation();
-        if (!window.confirm("Are you sure you want to delete this post?")) return;
-        try {
-            setDeleteLoading(postId);
-            const result = await deleteThreadsPost(postId);
-            if (result.success) {
-                toast.success("Post deleted successfully!");
-                if (onRefresh) onRefresh();
-                else loadPosts(true);
-            } else {
-                toast.error(result.message || "Failed to delete post");
-            }
-        } catch (error) {
-            toast.error("An error occurred while deleting");
-        } finally {
-            setDeleteLoading(null);
-        }
     };
 
     const formatNumber = (num) => {
@@ -447,7 +426,7 @@ export default function ThreadsListingViewComponent({
                                                                 <Send className="h-5 w-5 text-purple-600" />
                                                                 <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => handleDelete(e, post.id)}>
+                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEditClick(post, 'delete'); }}>
                                                                 <Trash2 className="h-5 w-5 text-red-600" />
                                                                 <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
                                                             </DropdownMenuItem>

@@ -179,21 +179,6 @@ export default function ThreadsViewComponent({
         }
     };
 
-    const handleDelete = async (postId) => {
-        try {
-            const result = await deleteThreadsPost(postId);
-            if (result.success) {
-                toast.success("Post deleted successfully!");
-                if (onRefresh) onRefresh();
-                else loadPosts(true);
-            } else {
-                toast.error(result.message || "Failed to delete post");
-            }
-        } catch (error) {
-            toast.error("An error occurred while deleting");
-        }
-    };
-
     const formatNumber = (num) => {
         if (!num && num !== 0) return "0";
         if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
@@ -442,7 +427,7 @@ export default function ThreadsViewComponent({
                                                                     <Send className="h-5 w-5 text-purple-600" />
                                                                     <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                                 </DropdownMenuItem>
-                                                                <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); handleDelete(post.id); }}>
+                                                                <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); handleEdit(post, 'delete'); }}>
                                                                     <Trash2 className="h-5 w-5 text-red-600" />
                                                                     <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
                                                                 </DropdownMenuItem>

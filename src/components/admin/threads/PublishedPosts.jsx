@@ -599,7 +599,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                     <AlertDialogHeader>
                         <AlertDialogTitle className="text-2xl font-black tracking-tight">Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription className="text-gray-500 font-medium pt-2">
-                            This will permanently delete the post from our records.
+                            This will permanently delete the post from our records. It will no longer appear in your calendar or listing views.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="pt-6">
