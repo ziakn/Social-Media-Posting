@@ -23,7 +23,7 @@ export async function fetchThreadsPosts(status = "published") {
             collection(db, "threads_posts"),
             where("userId", "==", user.id),
             where("status", "==", status),
-            where("deleted", "==", 0),
+            where("delete", "==", 0),
             orderBy("createdAt", "desc")
         );
 

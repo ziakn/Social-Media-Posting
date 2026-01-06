@@ -97,7 +97,7 @@ export async function getYoutubePublishedPosts({
         let constraints = [
             where("userId", "==", user.id),
             where("status", "==", "posted"),
-            where("deleted", "==", 0)
+            where("delete", "==", 0)
         ];
 
         if (filters.accountId && filters.accountId !== "all") {
@@ -183,7 +183,7 @@ export async function getYoutubeScheduledPosts({
         let constraints = [
             where("userId", "==", user.id),
             where("status", "==", "scheduled"),
-            where("deleted", "==", 0)
+            where("delete", "==", 0)
         ];
 
         if (filters.accountId && filters.accountId !== "all") {
@@ -293,7 +293,7 @@ export async function deleteYoutubePost(postId) {
 
         // Soft delete in Firestore
         await updateDoc(postRef, {
-            deleted: 1,
+            delete: 1,
             updatedAt: serverTimestamp()
         });
 
@@ -333,8 +333,8 @@ export async function updateYoutubePost(postId, updates) {
 
         // If posted, update on YouTube too
         if (postData.status === "posted" && postData.videoId && postData.accountId) {
-             const accountSnap = await getDoc(doc(db, "socialAccounts", postData.accountId));
-             if (accountSnap.exists()) {
+            const accountSnap = await getDoc(doc(db, "socialAccounts", postData.accountId));
+            if (accountSnap.exists()) {
                 const accountData = accountSnap.data();
                 let accessToken = accountData.accessToken;
                 const refreshToken = accountData.refreshToken;
@@ -368,7 +368,7 @@ export async function updateYoutubePost(postId, updates) {
                         await performUpdate(refreshResult.access_token);
                     }
                 }
-             }
+            }
         }
 
         // Update Firestore

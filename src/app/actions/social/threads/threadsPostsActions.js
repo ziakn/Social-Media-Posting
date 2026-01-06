@@ -41,7 +41,7 @@ export async function getThreadsPosts({
         let constraints = [
             where("userId", "==", user.id),
             where("platform", "==", "threads"),
-            where("deleted", "==", 0)
+            where("delete", "==", 0)
         ];
 
         // Status filter
@@ -142,7 +142,7 @@ export async function getThreadsPostsStats({ accountId = null } = {}) {
             where("userId", "==", user.id),
             where("platform", "==", "threads"),
             where("status", "==", "published"),
-            where("deleted", "==", 0)
+            where("delete", "==", 0)
         ];
 
         if (accountId && accountId !== "all") {
@@ -391,7 +391,7 @@ export async function publishThreadsPostNow(postId) {
             updatedAt: serverTimestamp(),
             // Remove scheduling fields if present, or update them to reflect published reality
             scheduledAt: serverTimestamp(),
-            deleted: 0
+            delete: 0
         });
 
         revalidatePath("/admin/social/threads/posts");
@@ -418,7 +418,7 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
         let constraints = [
             where("userId", "==", user.id),
             where("platform", "==", "threads"),
-            where("deleted", "==", 0)
+            where("delete", "==", 0)
         ];
 
         // Add date range filters if provided
@@ -483,7 +483,7 @@ export async function deleteThreadsPost(postId) {
 
         // Soft delete
         await updateDoc(postRef, {
-            deleted: 1,
+            delete: 1,
             updatedAt: serverTimestamp()
         });
 

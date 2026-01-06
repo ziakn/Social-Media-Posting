@@ -127,12 +127,12 @@ export async function getScheduledPosts({
                 updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt,
                 publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
                 analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
-                deleted: data.delete || 0
+                delete: data.delete || 0
             };
         }));
 
         // Filter out deleted posts
-        const activePosts = posts.filter(p => p.deleted !== 1);
+        const activePosts = posts.filter(p => p.delete !== 1);
 
         const lastVisible = posts.length > 0 ? posts[posts.length - 1].id : null;
 

@@ -167,6 +167,7 @@ export async function createTwitterPost({
                 scheduledAt: new Date(scheduledTime),
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                delete: 0,
             });
 
             return { success: true, message: "Tweet scheduled successfully", postId };
@@ -185,6 +186,7 @@ export async function createTwitterPost({
                 twitterPostId: result.tweetId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
+                delete: 0,
             });
 
             return { success: true, message: "Tweet published successfully", postId };

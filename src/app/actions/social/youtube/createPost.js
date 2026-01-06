@@ -156,6 +156,7 @@ export async function createYoutubePost({
             status: scheduledTime ? "scheduled" : "posted",
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
+            delete: 0,
         };
 
         if (scheduledTime) {
@@ -166,9 +167,9 @@ export async function createYoutubePost({
 
         await setDoc(postRef, postData);
 
-        return { 
-            success: true, 
-            message: scheduledTime ? "Video scheduled successfully" : "Video uploaded successfully", 
+        return {
+            success: true,
+            message: scheduledTime ? "Video scheduled successfully" : "Video uploaded successfully",
             postId,
             videoId: result.videoId
         };

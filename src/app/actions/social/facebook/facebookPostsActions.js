@@ -131,15 +131,15 @@ export async function getFacebookPosts({
     }
 
     constraints.push(orderBy(sortField, sortDirection));
-    constraints.push(limit(pageSize * 5)); // Fetch more for client-side filtering (deleted/search)
+    constraints.push(limit(pageSize * 5)); // Fetch more for client-side filtering (delete/search)
     // Filter out deleted posts logic (application level or if possible query level)
-    // Since existing posts might not have 'deleted' field, we can't easily query using != 1 without an index or backfill.
+    // Since existing posts might not have 'delete' field, we can't easily query using != 1 without an index or backfill.
     // We will filter efficiently in memory after fetching or try to use a constraint if possible.
     // For now, let's just fetch and filter in memory as it's safer without migration.
     // However, to avoid messing up pagination, we should ideally use a query.
     // Let's rely on the client side not showing them or filter here. 
     // To be safe with pagination, we'll try to filter here but it might affect page size.
-    // Better approach: Since 'deleted' is a new field, we can't query on it for old docs.
+    // Better approach: Since 'delete' is a new field, we can't query on it for old docs.
     // So we will filter in the map loop.
 
     let q = query(collection(db, "facebook_posts"), ...constraints);
@@ -158,14 +158,14 @@ export async function getFacebookPosts({
 
     const snapshot = await getDocs(q);
 
-    // Filter out deleted posts and apply search
+    // Filter out soft-deleted posts and apply search
     const allPosts = await Promise.all(snapshot.docs.map(async (docSnap) => {
       const data = docSnap.data();
 
       // Skip soft-deleted posts
-      if (data.delete === 1) return null;
-
-      // Apply client-side search filter
+      if (data.delete === 1) {
+        return null;
+      } // Apply client-side search filter
       const message = (data.message || data.caption || "").toLowerCase();
       const searchQuery = (filters.searchQuery || "").toLowerCase();
       if (searchQuery && !message.includes(searchQuery)) return null;
@@ -247,7 +247,7 @@ export async function getFacebookPosts({
         scheduledAt: data.scheduledAt?.toDate?.()?.toISOString() || data.scheduledAt,
         publishedAt: data.publishedAt?.toDate?.()?.toISOString() || data.publishedAt,
         analyticsFetchedAt: data.analyticsFetchedAt?.toDate?.()?.toISOString() || data.analyticsFetchedAt,
-        deleted: data.delete || 0
+        delete: data.delete || 0
       };
     }));
 

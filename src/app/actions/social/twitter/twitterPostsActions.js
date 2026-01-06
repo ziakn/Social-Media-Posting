@@ -188,7 +188,7 @@ export async function getTwitterPublishedPosts({
                 publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt?.toISOString?.() || data.publishedAt || null,
                 lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate?.toISOString?.() || null,
                 tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt?.toISOString?.() || null,
-                deleted: data.deleted || 0
+                delete: data.delete || 0
             };
         });
 
@@ -199,7 +199,7 @@ export async function getTwitterPublishedPosts({
         };
 
         // Filter out deleted posts in memory for legacy support
-        const activePosts = posts.filter(p => p.deleted !== 1);
+        const activePosts = posts.filter(p => p.delete !== 1);
 
         return {
             success: true,
@@ -300,12 +300,12 @@ export async function getTwitterScheduledPosts({
                 scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt?.toISOString?.() || data.scheduledAt || null,
                 publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt?.toISOString?.() || data.publishedAt || null,
                 tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt?.toISOString?.() || null,
-                deleted: data.deleted || 0
+                delete: data.delete || 0
             };
         });
 
         // Filter out deleted posts in memory
-        const activePosts = posts.filter(p => p.deleted !== 1);
+        const activePosts = posts.filter(p => p.delete !== 1);
 
         return {
             success: true,
@@ -409,7 +409,7 @@ export async function deleteTwitterPost(postId) {
 
         // 2. Soft delete in Firestore
         await updateDoc(postRef, {
-            deleted: 1,
+            delete: 1,
             updatedAt: new Date()
         });
 
@@ -697,7 +697,7 @@ export async function getAllTwitterCalendarPosts({ startDate, endDate }) {
         }));
 
         const allPosts = [...scheduledPosts, ...publishedPosts]
-            .filter(p => p.deleted !== 1)
+            .filter(p => p.delete !== 1)
             .sort((a, b) => {
                 const dateA = new Date(a.scheduledAt || a.createdAt);
                 const dateB = new Date(b.scheduledAt || b.createdAt);
@@ -908,7 +908,7 @@ export async function getTwitterPosts({
                 publishedAt: data.publishedAt?.toDate?.().toISOString() || null,
                 scheduledAt: data.scheduledAt?.toDate ? data.scheduledAt.toDate().toISOString() : (data.scheduledAt || null),
                 tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || null,
-                deleted: data.deleted || 0
+                delete: data.delete || 0
             };
         });
 
@@ -958,7 +958,7 @@ export async function getTwitterPosts({
                 account: account // Keep nested object just in case
             };
         }).filter(p => {
-            if (p.deleted === 1) return false;
+            if (p.delete === 1) return false;
             if (filters.searchQuery) {
                 const q = filters.searchQuery.toLowerCase();
                 return (p.message || "").toLowerCase().includes(q);
