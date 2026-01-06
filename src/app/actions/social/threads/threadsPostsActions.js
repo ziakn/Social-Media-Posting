@@ -40,7 +40,8 @@ export async function getThreadsPosts({
 
         let constraints = [
             where("userId", "==", user.id),
-            where("platform", "==", "threads")
+            where("platform", "==", "threads"),
+            where("deleted", "==", 0)
         ];
 
         // Status filter
@@ -91,9 +92,6 @@ export async function getThreadsPosts({
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
 
-            // Soft-delete check
-            if (data.deleted === 1) return;
-
             // Search filter
             if (filters.searchQuery) {
                 const message = (data.message || data.caption || data.content?.text || "").toLowerCase();
@@ -143,7 +141,8 @@ export async function getThreadsPostsStats({ accountId = null } = {}) {
         let constraints = [
             where("userId", "==", user.id),
             where("platform", "==", "threads"),
-            where("status", "==", "published")
+            where("status", "==", "published"),
+            where("deleted", "==", 0)
         ];
 
         if (accountId && accountId !== "all") {
@@ -166,7 +165,6 @@ export async function getThreadsPostsStats({ accountId = null } = {}) {
 
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
-            if (data.deleted === 1) return;
 
             stats.totalPosts++;
             stats.totalLikes += data.metrics?.likes || 0;
@@ -419,7 +417,8 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
 
         let constraints = [
             where("userId", "==", user.id),
-            where("platform", "==", "threads")
+            where("platform", "==", "threads"),
+            where("deleted", "==", 0)
         ];
 
         // Add date range filters if provided
@@ -438,7 +437,6 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
         const snapshot = await getDocs(q);
         const posts = snapshot.docs.map(doc => {
             const data = doc.data();
-            if (data.deleted === 1) return null;
 
             const displayDate = data.scheduledAt || data.publishedAt || data.createdAt;
             return {
