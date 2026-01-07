@@ -65,9 +65,6 @@ import { checkTwitterConnection } from "../../../actions/social/twitter/connectA
 import { disconnectTwitterAccount } from "../../../actions/social/twitter/disconnectAccount";
 import { checkYoutubeConnection } from "../../../actions/social/youtube/connectAccount";
 import { disconnectYoutubeAccount } from "../../../actions/social/youtube/disconnectAccount";
-import { checkTiktokConnection } from "../../../actions/social/tiktok/connectAccount";
-import { disconnectTiktokAccount } from "../../../actions/social/tiktok/disconnectAccount";
-import { TiktokLogo } from "@/components/icons/TiktokLogo";
 
 const CONNECTION_FUNCTIONS = {
   facebook: checkFacebookConnection,
@@ -75,7 +72,6 @@ const CONNECTION_FUNCTIONS = {
   threads: checkThreadsConnection,
   twitter: checkTwitterConnection,
   youtube: checkYoutubeConnection,
-  tiktok: checkTiktokConnection,
 };
 
 const DISCONNECT_FUNCTIONS = {
@@ -84,7 +80,6 @@ const DISCONNECT_FUNCTIONS = {
   threads: disconnectThreadsAccount,
   twitter: disconnectTwitterAccount,
   youtube: disconnectYoutubeAccount,
-  tiktok: disconnectTiktokAccount,
 };
 
 export default function SocialConnectPage() {
