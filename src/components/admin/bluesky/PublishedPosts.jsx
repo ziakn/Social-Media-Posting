@@ -502,7 +502,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                         <CalendarIcon className="h-4 w-4" /> Calendar View
                     </TabsTrigger>
                     <TabsTrigger value="posts" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-[#0085ff] data-[state=active]:text-white font-bold text-gray-500 gap-2">
-                        <LayoutGrid className="h-4 w-4" /> Posts View
+                        <LayoutGrid className="h-4 w-4" /> BlueSky View
                     </TabsTrigger>
                     <TabsTrigger value="listing" className="rounded-lg px-4 py-2.5 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900 font-bold text-gray-500 gap-2">
                         <List className="h-4 w-4" /> Listing View

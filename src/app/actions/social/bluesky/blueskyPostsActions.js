@@ -40,6 +40,153 @@ async function getBlueSkyAccount(userId, accountId) {
 }
 
 /**
+ * Get all BlueSky posts with status filtering, pagination, and enhanced filtering
+ */
+export async function getBlueSkyPosts({
+    pageSize = 12,
+    lastDocId = null,
+    filters = {},
+    sortBy = "createdAt",
+    sortOrder = "desc"
+} = {}) {
+    try {
+        const user = await getAuthenticatedUser();
+
+        let constraints = [
+            where("userId", "==", user.id),
+            where("platform", "==", "bluesky"),
+            where("delete", "==", 0)
+        ];
+
+        // Status filter
+        if (filters.status && filters.status !== "all") {
+            constraints.push(where("status", "==", filters.status));
+        }
+
+        // Account filter
+        if (filters.accountId && filters.accountId !== "all") {
+            constraints.push(where("accountId", "==", filters.accountId));
+        }
+
+        // Post type filter
+        if (filters.postType && filters.postType !== "all") {
+            constraints.push(where("postType", "==", filters.postType));
+        }
+
+        // Date range filters
+        const orderField = sortBy === "date" ? "createdAt" : sortBy;
+        if (filters.dateFrom && orderField === "createdAt") {
+            constraints.push(where("createdAt", ">=", new Date(filters.dateFrom)));
+        }
+        if (filters.dateTo && orderField === "createdAt") {
+            constraints.push(where("createdAt", "<=", new Date(filters.dateTo)));
+        }
+
+        // Sorting
+        constraints.push(orderBy(orderField, sortOrder));
+
+        // Cursor for pagination
+        if (lastDocId) {
+            const lastDocRef = doc(db, "bluesky_posts", lastDocId);
+            const lastDocSnap = await getDoc(lastDocRef);
+            if (lastDocSnap.exists()) {
+                constraints.push(startAfter(lastDocSnap));
+            }
+        }
+
+        const fetchLimit = filters.searchQuery ? pageSize * 10 : pageSize * 2;
+        constraints.push(limit(fetchLimit));
+
+        const q = query(collection(db, "bluesky_posts"), ...constraints);
+        const snapshot = await getDocs(q);
+
+        let posts = [];
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+
+            // Search filter
+            if (filters.searchQuery) {
+                const message = (data.message || data.caption || data.content?.text || "").toLowerCase();
+                if (!message.includes(filters.searchQuery.toLowerCase())) return;
+            }
+
+            if (posts.length < pageSize) {
+                posts.push({
+                    id: docSnap.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
+                    updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                    scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
+                    publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
+                });
+            }
+        });
+
+        const lastVisibleDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
+        const hasMore = snapshot.docs.length >= fetchLimit;
+
+        return {
+            success: true,
+            posts,
+            hasMore,
+            lastPostId: lastVisibleDoc
+        };
+
+    } catch (error) {
+        console.error("Error in getBlueSkyPosts:", error);
+        return { success: false, message: error.message, posts: [], hasMore: false };
+    }
+}
+
+/**
+ * Get aggregate stats for BlueSky posts
+ */
+export async function getBlueSkyPostsStats({ accountId = null } = {}) {
+    try {
+        const user = await getAuthenticatedUser();
+
+        let constraints = [
+            where("userId", "==", user.id),
+            where("platform", "==", "bluesky"),
+            where("status", "==", "published"),
+            where("delete", "==", 0)
+        ];
+
+        if (accountId && accountId !== "all") {
+            constraints.push(where("accountId", "==", accountId));
+        }
+
+        constraints.push(limit(2000));
+        const q = query(collection(db, "bluesky_posts"), ...constraints);
+        const snapshot = await getDocs(q);
+
+        let stats = {
+            totalPosts: 0,
+            totalLikes: 0,
+            totalReplies: 0,
+            totalEngagement: 0,
+            avgEngagement: 0
+        };
+
+        snapshot.forEach(docSnap => {
+            const data = docSnap.data();
+
+            stats.totalPosts++;
+            stats.totalLikes += data.metrics?.likes || 0;
+            stats.totalReplies += data.metrics?.replies || 0;
+        });
+
+        stats.totalEngagement = stats.totalLikes + stats.totalReplies;
+        stats.avgEngagement = stats.totalPosts > 0 ? Math.round(stats.totalEngagement / stats.totalPosts) : 0;
+
+        return { success: true, stats };
+    } catch (error) {
+        console.error("Error in getBlueSkyPostsStats:", error);
+        return { success: false, message: error.message };
+    }
+}
+
+/**
  * Publish a scheduled BlueSky post immediately
  */
 export async function publishBlueSkyPostNow(postId) {

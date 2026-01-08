@@ -296,7 +296,7 @@ export default function BlueSkyFullCalendar({
                                                                     className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
                                                                 >
                                                                     <Edit className="h-5 w-5 text-gray-900" />
-                                                                    <span className="font-bold text-[13px] text-gray-900">Edit Thread</span>
+                                                                    <span className="font-bold text-[13px] text-gray-900">Edit Post</span>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
                                                                     onClick={(e) => handlePublishNow(e, post)}
@@ -310,7 +310,7 @@ export default function BlueSkyFullCalendar({
                                                                     onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'delete'); }}
                                                                 >
                                                                     <Trash2 className="h-5 w-5 text-red-600" />
-                                                                    <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
+                                                                    <span className="font-bold text-[13px] text-red-600">Delete Post</span>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}

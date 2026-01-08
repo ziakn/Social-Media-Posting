@@ -223,7 +223,7 @@ export default function BlueSkyViewComponent({
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                         <div>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-black text-white">
+                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0085ff] text-white">
                                     <BlueSkyLogo className="h-5 w-5 fill-white" />
                                 </div>
                                 <CardTitle className="text-2xl font-bold text-gray-900">
@@ -369,7 +369,7 @@ export default function BlueSkyViewComponent({
                         return (
                             <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 bg-white p-5 cursor-pointer rounded-2xl", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => handleEdit(post)}>
                                 <div className="flex gap-3 lg:gap-4 relative">
-                                    {/* Left: Avatar & Thread Line */}
+                                    {/* Left: Avatar */}
                                     <div className="flex flex-col items-center shrink-0 w-10 lg:w-12">
                                         <div className="relative">
                                             <Avatar className="h-10 w-10 lg:h-12 lg:h-12 border border-gray-50 shadow-sm">
@@ -378,15 +378,9 @@ export default function BlueSkyViewComponent({
                                                     {name[0]}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div className="absolute -bottom-1 -right-1 bg-black rounded-full p-1 border-2 border-white shadow-sm">
-                                                <BlueSkyLogo className="h-2 w-2 text-white" />
+                                            <div className="absolute -bottom-1 -right-1 bg-[#0085ff] rounded-full p-1 border-2 border-white shadow-sm">
+                                                <BlueSkyLogo className="h-2.5 w-2.5 text-white" />
                                             </div>
-                                        </div>
-                                        <div className="flex-1 w-[2px] bg-gray-100 my-2 rounded-full" />
-                                        <div className="flex -space-x-1 mt-1 pb-1">
-                                            {[1, 2].map(i => (
-                                                <div key={i} className="w-3.5 h-3.5 rounded-full border border-white bg-gray-200" />
-                                            ))}
                                         </div>
                                     </div>
 
@@ -397,7 +391,7 @@ export default function BlueSkyViewComponent({
                                                 <span className="font-bold text-gray-900 text-[14px] lg:text-[15px] hover:underline cursor-pointer">
                                                     {name.toLowerCase().replace(/\s/g, '')}
                                                 </span>
-                                                <Check className="h-3 w-3 bg-blue-500 text-white rounded-full p-0.5" />
+                                                <Check className="h-3 w-3 bg-[#0085ff] text-white rounded-full p-0.5" />
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <span className="text-gray-400 text-xs font-medium">{formatDate(post.createdAt)}</span>
@@ -414,14 +408,14 @@ export default function BlueSkyViewComponent({
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                     <Eye className="h-5 w-5 text-gray-900" />
-                                                                    <span className="font-bold text-[13px] text-gray-900">Thread Details</span>
+                                                                    <span className="font-bold text-[13px] text-gray-900">Post Details</span>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         ) : (
                                                             <>
                                                                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                     <Edit className="h-5 w-5 text-gray-900" />
-                                                                    <span className="font-bold text-[13px] text-gray-900">Edit Thread</span>
+                                                                    <span className="font-bold text-[13px] text-gray-900">Edit Post</span>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group">
                                                                     <Send className="h-5 w-5 text-purple-600" />
@@ -429,7 +423,7 @@ export default function BlueSkyViewComponent({
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); handleEdit(post, 'delete'); }}>
                                                                     <Trash2 className="h-5 w-5 text-red-600" />
-                                                                    <span className="font-bold text-[13px] text-red-600">Delete Thread</span>
+                                                                    <span className="font-bold text-[13px] text-red-600">Delete Post</span>
                                                                 </DropdownMenuItem>
                                                             </>
                                                         )}
