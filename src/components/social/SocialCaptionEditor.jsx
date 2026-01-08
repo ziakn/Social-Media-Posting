@@ -17,6 +17,7 @@ const PLATFORM_LIMITS = {
     twitter: 280,
     linkedin: 3000,
     tiktok: 2200,
+    bluesky: 300,
     default: 5000,
 };
 

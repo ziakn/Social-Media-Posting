@@ -1,0 +1,48 @@
+"use server";
+
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, updateDoc, deleteDoc } from "firebase/firestore";
+import { verifyToken } from "@/lib/auth";
+import { cookies } from "next/headers";
+
+export async function disconnectBlueSkyAccount() {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            throw new Error("Unauthorized");
+        }
+
+        const q = query(
+            collection(db, "socialAccounts"),
+            where("userId", "==", user.id),
+            where("platform", "==", "bluesky"),
+            where("status", "==", "active")
+        );
+
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            return { success: false, message: "No active BlueSky account found" };
+        }
+
+        // Deactivate all found BlueSky accounts for this user (Soft Delete)
+        const disconnectPromises = snapshot.docs.map(docSnap =>
+            updateDoc(docSnap.ref, {
+                status: "inactive",
+                disconnectedAt: new Date(),
+                accessToken: ""
+            })
+        );
+
+        await Promise.all(disconnectPromises);
+
+        return { success: true, message: "BlueSky disconnected successfully" };
+
+    } catch (error) {
+        console.error("Error disconnecting BlueSky account:", error);
+        return { success: false, message: error.message };
+    }
+}

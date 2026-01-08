@@ -69,6 +69,8 @@ import { checkLinkedinConnection } from "../../../actions/social/linkedin/connec
 import { disconnectLinkedinAccount } from "../../../actions/social/linkedin/disconnectAccount";
 import { checkTiktokConnection } from "../../../actions/social/tiktok/connectAccount";
 import { disconnectTiktokAccount } from "../../../actions/social/tiktok/disconnectAccount";
+import { checkBlueSkyConnection } from "../../../actions/social/bluesky/connectAccount";
+import { disconnectBlueSkyAccount } from "../../../actions/social/bluesky/disconnectAccount";
 import { TiktokLogo } from "@/components/icons/TiktokLogo";
 
 const CONNECTION_FUNCTIONS = {
@@ -79,6 +81,7 @@ const CONNECTION_FUNCTIONS = {
   youtube: checkYoutubeConnection,
   linkedin: checkLinkedinConnection,
   tiktok: checkTiktokConnection,
+  bluesky: checkBlueSkyConnection,
 };
 
 const DISCONNECT_FUNCTIONS = {
@@ -89,6 +92,7 @@ const DISCONNECT_FUNCTIONS = {
   youtube: disconnectYoutubeAccount,
   linkedin: disconnectLinkedinAccount,
   tiktok: disconnectTiktokAccount,
+  bluesky: disconnectBlueSkyAccount,
 };
 
 export default function SocialConnectPage() {
@@ -203,6 +207,7 @@ export default function SocialConnectPage() {
   }, []);
 
   const handleConnect = (platformKey) => {
+    // Both BlueSky and others now use the same API route pattern
     window.location.href = `/api/admin/${platformKey}/connect`;
   };
 

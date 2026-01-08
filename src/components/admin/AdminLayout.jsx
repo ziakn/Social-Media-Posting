@@ -17,6 +17,7 @@ import {
   Globe,
 } from "lucide-react";
 import Navbar from "./Navbar";
+import { BlueSkyLogo } from "@/components/icons/BlueSkyLogo";
 import { usePermissions } from "@/hooks/usePermissions";
 import { ROUTES } from "@/constants/routes";
 import { API_ROUTES } from "@/constants/api";
@@ -178,6 +179,22 @@ export default function AdminLayout({ children }) {
                 </Link>
               </li>
             )}
+
+            {/* BlueSky Module */}
+            <li key={ROUTES.ADMIN_BLUESKY}>
+              <Link
+                href={`${ROUTES.ADMIN_BLUESKY}/posts`}
+                className={`flex items-center gap-3 px-3 py-2 rounded-md text-gray-700 transition-colors hover:bg-gray-100 ${sidebarOpen ? "justify-start" : "justify-center"
+                  }`}
+              >
+                <div className="w-[18px] h-[18px] flex items-center justify-center">
+                  <BlueSkyLogo className="w-full h-full text-gray-700" />
+                </div>
+                {sidebarOpen && (
+                  <span className="text-sm font-medium">BlueSky</span>
+                )}
+              </Link>
+            </li>
             {hasPermission('view_settings') && (
               <li key="/admin/settings">
                 <Link
