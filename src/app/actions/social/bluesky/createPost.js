@@ -41,20 +41,97 @@ async function getBlueSkyAccount(userId, accountId) {
 /**
  * Upload image to BlueSky (Helper)
  */
-async function uploadImage(agent, url) {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    const buffer = await blob.arrayBuffer();
+async function uploadImage(agent, media) {
+    const { readFile } = await import('fs/promises');
+    const path = await import('path');
 
-    const { data } = await agent.uploadBlob(new Uint8Array(buffer), {
-        encoding: blob.type
-    });
+    let fileBuffer;
+    let mimeType = media.type;
 
-    return {
-        $type: "app.bsky.embed.images#image",
-        alt: "", // accessibility text could be added here
-        image: data.blob
+    // Helper map for normalization
+    const mimeMap = {
+        'image': 'image/jpeg',
+        'video': 'video/mp4',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp'
     };
+
+    if (media.url.startsWith('http')) {
+        // Handle remote URLs
+        const response = await fetch(media.url);
+        fileBuffer = await response.arrayBuffer();
+        // Try to get MIME type from response if not provided or too generic
+        if (!mimeType || mimeType === 'image') {
+            mimeType = response.headers.get('content-type') || 'image/jpeg';
+        }
+    } else {
+        // Handle local files - read from public directory
+        const relativePath = media.url.startsWith('/') ? media.url.slice(1) : media.url;
+        const filePath = path.join(process.cwd(), 'public', relativePath);
+        fileBuffer = await readFile(filePath);
+
+        // Detect or normalize MIME type
+        if (!mimeType || mimeType === 'image') {
+            const ext = path.extname(media.url).toLowerCase();
+            mimeType = mimeMap[ext] || 'image/jpeg';
+        }
+    }
+
+    // Final normalization check
+    if (mimeType === 'image') mimeType = 'image/jpeg';
+    if (mimeType === 'video') mimeType = 'video/mp4';
+
+    // Create a Blob from the buffer (similar to Facebook module)
+    const blob = new Blob([fileBuffer], { type: mimeType });
+
+    try {
+        // Attempt 1: Using the SDK's uploadBlob with a Blob object
+        console.log(`BlueSky Upload Attempt 1 (SDK): type=${mimeType}, size=${fileBuffer.byteLength}`);
+        const { data } = await agent.uploadBlob(blob);
+
+        if (data?.blob) {
+            return {
+                $type: "app.bsky.embed.images#image",
+                alt: media.alt || "",
+                image: data.blob
+            };
+        }
+    } catch (uploadError) {
+        console.warn("BlueSky SDK upload failed, attempting direct XRPC fetch:", uploadError.message);
+
+        // Attempt 2: Direct fetch to XRPC endpoint (bypass SDK validation)
+        const xrpcUrl = `${agent.service.href}xrpc/com.atproto.repo.uploadBlob`;
+
+        const response = await fetch(xrpcUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${agent.session.accessJwt}`,
+                'Content-Type': mimeType
+            },
+            body: fileBuffer
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("BlueSky XRPC upload failed:", errorText);
+            throw new Error(`BlueSky upload failed: ${response.status} ${errorText}`);
+        }
+
+        const data = await response.json();
+
+        if (data?.blob) {
+            return {
+                $type: "app.bsky.embed.images#image",
+                alt: media.alt || "",
+                image: data.blob
+            };
+        }
+    }
+
+    throw new Error("Failed to upload image to BlueSky: No blob data returned in either attempt");
 }
 
 /**
@@ -134,7 +211,7 @@ export async function createBlueSkyPost({
             const images = [];
             for (const item of media) {
                 if (item.type === 'image' || !item.type) {
-                    const image = await uploadImage(agent, item.url);
+                    const image = await uploadImage(agent, item);
                     images.push(image);
                 }
             }
