@@ -1,14 +1,14 @@
 "use client";
 
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreateYoutubePost from "@/components/admin/youtube/CreatePost";
 import PublishedPosts from "@/components/admin/youtube/PublishedPosts";
 import ScheduledPosts from "@/components/admin/youtube/ScheduledPosts";
-import { Youtube, PlusCircle, FileText, Clock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Youtube, PlusCircle, FileText, Clock, Loader2 } from "lucide-react";
 
-export default function YoutubePostsPage() {
+function YoutubePostsContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tab = searchParams.get("tab") || "published";
@@ -77,5 +77,17 @@ export default function YoutubePostsPage() {
                 </TabsContent>
             </Tabs>
         </div>
+    );
+}
+
+export default function YoutubePostsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-red-600" />
+            </div>
+        }>
+            <YoutubePostsContent />
+        </Suspense>
     );
 }

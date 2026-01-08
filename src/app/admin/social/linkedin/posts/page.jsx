@@ -1,14 +1,14 @@
 "use client";
 
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CreateLinkedinPost from "@/components/admin/linkedin/CreatePost";
 import PublishedPosts from "@/components/admin/linkedin/PublishedPosts";
 import ScheduledPosts from "@/components/admin/linkedin/ScheduledPosts";
-import { Linkedin, PlusCircle, FileText, Clock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Linkedin, PlusCircle, FileText, Clock, Loader2 } from "lucide-react";
 
-export default function LinkedinPostsPage() {
+function LinkedinPostsContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const tab = searchParams.get("tab") || "published";
@@ -77,5 +77,17 @@ export default function LinkedinPostsPage() {
                 </TabsContent>
             </Tabs>
         </div>
+    );
+}
+
+export default function LinkedinPostsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        }>
+            <LinkedinPostsContent />
+        </Suspense>
     );
 }

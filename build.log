@@ -1,0 +1,109 @@
+
+> firebase-nextjs@0.1.0 build
+> next build
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+⚠ Invalid next.config.mjs options detected: 
+⚠     Unrecognized key(s) in object: 'serverActions'
+⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+▲ Next.js 16.1.1 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+✓ Compiled successfully in 6.8s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+  Generating static pages using 11 workers (0/59) ...
+  Generating static pages using 11 workers (14/59) 
+  Generating static pages using 11 workers (29/59) 
+  Generating static pages using 11 workers (44/59) 
+✓ Generating static pages using 11 workers (59/59) in 551.5ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ○ /admin/dashboard
+├ ○ /admin/gallery
+├ ○ /admin/permissions
+├ ƒ /admin/permissions/[id]/edit
+├ ○ /admin/permissions/create
+├ ○ /admin/platforms
+├ ƒ /admin/platforms/[id]/edit
+├ ○ /admin/platforms/create
+├ ○ /admin/roles
+├ ƒ /admin/roles/[id]/edit
+├ ○ /admin/roles/create
+├ ○ /admin/social/connect
+├ ○ /admin/social/facebook
+├ ○ /admin/social/facebook/posts
+├ ○ /admin/social/instagram
+├ ○ /admin/social/instagram/posts
+├ ○ /admin/social/linkedin/posts
+├ ○ /admin/social/threads
+├ ○ /admin/social/threads/posts
+├ ○ /admin/social/tiktok
+├ ○ /admin/social/tiktok/posts
+├ ○ /admin/social/twitter
+├ ○ /admin/social/twitter/posts
+├ ƒ /admin/social/twitter/posts/create/[id]
+├ ○ /admin/social/youtube/posts
+├ ○ /admin/tasks
+├ ƒ /admin/tasks/[id]/edit
+├ ○ /admin/tasks/create
+├ ○ /admin/users
+├ ƒ /admin/users/[id]/edit
+├ ○ /admin/users/create
+├ ƒ /api/admin/auth/login
+├ ƒ /api/admin/auth/logout
+├ ƒ /api/admin/auth/verify
+├ ƒ /api/admin/facebook/callback
+├ ƒ /api/admin/facebook/connect
+├ ƒ /api/admin/instagram/callback
+├ ƒ /api/admin/instagram/connect
+├ ƒ /api/admin/linkedin/callback
+├ ƒ /api/admin/linkedin/connect
+├ ƒ /api/admin/platforms
+├ ƒ /api/admin/platforms/[id]
+├ ƒ /api/admin/platforms/seed
+├ ƒ /api/admin/roles
+├ ƒ /api/admin/roles/[id]
+├ ƒ /api/admin/seed/permissions
+├ ƒ /api/admin/threads/callback
+├ ƒ /api/admin/threads/connect
+├ ƒ /api/admin/tiktok/callback
+├ ƒ /api/admin/tiktok/connect
+├ ƒ /api/admin/twitter/callback
+├ ƒ /api/admin/twitter/connect
+├ ƒ /api/admin/upload
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/admin/youtube/callback
+├ ƒ /api/admin/youtube/connect
+├ ƒ /api/upload
+├ ○ /auth/login
+├ ○ /auth/register
+├ ○ /blog
+├ ○ /data-deletion
+├ ○ /privacy-policy
+└ ○ /terms-of-service
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

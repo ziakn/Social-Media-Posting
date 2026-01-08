@@ -9,8 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { API_ROUTES } from "@/constants/api";
 import { ROUTES } from "@/constants/routes";
 import { toast } from "sonner";
-import Quill from "quill";
-import "quill/dist/quill.snow.css";
 
 export default function CreatePlatform() {
   const router = useRouter();
@@ -30,17 +28,28 @@ export default function CreatePlatform() {
   useEffect(() => {
     if (!editorRef.current || quillRef.current) return;
 
-    quillRef.current = new Quill(editorRef.current, {
-      theme: "snow",
-      placeholder: "Enter platform description...",
-    });
+    const initQuill = async () => {
+      try {
+        const Quill = (await import("quill")).default;
+        await import("quill/dist/quill.snow.css");
 
-    quillRef.current.on("text-change", () => {
-      setForm((prev) => ({
-        ...prev,
-        description: quillRef.current.root.innerHTML,
-      }));
-    });
+        quillRef.current = new Quill(editorRef.current, {
+          theme: "snow",
+          placeholder: "Enter platform description...",
+        });
+
+        quillRef.current.on("text-change", () => {
+          setForm((prev) => ({
+            ...prev,
+            description: quillRef.current.root.innerHTML,
+          }));
+        });
+      } catch (error) {
+        console.error("Failed to load Quill:", error);
+      }
+    };
+
+    initQuill();
   }, []);
 
   const handleSubmit = async (e) => {
@@ -52,7 +61,6 @@ export default function CreatePlatform() {
     }
 
     try {
-
       setLoading(true);
 
       const res = await fetch(API_ROUTES.PLATFORMS_CREATE, {

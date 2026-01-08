@@ -122,3 +122,26 @@ export async function updateLinkedinPostSchedule(postId, scheduledAt) {
         return { success: false, message: error.message };
     }
 }
+
+export async function updateLinkedinPost(postId, data) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, message: "Invalid token" };
+        }
+
+        const postRef = doc(db, "linkedin_posts", postId);
+        await updateDoc(postRef, {
+            ...data,
+            updatedAt: serverTimestamp()
+        });
+
+        return { success: true, message: "Post updated successfully" };
+    } catch (error) {
+        console.error("Error updating LinkedIn post:", error);
+        return { success: false, message: error.message };
+    }
+}
