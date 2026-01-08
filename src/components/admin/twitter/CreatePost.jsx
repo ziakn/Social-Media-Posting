@@ -324,7 +324,7 @@ export default function CreateTwitterPost() {
 
                                         <Button
                                             variant="outline"
-                                            onClick={() => openGallery("image")}
+                                            onClick={() => openGallery(["image", "video"])}
                                             className="w-full h-16 border-dashed border-2 hover:border-blue-500 hover:bg-blue-50"
                                         >
                                             <ImageIcon className="h-5 w-5 mr-2" />

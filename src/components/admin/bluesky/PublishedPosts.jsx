@@ -75,7 +75,7 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
     const [selectedAccount, setSelectedAccount] = useState(initialData?.accountId || null);
 
     const [galleryOpen, setGalleryOpen] = useState(false);
-    const [galleryMediaType, setGalleryMediaType] = useState("image"); // BlueSky API mainly images for now, video support varies but we allow selection
+    const [galleryMediaType, setGalleryMediaType] = useState(["image", "video"]); // Enabled video support
     const [currentSlide, setCurrentSlide] = useState(0);
     const selectionScrollRef = useRef(null);
 
@@ -253,14 +253,14 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
 
                                 <div className="space-y-4">
                                     <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Media</Label>
-                                    <Button disabled={isReadOnly} variant="outline" onClick={() => { setGalleryMediaType(["image"]); setGalleryOpen(true); }} className="h-28 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#0085ff] hover:bg-blue-50/50 flex flex-col gap-2 group transition-all duration-300">
+                                    <Button disabled={isReadOnly} variant="outline" onClick={() => { setGalleryMediaType(["image", "video"]); setGalleryOpen(true); }} className="h-28 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#0085ff] hover:bg-blue-50/50 flex flex-col gap-2 group transition-all duration-300">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 bg-gray-50 group-hover:bg-[#0085ff] group-hover:text-white rounded-lg transition-colors duration-300">
                                                 <ImageIcon className="h-5 w-5" />
                                             </div>
                                         </div>
                                         <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-[#0085ff]">Select Media</span>
-                                        <span className="text-[9px] text-gray-400 font-medium">Add up to 4 images</span>
+                                        <span className="text-[9px] text-gray-400 font-medium">Add up to 4 images or videos</span>
                                     </Button>
                                 </div>
                             </div>

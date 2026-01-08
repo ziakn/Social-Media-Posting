@@ -76,7 +76,8 @@ export default function GallerySelector({
             for (const file of files) {
                 const type = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : "document";
 
-                if (!allowedTypes.includes(type)) {
+                const supportedTypes = ["image", "video", "document"];
+                if (!supportedTypes.includes(type)) {
                     toast.error(`File type ${type} not allowed`);
                     continue;
                 }
