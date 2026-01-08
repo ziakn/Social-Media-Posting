@@ -39,9 +39,9 @@ async function getBlueSkyAccount(userId, accountId) {
 }
 
 /**
- * Upload image to BlueSky (Helper)
+ * Upload media (image/video) to BlueSky (Helper)
  */
-async function uploadImage(agent, media) {
+async function uploadMedia(agent, media) {
     const { readFile } = await import('fs/promises');
     const path = await import('path');
 
@@ -56,7 +56,10 @@ async function uploadImage(agent, media) {
         '.jpeg': 'image/jpeg',
         '.png': 'image/png',
         '.gif': 'image/gif',
-        '.webp': 'image/webp'
+        '.webp': 'image/webp',
+        '.mp4': 'video/mp4',
+        '.mov': 'video/quicktime',
+        '.webm': 'video/webm'
     };
 
     if (media.url.startsWith('http')) {
@@ -64,8 +67,8 @@ async function uploadImage(agent, media) {
         const response = await fetch(media.url);
         fileBuffer = await response.arrayBuffer();
         // Try to get MIME type from response if not provided or too generic
-        if (!mimeType || mimeType === 'image') {
-            mimeType = response.headers.get('content-type') || 'image/jpeg';
+        if (!mimeType || mimeType === 'image' || mimeType === 'video') {
+            mimeType = response.headers.get('content-type') || (media.url.endsWith('.mp4') ? 'video/mp4' : 'image/jpeg');
         }
     } else {
         // Handle local files - read from public directory
@@ -74,9 +77,9 @@ async function uploadImage(agent, media) {
         fileBuffer = await readFile(filePath);
 
         // Detect or normalize MIME type
-        if (!mimeType || mimeType === 'image') {
+        if (!mimeType || mimeType === 'image' || mimeType === 'video') {
             const ext = path.extname(media.url).toLowerCase();
-            mimeType = mimeMap[ext] || 'image/jpeg';
+            mimeType = mimeMap[ext] || (ext === '.mp4' ? 'video/mp4' : 'image/jpeg');
         }
     }
 
@@ -84,15 +87,22 @@ async function uploadImage(agent, media) {
     if (mimeType === 'image') mimeType = 'image/jpeg';
     if (mimeType === 'video') mimeType = 'video/mp4';
 
-    // Create a Blob from the buffer (similar to Facebook module)
+    const isVideo = mimeType.startsWith('video/');
     const blob = new Blob([fileBuffer], { type: mimeType });
 
     try {
         // Attempt 1: Using the SDK's uploadBlob with a Blob object
-        console.log(`BlueSky Upload Attempt 1 (SDK): type=${mimeType}, size=${fileBuffer.byteLength}`);
+        console.log(`BlueSky Upload Attempt 1 (SDK): type=${mimeType}, size=${fileBuffer.byteLength}, isVideo=${isVideo}`);
         const { data } = await agent.uploadBlob(blob);
 
         if (data?.blob) {
+            if (isVideo) {
+                return {
+                    $type: "app.bsky.embed.video",
+                    video: data.blob,
+                    alt: media.alt || ""
+                };
+            }
             return {
                 $type: "app.bsky.embed.images#image",
                 alt: media.alt || "",
@@ -111,7 +121,7 @@ async function uploadImage(agent, media) {
                 'Authorization': `Bearer ${agent.session.accessJwt}`,
                 'Content-Type': mimeType
             },
-            body: fileBuffer
+            body: Buffer.from(fileBuffer)
         });
 
         if (!response.ok) {
@@ -123,6 +133,13 @@ async function uploadImage(agent, media) {
         const data = await response.json();
 
         if (data?.blob) {
+            if (isVideo) {
+                return {
+                    $type: "app.bsky.embed.video",
+                    video: data.blob,
+                    alt: media.alt || ""
+                };
+            }
             return {
                 $type: "app.bsky.embed.images#image",
                 alt: media.alt || "",
@@ -131,7 +148,7 @@ async function uploadImage(agent, media) {
         }
     }
 
-    throw new Error("Failed to upload image to BlueSky: No blob data returned in either attempt");
+    throw new Error(`Failed to upload media to BlueSky: No blob data returned for ${mimeType}`);
 }
 
 /**
@@ -208,15 +225,20 @@ export async function createBlueSkyPost({
 
         // Handle Media
         if (media.length > 0) {
-            const images = [];
+            const uploadedMedia = [];
             for (const item of media) {
-                if (item.type === 'image' || !item.type) {
-                    const image = await uploadImage(agent, item);
-                    images.push(image);
-                }
+                const result = await uploadMedia(agent, item);
+                uploadedMedia.push(result);
             }
 
-            if (images.length > 0) {
+            // BlueSky allows either an array of images OR a single video
+            const images = uploadedMedia.filter(m => m.$type === "app.bsky.embed.images#image");
+            const video = uploadedMedia.find(m => m.$type === "app.bsky.embed.video");
+
+            if (video) {
+                // If there's a video, it takes precedence as BlueSky usually allow 1 video post
+                postRecord.embed = video;
+            } else if (images.length > 0) {
                 postRecord.embed = {
                     $type: "app.bsky.embed.images",
                     images: images

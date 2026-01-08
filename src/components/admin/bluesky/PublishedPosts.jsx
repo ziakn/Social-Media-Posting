@@ -98,17 +98,26 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
 
     const handleGallerySelect = (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
+
+        // BlueSky specific: If any video is selected, it should ideally be the only media
+        const hasVideo = items.some(item => item.mediaType === 'video' || item.fileType?.startsWith('video'));
         const newMedia = items.map(item => ({
-            url: item.fileUrl,
-            name: item.fileName,
-            size: item.fileSize,
-            type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image')
+            url: item.fileUrl, name: item.fileName, size: item.fileSize,
+            type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image'),
+            mimeType: item.fileType, file: null
         }));
 
-        setPostContent(prev => ({
-            ...prev,
-            media: [...prev.media, ...newMedia].slice(0, 4) // BlueSky allows up to 4 images
-        }));
+        if (hasVideo) {
+            // Take only the first video and replace current media
+            const firstVideo = newMedia.find(m => m.type === 'video');
+            setPostContent(prev => ({ ...prev, media: [firstVideo] }));
+        } else {
+            // Filter out existing videos if we are adding images
+            setPostContent(prev => ({
+                ...prev,
+                media: [...prev.media.filter(m => m.type !== 'video'), ...newMedia].slice(0, 4)
+            }));
+        }
         setGalleryOpen(false);
     };
 
