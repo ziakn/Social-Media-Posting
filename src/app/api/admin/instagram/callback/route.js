@@ -93,7 +93,7 @@ async function exchangeCodeForToken(code) {
   formData.append("client_id", process.env.INSTAGRAM_APP_ID);
   formData.append("client_secret", process.env.INSTAGRAM_APP_SECRET);
   formData.append("grant_type", "authorization_code");
-  formData.append("redirect_uri", process.env.IG_REDIRECT_URI);
+  formData.append("redirect_uri", process.env.INSTAGRAM_REDIRECT_URI);
   formData.append("code", code);
 
   const res = await fetch("https://api.instagram.com/oauth/access_token", {

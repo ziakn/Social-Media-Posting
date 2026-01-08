@@ -36,7 +36,7 @@ export async function GET(request) {
                     client_id: process.env.THREDS_APP_ID,
                     client_secret: process.env.THREDS_APP_SECRET,
                     grant_type: "authorization_code",
-                    redirect_uri: process.env.TH_REDIRECT_URI,
+                    redirect_uri: process.env.THREADS_REDIRECT_URI,
                     code: code,
                 }),
             }

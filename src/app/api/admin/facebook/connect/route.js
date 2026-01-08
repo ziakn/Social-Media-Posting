@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const redirect_uri = process.env.FB_REDIRECT_URI;
+  const redirect_uri = process.env.FACEBOOK_REDIRECT_URI;
   const app_id = process.env.FACEBOOK_APP_ID;
 
   const scopes = [
