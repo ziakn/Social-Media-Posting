@@ -15,6 +15,7 @@ export default function GalleryModal({
     onOpenChange,
     onSelect,
     allowMultiple = false,
+    maxSelection = Infinity,
     allowedTypes,
     title = "Select Media",
 }) {
@@ -37,6 +38,7 @@ export default function GalleryModal({
                     <GallerySelector
                         onSelect={handleSelect}
                         allowMultiple={allowMultiple}
+                        maxSelection={maxSelection}
                         allowedTypes={allowedTypes}
                     />
                 </div>

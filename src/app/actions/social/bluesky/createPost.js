@@ -152,6 +152,49 @@ async function uploadMedia(agent, media) {
 }
 
 /**
+ * Get metadata for a URL (Helper for link cards)
+ */
+async function getLinkMetadata(agent, url) {
+    try {
+        const response = await fetch(url);
+        const html = await response.text();
+
+        const title = html.match(/<title>(.*?)<\/title>/i)?.[1] || url;
+        const description = html.match(/<meta name="description" content="(.*?)"/i)?.[1] ||
+            html.match(/<meta property="og:description" content="(.*?)"/i)?.[1] || "";
+        const ogImage = html.match(/<meta property="og:image" content="(.*?)"/i)?.[1];
+
+        let thumbBlob = null;
+        if (ogImage) {
+            try {
+                const imgRes = await fetch(ogImage);
+                const imgBuffer = await imgRes.arrayBuffer();
+                const uploadRes = await agent.uploadBlob(new Blob([imgBuffer], { type: imgRes.headers.get('content-type') || 'image/jpeg' }));
+                thumbBlob = uploadRes.data.blob;
+            } catch (e) {
+                console.warn("Failed to upload link thumbnail:", e.message);
+            }
+        }
+
+        return {
+            $type: "app.bsky.embed.external",
+            external: {
+                uri: url,
+                title: title,
+                description: description,
+                thumb: thumbBlob
+            }
+        };
+    } catch (error) {
+        console.error("Metadata extraction failed:", error);
+        return {
+            $type: "app.bsky.embed.external",
+            external: { uri: url, title: url, description: "" }
+        };
+    }
+}
+
+/**
  * Get all connected BlueSky accounts for the current user
  */
 export async function getUserBlueSkyAccounts() {
@@ -187,6 +230,7 @@ export async function createBlueSkyPost({
     pageId, // accountId
     text = "",
     media = [],
+    link = null,
     scheduling = null
 }) {
     try {
@@ -199,7 +243,7 @@ export async function createBlueSkyPost({
                 userId: user.id,
                 accountId: pageId,
                 platform: "bluesky",
-                content: { text, media },
+                content: { text, media, link },
                 status: "scheduled",
                 scheduledAt: scheduling,
                 createdAt: serverTimestamp(),
@@ -246,6 +290,11 @@ export async function createBlueSkyPost({
             }
         }
 
+        // Handle Link Card (External Embed)
+        if (link && !postRecord.embed) {
+            postRecord.embed = await getLinkMetadata(agent, link);
+        }
+
         const res = await agent.post(postRecord);
 
         // Save to Firestore
@@ -253,7 +302,7 @@ export async function createBlueSkyPost({
             userId: user.id,
             accountId: pageId,
             platform: "bluesky",
-            content: { text, media },
+            content: { text, media, link },
             blueskyUri: res.uri,
             blueskyCid: res.cid,
             status: "published",

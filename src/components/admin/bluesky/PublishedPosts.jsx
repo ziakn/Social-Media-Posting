@@ -30,7 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import {
     LayoutGrid, List, Calendar as CalendarIcon, Plus, X,
     ImageIcon, Play, Edit, Trash2, Send, Loader2, Check,
-    ChevronUp, ChevronDown, Upload, BarChart3, Clock
+    ChevronUp, ChevronDown, Upload, BarChart3, Clock, Link2
 } from "lucide-react";
 
 // Server Actions
@@ -58,12 +58,6 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
 
     // BlueSky doesn't distinguish "thread" vs "carousel" in the same way (everything is a post with embed),
     // but the UI logic can remain "thread" based for consistency.
-    const [postType, setPostType] = useState(initialData?.postType || "post");
-    const [postContent, setPostContent] = useState({
-        message: initialData?.content?.text || initialData?.message || "",
-        media: initialData?.content?.media || initialData?.mediaUrls || (initialData?.content?.mediaUrl ? [{ url: initialData.content.mediaUrl, type: initialData.content.mediaType }] : []),
-    });
-
     const [scheduling, setScheduling] = useState({
         schedule: initialData?.scheduling?.schedule || !!initialData?.scheduledAt,
         date: initialData?.scheduling?.date || (initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date()),
@@ -73,6 +67,13 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
 
     const [accounts, setAccounts] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState(initialData?.accountId || null);
+
+    const [postType, setPostType] = useState(initialData?.postType || "text");
+    const [postContent, setPostContent] = useState({
+        message: initialData?.message || initialData?.content?.caption || initialData?.content?.text || "",
+        media: initialData?.mediaUrls || (initialData?.content?.media ? (Array.isArray(initialData.content.media) ? initialData.content.media : [initialData.content.media]) : []),
+        link: initialData?.additionalData?.link || initialData?.link || "",
+    });
 
     const [galleryOpen, setGalleryOpen] = useState(false);
     const [galleryMediaType, setGalleryMediaType] = useState(["image", "video"]); // Enabled video support
@@ -99,7 +100,7 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
     const handleGallerySelect = (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
 
-        // BlueSky specific: If any video is selected, it should ideally be the only media
+        // BlueSky specific: If any video is selected, it replaces others
         const hasVideo = items.some(item => item.mediaType === 'video' || item.fileType?.startsWith('video'));
         const newMedia = items.map(item => ({
             url: item.fileUrl, name: item.fileName, size: item.fileSize,
@@ -108,15 +109,16 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
         }));
 
         if (hasVideo) {
-            // Take only the first video and replace current media
-            const firstVideo = newMedia.find(m => m.type === 'video');
-            setPostContent(prev => ({ ...prev, media: [firstVideo] }));
+            // Priority: Single video
+            const videoItem = newMedia.find(m => m.type === 'video') || newMedia[0];
+            setPostContent(prev => ({ ...prev, media: [videoItem] }));
         } else {
-            // Filter out existing videos if we are adding images
-            setPostContent(prev => ({
-                ...prev,
-                media: [...prev.media.filter(m => m.type !== 'video'), ...newMedia].slice(0, 4)
-            }));
+            // Images: allow multiple up to 4
+            setPostContent(prev => {
+                const existingImages = prev.media.filter(m => m.type === 'image');
+                const combined = [...existingImages, ...newMedia].slice(0, 4);
+                return { ...prev, media: combined };
+            });
         }
         setGalleryOpen(false);
     };
@@ -155,14 +157,16 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
                         postId: initialData.id,
                         accountId: selectedAccount,
                         text: postContent.message,
-                        media: postContent.media,
+                        media: (postType === 'images' || postType === 'video') ? postContent.media : [],
+                        link: postType === 'link' ? postContent.link : null,
                         scheduling: scheduledTime
                     });
                 } else {
                     result = await createBlueSkyPost({
                         pageId: selectedAccount,
                         text: postContent.message,
-                        media: postContent.media,
+                        media: (postType === 'images' || postType === 'video') ? postContent.media : [],
+                        link: postType === 'link' ? postContent.link : null,
                         scheduling: scheduledTime
                     });
                 }
@@ -242,6 +246,27 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
 
                             {/* Content */}
                             <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-black text-gray-900 uppercase">Format</h3>
+                                    <div className="flex gap-1 bg-gray-50 p-1 rounded-lg">
+                                        {["text", "images", "video", "link"].map(type => (
+                                            <button
+                                                key={type}
+                                                disabled={isReadOnly || isEditing}
+                                                onClick={() => { setPostType(type); setPostContent(prev => ({ ...prev, media: [], link: "" })); }}
+                                                className={cn(
+                                                    "px-4 py-1.5 rounded-md text-[9px] font-black uppercase transition-all",
+                                                    postType === type
+                                                        ? "bg-white text-blue-600 shadow-sm ring-1 ring-black/5 opacity-100"
+                                                        : "text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                                )}
+                                            >
+                                                {type}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="space-y-4">
                                     <SocialCaptionEditor
                                         disabled={isReadOnly}
@@ -258,20 +283,43 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
                                         </span>
                                     </div>
                                 </div>
+
+                                {postType === "link" && (
+                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <Label className="text-[10px] font-black uppercase text-gray-400 tracking-widest pl-1">Target URL</Label>
+                                        <div className="relative group">
+                                            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                <Link2 className="h-4 w-4 text-blue-500/50 group-focus-within:text-blue-500 transition-colors" />
+                                            </div>
+                                            <Input
+                                                disabled={isReadOnly}
+                                                placeholder="https://bsky.app or any website..."
+                                                value={postContent.link}
+                                                onChange={(e) => setPostContent(prev => ({ ...prev, link: e.target.value }))}
+                                                className="rounded-2xl h-12 bg-gray-50/50 border-gray-100 pl-11 text-sm focus:ring-4 focus:ring-blue-50 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 <Separator className="bg-gray-50/50" />
 
-                                <div className="space-y-4">
-                                    <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Media</Label>
-                                    <Button disabled={isReadOnly} variant="outline" onClick={() => { setGalleryMediaType(["image", "video"]); setGalleryOpen(true); }} className="h-28 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#0085ff] hover:bg-blue-50/50 flex flex-col gap-2 group transition-all duration-300">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-gray-50 group-hover:bg-[#0085ff] group-hover:text-white rounded-lg transition-colors duration-300">
-                                                <ImageIcon className="h-5 w-5" />
+                                {(postType === "images" || postType === "video") && (
+                                    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                        <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Media</Label>
+                                        <Button disabled={isReadOnly} variant="outline" onClick={() => { setGalleryMediaType(postType === "video" ? ["video"] : ["image"]); setGalleryOpen(true); }} className="h-28 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#0085ff] hover:bg-blue-50/50 flex flex-col gap-2 group transition-all duration-300">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-gray-50 group-hover:bg-[#0085ff] group-hover:text-white rounded-lg transition-colors duration-300">
+                                                    <ImageIcon className="h-5 w-5" />
+                                                </div>
                                             </div>
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-[#0085ff]">Select Media</span>
-                                        <span className="text-[9px] text-gray-400 font-medium">Add up to 4 images or videos</span>
-                                    </Button>
-                                </div>
+                                            <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-[#0085ff]">Select Media</span>
+                                            <span className="text-[9px] text-gray-400 font-medium">
+                                                {postType === "video" ? "Add 1 video (max 60s)" : "Add up to 4 images"}
+                                            </span>
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -375,7 +423,14 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
                     </Button>
                 )}
             </div>
-            <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={true} maxSelection={4} />
+            <GalleryModal
+                open={galleryOpen}
+                onOpenChange={setGalleryOpen}
+                onSelect={handleGallerySelect}
+                allowedTypes={galleryMediaType}
+                allowMultiple={postType === 'images'}
+                maxSelection={postType === 'images' ? 4 : 1}
+            />
         </div>
     );
 }

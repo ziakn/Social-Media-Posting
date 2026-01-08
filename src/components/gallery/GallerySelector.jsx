@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 export default function GallerySelector({
     onSelect,
     allowMultiple = false,
+    maxSelection = Infinity,
     allowedTypes = ["image", "video"], // 'image', 'video', 'document'
     className,
 }) {
@@ -165,25 +166,30 @@ export default function GallerySelector({
     };
 
     const handleSelect = (item) => {
-        if (allowMultiple) {
-            setSelectedItems(prev => {
-                const isSelected = prev.some(i => i.id === item.id);
-                if (isSelected) {
-                    return prev.filter(i => i.id !== item.id);
-                } else {
-                    return [...prev, item];
-                }
-            });
-        } else {
-            setSelectedItems([item]);
+        if (!allowMultiple || maxSelection === 1) {
+            onSelect(item);
+            return;
         }
+
+        setSelectedItems(prev => {
+            const isSelected = prev.some(i => i.id === item.id);
+            if (isSelected) {
+                return prev.filter(i => i.id !== item.id);
+            } else {
+                if (prev.length >= maxSelection) {
+                    toast.error(`You can only select up to ${maxSelection} items`);
+                    return prev;
+                }
+                return [...prev, item];
+            }
+        });
     };
 
     const handleConfirmSelection = () => {
-        if (allowMultiple) {
-            onSelect(selectedItems);
+        if (!allowMultiple || maxSelection === 1) {
+            if (selectedItems.length > 0) onSelect(selectedItems[0]);
         } else {
-            onSelect(selectedItems[0]);
+            onSelect(selectedItems);
         }
     };
 

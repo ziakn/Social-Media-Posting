@@ -259,7 +259,7 @@ export async function deleteBlueSkyPost(postId) {
 /**
  * Update a scheduled BlueSky post
  */
-export async function updateBlueSkyPost({ postId, text, media, scheduling, accountId }) {
+export async function updateBlueSkyPost({ postId, text, media, link, scheduling, accountId }) {
     try {
         const user = await getAuthenticatedUser();
         const postRef = doc(db, "bluesky_posts", postId);
@@ -272,7 +272,7 @@ export async function updateBlueSkyPost({ postId, text, media, scheduling, accou
         if (postData.status === "published") return { success: false, message: "Cannot edit published posts" };
 
         const updates = {
-            content: { text, media },
+            content: { text, media, link },
             accountId,
             updatedAt: serverTimestamp()
         };

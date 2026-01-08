@@ -419,7 +419,14 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
           </Button>
         </div>
       )}
-      <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={postType !== 'video'} maxSelection={10} />
+      <GalleryModal
+        open={galleryOpen}
+        onOpenChange={setGalleryOpen}
+        onSelect={handleGallerySelect}
+        allowedTypes={galleryMediaType}
+        allowMultiple={postType !== 'video'}
+        maxSelection={postType === 'video' ? 1 : 10}
+      />
     </div>
   );
 }
