@@ -39,7 +39,7 @@ export default function BlueSkyCalendarViewComponent({
             {loadingCalendar && (
                 <div className="absolute inset-0 z-10 bg-white/80 flex items-center justify-center backdrop-blur-sm">
                     <div className="flex flex-col items-center gap-3">
-                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-50 border-t-[#0085ff]" />
                         <p className="text-sm font-medium text-gray-500">Loading...</p>
                     </div>
                 </div>

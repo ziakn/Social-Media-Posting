@@ -103,29 +103,21 @@ export default function BlueSkyPreview({
                         </div>
 
                         {/* Interactive Actions */}
-                        <div className="flex items-center justify-between py-2 text-slate-500 max-w-[300px]">
-                            <div className="flex items-center gap-1 group cursor-pointer">
-                                <div className="p-1.5 rounded-full group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                    <MessageCircle className="h-4.5 w-4.5" />
-                                </div>
-                                <span className="text-xs">0</span>
+                        <div className="flex items-center gap-5 py-2 text-gray-900 mt-2">
+                            <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                <MessageCircle className="h-5 w-5 stroke-[2] group-hover:text-blue-500 transition-colors" />
+                                <span className="text-[13px] font-medium text-gray-500">0</span>
                             </div>
-                            <div className="flex items-center gap-1 group cursor-pointer">
-                                <div className="p-1.5 rounded-full group-hover:bg-green-50 group-hover:text-green-500 transition-colors">
-                                    <Repeat2 className="h-4.5 w-4.5" />
-                                </div>
-                                <span className="text-xs">0</span>
+                            <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                <Repeat2 className="h-5 w-5 stroke-[2] group-hover:text-green-500 transition-colors" />
+                                <span className="text-[13px] font-medium text-gray-500">0</span>
                             </div>
-                            <div className="flex items-center gap-1 group cursor-pointer">
-                                <div className="p-1.5 rounded-full group-hover:bg-pink-50 group-hover:text-pink-500 transition-colors">
-                                    <Heart className="h-4.5 w-4.5" />
-                                </div>
-                                <span className="text-xs">0</span>
+                            <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                <Heart className="h-5 w-5 stroke-[2] group-hover:text-pink-500 transition-colors" />
+                                <span className="text-[13px] font-medium text-gray-500">0</span>
                             </div>
-                            <div className="flex items-center group cursor-pointer">
-                                <div className="p-1.5 rounded-full group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                    <MoreHorizontal className="h-4.5 w-4.5" />
-                                </div>
+                            <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                <Share2 className="h-5 w-5 stroke-[2] group-hover:text-gray-600 transition-colors" />
                             </div>
                         </div>
                     </div>

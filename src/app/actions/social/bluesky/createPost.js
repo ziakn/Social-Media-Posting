@@ -88,12 +88,13 @@ async function uploadMedia(agent, media) {
     if (mimeType === 'video') mimeType = 'video/mp4';
 
     const isVideo = mimeType.startsWith('video/');
-    const blob = new Blob([fileBuffer], { type: mimeType });
+    const blobData = Buffer.from(fileBuffer);
+    const blobSize = blobData.length;
 
     try {
-        // Attempt 1: Using the SDK's uploadBlob with a Blob object
-        console.log(`BlueSky Upload Attempt 1 (SDK): type=${mimeType}, size=${fileBuffer.byteLength}, isVideo=${isVideo}`);
-        const { data } = await agent.uploadBlob(blob);
+        // Attempt 1: Using the SDK's uploadBlob with Buffer (Server-side standardized)
+        console.log(`BlueSky Upload Attempt 1 (SDK): type=${mimeType}, size=${blobSize}, isVideo=${isVideo}`);
+        const { data } = await agent.uploadBlob(blobData, { encoding: mimeType });
 
         if (data?.blob) {
             if (isVideo) {
@@ -112,7 +113,7 @@ async function uploadMedia(agent, media) {
     } catch (uploadError) {
         console.warn("BlueSky SDK upload failed, attempting direct XRPC fetch:", uploadError.message);
 
-        // Attempt 2: Direct fetch to XRPC endpoint (bypass SDK validation)
+        // Attempt 2: Direct fetch to XRPC endpoint (bypass SDK validation if necessary)
         const xrpcUrl = `${agent.service.href}xrpc/com.atproto.repo.uploadBlob`;
 
         const response = await fetch(xrpcUrl, {
@@ -121,7 +122,7 @@ async function uploadMedia(agent, media) {
                 'Authorization': `Bearer ${agent.session.accessJwt}`,
                 'Content-Type': mimeType
             },
-            body: Buffer.from(fileBuffer)
+            body: blobData
         });
 
         if (!response.ok) {
@@ -168,22 +169,36 @@ async function getLinkMetadata(agent, url) {
         if (ogImage) {
             try {
                 const imgRes = await fetch(ogImage);
-                const imgBuffer = await imgRes.arrayBuffer();
-                const uploadRes = await agent.uploadBlob(new Blob([imgBuffer], { type: imgRes.headers.get('content-type') || 'image/jpeg' }));
-                thumbBlob = uploadRes.data.blob;
+                if (imgRes.ok) {
+                    const contentType = imgRes.headers.get('content-type') || 'image/jpeg';
+                    const imgBuffer = await imgRes.arrayBuffer();
+
+                    // BlueSky thumb limit is technically the same 1MB, let's play safe
+                    if (imgBuffer.byteLength < 900 * 1024) {
+                        const uploadRes = await agent.uploadBlob(Buffer.from(imgBuffer), { encoding: contentType });
+                        thumbBlob = uploadRes.data.blob;
+                    } else {
+                        console.warn("Link thumbnail too large, skipping:", imgBuffer.byteLength);
+                    }
+                }
             } catch (e) {
                 console.warn("Failed to upload link thumbnail:", e.message);
             }
         }
 
+        const external = {
+            uri: url,
+            title: title,
+            description: description,
+        };
+
+        if (thumbBlob) {
+            external.thumb = thumbBlob;
+        }
+
         return {
             $type: "app.bsky.embed.external",
-            external: {
-                uri: url,
-                title: title,
-                description: description,
-                thumb: thumbBlob
-            }
+            external: external
         };
     } catch (error) {
         console.error("Metadata extraction failed:", error);

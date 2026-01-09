@@ -300,10 +300,10 @@ export default function BlueSkyFullCalendar({
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
                                                                     onClick={(e) => handlePublishNow(e, post)}
-                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group"
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-blue-50 transition-colors group"
                                                                 >
-                                                                    <Send className="h-5 w-5 text-purple-600" />
-                                                                    <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
+                                                                    <Send className="h-5 w-5 text-[#0085ff]" />
+                                                                    <span className="font-bold text-[13px] text-[#0085ff]">Publish Now</span>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem
                                                                     className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group"

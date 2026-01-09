@@ -97,26 +97,78 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
         }
     }, [postType, isEditing]);
 
-    const handleGallerySelect = (selectedItems) => {
+    // Helper: Compress image to stay under BlueSky limit (~976KB)
+    const compressImage = async (mediaItem) => {
+        if (mediaItem.type !== 'image' || mediaItem.size < 900 * 1024) return mediaItem;
+
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.src = mediaItem.url;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Max resolution for social posts usually doesn't need to exceed 2000px
+                const MAX_DIM = 2000;
+                if (width > MAX_DIM || height > MAX_DIM) {
+                    if (width > height) {
+                        height *= MAX_DIM / width;
+                        width = MAX_DIM;
+                    } else {
+                        width *= MAX_DIM / height;
+                        height = MAX_DIM;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Start with 0.8 quality
+                canvas.toBlob((blob) => {
+                    if (!blob) return resolve(mediaItem);
+                    resolve({
+                        ...mediaItem,
+                        url: URL.createObjectURL(blob),
+                        size: blob.size,
+                        file: new File([blob], mediaItem.name, { type: 'image/jpeg' })
+                    });
+                }, 'image/jpeg', 0.8);
+            };
+            img.onerror = () => resolve(mediaItem);
+        });
+    };
+
+    const handleGallerySelect = async (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
 
+        // Process items (compress large images for BlueSky)
+        const processedItems = [];
+        for (const item of items) {
+            const mediaItem = {
+                url: item.fileUrl, name: item.fileName, size: item.fileSize,
+                type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image'),
+                mimeType: item.fileType, file: null
+            };
+            const processedItem = await compressImage(mediaItem);
+            processedItems.push(processedItem);
+        }
+
         // BlueSky specific: If any video is selected, it replaces others
-        const hasVideo = items.some(item => item.mediaType === 'video' || item.fileType?.startsWith('video'));
-        const newMedia = items.map(item => ({
-            url: item.fileUrl, name: item.fileName, size: item.fileSize,
-            type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image'),
-            mimeType: item.fileType, file: null
-        }));
+        const hasVideo = processedItems.some(item => item.type === 'video');
 
         if (hasVideo) {
             // Priority: Single video
-            const videoItem = newMedia.find(m => m.type === 'video') || newMedia[0];
+            const videoItem = processedItems.find(m => m.type === 'video') || processedItems[0];
             setPostContent(prev => ({ ...prev, media: [videoItem] }));
         } else {
             // Images: allow multiple up to 4
             setPostContent(prev => {
                 const existingImages = prev.media.filter(m => m.type === 'image');
-                const combined = [...existingImages, ...newMedia].slice(0, 4);
+                const combined = [...existingImages, ...processedItems].slice(0, 4);
                 return { ...prev, media: combined };
             });
         }
@@ -519,7 +571,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
 
                         <div className="space-y-0.5">
                             <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-gray-900">
-                                Content Studio
+                                BlueSky Studio
                             </h1>
                             <p className="text-gray-500 max-w-md text-xs font-medium leading-relaxed">
                                 Manage your BlueSky presence with precision scheduling and engagement tools.
@@ -541,6 +593,11 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                                         )}
                                     </div>
                                 ))}
+                                {accounts.length > 3 && (
+                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-[#0085ff] flex items-center justify-center shadow-sm z-10">
+                                        <span className="text-[10px] font-black text-white">+{accounts.length - 3}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
 
@@ -553,7 +610,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                         >
                             <div className="relative flex items-center gap-2">
                                 <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                <span className="text-sm">Compose Post</span>
+                                <span className="text-sm">Compose Masterpiece</span>
                             </div>
                         </Button>
                     </div>
@@ -610,7 +667,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                                     <div className="w-8 h-8 bg-[#0085ff] rounded-xl shadow-lg flex items-center justify-center transform rotate-3"><BlueSkyLogo className="h-4 w-4 text-white" /></div>
                                     <div className="flex flex-col">
                                         <DialogTitle className="text-sm font-black text-gray-900 leading-none">Post Creator</DialogTitle>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">BlueSky Studio</span>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">BlueSky Studio v2.0</span>
                                     </div>
                                 </div>
                                 <Button variant="ghost" size="icon" onClick={() => {

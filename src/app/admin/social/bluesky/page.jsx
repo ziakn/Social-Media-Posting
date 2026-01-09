@@ -41,7 +41,7 @@ export default function BlueSkyAccountsDashboard() {
     if (accounts.length === 0)
         return (
             <div className="container mx-auto py-20 text-center max-w-xl">
-                <div className="bg-black rounded-full p-8 mb-6 inline-block shadow-lg">
+                <div className="bg-[#0085ff] rounded-full p-8 mb-6 inline-block shadow-lg">
                     <BlueSkyLogo className="h-16 w-16 text-white" />
                 </div>
                 <h2 className="text-3xl font-extrabold text-neutral-800 mb-3">No BlueSky Accounts Found</h2>
@@ -49,7 +49,7 @@ export default function BlueSkyAccountsDashboard() {
                     Connect your BlueSky account to share text updates and join public conversations programmatically.
                 </p>
                 <Button
-                    className="bg-neutral-800 hover:bg-neutral-900 text-white px-8 py-3 text-lg font-semibold shadow-lg rounded-xl flex items-center justify-center gap-2 mx-auto"
+                    className="bg-[#0085ff] hover:bg-blue-600 text-white px-8 py-3 text-lg font-semibold shadow-lg rounded-xl flex items-center justify-center gap-2 mx-auto"
                     size="lg"
                     onClick={() => window.location.href = "/api/admin/bluesky/connect"}
                 >
@@ -86,7 +86,7 @@ export default function BlueSkyAccountsDashboard() {
                     >
                         <CardHeader className="flex items-center justify-between pb-2">
                             <div className="flex items-center gap-3">
-                                <div className="p-3 bg-black rounded-lg">
+                                <div className="p-3 bg-[#0085ff] rounded-lg">
                                     <BlueSkyLogo className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
@@ -128,7 +128,7 @@ export default function BlueSkyAccountsDashboard() {
                         <CardFooter className="flex justify-end">
                             <Button
                                 size="sm"
-                                className="bg-neutral-800 hover:bg-neutral-900 text-white flex items-center gap-1 rounded-lg shadow"
+                                className="bg-[#0085ff] hover:bg-blue-600 text-white flex items-center gap-1 rounded-lg shadow"
                                 onClick={() => router.push(`${ROUTES.ADMIN_BLUESKY}/posts`)}
                             >
                                 Manage Posts
@@ -142,7 +142,7 @@ export default function BlueSkyAccountsDashboard() {
             {/* Info Card */}
             <Card className="mt-12">
                 <CardContent className="p-6 flex items-start gap-3">
-                    <div className="bg-black p-2 rounded-lg">
+                    <div className="bg-[#0085ff] p-2 rounded-lg">
                         <BlueSkyLogo className="w-5 h-5 text-white" />
                     </div>
                     <div>

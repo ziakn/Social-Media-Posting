@@ -267,11 +267,24 @@ export default function BlueSkyAnalyticsModal({
                                     <div className="text-[11px] font-black uppercase text-gray-400 tracking-widest">Preview</div>
                                 </div>
                                 <div className="p-5 flex flex-col gap-4">
-                                    <div className="flex items-start gap-3">
-                                        <Avatar className="h-10 w-10 border border-gray-50 sticky top-0">
-                                            <AvatarImage src={post?.profilePicture} className="object-cover" />
-                                            <AvatarFallback className="bg-gray-100 font-bold text-[10px]">{post?.username?.[0]}</AvatarFallback>
-                                        </Avatar>
+                                    <div className="flex items-start gap-3 relative">
+                                        <div className="flex flex-col items-center shrink-0 w-10">
+                                            <div className="relative z-10">
+                                                <Avatar className="h-10 w-10 border border-gray-50">
+                                                    <AvatarImage src={post?.profilePicture} className="object-cover" />
+                                                    <AvatarFallback className="bg-gray-100 font-bold text-[10px]">{post?.username?.[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <div className="absolute -bottom-1 -right-1 bg-[#0085ff] rounded-full p-1 border-2 border-white shadow-sm">
+                                                    <BlueSkyLogo className="h-2 w-2 text-white" />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 w-[2px] bg-gray-100 my-2 rounded-full" />
+                                            <div className="flex -space-x-1 mt-1 pb-2">
+                                                {[1, 2].map(i => (
+                                                    <div key={i} className="w-3.5 h-3.5 rounded-full border border-white bg-gray-200" />
+                                                ))}
+                                            </div>
+                                        </div>
                                         <div className="flex-1 flex flex-col min-w-0">
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-1 min-w-0">
@@ -309,11 +322,22 @@ export default function BlueSkyAnalyticsModal({
                                                     </div>
                                                 )}
 
-                                                <div className="flex items-center gap-4 text-black pt-1">
-                                                    <Heart className="h-[20px] w-[20px] stroke-[1.5px]" />
-                                                    <MessageCircle className="h-[20px] w-[20px] stroke-[1.5px] transform -scale-x-100" />
-                                                    <Repeat2 className="h-[20px] w-[20px] stroke-[1.5px]" />
-                                                    <Send className="h-[18px] w-[18px] stroke-[1.5px]" />
+                                                <div className="flex items-center gap-5 pt-2 text-gray-900 mt-2">
+                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                                        <MessageCircle className="h-5 w-5 stroke-[2] group-hover:text-blue-500 transition-colors" />
+                                                        <span className="text-[13px] font-medium text-gray-500">0</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                                        <Repeat2 className="h-5 w-5 stroke-[2] group-hover:text-green-500 transition-colors" />
+                                                        <span className="text-[13px] font-medium text-gray-500">0</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                                        <Heart className="h-5 w-5 stroke-[2] group-hover:text-pink-500 transition-colors" />
+                                                        <span className="text-[13px] font-medium text-gray-500">0</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
+                                                        <Send className="h-5 w-5 stroke-[2] group-hover:text-gray-600 transition-colors" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

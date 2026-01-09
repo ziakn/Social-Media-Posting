@@ -369,7 +369,7 @@ export default function BlueSkyViewComponent({
                         return (
                             <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 bg-white p-5 cursor-pointer rounded-2xl", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => handleEdit(post)}>
                                 <div className="flex gap-3 lg:gap-4 relative">
-                                    {/* Left: Avatar */}
+                                    {/* Left: Avatar & Vertical Line */}
                                     <div className="flex flex-col items-center shrink-0 w-10 lg:w-12">
                                         <div className="relative">
                                             <Avatar className="h-10 w-10 lg:h-12 lg:h-12 border border-gray-50 shadow-sm">
@@ -379,8 +379,14 @@ export default function BlueSkyViewComponent({
                                                 </AvatarFallback>
                                             </Avatar>
                                             <div className="absolute -bottom-1 -right-1 bg-[#0085ff] rounded-full p-1 border-2 border-white shadow-sm">
-                                                <BlueSkyLogo className="h-2.5 w-2.5 text-white" />
+                                                <BlueSkyLogo className="h-2 w-2 text-white" />
                                             </div>
+                                        </div>
+                                        <div className="flex-1 w-[2px] bg-gray-100 my-2 rounded-full" />
+                                        <div className="flex -space-x-1 mt-1 pb-1">
+                                            {[1, 2].map(i => (
+                                                <div key={i} className="w-3.5 h-3.5 rounded-full border border-white bg-gray-200" />
+                                            ))}
                                         </div>
                                     </div>
 
