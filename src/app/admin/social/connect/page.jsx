@@ -30,6 +30,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
+import { BlueSkyLogo } from "@/components/icons/BlueSkyLogo";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +48,7 @@ const ICONS = {
   whatsapp: MessageCircle,
   twitter: Twitter,
   telegram: Send,
-  bluesky: Globe,
+  bluesky: BlueSkyLogo,
   reddit: MessageSquare,
   threads: ThreadsLogo,
   tiktok: TiktokLogo,
