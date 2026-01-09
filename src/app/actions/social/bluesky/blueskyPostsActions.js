@@ -6,6 +6,8 @@ import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, get
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { uploadMedia, getLinkMetadata } from "./createPost";
+import { RichText } from "@atproto/api";
 
 /**
  * Get authenticated user (Helper)
@@ -204,13 +206,44 @@ export async function publishBlueSkyPostNow(postId) {
         const agent = new BskyAgent({ service: "https://bsky.social" });
         await agent.login({ identifier: account.identifier, password: account.password });
 
-        // Logic to construct post (similar to createPost but from stored data)
+        // Process Rich Text (Facets for mentions/links)
+        const rt = new RichText({ text: post.content.text || "" });
+        await rt.detectFacets(agent);
+
         const record = {
-            text: post.content.text || "",
+            text: rt.text,
+            facets: rt.facets,
             createdAt: new Date().toISOString()
         };
-        // Note: For full fidelity, we'd need to re-upload media or store blobs properly. 
-        // For now, assuming text-only or basic media handling similar to createPost.
+
+        const media = post.content.media || [];
+        const link = post.content.link || null;
+
+        // Handle Media
+        if (media.length > 0) {
+            const uploadedMedia = [];
+            for (const item of media) {
+                const result = await uploadMedia(agent, item);
+                uploadedMedia.push(result);
+            }
+
+            const images = uploadedMedia.filter(m => m.$type === "app.bsky.embed.images#image");
+            const video = uploadedMedia.find(m => m.$type === "app.bsky.embed.video");
+
+            if (video) {
+                record.embed = video;
+            } else if (images.length > 0) {
+                record.embed = {
+                    $type: "app.bsky.embed.images",
+                    images: images
+                };
+            }
+        }
+
+        // Handle Link Card (External Embed)
+        if (link && !record.embed) {
+            record.embed = await getLinkMetadata(agent, link);
+        }
 
         const res = await agent.post(record);
 
@@ -220,10 +253,13 @@ export async function publishBlueSkyPostNow(postId) {
             blueskyCid: res.cid,
             publishedAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
+            scheduledAt: null, // Reset schedule for immediate publish
             delete: 0
         });
 
         revalidatePath("/admin/social/bluesky/posts");
+        revalidatePath("/admin/social/bluesky/calendar");
+
         return { success: true, message: "Post published successfully", blueskyUri: res.uri };
 
     } catch (error) {

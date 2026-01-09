@@ -41,7 +41,7 @@ async function getBlueSkyAccount(userId, accountId) {
 /**
  * Upload media (image/video) to BlueSky (Helper)
  */
-async function uploadMedia(agent, media) {
+export async function uploadMedia(agent, media) {
     const { readFile } = await import('fs/promises');
     const path = await import('path');
 
@@ -155,7 +155,7 @@ async function uploadMedia(agent, media) {
 /**
  * Get metadata for a URL (Helper for link cards)
  */
-async function getLinkMetadata(agent, url) {
+export async function getLinkMetadata(agent, url) {
     try {
         const response = await fetch(url);
         const html = await response.text();
