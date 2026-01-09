@@ -15,8 +15,8 @@ export default function BlueSkyPreview({
     compact = false,
     noBorder = false
 }) {
-    const { text, media = [] } = content || {};
-    const postMessage = text || ""; // BlueSky uses 'text' mostly, but content object might vary
+    const { text, media = [], link = null } = content || {};
+    const postMessage = text || "";
 
     // Fallbacks for account info
     const name = page?.username || page?.displayName || "BlueSky User";
@@ -69,7 +69,7 @@ export default function BlueSkyPreview({
                             </div>
                         )}
 
-                        {/* Media Container */}
+                        {/* Media Container or Link Card */}
                         <div className="relative group pt-1.5">
                             {currentItem ? (
                                 <div className="rounded-xl overflow-hidden border border-gray-200 bg-gray-50 relative shadow-sm aspect-auto max-h-[400px]">
@@ -90,6 +90,18 @@ export default function BlueSkyPreview({
                                             {currentSlide + 1}/{media.length}
                                         </div>
                                     )}
+                                </div>
+                            ) : link && postType === 'link' ? (
+                                <div className="rounded-xl overflow-hidden border border-gray-200 bg-white hover:bg-gray-50 transition-colors cursor-pointer group/link">
+                                    <div className="aspect-[1.91/1] bg-gray-100 flex items-center justify-center relative overflow-hidden">
+                                        <BlueSkyLogo className="h-10 w-10 text-gray-200 group-hover/link:scale-110 transition-transform duration-500" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent" />
+                                    </div>
+                                    <div className="p-3 space-y-1 border-t border-gray-100">
+                                        <div className="text-[11px] font-black uppercase text-blue-500 tracking-[0.2em] truncate">{new URL(link).hostname}</div>
+                                        <div className="text-[14px] font-bold text-gray-900 line-clamp-2 leading-tight">{content.linkTitle || "Link Preview"}</div>
+                                        {content.linkDescription && <div className="text-[12px] text-gray-500 line-clamp-2 leading-snug">{content.linkDescription}</div>}
+                                    </div>
                                 </div>
                             ) : !postMessage && (
                                 <div className="aspect-square rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 opacity-60">

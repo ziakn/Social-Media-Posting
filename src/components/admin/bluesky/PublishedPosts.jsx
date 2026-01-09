@@ -209,7 +209,7 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
                         postId: initialData.id,
                         accountId: selectedAccount,
                         text: postContent.message,
-                        media: (postType === 'images' || postType === 'video') ? postContent.media : [],
+                        media: (postType === 'images' || postType === 'video') ? postContent.media.map(({ file, ...rest }) => rest) : [],
                         link: postType === 'link' ? postContent.link : null,
                         scheduling: scheduledTime
                     });
@@ -217,7 +217,7 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
                     result = await createBlueSkyPost({
                         pageId: selectedAccount,
                         text: postContent.message,
-                        media: (postType === 'images' || postType === 'video') ? postContent.media : [],
+                        media: (postType === 'images' || postType === 'video') ? postContent.media.map(({ file, ...rest }) => rest) : [],
                         link: postType === 'link' ? postContent.link : null,
                         scheduling: scheduledTime
                     });
@@ -304,8 +304,11 @@ function CreateBlueSkyPostForm({ initialData = null, onSuccess = null }) {
                                         {["text", "images", "video", "link"].map(type => (
                                             <button
                                                 key={type}
-                                                disabled={isReadOnly || isEditing}
-                                                onClick={() => { setPostType(type); setPostContent(prev => ({ ...prev, media: [], link: "" })); }}
+                                                disabled={isReadOnly}
+                                                onClick={() => {
+                                                    setPostType(type);
+                                                    // Note: We don't reset media/link here so users can add them to a text post
+                                                }}
                                                 className={cn(
                                                     "px-4 py-1.5 rounded-md text-[9px] font-black uppercase transition-all",
                                                     postType === type
@@ -531,11 +534,22 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
             return;
         }
 
+        // Detect post type
+        let detectedType = "text";
+        const media = post.content?.media || [];
+        if (media.some(m => m.type === 'video')) {
+            detectedType = "video";
+        } else if (media.length > 0) {
+            detectedType = "images";
+        } else if (post.content?.link || post.link) {
+            detectedType = "link";
+        }
+
         // Map post to initialData format
         const initialData = {
             ...post,
             readOnly: post.status === 'published',
-            postType: "post"
+            postType: detectedType
         };
         setCreateInitialData(initialData);
         setIsCreating(true);

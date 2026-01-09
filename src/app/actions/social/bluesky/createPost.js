@@ -230,6 +230,7 @@ export async function getUserBlueSkyAccounts() {
                 tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt || null,
                 createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
                 updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                disconnectedAt: data.disconnectedAt?.toDate?.().toISOString() || data.disconnectedAt || null,
             };
         });
         return { success: true, accounts };
