@@ -4,7 +4,7 @@ import { collection, addDoc, query, where, getDocs, serverTimestamp } from "fire
 
 export async function GET() {
   try {
-    const modules = ["dashboard", "permissions", "roles", "settings", "users", "connect", "gallery", "plateforms"];
+    const modules = ["dashboard", "permissions", "roles", "settings", "users", "connect", "gallery", "plateforms", "billing"];
     const actions = ["view", "create", "edit", "delete"];
 
     let inserted = 0;
