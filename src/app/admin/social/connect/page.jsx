@@ -57,12 +57,15 @@ import { checkThreadsConnection } from "../../../actions/social/threads/connectA
 import { disconnectThreadsAccount } from "../../../actions/social/threads/disconnectAccount";
 import { checkTwitterConnection } from "../../../actions/social/twitter/connectAccount";
 import { disconnectTwitterAccount } from "../../../actions/social/twitter/disconnectAccount";
+import { checkTelegramConnection } from "../../../actions/social/telegram/connectAccount";
+import { disconnectTelegramAccount } from "../../../actions/social/telegram/disconnectAccount";
 
 const CONNECTION_FUNCTIONS = {
   facebook: checkFacebookConnection,
   instagram: checkInstagramConnection,
   threads: checkThreadsConnection,
   twitter: checkTwitterConnection,
+  telegram: checkTelegramConnection,
 };
 
 // Map platform keys to disconnect functions
@@ -71,6 +74,7 @@ const DISCONNECT_FUNCTIONS = {
   instagram: disconnectInstagramAccount,
   threads: disconnectThreadsAccount,
   twitter: disconnectTwitterAccount,
+  telegram: disconnectTelegramAccount,
 };
 
 export default function SocialConnectPage() {
