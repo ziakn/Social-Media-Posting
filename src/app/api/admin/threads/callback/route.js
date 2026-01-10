@@ -57,7 +57,7 @@ export async function GET(request) {
         // 2. Exchange for long-lived token (60 days)
         const longLivedRes = await fetch(
             `https://graph.threads.net/access_token?` +
-            `grant_type=th_exchange_token&` +
+            `grant_type=THREADS_exchange_token&` +
             `client_secret=${process.env.THREDS_APP_SECRET}&` +
             `access_token=${shortLivedUserToken}`
         );

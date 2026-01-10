@@ -95,7 +95,7 @@ async function exchangeCodeForToken(code) {
     `https://graph.facebook.com/v24.0/oauth/access_token` +
     `?client_id=${process.env.FACEBOOK_APP_ID}` +
     `&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI)}` +
-    `&client_secret=${process.env.FACBOOK_APP_SECRET}` +
+    `&client_secret=${process.env.FACEBOOK_APP_SECRET}` +
     `&code=${code}`
   );
   const data = await res.json();
@@ -108,7 +108,7 @@ async function exchangeForLongLivedToken(shortLivedToken) {
     `https://graph.facebook.com/v24.0/oauth/access_token?` +
     `grant_type=fb_exchange_token&` +
     `client_id=${process.env.FACEBOOK_APP_ID}&` +
-    `client_secret=${process.env.FACBOOK_APP_SECRET}&` +
+    `client_secret=${process.env.FACEBOOK_APP_SECRET}&` +
     `fb_exchange_token=${shortLivedToken}`
   );
   const data = await res.json();

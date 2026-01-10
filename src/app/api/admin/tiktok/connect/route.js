@@ -47,7 +47,7 @@ export async function GET() {
     const response = NextResponse.redirect(authUrl);
 
     // 3. Store state and verifier in secure, httpOnly cookies
-    response.cookies.set("tiktok_oauth_state", state, {
+    response.cookies.set("tiktok_oauTHREADS_state", state, {
         httpOnly: true,
         secure: true,
         sameSite: "lax",

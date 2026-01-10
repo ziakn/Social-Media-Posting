@@ -56,9 +56,9 @@ function Calendar({
           "size-(--cell-size) aria-disabled:opacity-50 p-0 select-none",
           defaultClassNames.button_next
         ),
-        month_caption: cn(
+        monTHREADS_caption: cn(
           "flex items-center justify-center h-(--cell-size) w-full px-(--cell-size)",
-          defaultClassNames.month_caption
+          defaultClassNames.monTHREADS_caption
         ),
         dropdowns: cn(
           "w-full flex items-center text-sm font-medium justify-center h-(--cell-size) gap-1.5",

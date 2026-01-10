@@ -17,7 +17,7 @@ export async function GET(request) {
         const state = url.searchParams.get("state");
 
         // 1. Verify state to prevent CSRF
-        const storedState = request.cookies.get("tiktok_oauth_state")?.value;
+        const storedState = request.cookies.get("tiktok_oauTHREADS_state")?.value;
         if (!state || state !== storedState) {
             console.error("TikTok OAuth State Mismatch:", { received: state, stored: storedState });
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -79,7 +79,7 @@ export async function GET(request) {
             `${baseUrl}/admin/social/connect?status=success&platform=tiktok&name=${encodeURIComponent(profileInfo.display_name)}`
         );
 
-        response.cookies.delete("tiktok_oauth_state");
+        response.cookies.delete("tiktok_oauTHREADS_state");
         response.cookies.delete("tiktok_code_verifier");
 
         return response;

@@ -108,7 +108,7 @@ async function exchangeCodeForToken(code) {
 
 async function exchangeForLongLivedToken(shortLivedToken) {
   const res = await fetch(
-    `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_APP_SECRET}&access_token=${shortLivedToken}`
+    `https://graph.instagram.com/access_token?grant_type=INSTAGRAM_exchange_token&client_secret=${process.env.INSTAGRAM_APP_SECRET}&access_token=${shortLivedToken}`
   );
   const data = await res.json();
   if (data.error) throw new Error(data.error.message);
