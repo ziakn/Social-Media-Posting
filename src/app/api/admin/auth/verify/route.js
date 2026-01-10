@@ -1,6 +1,6 @@
-// app/api/auth/verify/route.js
 import { NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth"; // your JWT or session logic
+import { verifyToken } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 
 export async function GET(req) {
   try {
@@ -15,6 +15,7 @@ export async function GET(req) {
       return NextResponse.json({ valid: false, message: "Invalid token" }, { status: 403 });
     }
 
+    // Return the user from token, but ensure it's not cached
     return NextResponse.json({ valid: true, user });
   } catch (error) {
     console.error("Error verifying token:", error);

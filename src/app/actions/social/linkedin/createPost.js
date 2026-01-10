@@ -46,8 +46,8 @@ async function uploadMedia(accessToken, platformUserId, mediaUrl, mediaType) {
         body: JSON.stringify({
             registerUploadRequest: {
                 recipes: [
-                    mediaType === "image" 
-                        ? "urn:li:digitalmediaRecipe:feedshare-image" 
+                    mediaType === "image"
+                        ? "urn:li:digitalmediaRecipe:feedshare-image"
                         : "urn:li:digitalmediaRecipe:feedshare-video"
                 ],
                 owner: `urn:li:person:${platformUserId}`,
@@ -208,9 +208,9 @@ export async function createLinkedinPost({
 
         await setDoc(postRef, postData);
 
-        return { 
-            success: true, 
-            message: scheduledTime ? "Post scheduled successfully" : "Post created successfully on LinkedIn", 
+        return {
+            success: true,
+            message: scheduledTime ? "Post scheduled successfully" : "Post created successfully on LinkedIn",
             postId,
             linkedinPostId: result.linkedinPostId
         };
@@ -262,14 +262,14 @@ export async function deletelinkedinPost({ postId }) {
         // Get the post document to find linkedinPostId
         const postRef = doc(db, "linkedin_posts", postId);
         const postSnap = await getDocs(query(collection(db, "linkedin_posts"), where("__name__", "==", postId)));
-        
+
         if (postSnap.empty) {
             return { success: false, message: "Post not found" };
         }
-        
+
         const postData = postSnap.docs[0].data();
         const linkedinPostId = postData.linkedinPostId;
-        
+
         if (linkedinPostId) {
             const accountQuery = query(
                 collection(db, "socialAccounts"),
@@ -367,4 +367,3 @@ export async function replaceLinkedinPost(postDocId, {
 }
 
 
-    

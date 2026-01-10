@@ -7,6 +7,7 @@ import { verifyToken } from "@/lib/auth";
 import { refreshTwitterToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { spendCoin } from "@/lib/subscription";
 
 /**
  * Enhanced Twitter API response handler
@@ -57,6 +58,12 @@ export async function createTwitterPost({
         }
 
         const userId = user.id;
+
+        // 0. Check and spend coin
+        const coinSpend = await spendCoin(userId);
+        if (!coinSpend.success) {
+            return { success: false, message: coinSpend.message };
+        }
 
         // 1. Get Twitter Access Token from Firestore
         const q = query(

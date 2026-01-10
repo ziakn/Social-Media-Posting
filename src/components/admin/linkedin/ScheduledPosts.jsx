@@ -236,7 +236,7 @@ export default function ScheduledPosts() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredPosts.map((post) => (
                         <Card key={post.id} className="overflow-hidden flex flex-col group hover:shadow-md transition-all">
-                            <div 
+                            <div
                                 className="relative aspect-video bg-slate-100 flex items-center justify-center cursor-pointer"
                                 onClick={() => setSelectedPost(post)}
                             >
@@ -348,8 +348,8 @@ export default function ScheduledPosts() {
                     <DialogHeader><DialogTitle>Edit Post</DialogTitle></DialogHeader>
                     <div className="space-y-4 py-4">
                         <Label>Content</Label>
-                        <Textarea 
-                            value={editDialog.text} 
+                        <Textarea
+                            value={editDialog.text}
                             onChange={(e) => setEditDialog(prev => ({ ...prev, text: e.target.value }))}
                             className="min-h-[200px]"
                         />

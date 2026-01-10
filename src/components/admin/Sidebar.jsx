@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,14 +8,31 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
+  CreditCard,
+  Coins,
 } from "lucide-react";
-
+ 
 export default function Sidebar() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [user, setUser] = useState(null);
+ 
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("/api/user/me");
+        const data = await res.json();
+        if (data.user) setUser(data.user);
+      } catch (err) {
+        console.error("Failed to fetch user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const menuItems = [
     { label: "Dashboard", href: "/admin/dashboard", icon: <LayoutDashboard size={18} /> },
     { label: "Users", href: "/admin/users", icon: <Users size={18} /> },
+    { label: "Pricing", href: "/pricing", icon: <CreditCard size={18} /> },
     { label: "Settings", href: "/admin/settings", icon: <Settings size={18} /> },
   ];
 
@@ -53,6 +68,19 @@ export default function Sidebar() {
               </Link>
             </li>
           ))}
+          {user && (
+            <li className="px-3 py-2">
+              <div className={`flex items-center gap-3 text-indigo-600 ${sidebarOpen ? "justify-start" : "justify-center"}`}>
+                <Coins size={18} />
+                {sidebarOpen && (
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Balance</span>
+                    <span className="text-sm font-bold">{user.coinBalance} Coins</span>
+                  </div>
+                )}
+              </div>
+            </li>
+          )}
         </ul>
       </nav>
 

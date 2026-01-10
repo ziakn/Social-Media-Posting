@@ -15,6 +15,7 @@ import {
   Link2,
   Image,
   Globe,
+  CreditCard,
 } from "lucide-react";
 import Navbar from "./Navbar";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -178,7 +179,6 @@ export default function AdminLayout({ children }) {
                 </Link>
               </li>
             )}
-
             {hasPermission('view_settings') && (
               <li key="/admin/settings">
                 <Link

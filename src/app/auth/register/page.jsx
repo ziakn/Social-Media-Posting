@@ -30,6 +30,7 @@ export default function Register() {
         email: form.email,
         role_id: form.role_id,
         role_name: "", // optional, you can fetch role name from roles collection if needed
+        coinBalance: 100, // Initial free coins
         created_at: new Date(),
       });
 

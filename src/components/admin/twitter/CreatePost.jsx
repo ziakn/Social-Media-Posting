@@ -46,25 +46,33 @@ export default function CreateTwitterPost() {
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
     const [galleryMediaType, setGalleryMediaType] = useState("image");
+    const [coinBalance, setCoinBalance] = useState(0);
 
     useEffect(() => {
-        async function loadAccounts() {
-            const res = await checkTwitterConnection();
-            if (res.connected) {
-                if (res.accounts && res.accounts.length > 0) {
-                    setAccounts(res.accounts);
+        async function loadData() {
+            const [twRes, userRes] = await Promise.all([
+                checkTwitterConnection(),
+                fetch("/api/user/me").then(r => r.json())
+            ]);
+
+            if (twRes.connected) {
+                if (twRes.accounts && twRes.accounts.length > 0) {
+                    setAccounts(twRes.accounts);
                 } else {
                     setAccounts([{
-                        id: res.accountId,
-                        name: res.displayName,
-                        username: res.username,
-                        profilePicture: res.profilePicture
+                        id: twRes.accountId,
+                        name: twRes.displayName,
+                        username: twRes.username,
+                        profilePicture: twRes.profilePicture
                     }]);
                 }
-                // Removed automatic setSelectedAccount to match Facebook behavior
+            }
+
+            if (userRes.user) {
+                setCoinBalance(userRes.user.coinBalance);
             }
         }
-        loadAccounts();
+        loadData();
     }, []);
 
     const audienceOptions = [
@@ -120,6 +128,10 @@ export default function CreateTwitterPost() {
             toast.error("Please select a Twitter account");
             return false;
         }
+        if (coinBalance <= 0) {
+            toast.error("Insufficient coins. Please buy more coins to post.");
+            return false;
+        }
         if (!postContent.text.trim() && postType === "text") {
             toast.error("Please enter some text for your tweet");
             return false;
@@ -158,6 +170,7 @@ export default function CreateTwitterPost() {
 
                 if (res.success) {
                     toast.success(res.message);
+                    setCoinBalance(prev => prev - 1);
                     setPostContent({ text: "", images: [], video: null, link: "" });
                     setScheduling({ schedule: false, date: new Date(), time: "12:00" });
                 } else {
@@ -553,11 +566,6 @@ export default function CreateTwitterPost() {
                             <div className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 {scheduling.schedule ? "Scheduling..." : "Publishing..."}
-                            </div>
-                        ) : scheduling.schedule ? (
-                            <div className="flex items-center gap-2">
-                                <CalendarDays className="h-4 w-4" />
-                                Schedule Tweet
                             </div>
                         ) : (
                             <div className="flex items-center gap-2">
