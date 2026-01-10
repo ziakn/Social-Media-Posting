@@ -7,6 +7,9 @@ import { fetchFacebookPages } from "./getPages";
 
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
+import { spendCoin } from "@/lib/subscription";
 
 // ... existing imports
 
@@ -22,6 +25,22 @@ async function createFacebookPostBase({
   additionalData = {},
 }) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("token")?.value;
+    const user = await verifyToken(token);
+
+    if (!user) {
+      return { success: false, message: "Invalid or expired token" };
+    }
+
+    const userId = user.id || user.uid;
+
+    // Check and spend coin
+    const coinSpend = await spendCoin(userId);
+    if (!coinSpend.success) {
+      return { success: false, message: coinSpend.message };
+    }
+
     const { pages } = await fetchFacebookPages();
 
     const page = pages.find((p) => String(p.pageId) === String(pageId));
@@ -34,8 +53,7 @@ async function createFacebookPostBase({
       return { success: false, message: "Missing Facebook Page Access Token" };
     }
 
-    const userId = page.userId
-    if (!userId) {
+    if (!page.userId) {
       return { success: false, message: "Missing Facebook Page User ID" };
     }
 

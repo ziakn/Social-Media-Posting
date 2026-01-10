@@ -5,7 +5,7 @@ import { verifyToken } from "@/lib/auth";
 
 export async function POST(req) {
   try {
-    const { priceId } = await req.json();
+    const { priceId, coinAmount } = await req.json();
     const token = (await cookies()).get('token')?.value;
     
     if (!token) {
@@ -26,8 +26,39 @@ export async function POST(req) {
     }
 
     if (isBypassEnabled) {
+      // Credit coins immediately for testing
+      try {
+        const { doc, updateDoc, increment, getDoc } = await import("firebase/firestore");
+        const { db } = await import("@/lib/firebase");
+        
+        // Find user document - we need to find it by the field 'id' or document ID
+        // To be safe, try direct document ID first
+        const userRef = doc(db, "users", user.id);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          await updateDoc(userRef, {
+            coinBalance: increment(coinAmount),
+            updated_at: new Date()
+          });
+        } else {
+          // If direct ID fails, try query by 'id' field
+          const { collection, query, where, getDocs } = await import("firebase/firestore");
+          const q = query(collection(db, "users"), where("id", "==", user.id));
+          const snap = await getDocs(q);
+          if (!snap.empty) {
+            await updateDoc(doc(db, "users", snap.docs[0].id), {
+              coinBalance: increment(coinAmount),
+              updated_at: new Date()
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Bypass credit error:", err);
+      }
+
       return NextResponse.json({ 
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?success=true&bypass=true` 
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/dashboard?success=true&bypass=true` 
       });
     }
 
@@ -39,11 +70,12 @@ export async function POST(req) {
           quantity: 1,
         },
       ],
-      mode: "subscription",
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?success=true`,
+      mode: "payment",
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/dashboard?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=true`,
       metadata: {
-        userId: user.id,
+        userId: user.id || user.uid,
+        coinAmount: coinAmount.toString(),
       },
     });
 

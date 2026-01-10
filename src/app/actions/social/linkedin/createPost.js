@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { spendCoin } from "@/lib/subscription";
 /**
  * Handle LinkedIn API response
  */
@@ -111,7 +112,13 @@ export async function createLinkedinPost({
 
         const userId = user.id;
 
-        // 1. Get LinkedIn Access Token from Firestore
+        // 2. Check and spend coin
+        const coinSpend = await spendCoin(userId);
+        if (!coinSpend.success) {
+            return { success: false, message: coinSpend.message };
+        }
+
+        // 3. Get LinkedIn Access Token from Firestore
         const q = query(
             collection(db, "socialAccounts"),
             where("userId", "==", userId),

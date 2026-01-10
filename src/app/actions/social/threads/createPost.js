@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { spendCoin } from "@/lib/subscription";
 
 /**
  * Make request to Threads Graph API
@@ -77,47 +78,59 @@ async function getThreadsAccount(userId, platformUserId) {
  * Create Threads Post
  */
 export async function createThreadsPost({ pageId, text, mediaUrl, mediaType, scheduling }) {
-    const user = await getAuthenticatedUser();
-    const { accountId, accessToken } = await getThreadsAccount(user.id, pageId);
+    try {
+        const user = await getAuthenticatedUser();
 
-    // 1. Create Media Container
-    const params = {
-        media_type: mediaType || "TEXT",
-    };
+        // Check and spend coin
+        const coinSpend = await spendCoin(user.id);
+        if (!coinSpend.success) {
+            return { success: false, message: coinSpend.message };
+        }
 
-    if (text) params.text = text;
-    if (mediaUrl) {
-        if (mediaType === "IMAGE") params.image_url = mediaUrl;
-        if (mediaType === "VIDEO") params.video_url = mediaUrl;
+        const { accountId, accessToken } = await getThreadsAccount(user.id, pageId);
+
+        // 1. Create Media Container
+        const params = {
+            media_type: mediaType || "TEXT",
+        };
+
+        if (text) params.text = text;
+        if (mediaUrl) {
+            if (mediaType === "IMAGE") params.image_url = mediaUrl;
+            if (mediaType === "VIDEO") params.video_url = mediaUrl;
+        }
+
+        const container = await makeThreadsRequest(`/${accountId}/threads`, params, accessToken);
+        const creationId = container.id;
+
+        // Threads recommends waiting ~30s for media processing, 
+        // but for text it's instant. For media we might need to poll.
+        if (mediaType === "IMAGE" || mediaType === "VIDEO") {
+            console.log("Waiting for Threads media processing...");
+            await new Promise(r => setTimeout(r, 10000)); // Wait 10s initially
+        }
+
+        // 2. Publish container
+        const publishResult = await makeThreadsRequest(`/${accountId}/threads_publish`, {
+            creation_id: creationId
+        }, accessToken);
+
+        // 3. Save to Firestore
+        const postRef = await addDoc(collection(db, "threads_posts"), {
+            userId: user.id,
+            accountId: accountId,
+            platform: "threads",
+            content: { text, mediaUrl, mediaType },
+            threadsCreationId: creationId,
+            threadsPostId: publishResult.id,
+            status: "published",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        return { success: true, threadsPostId: publishResult.id, firestoreId: postRef.id };
+    } catch (error) {
+        console.error("Threads Post Error:", error);
+        return { success: false, message: error.message || "Failed to create Threads post" };
     }
-
-    const container = await makeThreadsRequest(`/${accountId}/threads`, params, accessToken);
-    const creationId = container.id;
-
-    // Threads recommends waiting ~30s for media processing, 
-    // but for text it's instant. For media we might need to poll.
-    if (mediaType === "IMAGE" || mediaType === "VIDEO") {
-        console.log("Waiting for Threads media processing...");
-        await new Promise(r => setTimeout(r, 10000)); // Wait 10s initially
-    }
-
-    // 2. Publish container
-    const publishResult = await makeThreadsRequest(`/${accountId}/threads_publish`, {
-        creation_id: creationId
-    }, accessToken);
-
-    // 3. Save to Firestore
-    const postRef = await addDoc(collection(db, "threads_posts"), {
-        userId: user.id,
-        accountId: accountId,
-        platform: "threads",
-        content: { text, mediaUrl, mediaType },
-        threadsCreationId: creationId,
-        threadsPostId: publishResult.id,
-        status: "published",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-    });
-
-    return { success: true, threadsPostId: publishResult.id, firestoreId: postRef.id };
 }

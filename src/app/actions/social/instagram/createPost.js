@@ -8,6 +8,7 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { fetchInstagramAccounts } from "./getPages";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { spendCoin } from "@/lib/subscription";
 
 /**
  * Upload local file or File object to Firebase and return public URL
@@ -163,178 +164,218 @@ function getDateTime(date, time) {
  * Create single image post
  */
 export async function createInstagramImagePost({ pageId, image, caption, scheduling }) {
-  const user = await getAuthenticatedUser();
-  const { instagramId, accessToken } = await getInstagramAccount(pageId);
+  try {
+    const user = await getAuthenticatedUser();
 
-  // TEST MODE: Use hardcoded public URL instead of uploading
-  const imageUrl = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
-  console.log("Creating Instagram Image Post with TEST URL:", imageUrl);
+    // Spend coin
+    const coinSpend = await spendCoin(user.id);
+    if (!coinSpend.success) return { success: false, message: coinSpend.message };
 
-  const scheduledTime = scheduling?.schedule
-    ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
-    : null;
+    const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  const containerId = await createMediaContainer(
-    instagramId,
-    { image_url: imageUrl, caption, scheduled_publish_time: scheduledTime },
-    accessToken
-  );
+    // TEST MODE: Use hardcoded public URL instead of uploading
+    const imageUrl = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
+    console.log("Creating Instagram Image Post with TEST URL:", imageUrl);
 
-  let publishResult = null;
-  if (!scheduling?.schedule) {
-    await new Promise(r => setTimeout(r, 2000));
-    const status = await checkMediaStatus(instagramId, containerId, accessToken);
-    if (status.status_code === "FINISHED") {
-      publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
-    } else {
-      throw new Error(`Media not ready for publishing. Status: ${status.status}`);
+    const scheduledTime = scheduling?.schedule
+      ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
+      : null;
+
+    const containerId = await createMediaContainer(
+      instagramId,
+      { image_url: imageUrl, caption, scheduled_publish_time: scheduledTime },
+      accessToken
+    );
+
+    let publishResult = null;
+    if (!scheduling?.schedule) {
+      await new Promise(r => setTimeout(r, 2000));
+      const status = await checkMediaStatus(instagramId, containerId, accessToken);
+      if (status.status_code === "FINISHED") {
+        publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
+      } else {
+        throw new Error(`Media not ready for publishing. Status: ${status.status}`);
+      }
     }
+
+    const firestoreId = await saveToFirestore({
+      platform: "instagram",
+      pageId,
+      postType: "image",
+      content: { caption, image: { url: imageUrl, name: image.name, type: image.type, size: image.size } },
+      status: scheduling?.schedule ? "scheduled" : "published",
+      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
+      instagramContainerId: containerId,
+      instagramPostId: publishResult?.id || null,
+      metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
+    }, user.id);
+
+    return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
+  } catch (error) {
+    console.error("Instagram Image Post Error:", error);
+    return { success: false, message: error.message || "Failed to create Instagram image post" };
   }
-
-  const firestoreId = await saveToFirestore({
-    platform: "instagram",
-    pageId,
-    postType: "image",
-    content: { caption, image: { url: imageUrl, name: image.name, type: image.type, size: image.size } },
-    status: scheduling?.schedule ? "scheduled" : "published",
-    scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
-    instagramContainerId: containerId,
-    instagramPostId: publishResult?.id || null,
-    metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
-  }, user.id);
-
-  return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
 }
 
 /**
  * Create carousel post (TEST MODE)
  */
 export async function createInstagramCarouselPost({ pageId, images, caption, scheduling }) {
-  const user = await getAuthenticatedUser();
-  const { instagramId, accessToken } = await getInstagramAccount(pageId);
+  try {
+    const user = await getAuthenticatedUser();
 
-  // TEST MODE: Hardcoded images
-  const testImages = [
-    "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80",
-    "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80"
-  ];
-  console.log("Creating Instagram Carousel Post with TEST URLs");
+    // Spend coin
+    const coinSpend = await spendCoin(user.id);
+    if (!coinSpend.success) return { success: false, message: coinSpend.message };
 
-  const childContainers = [];
-  for (const imageUrl of testImages) {
-    const childContainerId = await createMediaContainer(instagramId, { image_url: imageUrl, caption: "" }, accessToken);
-    childContainers.push(childContainerId);
-    await new Promise(r => setTimeout(r, 1000));
+    const { instagramId, accessToken } = await getInstagramAccount(pageId);
+
+    // TEST MODE: Hardcoded images
+    const testImages = [
+      "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80"
+    ];
+    console.log("Creating Instagram Carousel Post with TEST URLs");
+
+    const childContainers = [];
+    for (const imageUrl of testImages) {
+      const childContainerId = await createMediaContainer(instagramId, { image_url: imageUrl, caption: "" }, accessToken);
+      childContainers.push(childContainerId);
+      await new Promise(r => setTimeout(r, 1000));
+    }
+
+    const scheduledTime = scheduling?.schedule
+      ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
+      : null;
+
+    const carouselContainerId = await createMediaContainer(instagramId, { caption, children: childContainers, scheduled_publish_time: scheduledTime }, accessToken, true);
+
+    let publishResult = null;
+    if (!scheduling?.schedule) {
+      await new Promise(r => setTimeout(r, 3000));
+      const status = await checkMediaStatus(instagramId, carouselContainerId, accessToken);
+      if (status.status_code === "FINISHED") publishResult = await publishMediaContainer(instagramId, carouselContainerId, accessToken);
+      else throw new Error(`Carousel not ready. Status: ${status.status}`);
+    }
+
+    const firestoreId = await saveToFirestore({
+      platform: "instagram",
+      pageId,
+      postType: "carousel",
+      content: { caption, images: testImages.map(url => ({ url })) },
+      status: scheduling?.schedule ? "scheduled" : "published",
+      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
+      instagramContainerId: carouselContainerId,
+      instagramPostId: publishResult?.id || null,
+      metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
+    }, user.id);
+
+    return { success: true, containerId: carouselContainerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
+  } catch (error) {
+    console.error("Instagram Carousel Post Error:", error);
+    return { success: false, message: error.message || "Failed to create Instagram carousel post" };
   }
-
-  const scheduledTime = scheduling?.schedule
-    ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
-    : null;
-
-  const carouselContainerId = await createMediaContainer(instagramId, { caption, children: childContainers, scheduled_publish_time: scheduledTime }, accessToken, true);
-
-  let publishResult = null;
-  if (!scheduling?.schedule) {
-    await new Promise(r => setTimeout(r, 3000));
-    const status = await checkMediaStatus(instagramId, carouselContainerId, accessToken);
-    if (status.status_code === "FINISHED") publishResult = await publishMediaContainer(instagramId, carouselContainerId, accessToken);
-    else throw new Error(`Carousel not ready. Status: ${status.status}`);
-  }
-
-  const firestoreId = await saveToFirestore({
-    platform: "instagram",
-    pageId,
-    postType: "carousel",
-    content: { caption, images: testImages.map(url => ({ url })) },
-    status: scheduling?.schedule ? "scheduled" : "published",
-    scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
-    instagramContainerId: carouselContainerId,
-    instagramPostId: publishResult?.id || null,
-    metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
-  }, user.id);
-
-  return { success: true, containerId: carouselContainerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
 }
 
 /**
  * Create video post (TEST MODE)
  */
 export async function createInstagramVideoPost({ pageId, video, caption, scheduling }) {
-  const user = await getAuthenticatedUser();
-  const { instagramId, accessToken } = await getInstagramAccount(pageId);
+  try {
+    const user = await getAuthenticatedUser();
 
-  // TEST MODE: Standard sample video (known to work with Instagram processing)
-  const videoUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
-  console.log("Creating Instagram Video Post with TEST URL:", videoUrl);
+    // Spend coin
+    const coinSpend = await spendCoin(user.id);
+    if (!coinSpend.success) return { success: false, message: coinSpend.message };
 
-  const scheduledTime = scheduling?.schedule
-    ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
-    : null;
+    const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  const containerId = await createMediaContainer(instagramId, { video_url: videoUrl, caption, scheduled_publish_time: scheduledTime, media_type: "REELS" }, accessToken);
+    // TEST MODE: Standard sample video (known to work with Instagram processing)
+    const videoUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+    console.log("Creating Instagram Video Post with TEST URL:", videoUrl);
 
-  let publishResult = null;
-  if (!scheduling?.schedule) {
-    await new Promise(r => setTimeout(r, 10000));
-    let status, attempts = 0;
-    do {
-      status = await checkMediaStatus(instagramId, containerId, accessToken);
-      console.log(`Video processing status (attempt ${attempts + 1}):`, status); // Debug log
-      attempts++;
-      if (status.status_code === "FINISHED") break;
-      else if (status.status_code === "ERROR") throw new Error(`Video processing failed. Status: ${JSON.stringify(status)}`);
-      await new Promise(r => setTimeout(r, 5000));
-    } while (attempts < 12);
-    if (status.status_code === "FINISHED") publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
-    else throw new Error(`Video not ready after 1 minute`);
+    const scheduledTime = scheduling?.schedule
+      ? Math.floor(new Date(`${scheduling.date}T${scheduling.time}`).getTime() / 1000)
+      : null;
+
+    const containerId = await createMediaContainer(instagramId, { video_url: videoUrl, caption, scheduled_publish_time: scheduledTime, media_type: "REELS" }, accessToken);
+
+    let publishResult = null;
+    if (!scheduling?.schedule) {
+      await new Promise(r => setTimeout(r, 10000));
+      let status, attempts = 0;
+      do {
+        status = await checkMediaStatus(instagramId, containerId, accessToken);
+        console.log(`Video processing status (attempt ${attempts + 1}):`, status); // Debug log
+        attempts++;
+        if (status.status_code === "FINISHED") break;
+        else if (status.status_code === "ERROR") throw new Error(`Video processing failed. Status: ${JSON.stringify(status)}`);
+        await new Promise(r => setTimeout(r, 5000));
+      } while (attempts < 12);
+      if (status.status_code === "FINISHED") publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
+      else throw new Error(`Video not ready after 1 minute`);
+    }
+
+    const firestoreId = await saveToFirestore({
+      platform: "instagram",
+      pageId,
+      postType: "video",
+      content: { caption, video: { url: videoUrl, name: "test_video.mp4" } },
+      status: scheduling?.schedule ? "scheduled" : "published",
+      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
+      instagramContainerId: containerId,
+      instagramPostId: publishResult?.id || null,
+      metrics: { reach: 0, engagement: 0, likes: 0, comments: 0, views: 0 },
+    }, user.id);
+
+    return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
+  } catch (error) {
+    console.error("Instagram Video Post Error:", error);
+    return { success: false, message: error.message || "Failed to create Instagram video post" };
   }
-
-  const firestoreId = await saveToFirestore({
-    platform: "instagram",
-    pageId,
-    postType: "video",
-    content: { caption, video: { url: videoUrl, name: "test_video.mp4" } },
-    status: scheduling?.schedule ? "scheduled" : "published",
-    scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
-    instagramContainerId: containerId,
-    instagramPostId: publishResult?.id || null,
-    metrics: { reach: 0, engagement: 0, likes: 0, comments: 0, views: 0 },
-  }, user.id);
-
-  return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
 }
 
 /**
  * Create story post (TEST MODE)
  */
 export async function createInstagramStory({ pageId, media, caption }) {
-  const user = await getAuthenticatedUser();
-  const { instagramId, accessToken } = await getInstagramAccount(pageId);
+  try {
+    const user = await getAuthenticatedUser();
 
-  // TEST MODE
-  const mediaUrl = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
-  console.log("Creating Instagram Story with TEST URL:", mediaUrl);
+    // Spend coin
+    const coinSpend = await spendCoin(user.id);
+    if (!coinSpend.success) return { success: false, message: coinSpend.message };
 
-  const containerId = await createMediaContainer(instagramId, { image_url: mediaUrl, caption, media_type: "STORIES" }, accessToken);
+    const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-  await new Promise(r => setTimeout(r, 3000));
-  const status = await checkMediaStatus(instagramId, containerId, accessToken);
-  if (status.status_code !== "FINISHED") throw new Error(`Story not ready`);
+    // TEST MODE
+    const mediaUrl = "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80";
+    console.log("Creating Instagram Story with TEST URL:", mediaUrl);
 
-  const publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
+    const containerId = await createMediaContainer(instagramId, { image_url: mediaUrl, caption, media_type: "STORIES" }, accessToken);
 
-  const firestoreId = await saveToFirestore({
-    platform: "instagram",
-    pageId,
-    postType: "story",
-    content: { caption, media: { url: mediaUrl, name: "test_story.jpg" } },
-    status: "published",
-    instagramContainerId: containerId,
-    instagramPostId: publishResult.id,
-    metrics: { reach: 0, impressions: 0, replies: 0, exits: 0 },
-  }, user.id);
+    await new Promise(r => setTimeout(r, 3000));
+    const status = await checkMediaStatus(instagramId, containerId, accessToken);
+    if (status.status_code !== "FINISHED") throw new Error(`Story not ready`);
 
-  return { success: true, containerId, instagramPostId: publishResult.id, firestoreId };
+    const publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
+
+    const firestoreId = await saveToFirestore({
+      platform: "instagram",
+      pageId,
+      postType: "story",
+      content: { caption, media: { url: mediaUrl, name: "test_story.jpg" } },
+      status: "published",
+      instagramContainerId: containerId,
+      instagramPostId: publishResult.id,
+      metrics: { reach: 0, impressions: 0, replies: 0, exits: 0 },
+    }, user.id);
+
+    return { success: true, containerId, instagramPostId: publishResult.id, firestoreId };
+  } catch (error) {
+    console.error("Instagram Story Error:", error);
+    return { success: false, message: error.message || "Failed to create Instagram story" };
+  }
 }
 
 /**

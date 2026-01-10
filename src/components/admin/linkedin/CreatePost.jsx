@@ -37,23 +37,32 @@ export default function CreateLinkedinPost() {
     });
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
+    const [coinBalance, setCoinBalance] = useState(0);
 
     useEffect(() => {
-        async function loadAccounts() {
-            const res = await checkLinkedinConnection();
-            if (res.connected) {
-                if (res.accounts && res.accounts.length > 0) {
-                    setAccounts(res.accounts);
+        async function loadData() {
+            const [liRes, userRes] = await Promise.all([
+                checkLinkedinConnection(),
+                fetch("/api/user/me").then(r => r.json())
+            ]);
+
+            if (liRes.connected) {
+                if (liRes.accounts && liRes.accounts.length > 0) {
+                    setAccounts(liRes.accounts);
                 } else {
                     setAccounts([{
-                        id: res.accountId,
-                        name: res.displayName,
-                        profilePicture: res.profilePicture
+                        id: liRes.accountId,
+                        name: liRes.displayName,
+                        profilePicture: liRes.profilePicture
                     }]);
                 }
             }
+
+            if (userRes.user) {
+                setCoinBalance(userRes.user.coinBalance);
+            }
         }
-        loadAccounts();
+        loadData();
     }, []);
 
     const handleGallerySelect = (selectedItems) => {
@@ -75,6 +84,10 @@ export default function CreateLinkedinPost() {
     const validateForm = () => {
         if (!selectedAccount) {
             toast.error("Please select a LinkedIn account");
+            return false;
+        }
+        if (coinBalance <= 0) {
+            toast.error("Insufficient coins. Please buy more coins to post.");
             return false;
         }
         if (!postContent.text.trim() && !postContent.media) {
@@ -102,6 +115,7 @@ export default function CreateLinkedinPost() {
 
                 if (res.success) {
                     toast.success(res.message);
+                    setCoinBalance(prev => prev - 1);
                     setPostContent({ text: "", media: null });
                     setScheduling({ schedule: false, date: new Date(), time: "12:00" });
                 } else {
@@ -304,15 +318,15 @@ export default function CreateLinkedinPost() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 {scheduling.schedule ? "Scheduling..." : "Posting..."}
                             </div>
-                        ) : scheduling.schedule ? (
-                            <div className="flex items-center gap-2">
-                                <CalendarDays className="h-4 w-4" />
-                                Schedule Post
-                            </div>
                         ) : (
-                            <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4" />
-                                Share Now
+                            <div className="flex flex-col items-center">
+                                <div className="flex items-center gap-2">
+                                    {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                                    {scheduling.schedule ? "Schedule Post (1 Coin)" : "Share Now (1 Coin)"}
+                                </div>
+                                <span className="text-[10px] opacity-70 font-normal mt-0.5">
+                                    Balance: {coinBalance} Coins
+                                </span>
                             </div>
                         )}
                     </Button>

@@ -103,15 +103,20 @@ export default function CreateFacebookPost() {
   const [pages, setPages] = useState([]);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryMediaType, setGalleryMediaType] = useState("image"); // 'image' or 'video'
+  const [coinBalance, setCoinBalance] = useState(0);
 
   const { uploadFiles, uploading, progress } = useFileUpload();
 
   useEffect(() => {
-    async function loadPages() {
-      const res = await fetchFacebookPages();
-      if (res.success) {
+    async function loadData() {
+      const [fbRes, userRes] = await Promise.all([
+        fetchFacebookPages(),
+        fetch("/api/user/me").then(r => r.json())
+      ]);
+
+      if (fbRes.success) {
         setPages(
-          res.pages.map((p) => ({
+          fbRes.pages.map((p) => ({
             id: p.pageId,
             name: p.pageName,
             fans: p.fans,
@@ -119,8 +124,12 @@ export default function CreateFacebookPost() {
           }))
         );
       }
+
+      if (userRes.user) {
+        setCoinBalance(userRes.user.coinBalance);
+      }
     }
-    loadPages();
+    loadData();
   }, []);
 
   const audienceOptions = [
@@ -276,6 +285,11 @@ export default function CreateFacebookPost() {
       return false;
     }
 
+    if (coinBalance <= 0) {
+      toast.error("Insufficient coins. Please buy more coins to post.");
+      return false;
+    }
+
     switch (postType) {
       case "text":
         if (!postContent.text.trim()) {
@@ -380,6 +394,7 @@ export default function CreateFacebookPost() {
             time: "12:00",
             timezone: "UTC"
           });
+          setCoinBalance(prev => prev - 1);
         } else {
           toast.error(result.message || "Failed to post. Try again.");
         }
@@ -784,15 +799,15 @@ export default function CreateFacebookPost() {
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 {scheduling.schedule ? "Scheduling..." : "Publishing..."}
               </div>
-            ) : scheduling.schedule ? (
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                Schedule Post
-              </div>
             ) : (
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Publish Now
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2">
+                  {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                  {scheduling.schedule ? "Schedule Post (1 Coin)" : "Publish Now (1 Coin)"}
+                </div>
+                <span className="text-[10px] opacity-70 font-normal mt-0.5">
+                  Balance: {coinBalance} Coins
+                </span>
               </div>
             )}
           </Button>

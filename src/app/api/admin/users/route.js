@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, getDocs, getDoc, doc, addDoc } from "firebase/firestore";
+import { collection, getDocs, getDoc, doc, addDoc, setDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 export const revalidate = 60;
@@ -73,11 +73,16 @@ export async function POST(req) {
       );
     }
 
-    const user = await addDoc(collection(db, "users"), {
+    const userRef = doc(collection(db, "users"));
+    const userId = userRef.id;
+
+    await setDoc(userRef, {
+      id: userId,
       name,
       email,
       role_id,
       password: hash_password,
+      coinBalance: 100,
       created_at: new Date(),
     });
 
@@ -85,7 +90,7 @@ export async function POST(req) {
     return new Response(
       JSON.stringify({
         success: true,
-        user: { id: user.id, name, email, role_id },
+        user: { id: userId, name, email, role_id, coinBalance: 100 },
       }),
       { status: 201 }
     );

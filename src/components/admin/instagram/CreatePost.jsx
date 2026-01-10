@@ -60,21 +60,30 @@ export default function CreatePost() {
   // Instagram-connected pages
   const [pages, setPages] = useState([]);
   const [selectedPage, setSelectedPage] = useState("");
+  const [coinBalance, setCoinBalance] = useState(0);
 
   // Gallery state
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryMediaType, setGalleryMediaType] = useState("image"); // 'image' or 'video'
 
   useEffect(() => {
-    async function loadPages() {
-      const res = await fetchInstagramAccounts();
-      if (res.success) {
-        setPages(res.accounts);
+    async function loadData() {
+      const [igRes, userRes] = await Promise.all([
+        fetchInstagramAccounts(),
+        fetch("/api/user/me").then(r => r.json())
+      ]);
+
+      if (igRes.success) {
+        setPages(igRes.accounts);
       } else {
         toast.error("Failed to load Instagram accounts");
       }
+
+      if (userRes.user) {
+        setCoinBalance(userRes.user.coinBalance);
+      }
     }
-    loadPages();
+    loadData();
   }, []);
 
   const handleImageUpload = (e) => {
@@ -279,6 +288,7 @@ export default function CreatePost() {
 
   const handleSubmit = async () => {
     if (!selectedPage) return toast.error("Please select an Instagram account first");
+    if (coinBalance <= 0) return toast.error("Insufficient coins. Please buy more coins to post.");
     if (!postContent.caption.trim()) return toast.error("Please add a caption for your post");
 
     // Validation based on post type
@@ -359,8 +369,10 @@ export default function CreatePost() {
             coverImage: null,
           });
           setScheduling({ schedule: false, date: new Date(), time: "12:00", timezone: "UTC" });
+          // Update local balance
+          setCoinBalance(prev => prev - 1);
         } else {
-          toast.error(result.error || "Failed to create post");
+          toast.error(result.message || "Failed to create post");
         }
       } catch (error) {
         toast.error("Failed to create post. Please try again.");

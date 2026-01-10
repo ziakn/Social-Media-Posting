@@ -42,23 +42,32 @@ export default function CreateYoutubePost() {
     const [privacyStatus, setPrivacyStatus] = useState("public");
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
+    const [coinBalance, setCoinBalance] = useState(0);
 
     useEffect(() => {
-        async function loadAccounts() {
-            const res = await checkYoutubeConnection();
-            if (res.connected) {
-                if (res.accounts && res.accounts.length > 0) {
-                    setAccounts(res.accounts);
+        async function loadData() {
+            const [ytRes, userRes] = await Promise.all([
+                checkYoutubeConnection(),
+                fetch("/api/user/me").then(r => r.json())
+            ]);
+
+            if (ytRes.connected) {
+                if (ytRes.accounts && ytRes.accounts.length > 0) {
+                    setAccounts(ytRes.accounts);
                 } else {
                     setAccounts([{
-                        id: res.accountId,
-                        name: res.displayName,
-                        profilePicture: res.profilePicture
+                        id: ytRes.accountId,
+                        name: ytRes.displayName,
+                        profilePicture: ytRes.profilePicture
                     }]);
                 }
             }
+
+            if (userRes.user) {
+                setCoinBalance(userRes.user.coinBalance);
+            }
         }
-        loadAccounts();
+        loadData();
     }, []);
 
     const privacyOptions = [
@@ -87,6 +96,10 @@ export default function CreateYoutubePost() {
     const validateForm = () => {
         if (!selectedAccount) {
             toast.error("Please select a YouTube channel");
+            return false;
+        }
+        if (coinBalance <= 0) {
+            toast.error("Insufficient coins. Please buy more coins to post.");
             return false;
         }
         if (!postContent.title.trim()) {
@@ -119,6 +132,7 @@ export default function CreateYoutubePost() {
 
                 if (res.success) {
                     toast.success(res.message);
+                    setCoinBalance(prev => prev - 1);
                     setPostContent({ title: "", description: "", video: null });
                     setScheduling({ schedule: false, date: new Date(), time: "12:00" });
                 } else {
@@ -370,15 +384,15 @@ export default function CreateYoutubePost() {
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 {scheduling.schedule ? "Scheduling..." : "Uploading..."}
                             </div>
-                        ) : scheduling.schedule ? (
-                            <div className="flex items-center gap-2">
-                                <CalendarDays className="h-4 w-4" />
-                                Schedule Upload
-                            </div>
                         ) : (
-                            <div className="flex items-center gap-2">
-                                <FileText className="h-4 w-4" />
-                                Upload Now
+                            <div className="flex flex-col items-center">
+                                <div className="flex items-center gap-2">
+                                    {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                                    {scheduling.schedule ? "Schedule Upload (1 Coin)" : "Upload Now (1 Coin)"}
+                                </div>
+                                <span className="text-[10px] opacity-70 font-normal mt-0.5">
+                                    Balance: {coinBalance} Coins
+                                </span>
                             </div>
                         )}
                     </Button>

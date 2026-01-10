@@ -5,52 +5,54 @@ import { Check, Zap, Rocket, ShieldCheck } from "lucide-react";
 
 const plans = [
   {
-    name: "Free",
+    name: "Starter Kit",
     price: "0",
-    description: "Perfect for exploring our platform and basic posting.",
+    description: "New to the platform? Get started with free credits.",
     features: [
-      "5 Posts per month",
-      "LinkedIn Integration",
+      "100 Free Coins",
+      "All Social Platforms",
       "Basic Analytics",
       "Single Account",
     ],
-    priceId: null,
-    buttonText: "Current Plan",
+    coinAmount: 100,
+    isFree: true,
+    buttonText: "Claimed",
     disabled: true,
     icon: <Zap className="w-6 h-6 text-yellow-400" />,
     gradient: "from-blue-50 to-indigo-50",
   },
   {
-    name: "Starter",
-    price: "19",
+    name: "Starter Package",
+    price: "20",
     description: "Ideal for growing creators who need more reach.",
     features: [
-      "50 Posts per month",
-      "All Social Platforms",
-      "Standard Analytics",
+      "200 Coins",
+      "No Expiry",
       "Priority Support",
       "3 Social Accounts",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER,
-    buttonText: "Upgrade to Starter",
+    coinAmount: 200,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER || "price_starter_placeholder",
+    isFree: false,
+    buttonText: "Buy 200 Coins",
     popular: true,
     icon: <Rocket className="w-6 h-6 text-purple-500" />,
     gradient: "from-purple-50 to-pink-50",
   },
   {
-    name: "Pro",
-    price: "49",
+    name: "Pro Package",
+    price: "50",
     description: "For professionals and agencies managing multiple brands.",
     features: [
-      "Unlimited Posts",
-      "Advanced AI features",
-      "Advanced Analytics",
+      "800 Coins",
+      "Premium Templates",
       "24/7 Support",
-      "Custom Branding",
       "Unlimited Accounts",
     ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO,
-    buttonText: "Upgrade to Pro",
+    coinAmount: 800,
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO || "price_pro_placeholder",
+    isFree: false,
+    buttonText: "Buy 800 Coins",
     icon: <ShieldCheck className="w-6 h-6 text-blue-500" />,
     gradient: "from-blue-50 to-cyan-50",
   },
@@ -59,31 +61,31 @@ const plans = [
 export default function PricingPage() {
   const [loading, setLoading] = useState(null);
 
-  const handleSubscribe = async (priceId) => {
-    if (!priceId) {
-      alert("This plan's Price ID is not configured in your .env file. Please add NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER or NEXT_PUBLIC_STRIPE_PRICE_ID_PRO.");
-      return;
-    }
-    setLoading(priceId);
-
+  const handleSubscribe = async (plan) => {
+    if (plan.isFree) return;
+    setLoading(plan.name);
+ 
     try {
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ 
+          priceId: plan.priceId,
+          coinAmount: plan.coinAmount 
+        }),
       });
-
+ 
       const { url, error: apiError } = await response.json();
       if (apiError) throw new Error(apiError);
-
+ 
       if (url) {
         window.location.href = url;
       } else {
-        throw new Error("No checkout URL received from server.");
+        throw new Error("No checkout URL received from Stripe.");
       }
       
     } catch (err) {
-      console.error("Checkout error:", err);
+      console.error("Stripe checkout error:", err);
       alert(err.message || "Failed to initiate checkout. Please try again.");
     } finally {
       setLoading(null);
@@ -147,15 +149,15 @@ export default function PricingPage() {
 
               <div className="space-y-3">
                 <button
-                  onClick={() => handleSubscribe(plan.priceId)}
-                  disabled={plan.disabled || (loading === plan.priceId)}
+                  onClick={() => handleSubscribe(plan)}
+                  disabled={plan.disabled || (loading === plan.name)}
                   className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all duration-200 transform active:scale-95 ${
                     plan.popular
                       ? "bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200"
                       : "bg-gray-50 text-gray-900 hover:bg-gray-100 border border-gray-200"
                   } ${plan.disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                 >
-                  {loading === plan.priceId ? (
+                  {loading === plan.name ? (
                     <div className="flex items-center justify-center">
                       <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                     </div>
@@ -170,7 +172,7 @@ export default function PricingPage() {
 
         <div className="mt-16 text-center">
           <p className="text-gray-500 text-sm italic">
-            All plans include a 14-day free trial on your first subscription. Secure payment via Stripe.
+            One-time payment for lifetime credits. Secure payment via Stripe.
           </p>
         </div>
       </div>
