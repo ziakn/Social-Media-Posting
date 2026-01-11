@@ -1,92 +1,24 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CreateLinkedinPost from "@/components/admin/linkedin/CreatePost";
 import PublishedPosts from "@/components/admin/linkedin/PublishedPosts";
-import ScheduledPosts from "@/components/admin/linkedin/ScheduledPosts";
-import { Linkedin, PlusCircle, FileText, Clock, Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 function LinkedinPostsContent() {
     const searchParams = useSearchParams();
-    const router = useRouter();
-    const tab = searchParams.get("tab") || "published";
-    const [activeTab, setActiveTab] = useState(tab);
-
-    useEffect(() => {
-        setActiveTab(tab);
-    }, [tab]);
-
-    const handleTabChange = (value) => {
-        setActiveTab(value);
-        router.push(`/admin/social/linkedin/posts?tab=${value}`);
-    };
+    const accountId = searchParams.get("accountId");
 
     return (
-        <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <Linkedin className="h-8 w-8 text-blue-600" />
-                        </div>
-                        LinkedIn Content Manager
-                    </h1>
-                    <p className="text-gray-500 mt-2 text-lg">
-                        Create, schedule, and track your posts across your connected LinkedIn accounts.
-                    </p>
-                </div>
-            </div>
-
-            <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full space-y-8">
-                <TabsList className="grid w-full grid-cols-3 md:w-[600px] h-14 p-1.5 bg-gray-100/80 backdrop-blur-sm rounded-2xl border border-gray-200">
-                    <TabsTrigger
-                        value="create"
-                        className="rounded-xl flex items-center gap-2 text-sm font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-300"
-                    >
-                        <PlusCircle className="h-4 w-4" />
-                        Create
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="published"
-                        className="rounded-xl flex items-center gap-2 text-sm font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-300"
-                    >
-                        <FileText className="h-4 w-4" />
-                        Published
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="scheduled"
-                        className="rounded-xl flex items-center gap-2 text-sm font-bold data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm transition-all duration-300"
-                    >
-                        <Clock className="h-4 w-4" />
-                        Scheduled
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="create" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                    <CreateLinkedinPost />
-                </TabsContent>
-
-                <TabsContent value="published" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                    <PublishedPosts />
-                </TabsContent>
-
-                <TabsContent value="scheduled" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-                    <ScheduledPosts />
-                </TabsContent>
-            </Tabs>
+        <div className="container mx-auto py-8 px-4">
+            <PublishedPosts accountId={accountId} />
         </div>
     );
 }
 
 export default function LinkedinPostsPage() {
     return (
-        <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
-        }>
+        <Suspense fallback={<div className="flex justify-center mt-20"><Spinner /></div>}>
             <LinkedinPostsContent />
         </Suspense>
     );

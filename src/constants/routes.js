@@ -41,7 +41,7 @@ export const ROUTES = {
   ADMIN_FACEBOOK: prefix + "social/facebook",
   ADMIN_INSTAGRAM: prefix + "social/instagram",
   ADMIN_WHATSAPP: prefix + "social/whatsapp",
-  ADMIN_LINKEDIN: prefix + "social/linkedin/posts",
+  ADMIN_LINKEDIN: prefix + "social/linkedin",
   ADMIN_LINKEDIN_POSTS: prefix + "social/linkedin/posts",
   ADMIN_TWITTER: prefix + "social/twitter",
   ADMIN_BLUESKY: prefix + "social/bluesky",
