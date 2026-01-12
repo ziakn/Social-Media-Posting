@@ -83,11 +83,16 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
         async function loadAccounts() {
             const res = await fetchLinkedinAccounts();
             if (res.success) {
-                setAccounts(res.accounts || []);
+                const accs = res.accounts || [];
+                setAccounts(accs);
+                // Auto-select first account if none selected and we're creating a new post
+                if (accs.length > 0 && !selectedAccount && !initialData?.accountId) {
+                    setSelectedAccount(accs[0].id);
+                }
             }
         }
         loadAccounts();
-    }, []);
+    }, [selectedAccount, initialData?.accountId]); // Added dependencies to ensure update
 
     const handleGallerySelect = (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
@@ -167,9 +172,9 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
                         </div>
                         <div className="flex flex-wrap gap-5 items-center">
                             {accounts.map((acc) => {
-                                const isSelected = selectedAccount === acc.accountId;
+                                const isSelected = selectedAccount === acc.id;
                                 return (
-                                    <div key={acc.id} onClick={() => !isReadOnly && setSelectedAccount(acc.accountId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-[#0077b5] bg-white shadow-xl shadow-[#0077b5]/10" : "w-12 h-12 border-gray-100 opacity-60 hover:opacity-100 scale-95 hover:scale-100", isReadOnly && "cursor-default opacity-100")}>
+                                    <div key={acc.id} onClick={() => !isReadOnly && setSelectedAccount(acc.id)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-[#0077b5] bg-white shadow-xl shadow-[#0077b5]/10" : "w-12 h-12 border-gray-100 opacity-60 hover:opacity-100 scale-95 hover:scale-100", isReadOnly && "cursor-default opacity-100")}>
                                         <div className="w-10 h-10 relative">
                                             <div className={cn("w-full h-full rounded-full bg-[#0077b5] p-[2.5px]", isSelected && "animate-spin-slow shadow-[0_0_15px_rgba(0,119,181,0.2)]")}>
                                                 <div className="w-full h-full rounded-full bg-white p-[2px]">

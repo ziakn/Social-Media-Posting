@@ -38,19 +38,34 @@ export default function CreateLinkedinPost() {
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
 
+    const [isLoading, setIsLoading] = useState(true);
+
     useEffect(() => {
         async function loadAccounts() {
-            const res = await checkLinkedinConnection();
-            if (res.connected) {
-                if (res.accounts && res.accounts.length > 0) {
-                    setAccounts(res.accounts);
-                } else {
-                    setAccounts([{
-                        id: res.accountId,
-                        name: res.displayName,
-                        profilePicture: res.profilePicture
-                    }]);
+            try {
+                const res = await checkLinkedinConnection();
+                if (res.connected) {
+                    let accs = [];
+                    if (res.accounts && res.accounts.length > 0) {
+                        accs = res.accounts;
+                    } else {
+                        accs = [{
+                            id: res.accountId,
+                            name: res.displayName,
+                            profilePicture: res.profilePicture
+                        }];
+                    }
+                    setAccounts(accs);
+
+                    if (accs.length > 0) {
+                        setSelectedAccount(accs[0].id);
+                    }
                 }
+            } catch (error) {
+                console.error("Failed to load LinkedIn accounts", error);
+                toast.error("Failed to load LinkedIn accounts");
+            } finally {
+                setIsLoading(false);
             }
         }
         loadAccounts();
@@ -153,27 +168,46 @@ export default function CreateLinkedinPost() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-                                <SelectTrigger className="h-12 text-base">
-                                    <SelectValue placeholder="Select a LinkedIn account" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {accounts.map(acc => (
-                                        <SelectItem key={acc.id} value={acc.id}>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold overflow-hidden">
-                                                    {acc.profilePicture ? (
-                                                        <img src={acc.profilePicture} alt={acc.name} className="w-full h-full object-cover" />
-                                                    ) : (
-                                                        acc.name.charAt(0)
-                                                    )}
+                            {isLoading ? (
+                                <div className="flex items-center justify-center p-4">
+                                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                                    <span className="ml-2 text-gray-500">Loading accounts...</span>
+                                </div>
+                            ) : accounts.length === 0 ? (
+                                <div className="text-center p-4">
+                                    <p className="text-gray-500 mb-4">No connected LinkedIn accounts found.</p>
+                                    <Button
+                                        onClick={() => window.location.href = "/admin/social?tab=accounts"}
+                                        variant="outline"
+                                        className="gap-2"
+                                    >
+                                        <Linkedin className="h-4 w-4" />
+                                        Connect LinkedIn Account
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                                    <SelectTrigger className="h-12 text-base">
+                                        <SelectValue placeholder="Select a LinkedIn account" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {accounts.map(acc => (
+                                            <SelectItem key={acc.id} value={acc.id}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-bold overflow-hidden">
+                                                        {acc.profilePicture ? (
+                                                            <img src={acc.profilePicture} alt={acc.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            acc.name.charAt(0)
+                                                        )}
+                                                    </div>
+                                                    <span className="font-medium">{acc.name}</span>
                                                 </div>
-                                                <span className="font-medium">{acc.name}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
                         </CardContent>
                     </Card>
 
