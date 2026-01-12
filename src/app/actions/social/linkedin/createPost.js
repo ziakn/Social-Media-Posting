@@ -99,6 +99,7 @@ export async function createLinkedinPost({
     imageUrl,
     videoUrl,
     scheduledTime,
+    accountId: customAccountId,
 }) {
     try {
         const cookieStore = await cookies();
@@ -112,19 +113,28 @@ export async function createLinkedinPost({
         const userId = user.id;
 
         // 1. Get LinkedIn Access Token from Firestore
-        const q = query(
-            collection(db, "socialAccounts"),
-            where("userId", "==", userId),
-            where("platform", "==", "linkedin"),
-            where("status", "==", "active")
-        );
-        const snapshot = await getDocs(q);
+        let accountDoc;
+        if (customAccountId) {
+            accountDoc = await getDoc(doc(db, "socialAccounts", customAccountId));
+            if (!accountDoc.exists() || accountDoc.data().userId !== userId) {
+                return { success: false, message: "LinkedIn account not found or access denied" };
+            }
+        } else {
+            const q = query(
+                collection(db, "socialAccounts"),
+                where("userId", "==", userId),
+                where("platform", "==", "linkedin"),
+                where("status", "==", "active")
+            );
+            const snapshot = await getDocs(q);
 
-        if (snapshot.empty) {
-            return { success: false, message: "LinkedIn account not connected" };
+            if (snapshot.empty) {
+                return { success: false, message: "LinkedIn account not connected" };
+            }
+
+            accountDoc = snapshot.docs[0];
         }
 
-        const accountDoc = snapshot.docs[0];
         const accountData = accountDoc.data();
         const accessToken = accountData.accessToken;
         const platformUserId = accountData.platformUserId;

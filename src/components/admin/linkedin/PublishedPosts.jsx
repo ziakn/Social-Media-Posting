@@ -135,7 +135,8 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
                         text: postContent.message,
                         imageUrl: postContent.media[0]?.type === 'image' ? postContent.media[0].url : null,
                         videoUrl: postContent.media[0]?.type === 'video' ? postContent.media[0].url : null,
-                        scheduledTime: scheduledTime
+                        scheduledTime: scheduledTime,
+                        accountId: selectedAccount,
                     });
                 }
 
@@ -433,10 +434,10 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
 
                         <div className="space-y-0.5">
                             <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-gray-900">
-                                Network Intelligence
+                                Content Studio
                             </h1>
                             <p className="text-gray-500 max-w-md text-xs font-medium leading-relaxed">
-                                Curate professional content and analyze engagement across your LinkedIn network.
+                                Elevate your professional presence with precision scheduling and network intelligence.
                             </p>
                         </div>
                     </div>
@@ -472,7 +473,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                         >
                             <div className="relative flex items-center gap-2">
                                 <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                <span className="text-sm">Create Post</span>
+                                <span className="text-sm">Compose Masterpiece</span>
                             </div>
                         </Button>
                     </div>
@@ -528,8 +529,8 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                                 <div className="flex items-center gap-4">
                                     <div className="w-8 h-8 bg-[#0077b5] rounded-xl shadow-lg flex items-center justify-center transform rotate-3"><LinkedinLogo className="h-4 w-4 text-white" /></div>
                                     <div className="flex flex-col">
-                                        <DialogTitle className="text-sm font-black text-gray-900 leading-none">Content Editor</DialogTitle>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Professional Suite v1.0</span>
+                                        <DialogTitle className="text-sm font-black text-gray-900 leading-none">Post Creator</DialogTitle>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">LinkedIn Studio v1.0</span>
                                     </div>
                                 </div>
                                 <Button variant="ghost" size="icon" onClick={() => {

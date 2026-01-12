@@ -221,6 +221,7 @@ export async function publishLinkedinPostNow(postId) {
             text: post.text,
             imageUrl: post.imageUrl,
             videoUrl: post.videoUrl,
+            accountId: post.accountId,
         });
 
         if (result.success) {

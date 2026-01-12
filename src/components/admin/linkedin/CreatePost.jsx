@@ -98,6 +98,7 @@ export default function CreateLinkedinPost() {
                     imageUrl: postContent.media?.type === "image" ? postContent.media.url : null,
                     videoUrl: postContent.media?.type === "video" ? postContent.media.url : null,
                     scheduledTime,
+                    accountId: selectedAccount,
                 });
 
                 if (res.success) {
