@@ -113,6 +113,27 @@ export async function getLinkedinPosts({
         const q = query(collection(db, "linkedin_posts"), ...constraints);
         const snapshot = await getDocs(q);
 
+        // Fetch user's LinkedIn accounts to enrich post data
+        const accountsQuery = query(
+            collection(db, "socialAccounts"),
+            where("userId", "==", user.id)
+            // Robustness: intentionally fetching all user accounts to match by accountId, ignoring platform filter
+        );
+        const accountsSnapshot = await getDocs(accountsQuery);
+        const accountMap = {};
+        accountsSnapshot.forEach(doc => {
+            const data = doc.data();
+            // Store by ID. Ensure string key.
+            const id = data.accountId || doc.id;
+            if (id) {
+                accountMap[String(id)] = {
+                    displayName: data.displayName || data.username || "LinkedIn Member",
+                    profilePicture: data.profilePicture || data.image || data.avatar,
+                    headline: data.headline || "Professional"
+                };
+            }
+        });
+
         let posts = [];
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
@@ -141,7 +162,18 @@ export async function getLinkedinPosts({
             }
 
             if (posts.length < pageSize) {
-                posts.push(serializeDoc(docSnap));
+                const serializedPost = serializeDoc(docSnap);
+                // Look up account robustly
+                const account = accountMap[String(serializedPost.accountId)];
+
+                // Enrich post with account data
+                if (account) {
+                    serializedPost.displayName = account.displayName;
+                    serializedPost.profilePicture = account.profilePicture;
+                    serializedPost.headline = account.headline;
+                }
+
+                posts.push(serializedPost);
             }
         });
 

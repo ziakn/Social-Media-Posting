@@ -368,7 +368,7 @@ export default function LinkedinViewComponent({
                         {posts.map((post) => {
                             const message = post.text || post.message || post.caption || "";
                             const media = post.mediaUrls || (post.imageUrl ? [{ url: post.imageUrl, type: 'image' }] : []) || (post.videoUrl ? [{ url: post.videoUrl, type: 'video' }] : []) || [];
-                            const account = accounts.find(a => a.accountId === post.accountId);
+                            const account = accounts.find(a => String(a.accountId) === String(post.accountId));
 
                             return (
                                 <div key={post.id} className={cn("relative group transition-all duration-300 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md", publishingId === post.id && "opacity-70 pointer-events-none")}>
@@ -384,7 +384,11 @@ export default function LinkedinViewComponent({
                                             message: message,
                                             media: media
                                         }}
-                                        page={account || { displayName: post.displayName || "Member" }}
+                                        page={account || {
+                                            displayName: post.displayName || "Member",
+                                            profilePicture: post.profilePicture,
+                                            headline: post.headline || "LinkedIn Professional"
+                                        }}
                                         compact={true}
                                         noBorder={true}
                                         customActions={

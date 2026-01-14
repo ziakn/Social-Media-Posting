@@ -349,10 +349,10 @@ export default function LinkedinListingViewComponent({
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-full">
                                                         <Avatar className="h-4 w-4">
-                                                            <AvatarImage src={post.profilePicture} />
+                                                            <AvatarImage src={post.profilePicture || accounts.find(a => String(a.accountId) === String(post.accountId))?.profilePicture} />
                                                             <AvatarFallback className="text-[6px] font-black">{post.displayName?.[0]}</AvatarFallback>
                                                         </Avatar>
-                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-tight">{accounts.find(a => a.accountId === post.accountId)?.displayName || post.displayName || "LinkedIn"}</span>
+                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-tight">{accounts.find(a => String(a.accountId) === String(post.accountId))?.displayName || post.displayName || "LinkedIn"}</span>
                                                     </div>
                                                     <div className="w-1 h-1 rounded-full bg-zinc-200" />
                                                     <Badge variant="outline" className="text-[9px] font-black uppercase text-zinc-400 border-zinc-100 rounded-md py-0 px-1.5">
