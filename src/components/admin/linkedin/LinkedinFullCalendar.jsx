@@ -276,6 +276,22 @@ export default function LinkedinFullCalendar({
                                                                         <span className="text-[10px] text-gray-400 font-medium">Stats & Performance</span>
                                                                     </div>
                                                                 </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'edit'); }}
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
+                                                                >
+                                                                    <Eye className="h-5 w-5 text-gray-900" />
+                                                                    <span className="font-bold text-[13px] text-gray-900">View Post</span>
+                                                                </DropdownMenuItem>
+                                                                {post.permalink && (
+                                                                    <DropdownMenuItem
+                                                                        onClick={(e) => { e.stopPropagation(); window.open(post.permalink, '_blank'); }}
+                                                                        className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
+                                                                    >
+                                                                        <LinkedinLogo className="h-5 w-5 text-[#0077b5]" />
+                                                                        <span className="font-bold text-[13px] text-gray-900">View Native</span>
+                                                                    </DropdownMenuItem>
+                                                                )}
                                                             </>
                                                         ) : (
                                                             <>

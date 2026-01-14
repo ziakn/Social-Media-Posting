@@ -404,6 +404,16 @@ export default function LinkedinListingViewComponent({
                                                                 <BarChart3 className="h-5 w-5 text-gray-900" />
                                                                 <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
                                                             </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <Eye className="h-5 w-5 text-gray-900" />
+                                                                <span className="font-bold text-[13px] text-gray-900">View Post</span>
+                                                            </DropdownMenuItem>
+                                                            {post.permalink && (
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(post.permalink, '_blank'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                    <LinkedinLogo className="h-5 w-5 text-[#0077b5]" />
+                                                                    <span className="font-bold text-[13px] text-gray-900">View Native</span>
+                                                                </DropdownMenuItem>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <>
@@ -430,21 +440,23 @@ export default function LinkedinListingViewComponent({
                         </TableBody>
                     </Table>
                 </div>
-            </Card>
+            </Card >
 
-            {pagination.hasMore && (
-                <div className="flex justify-center pt-8">
-                    <Button onClick={handleLoadMore} disabled={loading} variant="outline" size="lg" className="w-full sm:w-auto min-w-[200px] h-12 rounded-full font-black text-xs uppercase tracking-widest border-gray-200">
-                        {loading ? "Loading..." : "Load More Activity"}
-                    </Button>
-                </div>
-            )}
+            {
+                pagination.hasMore && (
+                    <div className="flex justify-center pt-8">
+                        <Button onClick={handleLoadMore} disabled={loading} variant="outline" size="lg" className="w-full sm:w-auto min-w-[200px] h-12 rounded-full font-black text-xs uppercase tracking-widest border-gray-200">
+                            {loading ? "Loading..." : "Load More Activity"}
+                        </Button>
+                    </div>
+                )
+            }
 
-            <LinkedinAnalyticsModal
+            < LinkedinAnalyticsModal
                 open={analyticsModalOpen}
                 onOpenChange={setAnalyticsModalOpen}
                 post={selectedPostForAnalytics}
             />
-        </div>
+        </div >
     );
 }
