@@ -30,7 +30,8 @@ import { Separator } from "@/components/ui/separator";
 import {
     LayoutGrid, List, Calendar as CalendarIcon, Plus, X,
     ImageIcon, Play, Edit, Trash2, Send, Loader2, Check,
-    ChevronUp, ChevronDown, Upload, BarChart3, Clock
+    ChevronUp, ChevronDown, Upload, BarChart3, Clock,
+    FileText, Film, Link2
 } from "lucide-react";
 
 // Server Actions
@@ -56,19 +57,20 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
     const isEditing = !!initialData?.id;
     const isReadOnly = initialData?.readOnly || false;
 
-    const [postType, setPostType] = useState(initialData?.postType || "post");
+    const [postType, setPostType] = useState(initialData?.postType || "text");
     const [postContent, setPostContent] = useState({
         message: initialData?.text || initialData?.message || "",
         media: initialData?.imageUrl || initialData?.videoUrl ? [
             { url: initialData.imageUrl || initialData.videoUrl, type: initialData.imageUrl ? 'image' : 'video' }
         ] : [],
+        link: initialData?.link || ""
     });
 
     const [scheduling, setScheduling] = useState({
-        schedule: !!initialData?.scheduledAt,
-        date: initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date(),
-        time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        schedule: !!initialData?.scheduling?.schedule || !!initialData?.scheduledAt,
+        date: initialData?.scheduling?.date || (initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date()),
+        time: initialData?.scheduling?.time || (initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00"),
+        timezone: initialData?.scheduling?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
     });
 
     const [accounts, setAccounts] = useState([]);
@@ -76,8 +78,6 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
 
     const [galleryOpen, setGalleryOpen] = useState(false);
     const [galleryMediaType, setGalleryMediaType] = useState("image");
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const selectionScrollRef = useRef(null);
 
     useEffect(() => {
         async function loadAccounts() {
@@ -85,14 +85,10 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
             if (res.success) {
                 const accs = res.accounts || [];
                 setAccounts(accs);
-                // Auto-select first account if none selected and we're creating a new post
-                if (accs.length > 0 && !selectedAccount && !initialData?.accountId) {
-                    setSelectedAccount(accs[0].id);
-                }
             }
         }
         loadAccounts();
-    }, [selectedAccount, initialData?.accountId]); // Added dependencies to ensure update
+    }, [initialData?.accountId]);
 
     const handleGallerySelect = (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
@@ -103,256 +99,235 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
             type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image')
         }));
 
-        setPostContent(prev => ({
-            ...prev,
-            media: [...prev.media, ...newMedia].slice(0, 1) // LinkedIn basic post usually 1 unless document
-        }));
+        if (galleryMediaType === 'video') {
+            setPostContent(prev => ({ ...prev, media: [newMedia[0]] }));
+        } else {
+            // LinkedIn component currently handles single image mostly via action
+            setPostContent(prev => ({ ...prev, media: [newMedia[0]] }));
+        }
+
         setGalleryOpen(false);
     };
 
-    const removeMedia = (index) => {
-        setPostContent(prev => ({
-            ...prev,
-            media: prev.media.filter((_, i) => i !== index)
-        }));
-    };
+    const handleSubmit = () => {
+        if (!selectedAccount) {
+            toast.error("Please select a LinkedIn account");
+            return;
+        }
 
-    const handleSubmit = async () => {
-        if (!selectedAccount) return toast.error("Please select a LinkedIn account");
-        if (!postContent.message.trim() && postContent.media.length === 0) return toast.error("Post must have text or media");
+        const payload = {
+            text: postContent.message,
+            accountId: selectedAccount,
+            scheduledTime: scheduling.schedule ? new Date(`${format(scheduling.date, "yyyy-MM-dd")}T${scheduling.time}`) : null,
+            imageUrl: postType === 'images' && postContent.media[0]?.type === 'image' ? postContent.media[0].url : null,
+            videoUrl: postType === 'video' && postContent.media[0]?.type === 'video' ? postContent.media[0].url : null,
+        };
+
+        if (postType === 'link' && postContent.link) {
+            payload.text = `${postContent.message}\n\n${postContent.link}`;
+        }
 
         startTransition(async () => {
             try {
-                const scheduledTime = scheduling.schedule ? getDateTime(scheduling.date, scheduling.time) : null;
-
-                let result;
+                let res;
                 if (isEditing) {
-                    result = await updateLinkedinPostAction({
+                    res = await updateLinkedinPostAction({
                         postId: initialData.id,
                         accountId: selectedAccount,
-                        text: postContent.message,
-                        imageUrl: postContent.media[0]?.type === 'image' ? postContent.media[0].url : null,
-                        videoUrl: postContent.media[0]?.type === 'video' ? postContent.media[0].url : null,
-                        scheduledAt: scheduledTime
+                        text: payload.text,
+                        imageUrl: payload.imageUrl,
+                        videoUrl: payload.videoUrl,
+                        scheduledAt: payload.scheduledTime
                     });
                 } else {
-                    result = await createLinkedinPost({
-                        text: postContent.message,
-                        imageUrl: postContent.media[0]?.type === 'image' ? postContent.media[0].url : null,
-                        videoUrl: postContent.media[0]?.type === 'video' ? postContent.media[0].url : null,
-                        scheduledTime: scheduledTime,
-                        accountId: selectedAccount,
-                    });
+                    res = await createLinkedinPost(payload);
                 }
 
-                if (result.success) {
-                    toast.success(scheduling.schedule ? (isEditing ? "Schedule updated!" : "Post scheduled!") : (isEditing ? "Post updated!" : "Post published!"));
-                    onSuccess?.();
+                if (res.success) {
+                    toast.success(res.message);
+                    if (onSuccess) onSuccess();
                 } else {
-                    toast.error(result.message || "Failed to submit post");
+                    toast.error(res.message);
                 }
-            } catch (error) {
-                toast.error(error.message);
+            } catch (err) {
+                toast.error("Failed to submit post");
             }
         });
     };
 
-    const characterCount = postContent.message.length;
-    const maxCharacters = 3000; // LinkedIn limit
-
     return (
-        <div className="w-full h-full flex flex-col bg-gray-50 overflow-hidden">
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-                <div className="p-4 lg:p-8 space-y-6 lg:space-y-10">
-                    {/* Account Selection */}
-                    <div className="space-y-3 px-2">
-                        <div className="flex items-center gap-2 opacity-50">
-                            <LinkedinLogo className="h-2.5 w-2.5 text-[#0077b5]" />
-                            <h3 className="text-[9px] font-black text-gray-900 uppercase tracking-[0.3em]"> Channel Selection </h3>
+        <div className="space-y-6 pt-2">
+            <div className="space-y-4">
+                <div className="space-y-2">
+                    <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Select Account</Label>
+                    <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                        <SelectTrigger className="w-full h-12 rounded-xl border-gray-200">
+                            <SelectValue placeholder="Select LinkedIn Account" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {accounts.map(acc => (
+                                <SelectItem key={acc.id} value={acc.id}>{acc.displayName}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                <Tabs value={postType} onValueChange={setPostType} className="w-full">
+                    <TabsList className="grid grid-cols-4 w-full bg-gray-50/50 p-1 rounded-xl">
+                        <TabsTrigger value="text" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><FileText className="h-4 w-4" /> Text</TabsTrigger>
+                        <TabsTrigger value="images" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><ImageIcon className="h-4 w-4" /> Images</TabsTrigger>
+                        <TabsTrigger value="video" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><Film className="h-4 w-4" /> Video</TabsTrigger>
+                        <TabsTrigger value="link" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><Link2 className="h-4 w-4" /> Link</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="text" className="pt-4 animate-in slide-in-from-top-2">
+                        <div className="space-y-3">
+                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Post Content</Label>
+                            <SocialCaptionEditor
+                                value={postContent.message}
+                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
+                                placeholder="What do you want to talk about?"
+                                platform="linkedin"
+                                className="min-h-[150px] rounded-xl"
+                            />
                         </div>
-                        <div className="flex flex-wrap gap-5 items-center">
-                            {accounts.map((acc) => {
-                                const isSelected = selectedAccount === acc.id;
-                                return (
-                                    <div key={acc.id} onClick={() => !isReadOnly && setSelectedAccount(acc.id)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-[#0077b5] bg-white shadow-xl shadow-[#0077b5]/10" : "w-12 h-12 border-gray-100 opacity-60 hover:opacity-100 scale-95 hover:scale-100", isReadOnly && "cursor-default opacity-100")}>
-                                        <div className="w-10 h-10 relative">
-                                            <div className={cn("w-full h-full rounded-full bg-[#0077b5] p-[2.5px]", isSelected && "animate-spin-slow shadow-[0_0_15px_rgba(0,119,181,0.2)]")}>
-                                                <div className="w-full h-full rounded-full bg-white p-[2px]">
-                                                    <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-black overflow-hidden shadow-inner">
-                                                        {acc.profilePicture ? <img src={acc.profilePicture} alt="" className="w-full h-full object-cover" /> : acc.displayName?.charAt(0)}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {isSelected && <div className="absolute -top-1 -right-1 bg-[#0077b5] text-white rounded-full p-1.5 border-2 border-white shadow-md"><Check className="h-2 w-2 stroke-[3]" /></div>}
-                                        </div>
-                                    </div>
-                                );
-                            })}
+                    </TabsContent>
+
+                    <TabsContent value="images" className="pt-4 space-y-4 animate-in slide-in-from-top-2">
+                        <div className="space-y-3">
+                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Caption</Label>
+                            <SocialCaptionEditor
+                                value={postContent.message}
+                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
+                                placeholder="Add a caption..."
+                                platform="linkedin"
+                                className="min-h-[100px] rounded-xl"
+                            />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-6 lg:gap-10 items-start">
-                        {/* Editor */}
-                        <div className="space-y-6">
-                            {/* Strategy / Scheduling */}
-                            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="p-1.5 bg-blue-50 rounded-lg"><Clock className="h-3.5 w-3.5 text-[#0077b5]" /></div>
-                                        <h3 className="text-[11px] font-black text-gray-900 leading-none tracking-widest uppercase">Smart Scheduler</h3>
-                                    </div>
-                                    <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-[#0077b5] scale-75" />
+                        <div className="space-y-2">
+                            {postContent.media.length > 0 && postContent.media[0].type === 'image' ? (
+                                <div className="relative aspect-video rounded-xl overflow-hidden border border-gray-100 shadow-sm group">
+                                    <img src={postContent.media[0].url} className="w-full h-full object-cover" />
+                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPostContent(prev => ({ ...prev, media: [] }))}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white text-[10px] rounded-md backdrop-blur-sm">Image Selected</div>
                                 </div>
-                                {scheduling.schedule && (
-                                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-50">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button disabled={isReadOnly} variant="outline" className="w-full h-9 rounded-xl text-[10px] uppercase font-black justify-start px-3 tracking-widest leading-none border-gray-100 hover:bg-gray-50">
-                                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-[#0077b5]" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 border-0 rounded-3xl overflow-hidden shadow-2xl" align="start">
-                                                <Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-9 rounded-xl text-xs font-bold border-gray-100 bg-gray-50/20 px-3" />
-                                    </div>
-                                )}
-                            </div>
+                            ) : (
+                                <Button variant="outline" className="w-full h-32 border-dashed border-2 rounded-xl flex flex-col gap-2 hover:bg-gray-50 hover:border-blue-200 transition-colors" onClick={() => { setGalleryMediaType('image'); setGalleryOpen(true); }}>
+                                    <div className="p-3 bg-blue-50 rounded-full text-[#0077b5]"><ImageIcon className="h-6 w-6" /></div>
+                                    <span className="text-xs font-medium text-gray-500">Click to select an image from gallery</span>
+                                </Button>
+                            )}
+                        </div>
+                    </TabsContent>
 
-                            {/* Content */}
-                            <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-80 pl-1">Format</h3>
-                                    <div className="flex gap-1 bg-gray-50 p-1 rounded-xl">
-                                        {["post", "carousel"].map(type => (
-                                            <button
-                                                key={type}
-                                                disabled={isReadOnly || isEditing}
-                                                onClick={() => { setPostType(type); }}
-                                                className={cn(
-                                                    "px-6 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-[0.2em]",
-                                                    postType === type
-                                                        ? "bg-white text-[#0077b5] shadow-md ring-1 ring-[#0077b5]/5"
-                                                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50",
-                                                    (isReadOnly || isEditing) && "cursor-not-allowed opacity-50"
-                                                )}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <SocialCaptionEditor
-                                        disabled={isReadOnly}
-                                        value={postContent.message}
-                                        onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
-                                        placeholder="What's on your mind?"
-                                        platform="linkedin"
-                                        className="rounded-2xl border-gray-100 bg-gray-50/10 p-6 font-sans text-[15px] text-gray-800 leading-relaxed min-h-[180px] focus:bg-white focus:ring-4 focus:ring-blue-50 transition-all shadow-inner"
-                                    />
-
-                                    <div className="flex justify-between items-center px-1">
-                                        <span className={cn("text-[10px] font-black uppercase tracking-widest", characterCount > maxCharacters ? "text-red-500" : "text-gray-300 font-bold")}>
-                                            {characterCount} <span className="text-gray-200 mx-1">/</span> {maxCharacters}
-                                        </span>
-                                    </div>
-                                </div>
-                                <Separator className="bg-gray-50/50" />
-
-                                <div className="space-y-4">
-                                    <Label className="text-xs font-black text-gray-900 uppercase tracking-[0.2em]">Media</Label>
-                                    <Button disabled={isReadOnly} variant="outline" onClick={() => { setGalleryMediaType(["image", "video"]); setGalleryOpen(true); }} className="h-28 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#0077b5] hover:bg-blue-50/20 flex flex-col gap-2 group transition-all duration-300">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-gray-50 group-hover:bg-[#0077b5] group-hover:text-white rounded-lg transition-colors duration-300">
-                                                <ImageIcon className="h-5 w-5" />
-                                            </div>
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-[#0077b5]">Select Media</span>
-                                        <span className="text-[9px] text-gray-400 font-medium">Add a photo or video to your post</span>
+                    <TabsContent value="video" className="pt-4 space-y-4 animate-in slide-in-from-top-2">
+                        <div className="space-y-3">
+                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Caption</Label>
+                            <SocialCaptionEditor
+                                value={postContent.message}
+                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
+                                placeholder="Add a caption..."
+                                platform="linkedin"
+                                className="min-h-[100px] rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            {postContent.media.length > 0 && postContent.media[0].type === 'video' ? (
+                                <div className="relative aspect-video rounded-xl overflow-hidden border bg-black group">
+                                    <video src={postContent.media[0].url} className="w-full h-full object-contain" controls />
+                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPostContent(prev => ({ ...prev, media: [] }))}>
+                                        <X className="h-4 w-4" />
                                     </Button>
                                 </div>
-                            </div>
+                            ) : (
+                                <Button variant="outline" className="w-full h-32 border-dashed border-2 rounded-xl flex flex-col gap-2 hover:bg-gray-50 hover:border-blue-200 transition-colors" onClick={() => { setGalleryMediaType('video'); setGalleryOpen(true); }}>
+                                    <div className="p-3 bg-purple-50 rounded-full text-purple-600"><Film className="h-6 w-6" /></div>
+                                    <span className="text-xs font-medium text-gray-500">Click to select a video</span>
+                                </Button>
+                            )}
                         </div>
+                    </TabsContent>
 
-                        {/* Preview */}
-                        <div className="lg:sticky top-0 flex gap-4">
-                            <div className="flex-1 min-w-0">
-                                <LinkedinPreview
-                                    content={postContent}
-                                    page={accounts.find(a => a.accountId === selectedAccount)}
+                    <TabsContent value="link" className="pt-4 space-y-4 animate-in slide-in-from-top-2">
+                        <div className="space-y-3">
+                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Caption</Label>
+                            <SocialCaptionEditor
+                                value={postContent.message}
+                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
+                                placeholder="Add a comment for this link..."
+                                platform="linkedin"
+                                className="min-h-[100px] rounded-xl"
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Link URL</Label>
+                            <div className="relative">
+                                <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Input
+                                    className="pl-9 rounded-xl"
+                                    placeholder="https://example.com"
+                                    value={postContent.link}
+                                    onChange={(e) => setPostContent(prev => ({ ...prev, link: e.target.value }))}
                                 />
-                                {postContent.media.length > 0 && (
-                                    <div className="mt-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-3 overflow-hidden">
-                                                <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-gray-100">
-                                                    {postContent.media[0].type === 'video' ? (
-                                                        <div className="w-full h-full bg-black flex items-center justify-center"><Play className="h-4 w-4 text-white" /></div>
-                                                    ) : (
-                                                        <img src={postContent.media[0].url} alt="" className="w-full h-full object-cover" />
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-900 truncate">Selected Media</span>
-                                                    <span className="text-[9px] text-gray-400 font-medium truncate italic">{postContent.media[0].name || "Post Media"}</span>
-                                                </div>
-                                            </div>
-                                            {!isReadOnly && (
-                                                <Button variant="ghost" size="icon" onClick={() => removeMedia(0)} className="rounded-full hover:bg-red-50 hover:text-red-500 text-gray-400 transition-colors">
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         </div>
+                    </TabsContent>
+                </Tabs>
+
+                <div className="pt-4 pb-2">
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className={cn("p-1.5 rounded-lg transition-colors", scheduling.schedule ? "bg-blue-100 text-[#0077b5]" : "bg-gray-200 text-gray-500")}>
+                                    <Clock className="h-4 w-4" />
+                                </div>
+                                <span className="text-sm font-bold text-gray-700">Schedule Post</span>
+                            </div>
+                            <Switch checked={scheduling.schedule} onCheckedChange={(c) => setScheduling(prev => ({ ...prev, schedule: c }))} />
+                        </div>
+                        {scheduling.schedule && (
+                            <div className="grid grid-cols-2 gap-3 pt-2 animate-in slide-in-from-top-2">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button variant="outline" className="w-full justify-start text-left font-normal rounded-xl border-gray-200 h-11 bg-white">
+                                            <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
+                                            {scheduling.date ? format(scheduling.date, "PPP") : <span>Pick a date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar mode="single" selected={scheduling.date} onSelect={(date) => setScheduling(prev => ({ ...prev, date }))} initialFocus />
+                                    </PopoverContent>
+                                </Popover>
+                                <Input
+                                    type="time"
+                                    value={scheduling.time}
+                                    onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))}
+                                    className="rounded-xl border-gray-200 h-11 bg-white"
+                                />
+                            </div>
+                        )}
                     </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                    <Button variant="ghost" onClick={() => onSuccess?.()} className="rounded-xl">Cancel</Button>
+                    <Button onClick={handleSubmit} disabled={isPending || !selectedAccount} className="bg-[#0077b5] hover:bg-[#006097] text-white rounded-xl px-8 font-bold shadow-lg shadow-blue-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+                        {scheduling.schedule ? "Schedule Post" : "Publish Masterpiece"}
+                    </Button>
                 </div>
             </div>
 
-            {/* Sticky Footer */}
-            <div className="shrink-0 px-8 py-4 bg-white border-t border-gray-100 flex items-center justify-end gap-3">
-                <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-900" onClick={() => onSuccess?.()}>
-                    {isReadOnly ? "Close" : "Cancel"}
-                </Button>
-
-                {isReadOnly && (
-                    <>
-                        <Button
-                            variant="outline"
-                            className="h-11 px-6 rounded-xl border-gray-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2"
-                            onClick={() => {
-                                onSuccess?.();
-                            }}
-                        >
-                            <BarChart3 className="h-3.5 w-3.5" />
-                            View Analytics
-                        </Button>
-                    </>
-                )}
-
-                {!isReadOnly && (
-                    <Button
-                        onClick={handleSubmit}
-                        disabled={isPending}
-                        className="h-11 px-8 rounded-xl bg-[#0077b5] hover:bg-[#006097] text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-100 transition-all active:scale-95"
-                    >
-                        {isPending ? (
-                            <>
-                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            scheduling.schedule ? (isEditing ? "Update Schedule" : "Schedule Post") : (isEditing ? "Save Changes" : "Publish Now")
-                        )}
-                    </Button>
-                )}
-            </div>
-            <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={false} maxSelection={1} />
+            <GalleryModal
+                open={galleryOpen}
+                onOpenChange={setGalleryOpen}
+                apiEndpoint="/api/admin/gallery"
+                onSelect={handleGallerySelect}
+                allowedTypes={galleryMediaType === 'image' ? ['image'] : ['video']}
+                maxSelection={1}
+            />
         </div>
     );
 }
@@ -386,7 +361,8 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                 date: date,
                 time: "12:00",
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-            }
+            },
+            readOnly: false
         });
         setIsCreating(true);
     };

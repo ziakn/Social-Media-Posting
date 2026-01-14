@@ -23,17 +23,17 @@ import { checkLinkedinConnection } from "@/app/actions/social/linkedin/connectAc
 import GalleryModal from "@/components/gallery/GalleryModal";
 import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
 
-export default function CreateLinkedinPost() {
+export default function CreateLinkedinPost({ initialData, onSuccess }) {
     const [isPending, startTransition] = useTransition();
     const [selectedAccount, setSelectedAccount] = useState("");
     const [postContent, setPostContent] = useState({
-        text: "",
-        media: null,
+        text: initialData?.text || "",
+        media: initialData?.media || null,
     });
     const [scheduling, setScheduling] = useState({
-        schedule: false,
-        date: new Date(),
-        time: "12:00",
+        schedule: initialData?.scheduling?.schedule || false,
+        date: initialData?.scheduling?.date || new Date(),
+        time: initialData?.scheduling?.time || "12:00",
     });
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
@@ -56,10 +56,6 @@ export default function CreateLinkedinPost() {
                         }];
                     }
                     setAccounts(accs);
-
-                    if (accs.length > 0) {
-                        setSelectedAccount(accs[0].id);
-                    }
                 }
             } catch (error) {
                 console.error("Failed to load LinkedIn accounts", error);

@@ -123,6 +123,23 @@ export async function getLinkedinPosts({
                 if (!text.includes(filters.searchQuery.toLowerCase())) return;
             }
 
+            // Post Type Filter logic
+            if (filters.postType && filters.postType !== "all") {
+                const hasVideo = !!data.videoUrl;
+                const hasImage = !!data.imageUrl;
+                const matchesUrl = /(https?:\/\/[^\s]+)/g.test(data.text || "");
+
+                let type = "text";
+                if (hasVideo) type = "video";
+                else if (hasImage) type = "image";
+                else if (matchesUrl) type = "link";
+
+                if (filters.postType === "link" && type !== "link") return;
+                if (filters.postType === "video" && type !== "video") return;
+                if (filters.postType === "image" && type !== "image") return;
+                if (filters.postType === "text" && type !== "text") return;
+            }
+
             if (posts.length < pageSize) {
                 posts.push(serializeDoc(docSnap));
             }
