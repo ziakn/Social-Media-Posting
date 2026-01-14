@@ -12,7 +12,8 @@ export default function LinkedinPreview({
     currentSlide = 0,
     hideLogo = false,
     compact = false,
-    noBorder = false
+    noBorder = false,
+    customActions = null
 }) {
     const { message, text, caption, media = [] } = content;
     const postMessage = message || text || caption || "";
@@ -52,9 +53,12 @@ export default function LinkedinPreview({
                             </div>
                         </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 rounded-full hover:bg-gray-100">
-                        <MoreHorizontal className="h-5 w-5" />
-                    </Button>
+                    {/* Custom Actions */}
+                    {customActions ? customActions : (
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 rounded-full hover:bg-gray-100">
+                            <MoreHorizontal className="h-5 w-5" />
+                        </Button>
+                    )}
                 </div>
 
                 {/* Text Content */}

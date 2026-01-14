@@ -241,7 +241,7 @@ export default function LinkedinFullCalendar({
                                                             <Clock className="h-3 w-3 text-gray-400 shrink-0" />
                                                         )}
                                                         <p className="font-black text-gray-900 truncate tracking-tighter">
-                                                            {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm a") : "Draft"}
+                                                            {(post.scheduledAt || post.createdAt) ? format(new Date(post.scheduledAt || post.createdAt), "h:mm a") : "Draft"}
                                                         </p>
                                                     </div>
                                                 </div>

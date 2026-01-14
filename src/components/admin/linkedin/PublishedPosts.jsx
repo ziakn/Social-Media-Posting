@@ -31,7 +31,7 @@ import {
     LayoutGrid, List, Calendar as CalendarIcon, Plus, X,
     ImageIcon, Play, Edit, Trash2, Send, Loader2, Check,
     ChevronUp, ChevronDown, Upload, BarChart3, Clock,
-    FileText, Film, Link2
+    FileText, Film, Link2, Users
 } from "lucide-react";
 
 // Server Actions
@@ -99,13 +99,7 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
             type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image')
         }));
 
-        if (galleryMediaType === 'video') {
-            setPostContent(prev => ({ ...prev, media: [newMedia[0]] }));
-        } else {
-            // LinkedIn component currently handles single image mostly via action
-            setPostContent(prev => ({ ...prev, media: [newMedia[0]] }));
-        }
-
+        setPostContent(prev => ({ ...prev, media: [newMedia[0]] }));
         setGalleryOpen(false);
     };
 
@@ -155,169 +149,195 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
         });
     };
 
+    const selectedAccountObj = accounts.find(a => a.id === selectedAccount);
+
     return (
-        <div className="space-y-6 pt-2">
-            <div className="space-y-4">
-                <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Select Account</Label>
-                    <Select value={selectedAccount} onValueChange={setSelectedAccount}>
-                        <SelectTrigger className="w-full h-12 rounded-xl border-gray-200">
-                            <SelectValue placeholder="Select LinkedIn Account" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {accounts.map(acc => (
-                                <SelectItem key={acc.id} value={acc.id}>{acc.displayName}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <Tabs value={postType} onValueChange={setPostType} className="w-full">
-                    <TabsList className="grid grid-cols-4 w-full bg-gray-50/50 p-1 rounded-xl">
-                        <TabsTrigger value="text" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><FileText className="h-4 w-4" /> Text</TabsTrigger>
-                        <TabsTrigger value="images" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><ImageIcon className="h-4 w-4" /> Images</TabsTrigger>
-                        <TabsTrigger value="video" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><Film className="h-4 w-4" /> Video</TabsTrigger>
-                        <TabsTrigger value="link" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm"><Link2 className="h-4 w-4" /> Link</TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="text" className="pt-4 animate-in slide-in-from-top-2">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Post Content</Label>
-                            <SocialCaptionEditor
-                                value={postContent.message}
-                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
-                                placeholder="What do you want to talk about?"
-                                platform="linkedin"
-                                className="min-h-[150px] rounded-xl"
-                            />
+        <div className="w-full h-full flex flex-col bg-gray-50 overflow-hidden">
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                <div className="p-4 lg:p-8 space-y-6 lg:space-y-8">
+                    {/* Account Selection */}
+                    <div className="space-y-3 px-2">
+                        <div className="flex items-center gap-2 opacity-40">
+                            <Users className="h-2.5 w-2.5 text-[#0077b5]" />
+                            <h3 className="text-[8px] font-black text-gray-900 uppercase tracking-[0.3em]"> Channel Selection </h3>
                         </div>
-                    </TabsContent>
-
-                    <TabsContent value="images" className="pt-4 space-y-4 animate-in slide-in-from-top-2">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Caption</Label>
-                            <SocialCaptionEditor
-                                value={postContent.message}
-                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
-                                placeholder="Add a caption..."
-                                platform="linkedin"
-                                className="min-h-[100px] rounded-xl"
-                            />
+                        <div className="flex flex-wrap gap-4 items-center">
+                            {accounts.map((acc) => {
+                                const isSelected = selectedAccount === acc.id;
+                                return (
+                                    <div key={acc.id} onClick={() => !isReadOnly && setSelectedAccount(acc.id)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-[#0077b5] bg-blue-50 shadow-lg" : "w-12 h-12 border-gray-100 opacity-60", isReadOnly && "cursor-default")}>
+                                        <div className="w-10 h-10 relative">
+                                            <div className={cn("w-full h-full rounded-full bg-gradient-to-tr from-[#0077b5] to-blue-600 p-[2px]", isSelected && "animate-spin-slow")}>
+                                                <div className="w-full h-full rounded-full bg-white p-[2px]">
+                                                    <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center text-gray-400 font-black overflow-hidden">
+                                                        {acc.profilePicture ? <img src={acc.profilePicture} alt="" className="w-full h-full object-cover" /> : acc.displayName.charAt(0)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {isSelected && <div className="absolute -top-1 -right-1 bg-[#0077b5] text-white rounded-full p-1"><Check className="h-2 w-2" /></div>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                        <div className="space-y-2">
-                            {postContent.media.length > 0 && postContent.media[0].type === 'image' ? (
-                                <div className="relative aspect-video rounded-xl overflow-hidden border border-gray-100 shadow-sm group">
-                                    <img src={postContent.media[0].url} className="w-full h-full object-cover" />
-                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPostContent(prev => ({ ...prev, media: [] }))}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 text-white text-[10px] rounded-md backdrop-blur-sm">Image Selected</div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-6 lg:gap-8 items-start">
+                        {/* Editor */}
+                        <div className="space-y-6">
+                            {/* Strategy */}
+                            <div className="bg-white rounded-xl p-2.5 border border-gray-100 shadow-sm flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="h-3.5 w-3.5 text-[#0077b5]" />
+                                        <h3 className="text-xs font-black text-gray-900 leading-none">Smart Scheduler</h3>
+                                    </div>
+                                    <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-[#0077b5] scale-75" />
                                 </div>
-                            ) : (
-                                <Button variant="outline" className="w-full h-32 border-dashed border-2 rounded-xl flex flex-col gap-2 hover:bg-gray-50 hover:border-blue-200 transition-colors" onClick={() => { setGalleryMediaType('image'); setGalleryOpen(true); }}>
-                                    <div className="p-3 bg-blue-50 rounded-full text-[#0077b5]"><ImageIcon className="h-6 w-6" /></div>
-                                    <span className="text-xs font-medium text-gray-500">Click to select an image from gallery</span>
-                                </Button>
-                            )}
-                        </div>
-                    </TabsContent>
+                                {scheduling.schedule && (
+                                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-50">
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                                <Button disabled={isReadOnly} variant="outline" className="w-full h-8 rounded-lg text-xs justify-start px-2"><CalendarIcon className="mr-1.5 h-3 w-3 text-[#0077b5]" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}</Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0 border-0 rounded-3xl" align="start"><Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus /></PopoverContent>
+                                        </Popover>
+                                        <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-8 rounded-lg text-xs" />
+                                    </div>
+                                )}
+                            </div>
 
-                    <TabsContent value="video" className="pt-4 space-y-4 animate-in slide-in-from-top-2">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Caption</Label>
-                            <SocialCaptionEditor
-                                value={postContent.message}
-                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
-                                placeholder="Add a caption..."
-                                platform="linkedin"
-                                className="min-h-[100px] rounded-xl"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            {postContent.media.length > 0 && postContent.media[0].type === 'video' ? (
-                                <div className="relative aspect-video rounded-xl overflow-hidden border bg-black group">
-                                    <video src={postContent.media[0].url} className="w-full h-full object-contain" controls />
-                                    <Button variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPostContent(prev => ({ ...prev, media: [] }))}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
+                            {/* Content */}
+                            <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-black text-gray-900 uppercase">Format</h3>
+                                    <Tabs value={postType} onValueChange={setPostType} className="w-auto">
+                                        <TabsList className="bg-gray-50/50 p-1 rounded-lg h-auto">
+                                            {[
+                                                { id: "text", icon: FileText, label: "Text" },
+                                                { id: "images", icon: ImageIcon, label: "Image" },
+                                                { id: "video", icon: Film, label: "Video" },
+                                                { id: "link", icon: Link2, label: "Link" }
+                                            ].map(type => (
+                                                <TabsTrigger
+                                                    key={type.id}
+                                                    value={type.id}
+                                                    disabled={isReadOnly || isEditing}
+                                                    className="rounded-md text-[10px] uppercase font-black px-3 py-1.5 data-[state=active]:bg-white data-[state=active]:text-[#0077b5] data-[state=active]:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    onClick={() => {
+                                                        if (type.id !== 'text' && type.id !== 'link') {
+                                                            setPostContent(prev => ({ ...prev, media: [] }));
+                                                        }
+                                                    }}
+                                                >
+                                                    <type.icon className="h-3 w-3 mr-1.5" /> {type.label}
+                                                </TabsTrigger>
+                                            ))}
+                                        </TabsList>
+                                    </Tabs>
                                 </div>
-                            ) : (
-                                <Button variant="outline" className="w-full h-32 border-dashed border-2 rounded-xl flex flex-col gap-2 hover:bg-gray-50 hover:border-blue-200 transition-colors" onClick={() => { setGalleryMediaType('video'); setGalleryOpen(true); }}>
-                                    <div className="p-3 bg-purple-50 rounded-full text-purple-600"><Film className="h-6 w-6" /></div>
-                                    <span className="text-xs font-medium text-gray-500">Click to select a video</span>
-                                </Button>
-                            )}
-                        </div>
-                    </TabsContent>
 
-                    <TabsContent value="link" className="pt-4 space-y-4 animate-in slide-in-from-top-2">
-                        <div className="space-y-3">
-                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Caption</Label>
-                            <SocialCaptionEditor
-                                value={postContent.message}
-                                onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
-                                placeholder="Add a comment for this link..."
-                                platform="linkedin"
-                                className="min-h-[100px] rounded-xl"
-                            />
+                                <Separator className="bg-gray-50" />
+
+                                <div className="space-y-4">
+                                    <Label className="text-xs font-black uppercase text-gray-500">Post Content</Label>
+                                    <SocialCaptionEditor
+                                        disabled={isReadOnly}
+                                        value={postContent.message}
+                                        onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
+                                        placeholder="What do you want to share with your professional network?"
+                                        platform="linkedin"
+                                        className="rounded-xl border-gray-50 bg-gray-50/50 p-4 font-medium text-sm text-gray-800 min-h-[150px]"
+                                    />
+                                </div>
+
+                                {(postType === "images" || postType === "video") && (
+                                    <div className="space-y-4 animate-in slide-in-from-top-2">
+                                        <Label className="text-xs font-black uppercase text-gray-500">Media</Label>
+                                        {postContent.media.length > 0 ? (
+                                            <div className="relative aspect-video rounded-xl overflow-hidden border border-gray-100 shadow-sm group bg-black">
+                                                {postContent.media[0].type === 'video' ? (
+                                                    <video src={postContent.media[0].url} className="w-full h-full object-contain" controls />
+                                                ) : (
+                                                    <img src={postContent.media[0].url} className="w-full h-full object-cover" />
+                                                )}
+                                                <Button variant="destructive" size="icon" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => setPostContent(prev => ({ ...prev, media: [] }))}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <Button
+                                                disabled={isReadOnly}
+                                                variant="outline"
+                                                onClick={() => {
+                                                    setGalleryMediaType(postType === "video" ? "video" : "image");
+                                                    setGalleryOpen(true);
+                                                }}
+                                                className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#0077b5] hover:bg-blue-50 flex flex-col gap-2 transition-all"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {postType === "video" ? <Film className="h-6 w-6 text-[#0077b5]" /> : <ImageIcon className="h-6 w-6 text-[#0077b5]" />}
+                                                </div>
+                                                <span className="text-xs font-black uppercase text-gray-600">Select {postType === "video" ? "Video" : "Image"}</span>
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {postType === "link" && (
+                                    <div className="space-y-3 animate-in slide-in-from-top-2">
+                                        <Label className="text-xs font-black uppercase text-gray-500">Link URL</Label>
+                                        <div className="relative">
+                                            <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                            <Input
+                                                className="pl-9 rounded-xl h-11 bg-gray-50/50 border-gray-100"
+                                                placeholder="https://example.com/article"
+                                                value={postContent.link}
+                                                onChange={(e) => setPostContent(prev => ({ ...prev, link: e.target.value }))}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                        <div className="space-y-3">
-                            <Label className="text-xs font-black uppercase tracking-wider text-gray-500">Link URL</Label>
-                            <div className="relative">
-                                <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <Input
-                                    className="pl-9 rounded-xl"
-                                    placeholder="https://example.com"
-                                    value={postContent.link}
-                                    onChange={(e) => setPostContent(prev => ({ ...prev, link: e.target.value }))}
+
+                        {/* Preview & Media Tray */}
+                        <div className="lg:sticky top-0 flex gap-4">
+                            <div className="flex-1 min-w-0">
+                                <Label className="block mb-4 text-xs font-black uppercase text-gray-400 text-center tracking-widest">Live Preview</Label>
+                                <LinkedinPreview
+                                    content={{
+                                        ...postContent,
+                                        message: postType === 'link' && postContent.link ? `${postContent.message}\n\n${postContent.link}` : postContent.message
+                                    }}
+                                    page={selectedAccountObj}
                                 />
                             </div>
                         </div>
-                    </TabsContent>
-                </Tabs>
-
-                <div className="pt-4 pb-2">
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className={cn("p-1.5 rounded-lg transition-colors", scheduling.schedule ? "bg-blue-100 text-[#0077b5]" : "bg-gray-200 text-gray-500")}>
-                                    <Clock className="h-4 w-4" />
-                                </div>
-                                <span className="text-sm font-bold text-gray-700">Schedule Post</span>
-                            </div>
-                            <Switch checked={scheduling.schedule} onCheckedChange={(c) => setScheduling(prev => ({ ...prev, schedule: c }))} />
-                        </div>
-                        {scheduling.schedule && (
-                            <div className="grid grid-cols-2 gap-3 pt-2 animate-in slide-in-from-top-2">
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className="w-full justify-start text-left font-normal rounded-xl border-gray-200 h-11 bg-white">
-                                            <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
-                                            {scheduling.date ? format(scheduling.date, "PPP") : <span>Pick a date</span>}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar mode="single" selected={scheduling.date} onSelect={(date) => setScheduling(prev => ({ ...prev, date }))} initialFocus />
-                                    </PopoverContent>
-                                </Popover>
-                                <Input
-                                    type="time"
-                                    value={scheduling.time}
-                                    onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))}
-                                    className="rounded-xl border-gray-200 h-11 bg-white"
-                                />
-                            </div>
-                        )}
                     </div>
                 </div>
+            </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-                    <Button variant="ghost" onClick={() => onSuccess?.()} className="rounded-xl">Cancel</Button>
-                    <Button onClick={handleSubmit} disabled={isPending || !selectedAccount} className="bg-[#0077b5] hover:bg-[#006097] text-white rounded-xl px-8 font-bold shadow-lg shadow-blue-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
-                        {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
+            {/* Footer */}
+            <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
+                <Button variant="ghost" onClick={() => onSuccess?.()} className="rounded-xl">{isReadOnly ? "Close" : "Cancel"}</Button>
+
+                {isReadOnly ? (
+                    initialData?.permalink && (
+                        <Button
+                            onClick={() => window.open(initialData.permalink, '_blank')}
+                            className="bg-white hover:bg-gray-50 text-[#0077b5] border border-gray-200 font-bold rounded-xl px-6 h-11 flex items-center gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        >
+                            <LinkedinLogo className="h-4 w-4" />
+                            View Native
+                        </Button>
+                    )
+                ) : (
+                    <Button disabled={isPending || !selectedAccount} onClick={handleSubmit} className="bg-[#0077b5] hover:bg-[#006097] text-white font-bold rounded-xl px-12 h-11 shadow-lg shadow-blue-200 transition-all hover:scale-[1.02] active:scale-[0.98]">
+                        {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />)}
                         {scheduling.schedule ? "Schedule Post" : "Publish Masterpiece"}
                     </Button>
-                </div>
+                )}
             </div>
 
             <GalleryModal

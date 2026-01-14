@@ -22,6 +22,7 @@ import { getLinkedinPosts, getLinkedinPostsStats, publishLinkedinPostNow, delete
 import { LinkedinLogo } from "@/components/icons/LinkedinLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LinkedinAnalyticsModal from "./LinkedinAnalyticsModal";
+import LinkedinPreview from "./LinkedinPreview";
 
 export default function LinkedinViewComponent({
     accountId: initialAccountId,
@@ -309,34 +310,7 @@ export default function LinkedinViewComponent({
                             </div>
                         </div>
 
-                        {/* Post Type Toggles */}
-                        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            {[
-                                { id: "all", label: "All Posts", icon: LayoutGrid },
-                                { id: "text", label: "Text", icon: FileText },
-                                { id: "image", label: "Images", icon: ImageIcon },
-                                { id: "video", label: "Videos", icon: Film },
-                                { id: "link", label: "Links", icon: Link2 },
-                            ].map((type) => {
-                                const Icon = type.icon;
-                                const isActive = filters.postType === type.id;
-                                return (
-                                    <button
-                                        key={type.id}
-                                        onClick={() => handleFilterChange("postType", type.id)}
-                                        className={cn(
-                                            "flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all duration-300 border",
-                                            isActive
-                                                ? "bg-[#0077b5] text-white border-[#0077b5] shadow-md shadow-blue-200 transform scale-105"
-                                                : "bg-white text-gray-500 border-gray-100 hover:border-blue-100 hover:bg-blue-50/50 hover:text-[#0077b5]"
-                                        )}
-                                    >
-                                        <Icon className={cn("h-3.5 w-3.5", isActive ? "text-white" : "text-gray-400")} />
-                                        {type.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
+
 
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
                             <div className="flex-1 flex flex-wrap gap-3">
@@ -368,7 +342,6 @@ export default function LinkedinViewComponent({
                             <div className="flex flex-wrap items-center gap-2 p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
                                 <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active:</span>
                                 {filters.status !== "all" && <Badge variant="secondary" className="gap-1 bg-white border-blue-100 text-[#0077b5] font-bold text-[10px] uppercase tracking-wider rounded-lg px-2 py-1">Status: {filters.status === 'posted' ? 'Published' : filters.status} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("status", "all")} /></Badge>}
-                                {filters.postType !== "all" && <Badge variant="secondary" className="gap-1 bg-white border-blue-100 text-[#0077b5] font-bold text-[10px] uppercase tracking-wider rounded-lg px-2 py-1">Type: {filters.postType} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("postType", "all")} /></Badge>}
                                 {filters.accountId !== "all" && <Badge variant="secondary" className="gap-1 bg-white border-blue-100 text-[#0077b5] font-bold text-[10px] uppercase tracking-wider rounded-lg px-2 py-1">Account: {accounts.find(p => p.accountId === filters.accountId)?.displayName || filters.accountId} <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("accountId", "all")} /></Badge>}
                                 {filters.searchQuery && <Badge variant="secondary" className="gap-1 bg-white border-blue-100 text-[#0077b5] font-bold text-[10px] uppercase tracking-wider rounded-lg px-2 py-1">"{filters.searchQuery}" <X className="h-3 w-3 cursor-pointer" onClick={() => handleFilterChange("searchQuery", "")} /></Badge>}
                             </div>
@@ -391,142 +364,82 @@ export default function LinkedinViewComponent({
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {posts.map((post) => {
-                            const media = post.mediaUrls || (post.imageUrl ? [{ url: post.imageUrl, type: 'image' }] : []) || (post.videoUrl ? [{ url: post.videoUrl, type: 'video' }] : []) || [];
-                            const hasMedia = media.length > 0;
                             const message = post.text || post.message || post.caption || "";
+                            const media = post.mediaUrls || (post.imageUrl ? [{ url: post.imageUrl, type: 'image' }] : []) || (post.videoUrl ? [{ url: post.videoUrl, type: 'video' }] : []) || [];
                             const account = accounts.find(a => a.accountId === post.accountId);
-                            const name = account?.displayName || post.displayName || "Member";
 
                             return (
-                                <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-blue-900/5 transition-all duration-500 bg-white overflow-hidden cursor-pointer rounded-[2.5rem]", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => handleEdit(post)}>
-                                    {/* Header */}
-                                    <div className="p-6 pb-2">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex gap-3">
-                                                <Avatar className="h-10 w-10 border-2 border-white shadow-sm ring-1 ring-gray-100">
-                                                    <AvatarImage src={post.profilePicture} />
-                                                    <AvatarFallback className="bg-blue-50 text-[#0077b5] font-black uppercase text-[10px]">
-                                                        {name[0]}
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex flex-col min-w-0">
-                                                    <span className="font-bold text-gray-900 text-[13px] truncate group-hover:text-[#0077b5] transition-colors uppercase tracking-tight">
-                                                        {name}
-                                                    </span>
-                                                    <div className="flex items-center gap-1">
-                                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{formatDate(post.createdAt)}</span>
-                                                        <span className="text-gray-300">·</span>
-                                                        <Globe className="h-3 w-3 text-gray-300" />
-                                                    </div>
-                                                </div>
-                                            </div>
+                                <div key={post.id} className={cn("relative group transition-all duration-300 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md", publishingId === post.id && "opacity-70 pointer-events-none")}>
+                                    {/* Status Badge Overlay */}
+                                    <div className="absolute top-3 left-3 z-10">
+                                        <Badge className={cn("text-[10px] font-black uppercase tracking-wider shadow-sm", post.status === 'posted' || post.status === 'published' ? "bg-white/90 text-green-700 hover:bg-white" : "bg-white/90 text-blue-700 hover:bg-white")}>
+                                            {post.status === 'posted' ? 'Published' : post.status || 'Draft'}
+                                        </Badge>
+                                    </div>
+
+                                    <LinkedinPreview
+                                        content={{
+                                            message: message,
+                                            media: media
+                                        }}
+                                        page={account || { displayName: post.displayName || "Member" }}
+                                        compact={true}
+                                        noBorder={true}
+                                        customActions={
                                             <DropdownMenu>
                                                 <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-50 text-gray-300 hover:text-gray-600 transition-colors"><MoreVertical className="h-4 w-4" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 rounded-full hover:bg-gray-100"><MoreVertical className="h-5 w-5" /></Button>
                                                 </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-[200px] rounded-[24px] shadow-2xl border-none p-2 bg-white/95 backdrop-blur-md">
+                                                <DropdownMenuContent align="end" className="w-[200px] rounded-xl shadow-xl p-1.5 border border-gray-100">
                                                     {post.status === 'posted' || post.status === 'published' ? (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[18px] hover:bg-blue-50 transition-colors group">
-                                                                <BarChart3 className="h-5 w-5 text-[#0077b5]" />
-                                                                <span className="font-bold text-[13px] text-[#0077b5]">Performance</span>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-2 p-2.5 cursor-pointer rounded-lg hover:bg-blue-50 focus:bg-blue-50 text-gray-700 focus:text-blue-700 font-medium transition-colors">
+                                                                <BarChart3 className="h-4 w-4" />
+                                                                <span>View Performance</span>
                                                             </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-2 p-2.5 cursor-pointer rounded-lg hover:bg-gray-50 focus:bg-gray-50 font-medium transition-colors">
+                                                                <Eye className="h-4 w-4" />
+                                                                <span>View Post</span>
+                                                            </DropdownMenuItem>
+                                                            {post.permalink && (
+                                                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(post.permalink, '_blank'); }} className="flex items-center gap-2 p-2.5 cursor-pointer rounded-lg hover:bg-gray-50 focus:bg-gray-50 font-medium transition-colors">
+                                                                    <Globe className="h-4 w-4" />
+                                                                    <span>View Native</span>
+                                                                </DropdownMenuItem>
+                                                            )}
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[18px] hover:bg-gray-50 transition-colors group">
-                                                                <Edit className="h-5 w-5 text-gray-900" />
-                                                                <span className="font-bold text-[13px] text-gray-900">Edit Post</span>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-2 p-2.5 cursor-pointer rounded-lg hover:bg-gray-50 focus:bg-gray-50 font-medium transition-colors">
+                                                                <Edit className="h-4 w-4" />
+                                                                <span>Edit Post</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[18px] hover:bg-blue-50 transition-colors group">
-                                                                <Send className="h-5 w-5 text-[#0077b5]" />
-                                                                <span className="font-bold text-[13px] text-[#0077b5]">Publish Now</span>
+                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-2 p-2.5 cursor-pointer rounded-lg hover:bg-blue-50 focus:bg-blue-50 text-blue-600 focus:text-blue-700 font-medium transition-colors">
+                                                                <Send className="h-4 w-4" />
+                                                                <span>Publish Now</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[18px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); handleEdit(post, 'delete'); }}>
-                                                                <Trash2 className="h-5 w-5 text-red-600" />
-                                                                <span className="font-bold text-[13px] text-red-600">Delete Post</span>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post, 'delete'); }} className="flex items-center gap-2 p-2.5 cursor-pointer rounded-lg hover:bg-red-50 focus:bg-red-50 text-red-600 focus:text-red-700 font-medium transition-colors">
+                                                                <Trash2 className="h-4 w-4" />
+                                                                <span>Delete</span>
                                                             </DropdownMenuItem>
                                                         </>
                                                     )}
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
-                                        </div>
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="px-6 py-2">
-                                        {message && (
-                                            <p className="text-gray-600 text-[13px] leading-relaxed line-clamp-2 font-medium italic">
-                                                "{message}"
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Media */}
-                                    {hasMedia ? (
-                                        <div className="relative aspect-video mx-4 mb-4 rounded-3xl overflow-hidden bg-gray-50 border border-gray-100 shadow-inner group/media">
-                                            {media[0].type?.startsWith('video') ? (
-                                                <div className="w-full h-full relative">
-                                                    <video src={media[0].url} className="w-full h-full object-cover" muted />
-                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 group-hover/media:opacity-100 transition-opacity">
-                                                        <div className="bg-white/90 backdrop-blur-md p-4 rounded-full shadow-2xl shadow-black/20">
-                                                            <Play className="h-6 w-6 text-[#0077b5] fill-[#0077b5]" />
-                                                        </div>
-                                                    </div>
-                                                    <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg">
-                                                        <Film className="h-3 w-3 text-[#0077b5]" />
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="relative w-full h-full">
-                                                    <img src={media[0].url} alt="Update" className="w-full h-full object-cover grayscale-[0.2] group-hover:grayscale-0 transition-all duration-700" />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    {media.length > 1 && (
-                                                        <div className="absolute top-4 right-4 bg-white/90 text-[#0077b5] text-[9px] px-2 py-1 rounded-full backdrop-blur-sm font-black uppercase tracking-widest shadow-sm">
-                                                            +{media.length - 1} Media
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        <div className="aspect-video mx-4 mb-4 rounded-3xl bg-blue-50/30 flex items-center justify-center border-2 border-dashed border-blue-100">
-                                            <LinkedinLogo className="h-10 w-10 text-blue-100" />
-                                        </div>
-                                    )}
-
-                                    {/* Footer Actions */}
-                                    <div className="px-6 py-4 bg-gray-50/50 flex items-center gap-6">
-                                        <div className="flex items-center gap-1.5 group/action">
-                                            <div className="p-1.5 bg-white rounded-lg shadow-sm border border-gray-100 group-hover/action:bg-blue-50 group-hover/action:text-[#0077b5] transition-colors">
-                                                <ThumbsUp className="h-3.5 w-3.5" />
-                                            </div>
-                                            <span className="text-[10px] font-black text-gray-400 group-hover/action:text-gray-900 transition-colors uppercase tracking-widest">{formatNumber(post.metrics?.likes || 0)}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 group/action">
-                                            <div className="p-1.5 bg-white rounded-lg shadow-sm border border-gray-100 group-hover/action:bg-blue-50 group-hover/action:text-[#0077b5] transition-colors">
-                                                <MessageCircle className="h-3.5 w-3.5" />
-                                            </div>
-                                            <span className="text-[10px] font-black text-gray-400 group-hover/action:text-gray-900 transition-colors uppercase tracking-widest">{formatNumber(post.metrics?.comments || 0)}</span>
-                                        </div>
-                                        <div className="ml-auto flex items-center gap-2">
-                                            <Badge className={cn("text-[9px] font-black uppercase tracking-[0.1em] rounded-lg h-5 px-2", post.status === 'posted' || post.status === 'published' ? "bg-green-100 text-green-700 border-none" : "bg-blue-100 text-[#0077b5] border-none")}>
-                                                {post.status === 'posted' ? 'Published' : post.status || 'Draft'}
-                                            </Badge>
-                                        </div>
-                                    </div>
+                                        }
+                                    />
 
                                     {publishingId === post.id && (
-                                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-50 border-t-[#0077b5]" />
-                                                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#0077b5]">Syncing...</span>
+                                        <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-xl">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <Loader2 className="h-8 w-8 animate-spin text-[#0077b5]" />
+                                                <span className="text-[10px] font-bold uppercase tracking-widest text-[#0077b5]">Publishing...</span>
                                             </div>
                                         </div>
                                     )}
-                                </Card>
+                                </div>
                             );
                         })}
                     </div>
