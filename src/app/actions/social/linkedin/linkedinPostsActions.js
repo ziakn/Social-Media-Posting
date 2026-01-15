@@ -138,6 +138,10 @@ export async function getLinkedinPosts({
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
 
+
+            // Skip soft-deleted posts
+            if (data.delete === 1) return;
+
             // Search filter
             if (filters.searchQuery) {
                 const text = (data.text || "").toLowerCase();
@@ -318,7 +322,10 @@ export async function getAllLinkedinCalendarPosts({ startDate, endDate } = {}) {
         );
 
         const snapshot = await getDocs(q);
-        const posts = snapshot.docs.map(docSnap => serializeDoc(docSnap));
+        // Filter out soft-deleted posts
+        const posts = snapshot.docs
+            .filter(docSnap => docSnap.data().delete !== 1)
+            .map(docSnap => serializeDoc(docSnap));
 
         return { success: true, posts };
     } catch (error) {
@@ -345,10 +352,12 @@ export async function deleteLinkedinPost(postId) {
 
         if (postSnap.data().userId !== user.id) return { success: false, message: "Unauthorized" };
 
-        // Real delete as per existing delete logic in createPost.js or soft delete?
-        // Threads does soft delete. I'll stick to real delete for now if that's what was there, 
-        // but maybe soft delete is better.
-        await deleteDoc(postRef);
+        // Soft delete: set delete flag instead of actually removing the document
+        // This matches the pattern used in Facebook and Instagram modules
+        await updateDoc(postRef, {
+            delete: 1,
+            deletedAt: serverTimestamp()
+        });
 
         revalidatePath("/admin/social/linkedin/posts");
         return { success: true, message: "Post deleted successfully" };
