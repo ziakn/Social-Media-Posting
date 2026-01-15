@@ -30,6 +30,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
+import PinterestLogo from "@/components/icons/PinterestLogo";
 import { BlueSkyLogo } from "@/components/icons/BlueSkyLogo";
 import {
   Dialog,
@@ -53,6 +54,7 @@ const ICONS = {
   threads: ThreadsLogo,
   tiktok: TiktokLogo,
   youtube: Youtube,
+  pinterest: PinterestLogo,
 };
 
 // Platform-specific actions
@@ -68,6 +70,8 @@ import { checkYoutubeConnection } from "../../../actions/social/youtube/connectA
 import { disconnectYoutubeAccount } from "../../../actions/social/youtube/disconnectAccount";
 import { checkLinkedinConnection } from "../../../actions/social/linkedin/connectAccount";
 import { disconnectLinkedinAccount } from "../../../actions/social/linkedin/disconnectAccount";
+import { checkPinterestConnection } from "../../../actions/social/pinterest/connectAccount";
+import { disconnectPinterestAccount } from "../../../actions/social/pinterest/disconnectAccount";
 import { checkTiktokConnection } from "../../../actions/social/tiktok/connectAccount";
 import { disconnectTiktokAccount } from "../../../actions/social/tiktok/disconnectAccount";
 import { checkBlueSkyConnection } from "../../../actions/social/bluesky/connectAccount";
@@ -83,6 +87,7 @@ const CONNECTION_FUNCTIONS = {
   linkedin: checkLinkedinConnection,
   tiktok: checkTiktokConnection,
   bluesky: checkBlueSkyConnection,
+  pinterest: checkPinterestConnection,
 };
 
 const DISCONNECT_FUNCTIONS = {
@@ -94,6 +99,7 @@ const DISCONNECT_FUNCTIONS = {
   linkedin: disconnectLinkedinAccount,
   tiktok: disconnectTiktokAccount,
   bluesky: disconnectBlueSkyAccount,
+  pinterest: disconnectPinterestAccount,
 };
 
 export default function SocialConnectPage() {
@@ -130,6 +136,7 @@ export default function SocialConnectPage() {
           reddit: "text-[#FF4500]",
           tiktok: "text-[#000000]",
           youtube: "text-[#FF0000]",
+          pinterest: "text-[#E60023]",
         };
 
         return {
