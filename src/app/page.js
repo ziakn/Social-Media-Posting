@@ -4,7 +4,7 @@ import FeaturesGrid from "@/components/home/FeaturesGrid";
 import WorkflowSteps from "@/components/home/WorkflowSteps";
 import CalendarPreviewSection from "@/components/home/CalendarPreviewSection";
 import AIToolsSection from "@/components/home/AIToolsSection";
-import UnifiedInboxSection from "@/components/home/UnifiedInboxSection";
+import VisualGallerySection from "@/components/home/VisualGallerySection";
 import AnalyticsDashboard from "@/components/home/AnalyticsDashboard";
 import SolutionsSection from "@/components/home/SolutionsSection";
 import TestimonialsSection from "@/components/home/TestimonialsSection";
@@ -70,7 +70,7 @@ export default function Home() {
       <WorkflowSteps />
       <CalendarPreviewSection />
       <AIToolsSection />
-      <UnifiedInboxSection />
+      <VisualGallerySection />
       <AnalyticsDashboard />
       <SolutionsSection />
       <TestimonialsSection />
