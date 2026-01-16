@@ -1,4 +1,4 @@
-import { Inter, Plus_Jakarta_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Inter, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -9,9 +9,10 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const mono = IBM_Plex_Mono({
@@ -72,7 +73,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} ${plusJakartaSans.variable} ${mono.variable} font-inter antialiased text-[#3E4652]`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${mono.variable} font-inter antialiased text-gray-900 bg-gray-50`}>
         <Navbar />
         {children}
         <Footer />

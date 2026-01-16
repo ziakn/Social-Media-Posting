@@ -41,12 +41,12 @@ export default function VisualGallerySection() {
                     {/* Left: Content */}
                     <div className="lg:w-1/2 space-y-10">
                         <div className="space-y-4">
-                            <span className="text-[10px] font-black text-[#00A2FF] uppercase tracking-[0.3em] font-plus-jakarta flex items-center gap-2">
+                            <span className="text-[10px] font-black text-[#3B82F6] uppercase tracking-[0.3em] font-plus-jakarta flex items-center gap-2">
                                 <Zap className="h-3 w-3 fill-[#F9C80E] text-[#F9C80E]" />
                                 Resonance Protocol
                             </span>
                             <h2 className="text-4xl md:text-6xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tighter leading-[0.9] uppercase">
-                                Visual <br /> <span className="text-[#00A2FF]">Resonance</span> Gallery
+                                Visual <br /> <span className="text-[#3B82F6]">Resonance</span> Gallery
                             </h2>
                         </div>
 
@@ -59,7 +59,7 @@ export default function VisualGallerySection() {
                                 <div className="text-3xl font-black text-[#0C1B33] font-plus-jakarta">98%</div>
                                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Visual Clarity <br /> Score</div>
                             </div>
-                            <div className="space-y-2 border-l-2 border-[#00A2FF] pl-6">
+                            <div className="space-y-2 border-l-2 border-[#3B82F6] pl-6">
                                 <div className="text-3xl font-black text-[#0C1B33] font-plus-jakarta">4.2x</div>
                                 <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Interaction <br /> Multiplier</div>
                             </div>

@@ -16,7 +16,7 @@ export default function UnifiedInboxSection() {
                                     </div>
                                     <div>
                                         <h4 className="font-extrabold text-[#0C1B33] text-sm font-plus-jakarta uppercase tracking-tight">Unified Inbox</h4>
-                                        <span className="text-[10px] font-bold text-[#00A2FF] uppercase tracking-widest font-plus-jakarta">3 Unread Mentions</span>
+                                        <span className="text-[10px] font-bold text-[#3B82F6] uppercase tracking-widest font-plus-jakarta">3 Unread Mentions</span>
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
@@ -52,7 +52,7 @@ export default function UnifiedInboxSection() {
                         </div>
 
                         {/* Decal */}
-                        <div className="absolute -bottom-10 -right-10 bg-[#00A2FF] p-6 rounded-xl shadow-xl text-white space-y-2 animate-bounce hidden md:block">
+                        <div className="absolute -bottom-10 -right-10 bg-[#3B82F6] p-6 rounded-xl shadow-xl text-white space-y-2 animate-bounce hidden md:block">
                             <CheckCircle className="h-6 w-6 mx-auto" />
                             <span className="text-xs font-black uppercase tracking-widest block font-plus-jakarta">All Synced</span>
                         </div>
@@ -60,7 +60,7 @@ export default function UnifiedInboxSection() {
 
                     <div className="space-y-10">
                         <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                            Unified Inbox for <br /> <span className="text-[#00A2FF]">Social Resonance</span>
+                            Unified Inbox for <br /> <span className="text-[#3B82F6]">Social Resonance</span>
                         </h2>
                         <p className="text-xl text-[#3E4652] font-medium leading-relaxed font-inter">
                             Manage all platform mentions and comments in one centralized command center. Never miss a signal.
@@ -73,14 +73,14 @@ export default function UnifiedInboxSection() {
                                 "Internal team tagging for high-priority signals"
                             ].map((item, i) => (
                                 <li key={i} className="flex items-center gap-4 text-sm font-bold text-[#3E4652] group font-inter">
-                                    <div className="w-2 h-2 rounded-full bg-[#00A2FF] group-hover:scale-150 transition-transform" />
+                                    <div className="w-2 h-2 rounded-full bg-[#3B82F6] group-hover:scale-150 transition-transform" />
                                     {item}
                                 </li>
                             ))}
                         </ul>
-                        <button className="text-[#00A2FF] font-black text-xs uppercase tracking-widest font-plus-jakarta flex items-center gap-3 hover:translate-x-2 transition-transform pt-4">
+                        <button className="text-[#3B82F6] font-black text-xs uppercase tracking-widest font-plus-jakarta flex items-center gap-3 hover:translate-x-2 transition-transform pt-4">
                             Explore Engagement Hub
-                            <div className="w-8 h-px bg-[#00A2FF]" />
+                            <div className="w-8 h-px bg-[#3B82F6]" />
                         </button>
                     </div>
                 </div>

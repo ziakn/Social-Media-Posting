@@ -1,67 +1,124 @@
+export const getPlans = (isAnnual) => [
+    {
+        name: "Free",
+        id: "free",
+        description: "Perfect for individuals just starting out.",
+        price: 0,
+        interval: "month",
+        features: [
+            "3 Social Accounts",
+            "1 User Seat",
+            "30 Scheduled Posts / mo",
+            "Basic Analytics",
+            "720p Image Uploads",
+        ],
+        cta: "Start Free",
+        popular: false,
+        gradient: false,
+    },
+    {
+        name: "Creator",
+        id: "creator",
+        description: "For influencers and serious content creators.",
+        price: isAnnual ? 24 : 29,
+        interval: isAnnual ? "month" : "month",
+        features: [
+            "10 Social Accounts",
+            "1 User Seat",
+            "Unlimited Scheduled Posts",
+            "Advanced Analytics",
+            "1080p Image & Video",
+            "AI Caption Generator (50/mo)",
+        ],
+        cta: "Start 14-Day Trial",
+        popular: true,
+        gradient: true,
+    },
+    {
+        name: "Pro",
+        id: "pro",
+        description: "For small teams and growing brands.",
+        price: isAnnual ? 49 : 59,
+        interval: isAnnual ? "month" : "month",
+        features: [
+            "25 Social Accounts",
+            "3 User Seats",
+            "Unlimited Scheduled Posts",
+            "Team Approval Workflow",
+            "Competitor Analysis",
+            "AI Caption Generator (Unlimited)",
+            "Priority Email Support",
+        ],
+        cta: "Start 14-Day Trial",
+        popular: false,
+        gradient: false,
+    },
+    {
+        name: "Agency",
+        id: "agency",
+        description: "For agencies managing multiple clients.",
+        price: isAnnual ? 129 : 149,
+        interval: isAnnual ? "month" : "month",
+        features: [
+            "50 Social Accounts",
+            "10 User Seats",
+            "Unlimited Scheduled Posts",
+            "Client Approval Portals",
+            "White-label Reports",
+            "Dedicated Account Manager",
+            "SLA Support",
+        ],
+        cta: "Contact Sales",
+        popular: false,
+        gradient: false,
+    },
+];
+
 export const planFeatures = [
-    { name: "Social Accounts", free: "2", pro: "10", enterprise: "Unlimited" },
-    { name: "Platforms", free: "Limited (TikTok/IG)", pro: "All Platforms", enterprise: "All Platforms" },
-    { name: "AI Tools", free: "Limited (30/mo)", pro: "Full Suite", enterprise: "Full Suite" },
-    { name: "Unified Inbox", free: false, pro: true, enterprise: true },
-    { name: "Analytics", free: "Basic", pro: "Full Suite", enterprise: "Full + White-label" },
-    { name: "Post Scheduling", free: "Basic", pro: "Advanced", enterprise: "Bulk + Priority" },
-    { name: "Multi-user / Teams", free: false, pro: false, enterprise: true },
-    { name: "Media Storage", free: "Basic", pro: "10GB", enterprise: "Unlimited" },
-    { name: "API & Webhooks", free: false, pro: false, enterprise: true },
-    { name: "Support", free: "Help Center", pro: "Email", enterprise: "Dedicated Manager" },
-    { name: "SLAs & Security", free: false, pro: false, enterprise: true },
+    {
+        category: "Scheduling & Publishing",
+        features: [
+            { name: "Social Profiles", free: "3", creator: "10", pro: "25", agency: "50+" },
+            { name: "Monthly Posts", free: "30", creator: "Unlimited", pro: "Unlimited", agency: "Unlimited" },
+            { name: "Post Tailoring", free: true, creator: true, pro: true, agency: true },
+            { name: "First Comment", free: false, creator: true, pro: true, agency: true },
+            { name: "Best Time to Post", free: false, creator: true, pro: true, agency: true },
+        ],
+    },
+    {
+        category: "Team & Collaboration",
+        features: [
+            { name: "User Seats", free: "1", creator: "1", pro: "3", agency: "10" },
+            { name: "Approval Workflows", free: false, creator: false, pro: true, agency: true },
+            { name: "Client Portal", free: false, creator: false, pro: false, agency: true },
+        ],
+    },
+    {
+        category: "Analytics & Reporting",
+        features: [
+            { name: "Engagement Metrics", free: "Basic", creator: "Advanced", pro: "Advanced", agency: "Advanced" },
+            { name: "Report History", free: "7 Days", creator: "30 Days", pro: "Unlimited", agency: "Unlimited" },
+            { name: "PDF Exports", free: false, creator: true, pro: true, agency: true },
+            { name: "White-label Reports", free: false, creator: false, pro: false, agency: true },
+        ],
+    },
 ];
 
 export const pricingFaqs = [
     {
-        q: "Is the free plan free forever?",
-        a: "Yes, our Free/Starter plan is free forever. It's designed to help creators and small businesses get started with their social media journey without any upfront costs."
+        question: "Do you offer a free trial?",
+        answer: "Yes, we offer a 14-day free trial for Creator and Pro plans. No credit card required to start.",
     },
     {
-        q: "Can I upgrade anytime?",
-        a: "Absolutely! You can upgrade to a higher tier at any time from your account settings. Upgrades are processed immediately so you can access new features right away."
+        question: "Can I change plans anytime?",
+        answer: "Absolutely. You can upgrade, downgrade, or cancel your subscription at any time from your billing settings.",
     },
     {
-        q: "Can I cancel anytime?",
-        a: "Yes, we offer monthly flexibility. You can cancel your subscription at any time, and you'll continue to have access to your paid features until the end of your current billing period."
+        question: "What happens if I hit my post limit?",
+        answer: "On the Free plan, you won't be able to schedule more posts until the next month. Upgrading removes this limit instantly.",
     },
     {
-        q: "Do you offer refunds?",
-        a: "We provide a 14-day money-back guarantee for all our paid plans. If you're not satisfied, just reach out to our support team."
+        question: "Do you offer discounts for non-profits?",
+        answer: "Yes! Contact our support team with proof of your non-profit status for a 20% discount.",
     },
-    {
-        q: "What happens when my usage limits run out?",
-        a: "If you hit your plan limits (like AI credits or account counts), you'll be prompted to upgrade or wait until your next billing cycle for credits to reset."
-    }
-];
-
-export const getPlans = (isAnnual) => [
-    {
-        name: "Free / Starter",
-        id: "free",
-        description: "Perfect for creators testing the system.",
-        price: "0",
-        features: ["2 Social Accounts", "Basic Scheduling (TikTok/IG)", "30 AI Credits / mo", "Basic Media Uploads", "Community Support"],
-        cta: "Start for Free",
-        popular: false,
-    },
-    {
-        name: "Professional",
-        id: "pro",
-        description: "Most popular for small businesses & solo marketers.",
-        price: isAnnual ? "29" : "39",
-        features: ["10 Social Accounts", "All Supported Platforms", "Full AI Suite (Unlimited)", "10GB Media Library", "Unified Inbox & Analytics", "Email Support"],
-        cta: "Upgrade to Professional",
-        popular: true,
-        priceId: isAnnual ? "price_pro_annual" : "price_pro_monthly"
-    },
-    {
-        name: "Agency / Enterprise",
-        id: "enterprise",
-        description: "For agencies and large scale marketing firms.",
-        price: "99",
-        features: ["Unlimited Accounts & Brands", "Team Roles & Approvals", "API & Webhooks", "White-label Reporting", "Dedicated Manager", "SLAs & Priority Support"],
-        cta: "Contact Sales",
-        popular: false
-    }
 ];

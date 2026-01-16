@@ -9,12 +9,12 @@ export default function AIToolsSection() {
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="grid lg:grid-cols-2 gap-24 items-center">
                     <div className="space-y-10 order-2 lg:order-1">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#00A2FF]/5 border border-[#00A2FF]/10">
-                            <Sparkles className="h-4 w-4 text-[#00A2FF]" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#00A2FF] font-plus-jakarta">Proprietary AI Resonance</span>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3B82F6]/5 border border-[#3B82F6]/10">
+                            <Sparkles className="h-4 w-4 text-[#3B82F6]" />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] font-plus-jakarta">Proprietary AI Resonance</span>
                         </div>
                         <h2 className="text-4xl md:text-6xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-[0.9] uppercase">
-                            AI-Driven <br /> Content <span className="text-[#00A2FF]">Optimization</span>
+                            AI-Driven <br /> Content <span className="text-[#3B82F6]">Optimization</span>
                         </h2>
                         <p className="text-xl text-[#3E4652] font-medium leading-relaxed font-inter">
                             Stop guessing and start scaling. AI Lab v4.0 automates the tedious parts of distribution so you can focus on strategy.
@@ -47,7 +47,7 @@ export default function AIToolsSection() {
 
                     <div className="flex-1 relative order-1 lg:order-2">
                         <div className="bg-[#0C1B33] rounded-[10px] p-10 md:p-16 text-white relative shadow-2xl overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00A2FF]/20 blur-[100px] pointer-events-none" />
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#3B82F6]/20 blur-[100px] pointer-events-none" />
                             <div className="space-y-8 relative z-10 text-center">
                                 <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center mx-auto backdrop-blur-sm border border-white/10 group-hover:scale-110 transition-transform">
                                     <Sparkles className="h-10 w-10 text-[#F9C80E]" />
@@ -56,7 +56,7 @@ export default function AIToolsSection() {
                                     <h3 className="text-2xl font-black uppercase tracking-tight font-plus-jakarta italic underline decoration-[#F9C80E]">LAB V4.0 LIVE</h3>
                                     <p className="text-slate-400 font-medium text-lg font-inter">Running multi-platform sentiment analysis... Captions optimized for 94.2% resonance.</p>
                                 </div>
-                                <div className="bg-white/5 border border-white/10 rounded-lg p-6 text-left space-y-4 font-mono text-xs text-[#00A2FF]">
+                                <div className="bg-white/5 border border-white/10 rounded-lg p-6 text-left space-y-4 font-mono text-xs text-[#3B82F6]">
                                     <p>&gt; scan platform metrics...</p>
                                     <p>&gt; identify viral triggers...</p>
                                     <p>&gt; generation successful.</p>

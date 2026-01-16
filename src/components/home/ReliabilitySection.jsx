@@ -10,7 +10,7 @@ export default function ReliabilitySection() {
                 <div className="grid lg:grid-cols-2 gap-24 items-center">
                     <div className="space-y-10">
                         <h2 className="text-4xl md:text-6xl font-extrabold font-plus-jakarta tracking-tight leading-[0.9] uppercase">
-                            Engineered for <br /> <span className="text-[#00A2FF]">Enterprise Scale</span>
+                            Engineered for <br /> <span className="text-[#3B82F6]">Enterprise Scale</span>
                         </h2>
                         <p className="text-xl text-slate-400 font-medium leading-relaxed font-inter">
                             We don't just post content; we secure it. Our infrastructure is built for 100% reliability, global scale, and strict compliance protocols.
@@ -25,7 +25,7 @@ export default function ReliabilitySection() {
                                 <p className="text-xs text-slate-500 font-bold font-inter leading-relaxed">AES-256 GCM encryption at rest for every platform node and credential.</p>
                             </div>
                             <div className="space-y-4">
-                                <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#00A2FF]">
+                                <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#3B82F6]">
                                     <Cpu className="h-6 w-6" />
                                 </div>
                                 <h4 className="text-sm font-black uppercase tracking-widest text-white font-plus-jakarta">Microservice Sync</h4>
@@ -33,13 +33,13 @@ export default function ReliabilitySection() {
                             </div>
                         </div>
 
-                        <Link href="/about#trust" className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#00A2FF] hover:text-white transition-colors pt-6 font-plus-jakarta">
+                        <Link href="/about#trust" className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#3B82F6] hover:text-white transition-colors pt-6 font-plus-jakarta">
                             Visit Technical Trust Center <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6 relative">
-                        <div className="absolute inset-0 bg-[#00A2FF]/5 blur-[120px] pointer-events-none" />
+                        <div className="absolute inset-0 bg-[#3B82F6]/5 blur-[120px] pointer-events-none" />
                         {[
                             { label: "Global Uptime", value: "99.99%", desc: "Cloud-Edge Infrastructure" },
                             { label: "API Latency", value: "&lt; 180ms", desc: "Native Platform Sync" },

@@ -9,7 +9,7 @@ export default function TestimonialsSection() {
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                        The Professional <br /> <span className="text-[#00A2FF]">Standard for 12k+</span> Teams
+                        The Professional <br /> <span className="text-[#3B82F6]">Standard for 12k+</span> Teams
                     </h2>
                     <div className="flex justify-center gap-4 pt-4">
                         <div className="flex items-center gap-2 px-6 py-2 bg-slate-50 border border-slate-100 rounded-full">
@@ -40,8 +40,8 @@ export default function TestimonialsSection() {
                             img: "GR"
                         }
                     ].map((test, i) => (
-                        <div key={i} className="p-10 bg-[#F5F8FB] rounded-[10px] border border-slate-100 hover:border-[#00A2FF]/20 hover:shadow-subtle hover:-translate-y-1 transition-all relative group">
-                            <div className="text-5xl font-black text-[#0C1B33]/5 absolute top-4 right-6 pointer-events-none group-hover:text-[#00A2FF]/10 transition-colors">"</div>
+                        <div key={i} className="p-10 bg-[#F5F8FB] rounded-[10px] border border-slate-100 hover:border-[#3B82F6]/20 hover:shadow-subtle hover:-translate-y-1 transition-all relative group">
+                            <div className="text-5xl font-black text-[#0C1B33]/5 absolute top-4 right-6 pointer-events-none group-hover:text-[#3B82F6]/10 transition-colors">"</div>
                             <p className="text-lg text-[#3E4652] font-medium leading-relaxed italic mb-10 relative z-10 transition-colors group-hover:text-[#0C1B33]">"{test.text}"</p>
                             <div className="flex items-center gap-4 relative z-10">
                                 <div className="w-12 h-12 rounded-full bg-[#0C1B33] flex items-center justify-center text-[#F9C80E] font-black text-sm font-plus-jakarta border-2 border-white shadow-sm">

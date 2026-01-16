@@ -33,9 +33,9 @@ export default function DevelopersPage() {
 
                 {/* --- Hero --- */}
                 <div className="max-w-4xl mx-auto text-center mb-32 space-y-6">
-                    <Badge className="bg-slate-50 text-[#00A2FF] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Engineering Portal</Badge>
+                    <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Engineering Portal</Badge>
                     <h1 className="text-5xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-none font-plus-jakarta lowercase">
-                        Programmatic <span className="text-[#00A2FF]">influence.</span>
+                        Programmatic <span className="text-[#3B82F6]">influence.</span>
                     </h1>
                     <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-2xl mx-auto">
                         Integrate 2026-grade social automation into your own stack. Robust REST APIs, real-time webhooks, and official SDKs.
@@ -49,11 +49,11 @@ export default function DevelopersPage() {
                         { icon: <Webhook className="h-5 w-5" />, title: "Webhooks", desc: "Real-time event streaming for publish events, analytics updates, and incoming DMs." },
                         { icon: <Server className="h-5 w-5" />, title: "Official SDKs", desc: "Native wrappers for Node.js, Python, Go, and Ruby to accelerate your integration." }
                     ].map((tech, i) => (
-                        <div key={i} className="p-8 border border-[#E1E7EF] rounded-[10px] bg-white hover:border-[#00A2FF] shadow-sm hover:shadow-subtle hover:-translate-y-1 transition-all group">
+                        <div key={i} className="p-8 border border-[#E1E7EF] rounded-[10px] bg-white hover:border-[#3B82F6] shadow-sm hover:shadow-subtle hover:-translate-y-1 transition-all group">
                             <div className="w-12 h-12 bg-[#F5F8FB] rounded-[6px] flex items-center justify-center text-[#0C1B33] mb-8 group-hover:bg-[#0C1B33] group-hover:text-[#F9C80E] transition-colors">{tech.icon}</div>
                             <h3 className="text-lg font-extrabold text-[#0C1B33] font-plus-jakarta uppercase tracking-tight mb-4">{tech.title}</h3>
                             <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6">{tech.desc}</p>
-                            <Link href="#" className="flex items-center gap-2 text-[10px] font-black uppercase text-[#00A2FF] tracking-widest pt-4 border-t border-slate-50">
+                            <Link href="#" className="flex items-center gap-2 text-[10px] font-black uppercase text-[#3B82F6] tracking-widest pt-4 border-t border-slate-50">
                                 Read Documentation <ArrowRight className="h-3 w-3" />
                             </Link>
                         </div>
@@ -75,7 +75,7 @@ export default function DevelopersPage() {
                                 "TLS 1.3 End-to-end encryption"
                             ].map((item, i) => (
                                 <div key={i} className="flex gap-4 items-center font-bold text-[#0C1B33]">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-[#00A2FF]" />
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" />
                                     {item}
                                 </div>
                             ))}
@@ -127,7 +127,7 @@ export default function DevelopersPage() {
                                 { icon: <ArrowRight className="h-5 w-5 rotate-45" />, label: "Success Rate", value: "99.9%" }
                             ].map((stat, i) => (
                                 <div key={i} className="p-6 bg-white border border-[#E1E7EF] rounded-[10px] space-y-3 shadow-sm hover:shadow-subtle hover:-translate-y-0.5 transition-all">
-                                    <div className="text-[#00A2FF]">{stat.icon}</div>
+                                    <div className="text-[#3B82F6]">{stat.icon}</div>
                                     <div className="space-y-0.5">
                                         <div className="text-xs font-black text-slate-400 uppercase tracking-widest">{stat.label}</div>
                                         <div className="text-2xl font-black text-[#0C1B33] font-plus-jakarta tracking-tighter">{stat.value}</div>
@@ -140,7 +140,7 @@ export default function DevelopersPage() {
 
                 {/* --- Call to Action --- */}
                 <div className="bg-[#0C1B33] rounded-[10px] p-12 md:p-24 text-center text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-1/4 h-full bg-[#00A2FF]/10 blur-3xl pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-1/4 h-full bg-[#3B82F6]/10 blur-3xl pointer-events-none" />
                     <h2 className="text-4xl md:text-6xl font-extrabold font-plus-jakarta tracking-tighter mb-10">Start building <br /> your voice.</h2>
                     <div className="flex flex-col sm:flex-row gap-6 justify-center">
                         <Link href="/auth/register">

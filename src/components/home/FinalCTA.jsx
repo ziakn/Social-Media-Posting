@@ -7,7 +7,7 @@ export default function FinalCTA() {
     return (
         <section className="py-24 bg-white container mx-auto px-6 max-w-[1280px]">
             <div className="bg-[#0C1B33] rounded-[10px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#00A2FF]/10 blur-[120px] pointer-events-none" />
+                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[120px] pointer-events-none" />
                 <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#F9C80E]/5 blur-[120px] rounded-full pointer-events-none" />
 
                 <div className="space-y-6 relative z-10">
@@ -15,7 +15,7 @@ export default function FinalCTA() {
                         <Zap className="h-8 w-8 text-[#F9C80E] fill-current" />
                     </div>
                     <h2 className="text-4xl md:text-7xl font-extrabold font-plus-jakarta tracking-tighter max-w-4xl mx-auto leading-[0.9] uppercase">
-                        Ready to <span className="text-[#00A2FF]">Scale</span> Without the Stress?
+                        Ready to <span className="text-[#3B82F6]">Scale</span> Without the Stress?
                     </h2>
                     <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto font-inter">
                         Join 12,500+ creators and professional agencies leveraging the SocialHub command center for high-velocity distribution.

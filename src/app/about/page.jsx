@@ -31,9 +31,9 @@ export default function AboutPage() {
       <div className="container mx-auto px-6 max-w-[1280px]">
         {/* --- Hero Section --- */}
         <div className="max-w-4xl mx-auto text-center mb-32 space-y-6">
-          <Badge className="bg-slate-50 text-[#00A2FF] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Our Narrative</Badge>
+          <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Our Narrative</Badge>
           <h1 className="text-5xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-none font-plus-jakarta uppercase">
-            The Mission Behind <span className="text-[#00A2FF]">SocialHub</span> Social Media Tool
+            The Mission Behind <span className="text-[#3B82F6]">SocialHub</span> Social Media Tool
           </h1>
           <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-2xl mx-auto">
             In an era of platform fragmentation, SocialHub provides the stability and intelligence teams need to maintain a coherent digital presence. We're building the infrastructure for the next generation of digital creators.
@@ -43,8 +43,8 @@ export default function AboutPage() {
         {/* --- The Problem we solve (Stats Strip) --- */}
         <div className="grid md:grid-cols-4 gap-4 mb-40">
           {stats.map((stat, i) => (
-            <div key={i} className="bg-[#F5F8FB] border border-[#E1E7EF] p-10 rounded-[10px] text-center space-y-2 hover:border-[#00A2FF] transition-colors group">
-              <div className="text-4xl font-black text-[#0C1B33] font-plus-jakarta tracking-tighter group-hover:text-[#00A2FF] transition-colors">{stat.value}</div>
+            <div key={i} className="bg-[#F5F8FB] border border-[#E1E7EF] p-10 rounded-[10px] text-center space-y-2 hover:border-[#3B82F6] transition-colors group">
+              <div className="text-4xl font-black text-[#0C1B33] font-plus-jakarta tracking-tighter group-hover:text-[#3B82F6] transition-colors">{stat.value}</div>
               <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</div>
               <span className="sr-only">Company statistic showing {stat.value} {stat.label}</span>
             </div>
@@ -78,7 +78,7 @@ export default function AboutPage() {
           <div className="bg-[#F5F8FB] border border-[#E1E7EF] rounded-[10px] aspect-square overflow-hidden relative group">
             <div className="absolute inset-0 bg-[#0C1B33]/5 group-hover:bg-transparent transition-colors" />
             <div className="absolute bottom-10 left-10 p-8 bg-white border border-[#E1E7EF] rounded-lg shadow-xl space-y-4 max-w-[280px]">
-              <div className="text-[#00A2FF] font-black text-[10px] uppercase tracking-widest">HQ / Remote-First</div>
+              <div className="text-[#3B82F6] font-black text-[10px] uppercase tracking-widest">HQ / Remote-First</div>
               <p className="font-bold text-[#0C1B33] leading-tight">Operating from 12+ countries to support a global creator base.</p>
             </div>
             <span className="sr-only">Photo of the SocialHub core engineering team collaborating at our headquarters.</span>
@@ -96,7 +96,7 @@ export default function AboutPage() {
               { title: "Absolute Transparency", desc: "From our status page to our pricing, we believe in radical honesty. No hidden limits, no dark patterns." },
               { title: "Velocity & Stability", desc: "We ship fast, but we never compromise on the reliability of our publishing engine. Your posts are too important to fail." }
             ].map((v, i) => (
-              <div key={i} className="p-10 bg-white border border-[#E1E7EF] rounded-[10px] hover:border-[#00A2FF] transition-all">
+              <div key={i} className="p-10 bg-white border border-[#E1E7EF] rounded-[10px] hover:border-[#3B82F6] transition-all">
                 <h4 className="text-xl font-extrabold text-[#0C1B33] font-plus-jakarta uppercase mb-4">{v.title}</h4>
                 <p className="text-slate-500 font-medium leading-relaxed">{v.desc}</p>
               </div>

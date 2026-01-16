@@ -31,7 +31,7 @@ export default function WorkflowSteps() {
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight uppercase">
-                        How <span className="text-[#00A2FF]">Multi-Platform</span> Scheduling Works
+                        How <span className="text-[#3B82F6]">Multi-Platform</span> Scheduling Works
                     </h2>
                     <p className="text-lg text-slate-500 font-medium max-w-2xl mx-auto">
                         A high-velocity workflow designed for professional scale.
@@ -44,8 +44,8 @@ export default function WorkflowSteps() {
 
                     {steps.map((step, i) => (
                         <div key={i} className="text-center space-y-8 relative z-10 group">
-                            <div className="w-24 h-24 rounded-full bg-white border-4 border-slate-50 flex items-center justify-center text-[#0C1B33] mx-auto shadow-subtle group-hover:border-[#00A2FF]/20 group-hover:bg-[#0C1B33] group-hover:text-[#F9C80E] transition-all duration-500 relative">
-                                <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-[#00A2FF] text-white flex items-center justify-center font-black text-sm font-plus-jakarta group-hover:bg-[#F9C80E] group-hover:text-[#0C1B33] transition-colors">
+                            <div className="w-24 h-24 rounded-full bg-white border-4 border-slate-50 flex items-center justify-center text-[#0C1B33] mx-auto shadow-subtle group-hover:border-[#3B82F6]/20 group-hover:bg-[#0C1B33] group-hover:text-[#F9C80E] transition-all duration-500 relative">
+                                <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-[#3B82F6] text-white flex items-center justify-center font-black text-sm font-plus-jakarta group-hover:bg-[#F9C80E] group-hover:text-[#0C1B33] transition-colors">
                                     {i + 1}
                                 </div>
                                 {step.icon}

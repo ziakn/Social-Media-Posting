@@ -27,9 +27,9 @@ const Navbar = () => {
     const navLinks = [
         { name: "Home", href: "/" },
         { name: "Features", href: "/features" },
-        { name: "Solutions", href: "/solutions" },
         { name: "Pricing", href: "/pricing" },
         { name: "Blog", href: "/blog" },
+        { name: "Help Center", href: "/help" },
         { name: "About", href: "/about" },
     ];
 
@@ -41,23 +41,23 @@ const Navbar = () => {
             className={cn(
                 "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
                 (isScrolled || forceSolid)
-                    ? "bg-white/95 backdrop-blur-md py-3 shadow-sm border-b border-slate-100"
+                    ? "bg-white/95 backdrop-blur-md py-3 shadow-sm border-b border-gray-100"
                     : "bg-transparent py-5"
             )}
         >
-            <div className="container mx-auto px-6 max-w-[1280px]">
+            <div className="container mx-auto px-6 max-w-[1440px]">
                 <div className="flex items-center justify-between">
-                    {/* Logo - Inter Bold */}
+                    {/* Logo */}
                     <Link href="/" className="flex items-center space-x-2 group">
-                        <div className="bg-[#0C1B33] p-2 rounded-[6px] text-[#F9C80E] transition-all hover:shadow-subtle hover:-translate-y-0.5">
+                        <div className="bg-primary p-2 rounded-[10px] text-white transition-all hover:shadow-lg hover:-translate-y-0.5">
                             <Zap className="h-5 w-5 fill-current" />
                         </div>
-                        <span className="text-xl font-extrabold tracking-tight text-[#0C1B33] font-plus-jakarta">
+                        <span className="text-xl font-bold tracking-tight text-gray-900 font-display">
                             SocialHub
                         </span>
                     </Link>
 
-                    {/* Desktop Navigation - DM Sans Medium */}
+                    {/* Desktop Navigation */}
                     <div className="hidden lg:flex items-center space-x-1">
                         {navLinks.map((link) => (
                             <Link
@@ -66,8 +66,8 @@ const Navbar = () => {
                                 className={cn(
                                     "px-4 py-2 rounded-lg text-sm font-medium transition-colors font-inter",
                                     pathname === link.href
-                                        ? "text-[#00A2FF]"
-                                        : "text-[#3E4652] hover:text-[#0C1B33] hover:bg-slate-50"
+                                        ? "text-primary bg-primary/5"
+                                        : "text-gray-600 hover:text-primary hover:bg-gray-50"
                                 )}
                             >
                                 {link.name}
@@ -76,22 +76,22 @@ const Navbar = () => {
                     </div>
 
                     {/* Desktop Auth */}
-                    <div className="hidden lg:flex items-center space-x-4 font-plus-jakarta">
+                    <div className="hidden lg:flex items-center space-x-4 font-inter">
                         <Link href="/auth/login">
-                            <button className="text-sm font-bold text-[#0C1B33] px-4 py-2 hover:opacity-70 transition-opacity">
+                            <Button variant="ghost" className="text-sm font-semibold text-gray-900 hover:text-primary hover:bg-transparent">
                                 Sign In
-                            </button>
+                            </Button>
                         </Link>
                         <Link href="/auth/register">
-                            <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-sm px-6 py-3 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle hover:-translate-y-0.5 active:translate-y-0">
+                            <Button className="bg-primary hover:bg-primary/90 text-white font-bold text-sm px-6 py-2 rounded-[8px] shadow-sm transition-all hover:-translate-y-0.5">
                                 Start Free
-                            </button>
+                            </Button>
                         </Link>
                     </div>
 
                     {/* Mobile Menu Toggle */}
                     <button
-                        className="lg:hidden p-2 text-[#0C1B33]"
+                        className="lg:hidden p-2 text-gray-900"
                         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     >
                         {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -102,7 +102,7 @@ const Navbar = () => {
             {/* Mobile Menu */}
             <div
                 className={cn(
-                    "lg:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 p-6 transition-all duration-300 origin-top shadow-xl",
+                    "lg:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-100 p-6 transition-all duration-300 origin-top shadow-xl",
                     isMobileMenuOpen ? "scale-y-100 opacity-100" : "scale-y-0 opacity-0 pointer-events-none"
                 )}
             >
@@ -113,24 +113,24 @@ const Navbar = () => {
                             href={link.href}
                             className={cn(
                                 "py-2 text-base font-bold",
-                                pathname === link.href ? "text-[#00A2FF]" : "text-[#3E4652]"
+                                pathname === link.href ? "text-primary" : "text-gray-600"
                             )}
                             onClick={() => setIsMobileMenuOpen(false)}
                         >
                             {link.name}
                         </Link>
                     ))}
-                    <hr className="border-slate-100" />
-                    <div className="flex flex-col space-y-3 pt-2 font-plus-jakarta">
+                    <hr className="border-gray-100" />
+                    <div className="flex flex-col space-y-3 pt-2">
                         <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
-                            <button className="w-full py-4 rounded-[8px] font-bold text-[#0C1B33] border border-slate-200">
+                            <Button variant="outline" className="w-full justify-center">
                                 Sign In
-                            </button>
+                            </Button>
                         </Link>
                         <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
-                            <button className="w-full bg-[#F9C80E] text-[#0C1B33] rounded-[6px] py-4 font-black shadow-subtle translate-y-0">
+                            <Button className="w-full justify-center bg-primary hover:bg-primary/90 text-white font-bold">
                                 Start Free
-                            </button>
+                            </Button>
                         </Link>
                     </div>
                 </div>

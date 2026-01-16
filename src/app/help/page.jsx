@@ -16,7 +16,7 @@ export default function HelpCenterPage() {
     const [openIndex, setOpenIndex] = useState(0);
 
     return (
-        <main className="bg-white min-h-screen font-inter text-[#3E4652]">
+        <main className="bg-white min-h-screen font-inter text-gray-900">
             <HelpHero />
 
             <section className="py-24">
@@ -27,13 +27,11 @@ export default function HelpCenterPage() {
                             activeCategory={activeCategory}
                             setActiveCategory={(i) => {
                                 setActiveCategory(i);
-                                setOpenIndex(0); // Reset accordion on category change
+                                setOpenIndex(0);
                             }}
                         />
                         <HelpFaqAccordion
                             questions={faqs[activeCategory].questions}
-                            openIndex={openIndex}
-                            setOpenIndex={setOpenIndex}
                         />
                     </div>
                 </div>

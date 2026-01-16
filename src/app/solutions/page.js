@@ -62,9 +62,9 @@ export default function SolutionsPage() {
             <div className="container mx-auto px-6 max-w-[1280px]">
                 {/* --- Header --- */}
                 <div className="max-w-4xl mx-auto text-center mb-32 space-y-6">
-                    <Badge className="bg-slate-50 text-[#00A2FF] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Segment Solutions</Badge>
+                    <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Segment Solutions</Badge>
                     <h1 className="text-5xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-none font-plus-jakarta uppercase">
-                        Tailored Solutions for <span className="text-[#00A2FF]">Every</span> Social Media User
+                        Tailored Solutions for <span className="text-[#3B82F6]">Every</span> Social Media User
                     </h1>
                     <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-2xl mx-auto">
                         SocialHub solves specific operational bottlenecks for high-growth teams. We move beyond "features" to deliver measurable business outcomes.
@@ -95,8 +95,8 @@ export default function SolutionsPage() {
 
                                 {/* Layout: Feature */}
                                 <div className="space-y-4">
-                                    <div className="text-[10px] font-black text-[#00A2FF] uppercase tracking-widest flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[#00A2FF]" /> The Solution
+                                    <div className="text-[10px] font-black text-[#3B82F6] uppercase tracking-widest flex items-center gap-2">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#3B82F6]" /> The Solution
                                     </div>
                                     <p className="text-sm font-bold text-[#0C1B33] leading-relaxed">{s.feature}</p>
                                 </div>
@@ -148,7 +148,7 @@ export default function SolutionsPage() {
                                 { title: "Authorized API Access", desc: "ZERO brittle web-scrapers or unofficial workarounds." }
                             ].map((feat, i) => (
                                 <div key={i} className="flex gap-6 items-start group">
-                                    <div className="w-10 h-10 bg-[#0C1B33] border border-white/10 rounded-lg flex items-center justify-center text-[#00A2FF] group-hover:bg-[#00A2FF] group-hover:text-white transition-colors flex-shrink-0"><Zap className="h-5 w-5" /></div>
+                                    <div className="w-10 h-10 bg-[#0C1B33] border border-white/10 rounded-lg flex items-center justify-center text-[#3B82F6] group-hover:bg-[#3B82F6] group-hover:text-white transition-colors flex-shrink-0"><Zap className="h-5 w-5" /></div>
                                     <div className="space-y-1">
                                         <h4 className="font-extrabold text-white font-plus-jakarta text-lg uppercase tracking-tight">{feat.title}</h4>
                                         <p className="text-sm font-medium text-slate-400 leading-relaxed">{feat.desc}</p>

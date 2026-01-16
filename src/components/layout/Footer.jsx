@@ -16,26 +16,30 @@ const Footer = () => {
     const currentYear = new Date().getFullYear();
 
     const footerLinks = {
-        Platform: [
-            { name: "Features", href: "/features" },
-            { name: "Solutions", href: "/solutions" },
-            { name: "Pricing", href: "/pricing" },
-        ],
-        Resources: [
-            { name: "Blog", href: "/blog" },
-            { name: "User Guide", href: "/guide" },
-            { name: "Help Center", href: "/help" },
-        ],
         Company: [
             { name: "About", href: "/about" },
             { name: "Careers", href: "/careers" },
             { name: "Contact", href: "/contact" },
+            { name: "Press", href: "/press" },
+        ],
+        Resources: [
+            { name: "Blog", href: "/blog" },
+            { name: "Help Center", href: "/help" },
+            { name: "Guides", href: "/guides" },
+            { name: "Status", href: "/status" },
+            { name: "Changelog", href: "/changelog" },
         ],
         Legal: [
-            { name: "Privacy Policy", href: "/privacy-policy" },
             { name: "Terms of Service", href: "/terms-of-service" },
-            { name: "Cookie Policy", href: "/cookie-policy" },
+            { name: "Privacy Policy", href: "/privacy-policy" },
             { name: "Data Deletion", href: "/data-deletion" },
+            { name: "Cookie Policy", href: "/cookie-policy" },
+        ],
+        Product: [
+            { name: "Platform Overview", href: "/features" },
+            { name: "Integrations", href: "/integrations" },
+            { name: "Pricing", href: "/pricing" },
+            { name: "Roadmap", href: "/roadmap" },
         ],
     };
 
@@ -47,20 +51,20 @@ const Footer = () => {
     ];
 
     return (
-        <footer className="bg-[#0C1B33] text-white pt-20 pb-12 font-inter">
-            <div className="container mx-auto px-6 max-w-[1200px]">
+        <footer className="bg-gray-900 text-white pt-20 pb-12 font-inter">
+            <div className="container mx-auto px-6 max-w-[1440px]">
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-12 mb-20">
                     {/* Brand Column */}
                     <div className="col-span-2 space-y-6">
                         <Link href="/" className="flex items-center space-x-2 group w-fit">
-                            <div className="bg-[#F9C80E] p-2 rounded-lg text-[#0C1B33] transition-transform group-hover:scale-110">
+                            <div className="bg-primary p-2 rounded-lg text-white transition-transform group-hover:scale-110">
                                 <Zap className="h-5 w-5 fill-current" />
                             </div>
-                            <span className="text-2xl font-extrabold tracking-tight font-plus-jakarta">
+                            <span className="text-2xl font-bold tracking-tight font-display">
                                 SocialHub
                             </span>
                         </Link>
-                        <p className="text-slate-400 text-base leading-relaxed max-w-sm">
+                        <p className="text-gray-400 text-base leading-relaxed max-w-sm">
                             The professional command center for scheduling, analyzing, and growing your digital voice across every major platform.
                         </p>
                         <div className="flex gap-4">
@@ -68,7 +72,7 @@ const Footer = () => {
                                 <Link
                                     key={social.name}
                                     href={social.href}
-                                    className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-blue-500 transition-all border border-white/5"
+                                    className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-primary transition-all border border-white/5"
                                     aria-label={social.name}
                                 >
                                     {social.icon}
@@ -80,13 +84,13 @@ const Footer = () => {
                     {/* Links Columns */}
                     {Object.entries(footerLinks).map(([title, links]) => (
                         <div key={title} className="col-span-1 space-y-6">
-                            <h4 className="text-xs font-black uppercase tracking-widest text-[#00A2FF] font-plus-jakarta">{title}</h4>
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-primary font-inter">{title}</h4>
                             <ul className="space-y-4">
                                 {links.map((link) => (
                                     <li key={link.name}>
                                         <Link
                                             href={link.href}
-                                            className="text-slate-400 hover:text-[#F9C80E] transition-colors text-sm font-medium"
+                                            className="text-gray-400 hover:text-primary transition-colors text-sm font-medium"
                                         >
                                             {link.name}
                                         </Link>
@@ -100,21 +104,21 @@ const Footer = () => {
                 {/* Bottom Bar */}
                 <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
                     <div className="flex flex-wrap items-center justify-center md:justify-start gap-8">
-                        <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                            <ShieldCheck className="h-3 w-3 text-emerald-500" />
+                        <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                            <ShieldCheck className="h-3 w-3 text-success" />
                             GDPR
                         </div>
-                        <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                            <Lock className="h-3 w-3 text-blue-500" />
+                        <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                            <Lock className="h-3 w-3 text-info" />
                             AES-256
                         </div>
-                        <div className="flex items-center gap-2 text-slate-500 text-xs font-bold uppercase tracking-widest">
-                            <Globe className="h-3 w-3 text-indigo-500" />
+                        <div className="flex items-center gap-2 text-gray-400 text-xs font-bold uppercase tracking-widest">
+                            <Globe className="h-3 w-3 text-primary" />
                             99.9% Uptime
                         </div>
                     </div>
 
-                    <div className="text-slate-500 text-sm font-medium">
+                    <div className="text-gray-500 text-sm font-medium">
                         © {currentYear} SocialHub Inc. Enterprise Grade Social Management.
                     </div>
                 </div>

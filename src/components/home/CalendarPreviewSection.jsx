@@ -22,12 +22,12 @@ export default function CalendarPreviewSection() {
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="flex flex-col lg:flex-row items-center gap-20">
                     <div className="flex-1 space-y-8">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#00A2FF]/5 border border-[#00A2FF]/10">
-                            <Zap className="h-4 w-4 text-[#00A2FF]" />
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3B82F6]/5 border border-[#3B82F6]/10">
+                            <Zap className="h-4 w-4 text-[#3B82F6]" />
                             <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33] font-plus-jakarta">Visual Scheduling Protocol</span>
                         </div>
                         <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                            Your Entire Social <br /> <span className="text-[#00A2FF]">Network on One Grid</span>
+                            Your Entire Social <br /> <span className="text-[#3B82F6]">Network on One Grid</span>
                         </h2>
                         <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-[500px]">
                             Drag, drop, and distribute. Our Unified Calendar gives you a bird's-eye view of your content ecosystem across every node.
@@ -51,22 +51,22 @@ export default function CalendarPreviewSection() {
 
                     <div className="flex-1 relative w-full">
                         <div className="bg-slate-50 rounded-3xl p-8 border border-slate-200 shadow-2xl relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#00A2FF]/5 blur-[100px] pointer-events-none" />
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-[#3B82F6]/5 blur-[100px] pointer-events-none" />
 
                             {/* Mock Calendar Grid */}
                             <div className="grid grid-cols-3 gap-4 relative z-10">
                                 {/* Cell 1 - Empty */}
                                 <div className="bg-white/60 border border-slate-100 rounded-2xl p-4 h-48 flex flex-col transition-all hover:shadow-md">
                                     <span className="text-slate-300 font-black text-sm mb-4">12</span>
-                                    <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-100 rounded-xl group/btn hover:border-[#00A2FF]/20 transition-colors cursor-pointer">
-                                        <Plus className="h-5 w-5 text-slate-200 group-hover/btn:text-[#00A2FF] transition-colors" />
+                                    <div className="flex-1 flex items-center justify-center border-2 border-dashed border-slate-100 rounded-xl group/btn hover:border-[#3B82F6]/20 transition-colors cursor-pointer">
+                                        <Plus className="h-5 w-5 text-slate-200 group-hover/btn:text-[#3B82F6] transition-colors" />
                                     </div>
                                 </div>
 
                                 {/* Cell 2 - Active Cell with Post */}
-                                <div className="bg-white border-2 border-[#00A2FF]/20 rounded-2xl p-4 h-56 flex flex-col shadow-xl z-20 scale-105 -translate-y-4">
+                                <div className="bg-white border-2 border-[#3B82F6]/20 rounded-2xl p-4 h-56 flex flex-col shadow-xl z-20 scale-105 -translate-y-4">
                                     <div className="flex justify-between items-center mb-4">
-                                        <span className="inline-flex items-center justify-center w-8 h-8 bg-[#00A2FF] text-white rounded-full font-black text-xs shadow-lg shadow-[#00A2FF]/20">13</span>
+                                        <span className="inline-flex items-center justify-center w-8 h-8 bg-[#3B82F6] text-white rounded-full font-black text-xs shadow-lg shadow-[#3B82F6]/20">13</span>
                                         <div className="flex -space-x-2">
                                             <div className="w-6 h-6 rounded-full bg-[#0C1B33] border-2 border-white flex items-center justify-center text-[#F9C80E]">
                                                 <Zap className="h-3 w-3" />
@@ -80,7 +80,7 @@ export default function CalendarPreviewSection() {
                                     <div className="flex-1 bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-3 relative overflow-hidden group/post">
                                         <div className="flex items-center gap-2">
                                             <div className="w-8 h-8 rounded-md bg-white border border-slate-200 overflow-hidden">
-                                                <div className="w-full h-full bg-gradient-to-br from-[#00A2FF] to-blue-600 opacity-20" />
+                                                <div className="w-full h-full bg-gradient-to-br from-[#3B82F6] to-blue-600 opacity-20" />
                                             </div>
                                             <div className="flex-1 space-y-1">
                                                 <div className="h-1.5 w-full bg-slate-200 rounded-full" />
@@ -122,7 +122,7 @@ export default function CalendarPreviewSection() {
                             {/* Branding Labels */}
                             <div className="mt-8 flex justify-between items-center opacity-40">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-[#00A2FF]" />
+                                    <div className="w-2 h-2 rounded-full bg-[#3B82F6]" />
                                     <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33]">Protocol Active</span>
                                 </div>
                                 <span className="text-[9px] font-bold text-slate-400 font-plus-jakarta uppercase tracking-widest">Global Node Sync v4.0</span>

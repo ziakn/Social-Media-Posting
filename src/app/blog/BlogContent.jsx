@@ -37,7 +37,7 @@ export default function BlogContent() {
   });
 
   return (
-    <div className="min-h-screen bg-white font-inter text-[#3E4652]">
+    <div className="min-h-screen bg-white font-inter text-gray-900">
       <BlogHero />
 
       <div className="container mx-auto px-6 py-16 max-w-[1280px]">
@@ -57,22 +57,22 @@ export default function BlogContent() {
                 ))}
               </div>
             ) : (
-              <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[10px] bg-slate-50">
-                <SearchX className="h-12 w-12 text-slate-200 mx-auto mb-4" />
-                <h3 className="text-2xl font-extrabold text-[#0C1B33] font-plus-jakarta uppercase">No articles found.</h3>
-                <p className="text-slate-500 font-medium font-inter">Try selecting a different category protocol.</p>
+              <div className="py-20 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+                <SearchX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-gray-900 font-display">No articles found.</h3>
+                <p className="text-gray-500 font-medium font-inter">Try selecting a different category.</p>
                 <Button
-                  className="mt-8 bg-[#0C1B33] text-[#F9C80E] font-black uppercase tracking-widest text-[10px] px-8 h-12 rounded-[6px] hover:bg-[#0C1B33]/90 font-plus-jakarta"
+                  className="mt-8 bg-gray-900 text-white font-bold uppercase tracking-widest text-xs px-8 h-12 rounded-lg hover:bg-gray-800"
                   onClick={() => setActiveCategory("All")}
                 >
-                  View All Intelligence
+                  View All Posts
                 </Button>
               </div>
             )}
 
             {/* Pagination */}
             <div className="mt-16 flex justify-center">
-              <Button className="bg-white border-2 border-[#0C1B33] text-[#0C1B33] hover:bg-slate-50 px-10 h-16 rounded-[6px] font-bold text-lg transition-all shadow-subtle font-plus-jakarta uppercase tracking-widest">
+              <Button variant="outline" className="border-2 border-gray-200 text-gray-900 hover:bg-gray-50 px-10 h-14 rounded-xl font-bold text-base transition-all">
                 Load More Articles
               </Button>
             </div>

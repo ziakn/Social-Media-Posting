@@ -10,18 +10,18 @@ export default function AuthLayout({ children, title, subtitle, visualTitle, vis
             {/* Left Section: Visual / Marketing (60%) */}
             <div className="hidden lg:flex lg:w-3/5 bg-[#0C1B33] relative overflow-hidden flex-col justify-center p-20 pt-32">
                 {/* Decorative Background Elements */}
-                <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-[#00A2FF]/10 to-transparent pointer-events-none" />
+                <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-[#3B82F6]/10 to-transparent pointer-events-none" />
                 <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#F9C80E]/10 blur-[120px] rounded-full pointer-events-none" />
 
                 {/* Main Content */}
                 <div className="relative z-10 max-w-xl">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-100 mb-8 w-fit">
-                        <div className="w-2 h-2 rounded-full bg-[#00A2FF] animate-pulse" />
+                        <div className="w-2 h-2 rounded-full bg-[#3B82F6] animate-pulse" />
                         <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33] font-plus-jakarta">2026 AI Lab Protocol Active</span>
                     </div>
 
                     <h2 className="text-6xl font-extrabold text-white leading-[0.95] mb-10 font-plus-jakarta uppercase tracking-tighter">
-                        {visualTitle || <>Scale your <br /><span className='text-[#00A2FF]'>Social Influence</span> <br />with Intelligence.</>}
+                        {visualTitle || <>Scale your <br /><span className='text-[#3B82F6]'>Social Influence</span> <br />with Intelligence.</>}
                     </h2>
 
                     <ul className="space-y-6">

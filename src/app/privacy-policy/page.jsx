@@ -33,13 +33,13 @@ export default function PrivacyPolicy() {
 
         {/* --- Header --- */}
         <div className="max-w-4xl mb-20 space-y-8">
-          <Link href="/" className="inline-flex items-center gap-2 text-xs font-black text-[#00A2FF] uppercase tracking-widest hover:-translate-x-1 transition-transform">
+          <Link href="/" className="inline-flex items-center gap-2 text-xs font-black text-[#3B82F6] uppercase tracking-widest hover:-translate-x-1 transition-transform">
             <ArrowLeft className="h-4 w-4" /> Return to Dashboard
           </Link>
           <div className="space-y-4">
             <Badge className="bg-[#0C1B33] text-white uppercase text-[9px] px-3 font-black tracking-widest">Legal Disclosure</Badge>
             <h1 className="text-4xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-[0.9] font-plus-jakarta uppercase">
-              Privacy <br /> <span className="text-[#00A2FF]">Protocol.</span>
+              Privacy <br /> <span className="text-[#3B82F6]">Protocol.</span>
             </h1>
           </div>
           <p className="text-xl font-medium text-slate-500 max-w-2xl leading-relaxed">
@@ -73,7 +73,7 @@ export default function PrivacyPolicy() {
           {/* Sidebar Info */}
           <div className="lg:col-span-4 space-y-8">
             <div className="p-8 bg-[#0C1B33] rounded-[10px] text-white space-y-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-1/3 h-full bg-[#00A2FF]/10 blur-3xl" />
+              <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-3xl" />
               <h4 className="text-xl font-extrabold font-plus-jakarta uppercase italic flex items-center gap-3">
                 <FileText className="h-5 w-5 text-[#F9C80E]" /> Trust Summary
               </h4>
@@ -84,7 +84,7 @@ export default function PrivacyPolicy() {
                   { icon: <Globe className="h-4 w-4" />, text: "Global GDPR/CCPA Compliance" }
                 ].map((item, i) => (
                   <li key={i} className="flex gap-4 items-center text-xs font-bold text-slate-300">
-                    <span className="text-[#00A2FF]">{item.icon}</span> {item.text}
+                    <span className="text-[#3B82F6]">{item.icon}</span> {item.text}
                   </li>
                 ))}
               </ul>
@@ -92,9 +92,9 @@ export default function PrivacyPolicy() {
             <div className="p-8 border border-[#E1E7EF] rounded-[10px] space-y-4">
               <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Related Documents</h5>
               <div className="space-y-2">
-                <Link href="/terms-of-service" className="block text-sm font-bold text-[#00A2FF] hover:underline">Terms of Service</Link>
-                <Link href="/cookie-policy" className="block text-sm font-bold text-[#00A2FF] hover:underline">Cookie Policy</Link>
-                <Link href="/dpa" className="block text-sm font-bold text-[#00A2FF] hover:underline">Data Processing Agreement (DPA)</Link>
+                <Link href="/terms-of-service" className="block text-sm font-bold text-[#3B82F6] hover:underline">Terms of Service</Link>
+                <Link href="/cookie-policy" className="block text-sm font-bold text-[#3B82F6] hover:underline">Cookie Policy</Link>
+                <Link href="/dpa" className="block text-sm font-bold text-[#3B82F6] hover:underline">Data Processing Agreement (DPA)</Link>
               </div>
             </div>
           </div>

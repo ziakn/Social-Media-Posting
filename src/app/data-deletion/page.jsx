@@ -29,7 +29,7 @@ export default function DataDeletionPage() {
       <section className="pt-32 pb-16 border-b border-slate-100">
         <div className="container mx-auto px-6 max-w-[1280px]">
           <div className="max-w-3xl space-y-6">
-            <Link href="/help" className="inline-flex items-center gap-2 text-[10px] font-black text-[#00A2FF] uppercase tracking-widest hover:-translate-x-1 transition-transform">
+            <Link href="/help" className="inline-flex items-center gap-2 text-[10px] font-black text-[#3B82F6] uppercase tracking-widest hover:-translate-x-1 transition-transform">
               <ArrowRight className="h-4 w-4 rotate-180" /> Intelligence Hub
             </Link>
             <h1 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] leading-none tracking-tighter font-plus-jakarta uppercase">
@@ -61,7 +61,7 @@ export default function DataDeletionPage() {
                     { title: "Analytic Node Wipe", desc: "Custom resonance weights and historical engagement data are permanently decoupled from your identity.", icon: <RefreshCcw className="h-5 w-5" /> }
                   ].map((item, i) => (
                     <li key={i} className="flex gap-6 items-start group">
-                      <div className="w-12 h-12 rounded-[10px] bg-slate-50 flex items-center justify-center text-[#00A2FF] border border-slate-100 group-hover:border-[#00A2FF]/20 transition-all shrink-0">
+                      <div className="w-12 h-12 rounded-[10px] bg-slate-50 flex items-center justify-center text-[#3B82F6] border border-slate-100 group-hover:border-[#3B82F6]/20 transition-all shrink-0">
                         {item.icon}
                       </div>
                       <div className="space-y-1">
@@ -100,7 +100,7 @@ export default function DataDeletionPage() {
                     </div>
                     <button
                       onClick={() => setSubmitted(false)}
-                      className="text-[10px] font-black text-[#00A2FF] uppercase tracking-widest hover:underline"
+                      className="text-[10px] font-black text-[#3B82F6] uppercase tracking-widest hover:underline"
                     >
                       Submit another request
                     </button>
@@ -120,12 +120,12 @@ export default function DataDeletionPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="e.g., commander@agency.com"
-                          className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[6px] px-4 text-sm font-medium focus:outline-none focus:border-[#00A2FF] transition-all font-dm-sans"
+                          className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[6px] px-4 text-sm font-medium focus:outline-none focus:border-[#3B82F6] transition-all font-dm-sans"
                         />
                       </div>
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deletion Reason (Optional)</label>
-                        <select className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[6px] px-4 text-sm font-medium focus:outline-none focus:border-[#00A2FF] transition-all">
+                        <select className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[6px] px-4 text-sm font-medium focus:outline-none focus:border-[#3B82F6] transition-all">
                           <option>Closing Business</option>
                           <option>Switching Platforms</option>
                           <option>Privacy Concerns</option>

@@ -71,7 +71,7 @@ export default function Login() {
         <form onSubmit={handleLogin} className="space-y-6">
           <div className="space-y-2">
             <label htmlFor="email" className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Mail className="h-3 w-3 text-[#00A2FF]" /> Email Identity
+              <Mail className="h-3 w-3 text-[#3B82F6]" /> Email Identity
             </label>
             <Input
               id="email"
@@ -80,16 +80,16 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-14 rounded-[6px] border-slate-200 focus:ring-[#00A2FF]/20 focus:border-[#00A2FF] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300"
+              className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300"
             />
           </div>
 
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <label htmlFor="password" className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-                <Lock className="h-3 w-3 text-[#00A2FF]" /> Access Key
+                <Lock className="h-3 w-3 text-[#3B82F6]" /> Access Key
               </label>
-              <Link href="/auth/reset" className="text-[10px] font-black uppercase tracking-widest text-[#00A2FF] hover:text-[#0081cc]">
+              <Link href="/auth/reset" className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] hover:text-[#0081cc]">
                 Recovery?
               </Link>
             </div>
@@ -101,7 +101,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-14 rounded-[6px] border-slate-200 focus:ring-[#00A2FF]/20 focus:border-[#00A2FF] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300 pr-12"
+                className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300 pr-12"
               />
               <button
                 type="button"
@@ -137,7 +137,7 @@ export default function Login() {
 
         <div className="grid grid-cols-2 gap-4">
           <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
-            <Chrome className="h-4 w-4 text-[#00A2FF]" /> Google
+            <Chrome className="h-4 w-4 text-[#3B82F6]" /> Google
           </Button>
           <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
             <Github className="h-4 w-4" /> GitHub
@@ -147,7 +147,7 @@ export default function Login() {
         <div className="pt-6 text-center">
           <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
             New to the network?{" "}
-            <Link href="/auth/register" className="text-[#00A2FF] font-black hover:underline ml-1">
+            <Link href="/auth/register" className="text-[#3B82F6] font-black hover:underline ml-1">
               Join Today
             </Link>
           </p>

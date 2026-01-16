@@ -1,23 +1,23 @@
-"use client";
-
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export default function BlogCategories({ categories, activeCategory, setActiveCategory }) {
     return (
-        <div className="flex flex-wrap justify-center gap-2 mb-20">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-16">
             {categories.map((cat) => (
-                <button
+                <Button
                     key={cat}
+                    variant="outline"
                     onClick={() => setActiveCategory(cat)}
                     className={cn(
-                        "px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all font-inter",
+                        "rounded-full px-6 h-10 font-medium transition-all",
                         activeCategory === cat
-                            ? "bg-[#0C1B33] text-[#F9C80E] shadow-subtle"
-                            : "text-slate-400 hover:text-[#0C1B33] hover:bg-slate-50"
+                            ? "bg-gray-900 text-white border-gray-900 shadow-md hover:bg-gray-800 hover:text-white"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                     )}
                 >
                     {cat}
-                </button>
+                </Button>
             ))}
         </div>
     );

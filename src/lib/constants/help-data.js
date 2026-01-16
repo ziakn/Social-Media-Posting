@@ -3,34 +3,42 @@ export const faqs = [
         category: "Getting Started",
         questions: [
             {
-                q: "How do I connect my TikTok account?",
-                a: "Navigate to the 'Accounts' tab, select 'Add New', and choose TikTok. You will be redirected to the secure TikTok OAuth portal to authorize SocialHub. Once authorized, our resonance engines will begin auditing your profile data."
+                q: "How do I connect my social accounts?",
+                a: "Navigate to the 'Integrations' tab in your dashboard. Click 'Connect' next to the platform you want to add and follow the OAuth prompts."
             },
             {
-                q: "Is there a free trial for teams?",
-                a: "Yes, every new Enterprise or Pro account begins with a 14-day zero-liability protocol period. You can test all AI Lab v4.0 features without restriction during this window."
+                q: "What platforms do you support?",
+                a: "We currently support Instagram, TikTok, Pinterest, YouTube, LinkedIn, X (Twitter), and Facebook."
+            },
+            {
+                q: "Is there a mobile app?",
+                a: "Yes! You can download SocialHub for iOS and Android from their respective app stores."
             }
         ]
     },
     {
-        category: "Posting & Scheduling",
+        category: "Publishing & Scheduling",
         questions: [
             {
-                q: "What is AI Lab v4.0?",
-                a: "AI Lab v4.0 is our proprietary content resonance engine. It uses machine learning to analyze social entropy and generate platform-optimized captions, sizing, and scheduling triggers for high-velocity distribution."
+                q: "Can I schedule posts for multiple platforms at once?",
+                a: "Absolutely. In the 'Create Post' window, simply select all the profiles you want to publish to."
             },
             {
-                q: "Can I schedule carousels for Instagram?",
-                a: "Absolutely. Our multi-asset uploader supports Instagram carousels, TikTok slideshows, and Pinterest boards with full AES-256 encryption for every node."
+                q: "Does auto-publish work for TikTok?",
+                a: "Yes, for business accounts. Personal accounts may receive a push notification reminder to post manually due to API limitations."
             }
         ]
     },
     {
-        category: "Billing & Security",
+        category: "Billing & Subscription",
         questions: [
             {
-                q: "How secure is my social media token?",
-                a: "We use enterprise-grade AES-256 encryption. Your access tokens are stored in a hardware-isolated environment and are never exposed to any third-party analytics or external nodes."
+                q: "How can I upgrade my plan?",
+                a: "Go to Settings > Billing and select 'Change Plan'. Your new limits will be active immediately."
+            },
+            {
+                q: "Do you offer refunds?",
+                a: "We offer a 7-day money-back guarantee if you are not satisfied with our Pro or Agency plans."
             }
         ]
     }

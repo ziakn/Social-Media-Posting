@@ -86,13 +86,13 @@ export default function Register() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <User className="h-3 w-3 text-[#00A2FF]" /> Creator Name
+              <User className="h-3 w-3 text-[#3B82F6]" /> Creator Name
             </label>
             <Input
               type="text"
               placeholder="Zia Muhammad"
               required
-              className="h-12 rounded-[6px] border-slate-200 focus:ring-[#00A2FF]/20 focus:border-[#00A2FF] font-bold text-sm bg-slate-50/50"
+              className="h-12 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
@@ -100,13 +100,13 @@ export default function Register() {
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Mail className="h-3 w-3 text-[#00A2FF]" /> Communications
+              <Mail className="h-3 w-3 text-[#3B82F6]" /> Communications
             </label>
             <Input
               type="email"
               placeholder="zia@example.com"
               required
-              className="h-12 rounded-[6px] border-slate-200 focus:ring-[#00A2FF]/20 focus:border-[#00A2FF] font-bold text-sm bg-slate-50/50"
+              className="h-12 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
@@ -114,13 +114,13 @@ export default function Register() {
 
           <div className="space-y-2">
             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Lock className="h-3 w-3 text-[#00A2FF]" /> Secure Key
+              <Lock className="h-3 w-3 text-[#3B82F6]" /> Secure Key
             </label>
             <Input
               type="password"
               placeholder="••••••••"
               required
-              className="h-12 rounded-[6px] border-slate-200 focus:ring-[#00A2FF]/20 focus:border-[#00A2FF] font-bold text-sm bg-slate-50/50"
+              className="h-12 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
@@ -129,22 +129,22 @@ export default function Register() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-                <Building2 className="h-3 w-3 text-[#00A2FF]" /> Brand
+                <Building2 className="h-3 w-3 text-[#3B82F6]" /> Brand
               </label>
               <Input
                 type="text"
                 placeholder="Agency X"
-                className="h-12 rounded-[6px] border-slate-200 focus:ring-[#00A2FF]/20 focus:border-[#00A2FF] font-bold text-sm bg-slate-50/50"
+                className="h-12 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50"
                 value={form.company}
                 onChange={(e) => setForm({ ...form, company: e.target.value })}
               />
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-                <Globe className="h-3 w-3 text-[#00A2FF]" /> Origin
+                <Globe className="h-3 w-3 text-[#3B82F6]" /> Origin
               </label>
               <select
-                className="flex h-12 w-full rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest ring-offset-white focus:outline-none focus:ring-2 focus:ring-[#00A2FF]/20 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-plus-jakarta"
+                className="flex h-12 w-full rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest ring-offset-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-plus-jakarta"
                 value={form.country}
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
               >
@@ -159,10 +159,10 @@ export default function Register() {
                 id="terms"
                 checked={agreeToTerms}
                 onCheckedChange={setAgreeToTerms}
-                className="mt-1 border-slate-300 data-[state=checked]:bg-[#00A2FF] data-[state=checked]:border-[#00A2FF]"
+                className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6]"
               />
               <label htmlFor="terms" className="text-[10px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta">
-                Agree to <Link href="/terms" className="text-[#00A2FF] font-black">Terms</Link> & <Link href="/privacy" className="text-[#00A2FF] font-black">Privacy</Link>.
+                Agree to <Link href="/terms" className="text-[#3B82F6] font-black">Terms</Link> & <Link href="/privacy" className="text-[#3B82F6] font-black">Privacy</Link>.
               </label>
             </div>
 
@@ -171,7 +171,7 @@ export default function Register() {
                 id="updates"
                 checked={receiveUpdates}
                 onCheckedChange={setReceiveUpdates}
-                className="mt-1 border-slate-300 data-[state=checked]:bg-[#00A2FF] data-[state=checked]:border-[#00A2FF]"
+                className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6]"
               />
               <label htmlFor="updates" className="text-[10px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta">
                 Receive release node protocols.
@@ -199,7 +199,7 @@ export default function Register() {
 
         <div className="grid grid-cols-2 gap-4">
           <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
-            <Chrome className="h-3 w-3 text-[#00A2FF]" /> Google
+            <Chrome className="h-3 w-3 text-[#3B82F6]" /> Google
           </Button>
           <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
             <Github className="h-3 w-3" /> GitHub
@@ -209,7 +209,7 @@ export default function Register() {
         <div className="pt-6 text-center">
           <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
             Already registered?{" "}
-            <Link href="/auth/login" className="text-[#00A2FF] font-black hover:underline ml-1">
+            <Link href="/auth/login" className="text-[#3B82F6] font-black hover:underline ml-1">
               Log in instead
             </Link>
           </p>

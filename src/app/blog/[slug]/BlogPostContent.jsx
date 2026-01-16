@@ -57,11 +57,11 @@ export default function BlogPostContent() {
             <div className="bg-white pt-32 pb-16 relative overflow-hidden">
                 <div className="container mx-auto px-6 max-w-[1280px] relative z-10">
                     <div className="max-w-4xl space-y-8">
-                        <Link href="/blog" className="inline-flex items-center gap-2 text-[10px] font-black text-[#00A2FF] uppercase tracking-widest hover:-translate-x-1 transition-transform">
+                        <Link href="/blog" className="inline-flex items-center gap-2 text-[10px] font-black text-[#3B82F6] uppercase tracking-widest hover:-translate-x-1 transition-transform">
                             <ArrowLeft className="h-4 w-4" /> Return to Intelligence
                         </Link>
                         <div className="space-y-6">
-                            <Badge className="bg-slate-50 text-[#00A2FF] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">
+                            <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">
                                 {post.category}
                             </Badge>
                             <h1 className="text-4xl md:text-6xl font-extrabold text-[#0C1B33] leading-none tracking-tighter font-plus-jakarta uppercase">
@@ -79,8 +79,8 @@ export default function BlogPostContent() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-8 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <span className="flex items-center gap-2.5"><Calendar className="h-4 w-4 text-[#00A2FF]" /> {post.date}</span>
-                                <span className="flex items-center gap-2.5"><Clock className="h-4 w-4 text-[#00A2FF]" /> {post.readTime}</span>
+                                <span className="flex items-center gap-2.5"><Calendar className="h-4 w-4 text-[#3B82F6]" /> {post.date}</span>
+                                <span className="flex items-center gap-2.5"><Clock className="h-4 w-4 text-[#3B82F6]" /> {post.readTime}</span>
                             </div>
                         </div>
                     </div>
@@ -104,10 +104,10 @@ export default function BlogPostContent() {
                             prose-h2:text-3xl prose-h3:text-2xl
                             prose-p:text-lg prose-p:leading-relaxed prose-p:text-[#3E4652] prose-p:font-medium
                             prose-strong:text-[#0C1B33] prose-strong:font-black
-                            prose-a:text-[#00A2FF] prose-a:font-black hover:prose-a:text-[#00A2FF]/80 transition-colors">
+                            prose-a:text-[#3B82F6] prose-a:font-black hover:prose-a:text-[#3B82F6]/80 transition-colors">
 
                             <p className="text-xl leading-relaxed text-[#0C1B33] font-bold mb-10 italic">
-                                Decoding the <span className="text-[#00A2FF]">2026 social meta</span> requires a shift from centralized broadcasting to node-based distribution resonance.
+                                Decoding the <span className="text-[#3B82F6]">2026 social meta</span> requires a shift from centralized broadcasting to node-based distribution resonance.
                             </p>
 
                             <h2>The Decentralized Shift</h2>
@@ -117,14 +117,14 @@ export default function BlogPostContent() {
 
                             {/* Mid-article CTA Block (Aligned with Homepage) */}
                             <div className="not-prose my-16 bg-[#0C1B33] rounded-[10px] p-12 md:p-16 text-center text-white space-y-8 relative overflow-hidden shadow-subtle">
-                                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#00A2FF]/10 blur-[100px] pointer-events-none" />
+                                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
                                 <div className="relative z-10 flex flex-col items-center space-y-8">
                                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
-                                        <div className="w-2 h-2 rounded-full bg-[#00A2FF] animate-pulse" />
+                                        <div className="w-2 h-2 rounded-full bg-[#3B82F6] animate-pulse" />
                                         <span className="text-[10px] font-black uppercase tracking-widest text-white">New: 2026 AI Lab v4.0 live</span>
                                     </div>
                                     <h4 className="text-3xl md:text-5xl font-extrabold font-inter tracking-tighter uppercase leading-none max-w-2xl mx-auto">
-                                        Ready to scale without the <span className="text-[#00A2FF]">stress?</span>
+                                        Ready to scale without the <span className="text-[#3B82F6]">stress?</span>
                                     </h4>
                                     <p className="text-lg text-slate-400 font-medium leading-relaxed max-w-xl mx-auto">
                                         Automate<br />
@@ -185,14 +185,14 @@ export default function BlogPostContent() {
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Share Intelligence:</span>
                                 <div className="flex gap-3">
                                     {[Twitter, Linkedin, Facebook, Share].map((Icon, i) => (
-                                        <button key={i} className="w-12 h-12 rounded-[6px] bg-white border border-slate-100 flex items-center justify-center text-[#0C1B33] hover:bg-[#00A2FF] hover:text-white transition-all shadow-sm">
+                                        <button key={i} className="w-12 h-12 rounded-[6px] bg-white border border-slate-100 flex items-center justify-center text-[#0C1B33] hover:bg-[#3B82F6] hover:text-white transition-all shadow-sm">
                                             <Icon className="h-4 w-4" />
                                         </button>
                                     ))}
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <Tag className="h-4 w-4 text-[#00A2FF]" />
+                                <Tag className="h-4 w-4 text-[#3B82F6]" />
                                 <div className="flex gap-3">
                                     {["Strategy", "Network Theory", "Automation"].map((t, i) => (
                                         <span key={i} className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t}{i < 2 ? "," : ""}</span>
@@ -227,10 +227,10 @@ export default function BlogPostContent() {
                             <div className="space-y-8">
                                 {relatedPosts.map((rp, i) => (
                                     <Link key={i} href={`/blog/${rp.slug}`} className="group block space-y-4">
-                                        <div className="aspect-[16/9] bg-[#F5F8FB] rounded-[10px] overflow-hidden border border-slate-100 group-hover:border-[#00A2FF] transition-all shadow-sm relative flex items-center justify-center">
+                                        <div className="aspect-[16/9] bg-[#F5F8FB] rounded-[10px] overflow-hidden border border-slate-100 group-hover:border-[#3B82F6] transition-all shadow-sm relative flex items-center justify-center">
                                             <Zap className="h-10 w-10 text-slate-200" />
                                         </div>
-                                        <h5 className="font-extrabold text-[#0C1B33] text-lg leading-tight uppercase tracking-tight group-hover:text-[#00A2FF] transition-colors line-clamp-2">
+                                        <h5 className="font-extrabold text-[#0C1B33] text-lg leading-tight uppercase tracking-tight group-hover:text-[#3B82F6] transition-colors line-clamp-2">
                                             {rp.title}
                                         </h5>
                                     </Link>
@@ -240,7 +240,7 @@ export default function BlogPostContent() {
 
                         {/* Newsletter Card */}
                         <div className="sticky top-32 p-10 bg-[#0C1B33] rounded-[10px] text-white space-y-8 shadow-subtle overflow-hidden group">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#00A2FF]/10 blur-3xl pointer-events-none" />
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-[#3B82F6]/10 blur-3xl pointer-events-none" />
                             <div className="relative z-10 space-y-6">
                                 <Mail className="h-10 w-10 text-[#F9C80E]" />
                                 <h4 className="text-2xl font-extrabold font-inter tracking-tighter uppercase leading-tight">Weekly <br /> Platform Signals.</h4>

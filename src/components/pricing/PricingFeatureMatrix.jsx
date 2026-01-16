@@ -1,57 +1,64 @@
-"use client";
-
 import { Check, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
 
 export default function PricingFeatureMatrix({ features }) {
     return (
-        <div className="hidden lg:block mb-32 font-inter">
-            <div className="text-center mb-16 space-y-2">
-                <h2 className="text-2xl font-bold text-[#111827] tracking-tight">Compare Plans & Features</h2>
-                <p className="text-[#6B7280] font-medium text-sm">Everything you need to grow your social presence.</p>
-            </div>
-            <div className="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-gray-50 border-b border-[#E5E7EB]">
-                            <th className="p-6 text-[#111827] font-semibold text-sm">Feature</th>
-                            <th className="p-6 text-center text-[#111827] font-semibold text-sm">Free</th>
-                            <th className="p-6 text-center text-[#4F46E5] font-semibold text-sm">Professional</th>
-                            <th className="p-6 text-center text-[#111827] font-semibold text-sm">Enterprise</th>
-                        </tr>
-                    </thead>
-                    <tbody className="text-sm">
-                        {features.map((f, i) => (
-                            <tr key={i} className="group hover:bg-gray-50/50 transition-colors border-b border-[#E5E7EB] last:border-0">
-                                <td className="p-6">
-                                    <span className="text-[#374151] font-medium">{f.name}</span>
-                                </td>
-                                <td className="p-6 text-center">
-                                    {typeof f.free === 'boolean' ? (
-                                        f.free ? <Check className="h-5 w-5 mx-auto text-green-500" /> : <Minus className="h-5 w-5 mx-auto text-gray-300" />
-                                    ) : (
-                                        <span className="text-[#6B7280] font-medium">{f.free}</span>
-                                    )}
-                                </td>
-                                <td className="p-6 text-center bg-indigo-50/20">
-                                    {typeof f.pro === 'boolean' ? (
-                                        f.pro ? <Check className="h-5 w-5 mx-auto text-[#4F46E5]" /> : <Minus className="h-5 w-5 mx-auto text-gray-300" />
-                                    ) : (
-                                        <span className="text-[#4F46E5] font-bold">{f.pro}</span>
-                                    )}
-                                </td>
-                                <td className="p-6 text-center">
-                                    {typeof f.enterprise === 'boolean' ? (
-                                        f.enterprise ? <Check className="h-5 w-5 mx-auto text-[#111827]" /> : <Minus className="h-5 w-5 mx-auto text-gray-300" />
-                                    ) : (
-                                        <span className="text-[#111827] font-bold">{f.enterprise}</span>
-                                    )}
-                                </td>
-                            </tr>
+        <div className="mb-32">
+            <h2 className="text-3xl font-bold text-center text-gray-900 mb-12 font-display">Compare Features</h2>
+            <div className="rounded-xl border border-gray-200 overflow-hidden bg-white shadow-sm">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
+                            <TableHead className="w-[30%]">Feature</TableHead>
+                            <TableHead className="text-center w-[17%]">Free</TableHead>
+                            <TableHead className="text-center w-[17%] text-primary font-bold">Creator</TableHead>
+                            <TableHead className="text-center w-[17%]">Pro</TableHead>
+                            <TableHead className="text-center w-[17%]">Agency</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {features.map((section, idx) => (
+                            <>
+                                <TableRow key={idx} className="bg-gray-50/30 hover:bg-gray-50/30">
+                                    <TableCell colSpan={5} className="font-bold text-gray-900 py-3 uppercase text-xs tracking-wider">
+                                        {section.category}
+                                    </TableCell>
+                                </TableRow>
+                                {section.features.map((feature, fIdx) => (
+                                    <TableRow key={fIdx}>
+                                        <TableCell className="font-medium text-gray-700">{feature.name}</TableCell>
+                                        <TableCell className="text-center text-gray-600 font-inter">
+                                            {renderValue(feature.free)}
+                                        </TableCell>
+                                        <TableCell className="text-center font-bold text-gray-900 font-inter">
+                                            {renderValue(feature.creator)}
+                                        </TableCell>
+                                        <TableCell className="text-center text-gray-600 font-inter">
+                                            {renderValue(feature.pro)}
+                                        </TableCell>
+                                        <TableCell className="text-center text-gray-600 font-inter">
+                                            {renderValue(feature.agency)}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </>
                         ))}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
         </div>
     );
+}
+
+function renderValue(value) {
+    if (value === true) return <Check className="h-5 w-5 text-success mx-auto" />;
+    if (value === false) return <Minus className="h-5 w-5 text-gray-300 mx-auto" />;
+    return value;
 }

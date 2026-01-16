@@ -1,93 +1,64 @@
-"use client";
-
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function PricingCards({ plans, isAnnual }) {
     return (
-        <div className="grid md:grid-cols-3 gap-6 mb-24 items-stretch">
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-8 mb-32">
             {plans.map((plan) => (
                 <div
                     key={plan.id}
                     className={cn(
-                        "relative p-8 rounded-[10px] border transition-all duration-300 flex flex-col hover:shadow-lg hover:-translate-y-1 bg-white",
-                        plan.popular
-                            ? "border-[#FBBF24] ring-1 ring-[#FBBF24] shadow-md z-10"
-                            : "border-[#E5E7EB] hover:border-gray-300 shadow-sm"
+                        "relative flex flex-col p-6 rounded-2xl bg-white border h-full transition-all duration-200 hover:shadow-xl hover:-translate-y-1",
+                        plan.popular ? "border-primary shadow-lg ring-2 ring-primary/10" : "border-gray-200 shadow-sm"
                     )}
                 >
                     {plan.popular && (
-                        <div className="absolute top-0 right-1/2 translate-x-1/2 -translate-y-1/2 bg-[#FBBF24] text-[#111827] text-[12px] font-bold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-sm font-inter">
+                        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">
                             Most Popular
                         </div>
                     )}
 
-                    <div className="mb-8">
-                        <h3 className="text-xl font-bold text-[#111827] font-inter mb-2">
-                            {plan.name}
-                        </h3>
-                        <p className="text-[#6B7280] text-sm leading-relaxed font-inter">
-                            {plan.description}
-                        </p>
+                    <div className="mb-6">
+                        <h3 className="text-xl font-bold text-gray-900 font-display mb-2">{plan.name}</h3>
+                        <p className="text-gray-500 text-sm h-10">{plan.description}</p>
                     </div>
 
-                    <div className="mb-8">
+                    <div className="mb-6">
                         <div className="flex items-baseline gap-1">
-                            <span className="text-4xl font-bold text-[#111827] tracking-tight font-inter">
-                                {plan.price === "0" ? "Free" : `$${plan.price}`}
-                            </span>
-                            {plan.price !== "0" && plan.id !== "enterprise" && (
-                                <span className="text-[#6B7280] font-medium text-base font-inter">/mo</span>
-                            )}
-                            {plan.id === "enterprise" && (
-                                <span className="text-[#6B7280] font-medium text-base font-inter">+</span>
-                            )}
+                            <span className="text-4xl font-bold text-gray-900 tracking-tight">${plan.price}</span>
+                            <span className="text-gray-500 text-sm font-medium">/{plan.interval}</span>
                         </div>
-                        {isAnnual && plan.price !== "0" && plan.id !== "enterprise" && (
-                            <p className="text-[11px] text-[#166534] font-semibold mt-1 uppercase tracking-wider font-inter">
-                                Billed annually
-                            </p>
+                        {isAnnual && plan.price > 0 && (
+                            <div className="text-xs text-success font-medium mt-1">
+                                Billed ${plan.price * 12} yearly
+                            </div>
                         )}
                     </div>
 
-                    <ul className="space-y-3.5 mb-10 flex-1 font-inter">
-                        {plan.features.map((f, i) => (
-                            <li key={i} className="flex items-start gap-3">
-                                <div className="mt-1 bg-indigo-50 rounded-full p-0.5">
-                                    <Check className="h-3 w-3 text-[#4F46E5]" strokeWidth={3} />
-                                </div>
-                                <span className="text-[#374151] font-medium text-sm tracking-tight">{f}</span>
+                    <ul className="space-y-3 mb-8 flex-1">
+                        {plan.features.map((feature, i) => (
+                            <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
+                                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                                <span>{feature}</span>
                             </li>
                         ))}
                     </ul>
 
-                    <div className="mt-auto">
-                        <Link href={plan.id === "enterprise" ? "/contact" : "/auth/signup"} className="block w-full">
-                            <button
-                                className={cn(
-                                    "w-full h-12 rounded-lg text-sm font-semibold transition-all font-inter active:scale-95 shadow-sm",
-                                    plan.popular
-                                        ? "bg-[#4F46E5] text-white hover:bg-indigo-700 shadow-indigo-100"
-                                        : plan.id === "enterprise"
-                                            ? "bg-white border-2 border-[#111827] text-[#111827] hover:bg-gray-50"
-                                            : "bg-white border border-[#E5E7EB] text-[#111827] hover:bg-gray-50"
-                                )}
-                            >
-                                {plan.cta}
-                            </button>
-                        </Link>
-                        {plan.id === "free" && (
-                            <p className="text-[11px] text-center text-[#6B7280] font-medium mt-3 font-inter uppercase tracking-wide">
-                                No credit card required
-                            </p>
-                        )}
-                        {plan.id === "pro" && (
-                            <p className="text-[11px] text-center text-[#6B7280] font-medium mt-3 font-inter uppercase tracking-wide">
-                                Start with 14-day free trial
-                            </p>
-                        )}
-                    </div>
+                    <Link href="/auth/register" className="mt-auto">
+                        <Button
+                            className={cn(
+                                "w-full font-bold",
+                                plan.popular
+                                    ? "bg-primary hover:bg-primary/90 text-white"
+                                    : "bg-gray-50 hover:bg-gray-100 text-gray-900 border-gray-200"
+                            )}
+                            variant={plan.popular ? "default" : "outline"}
+                        >
+                            {plan.cta}
+                        </Button>
+                    </Link>
                 </div>
             ))}
         </div>
