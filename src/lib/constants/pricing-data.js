@@ -1,62 +1,66 @@
 export const planFeatures = [
-    { name: "Unified Content Gallery", starter: true, pro: true, enterprise: true },
-    { name: "Social Platforms", starter: "5 Nodes", pro: "20 Nodes", enterprise: "Unlimited + Custom" },
-    { name: "Daily Posts", starter: "25 Posts", pro: "Unlimited", enterprise: "Unlimited" },
-    { name: "AI Media Lab (Resizing)", starter: true, pro: true, enterprise: true },
-    { name: "AI Caption Generation", starter: "Basic", pro: "Advanced", enterprise: "Custom Training" },
-    { name: "Unified Inbox", starter: "Basic", pro: "Enterprise", enterprise: "Universal Hub" },
-    { name: "Analytics Dashboard", starter: "Standard", pro: "Advanced", enterprise: "Real-time + Export" },
-    { name: "Team Approvals", starter: false, pro: "3 Users", enterprise: "Unlimited" },
-    { name: "Custom API Access", starter: false, pro: false, enterprise: true },
-    { name: "Support", starter: "Community", pro: "Priority 24/7", enterprise: "Dedicated Manager" },
+    { name: "Social Accounts", free: "2", pro: "10", enterprise: "Unlimited" },
+    { name: "Platforms", free: "Limited (TikTok/IG)", pro: "All Platforms", enterprise: "All Platforms" },
+    { name: "AI Tools", free: "Limited (30/mo)", pro: "Full Suite", enterprise: "Full Suite" },
+    { name: "Unified Inbox", free: false, pro: true, enterprise: true },
+    { name: "Analytics", free: "Basic", pro: "Full Suite", enterprise: "Full + White-label" },
+    { name: "Post Scheduling", free: "Basic", pro: "Advanced", enterprise: "Bulk + Priority" },
+    { name: "Multi-user / Teams", free: false, pro: false, enterprise: true },
+    { name: "Media Storage", free: "Basic", pro: "10GB", enterprise: "Unlimited" },
+    { name: "API & Webhooks", free: false, pro: false, enterprise: true },
+    { name: "Support", free: "Help Center", pro: "Email", enterprise: "Dedicated Manager" },
+    { name: "SLAs & Security", free: false, pro: false, enterprise: true },
 ];
 
 export const pricingFaqs = [
     {
-        q: "How does the 14-day free trial work?",
-        a: "Every Professional and Starter subscription begins with a 14-day zero-liability period. You can test all AI Lab features without restriction. No credit card is required to initiate the trial."
+        q: "Is the free plan free forever?",
+        a: "Yes, our Free/Starter plan is free forever. It's designed to help creators and small businesses get started with their social media journey without any upfront costs."
     },
     {
-        q: "Can I upgrade or downgrade my plan?",
-        a: "Yes, you can swap protocol tiers at any time from your dashboard. Upgrades are prorated immediately, while downgrades take effect at the end of the current billing cycle."
+        q: "Can I upgrade anytime?",
+        a: "Absolutely! You can upgrade to a higher tier at any time from your account settings. Upgrades are processed immediately so you can access new features right away."
     },
     {
-        q: "What payment methods are supported?",
-        a: "We accept all major credit cards, Apple Pay, Google Pay, and Coinbase Commerce for crypto-native teams."
+        q: "Can I cancel anytime?",
+        a: "Yes, we offer monthly flexibility. You can cancel your subscription at any time, and you'll continue to have access to your paid features until the end of your current billing period."
     },
     {
-        q: "Do you offer enterprise-grade support?",
-        a: "Absolutely. Our Enterprise tier includes a dedicated growth engineer, custom SLA guarantees, and priority node troubleshooting."
+        q: "Do you offer refunds?",
+        a: "We provide a 14-day money-back guarantee for all our paid plans. If you're not satisfied, just reach out to our support team."
+    },
+    {
+        q: "What happens when my usage limits run out?",
+        a: "If you hit your plan limits (like AI credits or account counts), you'll be prompted to upgrade or wait until your next billing cycle for credits to reset."
     }
 ];
 
 export const getPlans = (isAnnual) => [
     {
-        name: "Starter",
-        id: "starter",
-        description: "Best for solo creators and small teams.",
-        price: isAnnual ? "19" : "24",
-        features: ["5 Social Accounts", "25 Posts / Day", "AI Media Lab", "Standard Analytics"],
-        cta: "Start Starter Plan",
+        name: "Free / Starter",
+        id: "free",
+        description: "Perfect for creators testing the system.",
+        price: "0",
+        features: ["2 Social Accounts", "Basic Scheduling (TikTok/IG)", "30 AI Credits / mo", "Basic Media Uploads", "Community Support"],
+        cta: "Start for Free",
         popular: false,
-        priceId: isAnnual ? "price_starter_annual" : "price_starter_monthly"
     },
     {
         name: "Professional",
         id: "pro",
-        description: "Comprehensive tools for high-growth brands.",
-        price: isAnnual ? "49" : "59",
-        features: ["20 Social Accounts", "Unlimited Posts", "Advanced AI Lab", "Unified Inbox", "ROI Tracking"],
-        cta: "Start Professional Plan",
+        description: "Most popular for small businesses & solo marketers.",
+        price: isAnnual ? "29" : "39",
+        features: ["10 Social Accounts", "All Supported Platforms", "Full AI Suite (Unlimited)", "10GB Media Library", "Unified Inbox & Analytics", "Email Support"],
+        cta: "Upgrade to Professional",
         popular: true,
         priceId: isAnnual ? "price_pro_annual" : "price_pro_monthly"
     },
     {
-        name: "Enterprise",
+        name: "Agency / Enterprise",
         id: "enterprise",
-        description: "For agencies or large teams",
-        price: "Custom / $99+",
-        features: ["Unlimited accounts", "Team Approvals", "Custom API Access", "White-label reports"],
+        description: "For agencies and large scale marketing firms.",
+        price: "99",
+        features: ["Unlimited Accounts & Brands", "Team Roles & Approvals", "API & Webhooks", "White-label Reporting", "Dedicated Manager", "SLAs & Priority Support"],
         cta: "Contact Sales",
         popular: false
     }

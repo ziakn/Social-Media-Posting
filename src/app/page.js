@@ -2,6 +2,7 @@ import HeroSection from "@/components/home/HeroSection";
 import PlatformStrip from "@/components/home/PlatformStrip";
 import FeaturesGrid from "@/components/home/FeaturesGrid";
 import WorkflowSteps from "@/components/home/WorkflowSteps";
+import CalendarPreviewSection from "@/components/home/CalendarPreviewSection";
 import AIToolsSection from "@/components/home/AIToolsSection";
 import UnifiedInboxSection from "@/components/home/UnifiedInboxSection";
 import AnalyticsDashboard from "@/components/home/AnalyticsDashboard";
@@ -67,6 +68,7 @@ export default function Home() {
       <PlatformStrip />
       <FeaturesGrid />
       <WorkflowSteps />
+      <CalendarPreviewSection />
       <AIToolsSection />
       <UnifiedInboxSection />
       <AnalyticsDashboard />

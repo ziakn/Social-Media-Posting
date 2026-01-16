@@ -1,16 +1,26 @@
 import PricingContent from "./PricingContent";
 
 export const metadata = {
-    title: "Pricing Plans for Multi-Platform Social Media Tool | SocialHub",
-    description: "Compare Starter, Professional, and Enterprise plans for TikTok, Instagram, Pinterest, and more. Free trial available.",
+    title: "Pricing Plans for Social Media Management | SocialHub",
+    description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content. Start for free and upgrade when you need more power.",
+    openGraph: {
+        title: "Pricing Plans for Social Media Management | SocialHub",
+        description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content.",
+        images: ["/og-pricing.png"],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Pricing Plans for Social Media Management | SocialHub",
+        description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content.",
+    }
 };
 
 export default function PricingPage() {
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Product",
-        "name": "SocialHub Social Media Tool",
-        "description": "Multi-platform social media scheduling and automation tool.",
+        "name": "SocialHub Social Media Management Tool",
+        "description": "Multi-platform social media scheduling, analytics, and unified inbox.",
         "brand": {
             "@type": "Brand",
             "name": "SocialHub"
@@ -18,17 +28,17 @@ export default function PricingPage() {
         "offers": [
             {
                 "@type": "Offer",
-                "url": "https://social-hub-demo.vercel.app/pricing",
+                "url": "https://socialhub.ai/pricing",
                 "priceCurrency": "USD",
                 "price": "0.00",
-                "name": "Starter",
+                "name": "Free / Starter",
                 "availability": "https://schema.org/InStock"
             },
             {
                 "@type": "Offer",
-                "url": "https://social-hub-demo.vercel.app/pricing",
+                "url": "https://socialhub.ai/pricing",
                 "priceCurrency": "USD",
-                "price": "29.00",
+                "price": "39.00",
                 "name": "Professional",
                 "availability": "https://schema.org/InStock"
             }
@@ -41,18 +51,26 @@ export default function PricingPage() {
         "mainEntity": [
             {
                 "@type": "Question",
-                "name": "How does the 14-day free trial work?",
+                "name": "Is the free plan free forever?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "You get full access to the Professional plan for 14 days. No credit card is required to start. At the end of the trial, you can choose to subscribe or move to the Free plan."
+                    "text": "Yes, our Free plan is free forever, designed for creators and small businesses to get started."
                 }
             },
             {
                 "@type": "Question",
-                "name": "Can I change plans at any time?",
+                "name": "Can I upgrade anytime?",
                 "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Yes, you can upgrade or downgrade your plan at any time from your dashboard. If you upgrade, the new price will be prorated."
+                    "text": "Yes, you can upgrade to a higher tier at any time from your account settings."
+                }
+            },
+            {
+                "@type": "Question",
+                "name": "Can I cancel anytime?",
+                "acceptedAnswer": {
+                    "@type": "Answer",
+                    "text": "Yes, we offer monthly flexibility. You can cancel your subscription at any time."
                 }
             }
         ]
