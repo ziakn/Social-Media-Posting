@@ -1,195 +1,105 @@
-"use client";
-
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Shield, Lock, Eye, Mail } from "lucide-react";
+import { ShieldCheck, Lock, Globe, FileText, ArrowLeft, ShieldAlert } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+export const metadata = {
+  title: "Privacy Policy | SocialHub Social Media Tool",
+  description: "Our privacy policy explains how we protect your data and stay compliant with global standards.",
+};
 
 export default function PrivacyPolicy() {
-  const lastUpdated = "December 1, 2024";
+  const sections = [
+    {
+      title: "1. Authorized Data Collection",
+      content: "We only collect data necessary to provide and improve our social management services. This includes OAuth tokens granted via authorized platform flows, basic account metadata, and content assets you explicitly upload to our secure DAM (Digital Asset Management) system."
+    },
+    {
+      title: "2. Technical Security Standards",
+      content: "All social credentials and sensitive tokens are encrypted using AES-256 GCM at rest. In-transit data is protected via TLS 1.3. We perform regular third-party security audits to ensure your platform standings remain secure."
+    },
+    {
+      title: "3. Third-Party Platform Terms",
+      content: "Our service integrates with official APIs from Meta, ByteDance, Google, and others. Your use of SocialHub is also subject to the respective Privacy Policies of these platforms. We never scrape or utilize grey-market API endpoints."
+    },
+    {
+      title: "4. Data Retention & Deletion",
+      content: "You maintain full ownership of your data. Upon account termination, all OAuth tokens are instantly revoked and content assets are purged from our primary S3 storage within 30 days, unless required otherwise by localized data laws."
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                  <Shield className="h-6 w-6 text-white" />
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  SocialHub
-                </span>
-              </Link>
+    <div className="bg-white pt-32 pb-24 font-plus-jakarta text-[#3E4652]">
+      <div className="container mx-auto px-6 max-w-[1200px]">
+
+        {/* --- Header --- */}
+        <div className="max-w-4xl mb-20 space-y-8">
+          <Link href="/" className="inline-flex items-center gap-2 text-xs font-black text-[#00A2FF] uppercase tracking-widest hover:-translate-x-1 transition-transform">
+            <ArrowLeft className="h-4 w-4" /> Return to Dashboard
+          </Link>
+          <div className="space-y-4">
+            <Badge className="bg-[#0C1B33] text-white uppercase text-[9px] px-3 font-black tracking-widest">Legal Disclosure</Badge>
+            <h1 className="text-4xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-[0.9] font-plus-jakarta uppercase">
+              Privacy <br /> <span className="text-[#00A2FF]">Protocol.</span>
+            </h1>
+          </div>
+          <p className="text-xl font-medium text-slate-500 max-w-2xl leading-relaxed">
+            Effective: January 01, 2026. This document outlines the technical and legal frameworks we use to protect your digital presence and authorization tokens.
+          </p>
+        </div>
+
+        {/* --- Policy Content --- */}
+        <div className="grid lg:grid-cols-12 gap-20">
+          <div className="lg:col-span-8 space-y-16">
+            {sections.map((section, i) => (
+              <section key={i} className="space-y-6">
+                <h2 className="text-2xl font-extrabold text-[#0C1B33] font-plus-jakarta uppercase tracking-tight">{section.title}</h2>
+                <p className="text-lg font-medium leading-relaxed text-[#505d72]">
+                  {section.content}
+                </p>
+              </section>
+            ))}
+
+            <div className="p-10 bg-[#F5F8FB] border border-[#E1E7EF] rounded-[10px] space-y-6">
+              <div className="flex items-center gap-3 text-[#0C1B33]">
+                <ShieldAlert className="h-5 w-5" />
+                <h4 className="font-extrabold text-sm uppercase tracking-tight font-plus-jakarta">GDPR & CCPA Rights</h4>
+              </div>
+              <p className="text-sm font-medium leading-relaxed text-slate-500">
+                If you are a resident of the European Economic Area (EEA) or California, you have specific data protection rights. To exercise your right to access, rectify, or delete your personal data, please contact our Data Protection Officer at <strong>dpo@socialhub.com</strong>.
+              </p>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <Link href="/">
-                <Button variant="ghost" className="flex items-center gap-2">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Home
-                </Button>
-              </Link>
+          </div>
+
+          {/* Sidebar Info */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="p-8 bg-[#0C1B33] rounded-[10px] text-white space-y-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-1/3 h-full bg-[#00A2FF]/10 blur-3xl" />
+              <h4 className="text-xl font-extrabold font-plus-jakarta uppercase italic flex items-center gap-3">
+                <FileText className="h-5 w-5 text-[#F9C80E]" /> Trust Summary
+              </h4>
+              <ul className="space-y-4">
+                {[
+                  { icon: <Lock className="h-4 w-4" />, text: "AES-256 GCM Key Encryption" },
+                  { icon: <ShieldCheck className="h-4 w-4" />, text: "No Data Reselling Policy" },
+                  { icon: <Globe className="h-4 w-4" />, text: "Global GDPR/CCPA Compliance" }
+                ].map((item, i) => (
+                  <li key={i} className="flex gap-4 items-center text-xs font-bold text-slate-300">
+                    <span className="text-[#00A2FF]">{item.icon}</span> {item.text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-8 border border-[#E1E7EF] rounded-[10px] space-y-4">
+              <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Related Documents</h5>
+              <div className="space-y-2">
+                <Link href="/terms-of-service" className="block text-sm font-bold text-[#00A2FF] hover:underline">Terms of Service</Link>
+                <Link href="/cookie-policy" className="block text-sm font-bold text-[#00A2FF] hover:underline">Cookie Policy</Link>
+                <Link href="/dpa" className="block text-sm font-bold text-[#00A2FF] hover:underline">Data Processing Agreement (DPA)</Link>
+              </div>
             </div>
           </div>
         </div>
-      </header>
 
-      <div className="container mx-auto px-6 py-12">
-        <div className="max-w-4xl mx-auto">
-          {/* Header Section */}
-          <div className="text-center mb-12">
-            <div className="flex justify-center mb-4">
-              <div className="bg-blue-100 p-3 rounded-full">
-                <Lock className="h-8 w-8 text-blue-600" />
-              </div>
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-            <p className="text-lg text-gray-600">
-              Last updated: {lastUpdated}
-            </p>
-          </div>
-
-          <Card className="shadow-lg">
-            <CardContent className="p-8">
-              <div className="prose prose-lg max-w-none">
-                {/* Introduction */}
-                <section className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">1. Introduction</h2>
-                  <p className="text-gray-700 mb-4">
-                    Welcome to SocialHub. We are committed to protecting your personal information and your right to privacy. 
-                    If you have any questions or concerns about this privacy notice or our practices with regard to your personal 
-                    information, please contact us at <a href="mailto:privacy@socialhub.com" className="text-blue-600 hover:underline">privacy@socialhub.com</a>.
-                  </p>
-                </section>
-
-                {/* Information We Collect */}
-                <section className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">2. Information We Collect</h2>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-start space-x-3">
-                      <Mail className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Personal Information</h3>
-                        <p className="text-gray-700">
-                          When you register for SocialHub, we collect information such as your name, email address, 
-                          and social media account credentials necessary to provide our services.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                      <Eye className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Usage Data</h3>
-                        <p className="text-gray-700">
-                          We automatically collect information about how you use our platform, including your interactions 
-                          with features, posting patterns, and analytics data.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start space-x-3">
-                      <Shield className="h-5 w-5 text-blue-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h3 className="font-semibold text-gray-800">Social Media Data</h3>
-                        <p className="text-gray-700">
-                          With your permission, we access and store data from your connected social media accounts, 
-                          including posts, messages, followers, and engagement metrics.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* How We Use Your Information */}
-                <section className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">3. How We Use Your Information</h2>
-                  <ul className="list-disc list-inside text-gray-700 space-y-2">
-                    <li>To provide and maintain our social media management services</li>
-                    <li>To schedule and publish content across your connected accounts</li>
-                    <li>To analyze performance and provide insights</li>
-                    <li>To communicate with you about platform updates and features</li>
-                    <li>To ensure the security and integrity of our platform</li>
-                    <li>To comply with legal obligations</li>
-                  </ul>
-                </section>
-
-                {/* Data Sharing */}
-                <section className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">4. Data Sharing and Disclosure</h2>
-                  <p className="text-gray-700 mb-4">
-                    We do not sell your personal information. We may share your information only in the following situations:
-                  </p>
-                  <ul className="list-disc list-inside text-gray-700 space-y-2">
-                    <li><strong>Service Providers:</strong> With trusted third-party vendors who help us operate our platform</li>
-                    <li><strong>Legal Requirements:</strong> When required by law or to protect our rights</li>
-                    <li><strong>Business Transfers:</strong> In connection with a merger or acquisition</li>
-                    <li><strong>With Your Consent:</strong> When you explicitly authorize us to share specific information</li>
-                  </ul>
-                </section>
-
-                {/* Data Security */}
-                <section className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">5. Data Security</h2>
-                  <p className="text-gray-700">
-                    We implement appropriate technical and organizational security measures designed to protect the security 
-                    of any personal information we process. However, please also remember that we cannot guarantee that the 
-                    internet itself is 100% secure.
-                  </p>
-                </section>
-
-                {/* Your Rights */}
-                <section className="mb-8">
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">6. Your Privacy Rights</h2>
-                  <p className="text-gray-700 mb-4">
-                    Depending on your location, you may have the following rights regarding your personal information:
-                  </p>
-                  <ul className="list-disc list-inside text-gray-700 space-y-2">
-                    <li>Access and receive a copy of your personal data</li>
-                    <li>Rectify or update your personal information</li>
-                    <li>Delete your personal information</li>
-                    <li>Restrict or object to the processing of your data</li>
-                    <li>Data portability</li>
-                    <li>Withdraw consent at any time</li>
-                  </ul>
-                </section>
-
-                {/* Contact Information */}
-                <section>
-                  <h2 className="text-2xl font-semibold text-gray-900 mb-4">7. Contact Us</h2>
-                  <p className="text-gray-700 mb-4">
-                    If you have questions or comments about this policy, you may contact our Data Protection Officer at:
-                  </p>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <p className="text-gray-700">
-                      <strong>Email:</strong> <a href="mailto:privacy@socialhub.com" className="text-blue-600 hover:underline">privacy@socialhub.com</a><br />
-                      <strong>Address:</strong> 123 Privacy Lane, Security City, SC 12345<br />
-                      <strong>Response Time:</strong> We aim to respond to all privacy-related inquiries within 48 hours.
-                    </p>
-                  </div>
-                </section>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/terms-of-service" className="flex-1">
-              <Button variant="outline" className="w-full">
-                View Terms of Service
-              </Button>
-            </Link>
-            <Link href="/" className="flex-1">
-              <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600">
-                Back to Homepage
-              </Button>
-            </Link>
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -28,10 +28,22 @@ const Toaster = ({
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)"
+          "--normal-bg": "var(--surface)",
+          "--normal-text": "var(--foreground)",
+          "--normal-border": "var(--divider)",
+          "--border-radius": "10px",
+          "--success-bg": "var(--success)",
+          "--success-text": "#FFFFFF",
+          "--success-border": "var(--success)",
+          "--error-bg": "var(--error)",
+          "--error-text": "#FFFFFF",
+          "--error-border": "var(--error)",
+          "--warning-bg": "var(--warning)",
+          "--warning-text": "#FFFFFF",
+          "--warning-border": "var(--warning)",
+          "--info-bg": "var(--info)",
+          "--info-text": "#FFFFFF",
+          "--info-border": "var(--info)",
         }
       }
       {...props} />
