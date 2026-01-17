@@ -1,23 +1,14 @@
-import { Inter, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"], // Enterprise weights only
   variable: "--font-inter",
-  subsets: ["latin"],
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const mono = IBM_Plex_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
+// Enterprise Font Only: Inter (300, 400, 500, 600)
 
 export const metadata = {
   title: {
@@ -71,7 +62,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} ${spaceGrotesk.variable} ${mono.variable} font-inter antialiased text-gray-900 bg-gray-50`}>
+      <body className={`${inter.variable} font-sans antialiased text-gray-900 bg-gray-50`}>
         {children}
         <Toaster position="top-right" expand={false} richColors />
       </body>

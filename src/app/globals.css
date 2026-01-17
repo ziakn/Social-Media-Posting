@@ -1,151 +1,132 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+@layer base {
+  :root {
+    /* 
+     * ENTERPRISE DESIGN TOKENS
+     * Direction: Modern, Neutral, High Density
+     */
 
+    /* Brand - Primary Blue */
+    --brand-primary: 221 83% 53%;
+    /* #3B82F6 (Blue-500) */
+    --brand-primary-dark: 225 73% 57%;
+    /* Blue-600 approximation for hover */
 
-@custom-variant dark (&:is(.dark *));
+    /* Neutrals */
+    --background: 210 20% 98%;
+    /* Gray-50 #F9FAFB */
+    --foreground: 222 47% 11%;
+    /* Gray-900 #111827 */
 
-@theme inline {
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  /* Button radius */
-  --radius-lg: 10px;
-  /* Card radius */
-  --radius-xl: 12px;
-  /* Modal radius */
-  --radius-2xl: 16px;
+    /* Card / Layer-0 */
+    --card: 0 0% 100%;
+    /* #FFFFFF */
+    --card-foreground: 222 47% 11%;
 
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+    /* Popover / Overlay */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+    /* Primary Action */
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
 
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
+    /* Secondary Action */
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222 47% 11%;
 
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+    /* Muted / Tertiary */
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Gray-500 */
 
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
+    /* Accent / Hover */
+    --accent: 210 40% 96.1%;
+    /* Gray-100 */
+    --accent-foreground: 222 47% 11%;
 
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+    /* Destructive / Error */
+    --destructive: 0 84.2% 60.2%;
+    /* #EF4444 */
+    --destructive-foreground: 210 40% 98%;
 
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-info: var(--info);
+    /* Borders */
+    --border: 214.3 31.8% 91.4%;
+    /* Gray-200 */
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;
 
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+    /* Radius - 6px default */
+    --radius: 0.375rem;
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+    /* Chart Colors (Neutral/Professional) */
+    --chart-1: 221 83% 53%;
+    /* Blue */
+    --chart-2: 173 58% 39%;
+    /* Teal */
+    --chart-3: 197 37% 24%;
+    /* Navy */
+    --chart-4: 43 74% 66%;
+    /* Muted Amber */
+    --chart-5: 27 87% 67%;
+    /* Muted Orange */
 
-  /* Chart Colors */
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-}
+    /* Sidebar - Enterprise Specific */
+    --sidebar-background: 210 20% 98%;
+    /* Gray-50 */
+    --sidebar-foreground: 215.4 16.3% 46.9%;
+    /* Gray-500 */
+    --sidebar-primary: 221 83% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96.1%;
+    /* Gray-100 */
+    --sidebar-accent-foreground: 222 47% 11%;
+    /* Gray-900 */
+    --sidebar-border: 220 13% 91%;
+    /* Gray-200 */
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
 
-:root {
-  /* Colors - Light Mode (Enterprise Professional) */
-  --background: #FFFFFF;
-  --foreground: #0F172A;
-  /* Slate-900: High contrast text */
+  .dark {
+    /* Dark Mode Mappings (If needed later, but focusing on light enterprise theme first) */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
 
-  /* Primary: Royal Blue (Trust & Action) */
-  --primary: #2563EB;
-  /* Blue-600 */
-  --primary-foreground: #FFFFFF;
-
-  /* Secondary: Dark Slate (Premium/Contrast) uses Slate-800 */
-  --secondary: #1E293B;
-  --secondary-foreground: #FFFFFF;
-
-  /* Accent: Subtle Slate (For interactions/hovers) */
-  --accent: #F1F5F9;
-  /* Slate-100 */
-  --accent-foreground: #0F172A;
-
-  /* Muted: Backgrounds/Borders */
-  --muted: #F8FAFC;
-  /* Slate-50 */
-  --muted-foreground: #64748B;
-  /* Slate-500 */
-
-  --destructive: #EF4444;
-  /* Red-500 */
-  --destructive-foreground: #FFFFFF;
-
-  --success: #10B981;
-  /* Emerald-500 */
-  --warning: #F59E0B;
-  /* Amber-500 */
-  --info: #3B82F6;
-  /* Blue-500 */
-
-  --border: #E2E8F0;
-  /* Slate-200 */
-  --input: #E2E8F0;
-  --ring: #2563EB;
-  /* Blue-600 */
-
-  /* Feature Colors (Used for Icons/Highlights) */
-  --color-growth: #10B981;
-  --color-brand-purple: #9333EA;
-  --color-brand-teal: #14B8A6;
-
-  /* Legacy Mappings */
-  --navy: #1E293B;
-  --blue-accent: #2563EB;
-  --yellow-cta: #F59E0B;
-  --gray-alt: #F8FAFC;
-  --divider: #E2E8F0;
-
-  /* Charts */
-  --chart-1: #2563EB;
-  --chart-2: #1E293B;
-  --chart-3: #14B8A6;
-  --chart-4: #F59E0B;
-  --chart-5: #EF4444;
-}
-
-.dark {
-  /* Colors - Dark Mode (Enterprise Professional) */
-  --background: #020617;
-  /* Slate-950 */
-  --foreground: #F8FAFC;
-  /* Slate-50 */
-
-  --primary: #3B82F6;
-  /* Blue-500 */
-  --primary-foreground: #FFFFFF;
-
-  --secondary: #1E293B;
-  /* Slate-800 */
-  --secondary-foreground: #F8FAFC;
-
-  --accent: #1E293B;
-  /* Slate-800 */
-  --accent-foreground: #F8FAFC;
-
-  --muted: #0F172A;
-  /* Slate-900 */
-  --muted-foreground: #94A3B8;
-  /* Slate-400 */
-
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-
-  --border: #1E293B;
-  --input: #1E293B;
-  --ring: #3B82F6;
+    /* Sidebar Dark */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
 }
 
 @layer base {
@@ -154,45 +135,22 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
+  /* Enterprise Typography Overrides */
   h1,
   h2,
   h3,
   h4,
   h5,
   h6 {
-    @apply font-display tracking-tight;
-  }
-}
-
-@layer utilities {
-  .text-gradient-brand {
-    background: linear-gradient(90deg, #2563EB, #9333EA);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    @apply tracking-tight font-semibold text-gray-900;
   }
 
-  .custom-scrollbar {
-    overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--muted-foreground) var(--muted);
-  }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: var(--muted);
-    border-radius: 4px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: var(--muted-foreground);
-    border-radius: 4px;
-    border: 2px solid var(--muted);
+  /* Small Radius Override for Inputs/Buttons if not using defaults */
+  .rounded-md {
+    border-radius: var(--radius) !important;
   }
 }
