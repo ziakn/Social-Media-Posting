@@ -1,7 +1,5 @@
 import { Inter, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
 import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({
@@ -74,11 +72,10 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${mono.variable} font-inter antialiased text-gray-900 bg-gray-50`}>
-        <Navbar />
         {children}
-        <Footer />
         <Toaster position="top-right" expand={false} richColors />
       </body>
     </html>
   );
 }
+
