@@ -1,54 +1,99 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Spinner } from "@/components/ui/spinner";
+import {
+  Users,
+  Image,
+  Globe,
+  AlertTriangle,
+  RefreshCcw
+} from "lucide-react";
+import { KpiCard } from "@/components/admin/dashboard/KpiCard";
+import { PlatformStatus } from "@/components/admin/dashboard/PlatformStatus";
+import { ActivityFeed } from "@/components/admin/dashboard/ActivityFeed";
+import { QuickActions } from "@/components/admin/dashboard/QuickActions";
 
-export default function Dashboard() {
-  const [loading, setLoading] = useState(true);
+export default function DashboardPage() {
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  if (!loading) return <Spinner />;
+  // Simulating live Polling/Websocket
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setLastUpdated(new Date());
+      // Here you would trigger a re-fetch of SWR/React Query data
+    }, 30000); // 30 sec refresh
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold mb-2">Welcome, </h1>
-        <p className="text-gray-600 text-lg">
-          You are successfully logged in to your dashboard.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Add New Idea */}
-        <div
-          onClick={() => router.push("/firebase/ideas/create")}
-          className="cursor-pointer border-2 border-blue-500 rounded-lg shadow-lg hover:scale-105 transition-transform duration-200 p-6 flex flex-col items-center text-center"
-        >
-          <h2 className="text-xl font-semibold mb-2">Add New Idea</h2>
-          <p className="text-gray-600">
-            Create a new idea to track and manage your projects.
-          </p>
+    <div className="flex flex-col space-y-6">
+      {/* Dashboard Top Header - Contextual */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Admin Console</h1>
+          <p className="text-muted-foreground">System Overview & Health Status</p>
         </div>
-
-        {/* View Ideas */}
-        <div
-          onClick={() => router.push("/firebase/ideas")}
-          className="cursor-pointer border-2 border-green-500 rounded-lg shadow-lg hover:scale-105 transition-transform duration-200 p-6 flex flex-col items-center text-center"
-        >
-          <h2 className="text-xl font-semibold mb-2">View Ideas</h2>
-          <p className="text-gray-600">
-            See all your ideas in one place and manage them efficiently.
-          </p>
-        </div>
-
-        {/* Logout */}
-        <div
-          className="cursor-pointer border-2 border-red-500 rounded-lg shadow-lg hover:scale-105 transition-transform duration-200 p-6 flex flex-col items-center text-center"
-        >
-          <h2 className="text-xl font-semibold mb-2">Logout</h2>
-          <p className="text-gray-600">Sign out from your account securely.</p>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-white px-3 py-1 rounded-md border shadow-sm">
+          <RefreshCcw className="h-3 w-3 animate-spin" style={{ animationDuration: "3s" }} />
+          Live Updates: {lastUpdated.toLocaleTimeString()}
         </div>
       </div>
+
+      {/* 1. KPI Metrics Row */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          title="Total Users"
+          value="1,240"
+          icon={Users}
+          trend="up"
+          trendValue="+12% from last month"
+        />
+        <KpiCard
+          title="Media Items"
+          value="3,422"
+          icon={Image}
+          description="2.4GB Used"
+        />
+        <KpiCard
+          title="Connected Platforms"
+          value="4/12"
+          icon={Globe}
+          trend="neutral"
+          trendValue="Stable"
+        />
+        <KpiCard
+          title="Pending Warnings"
+          value="3"
+          icon={AlertTriangle}
+          trend="down"
+          trendValue="Needs Attention"
+          className="border-yellow-200 bg-yellow-50/50"
+        />
+      </div>
+
+      {/* 2. Main Content Grid */}
+      <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-3">
+        {/* Left Column (Wide) */}
+        <div className="col-span-1 lg:col-span-2 space-y-4">
+          {/* Platform Status */}
+          <PlatformStatus />
+
+          {/* Maybe a Chart here later */}
+        </div>
+
+        {/* Right Column (Narrow) */}
+        <div className="space-y-4">
+          {/* Quick Actions */}
+          <QuickActions />
+
+          {/* Activity Stream */}
+          <ActivityFeed />
+        </div>
+      </div>
+
+      {/* 3. Bottom Row - System Health or More Logs */}
+      {/* For now, Activity Feed covers logs, so we fit it in the grid above for better density */}
     </div>
   );
 }

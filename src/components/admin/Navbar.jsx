@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Coins, ChevronDown, User, CreditCard, LogOut } from 'lucide-react';
+import { Coins, ChevronDown, User, CreditCard, LogOut, Lock } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 import { API_ROUTES } from '@/constants/api';
 import { cn } from '@/lib/utils';
@@ -117,39 +117,47 @@ export default function Navbar({ user: initialUser }) {
                 <User size={80} />
               </div>
             </div>
-            <div className="p-3 space-y-2">
+            <div className="p-3 space-y-1">
               <button
-                className="w-full flex items-center justify-between px-4 py-3 text-sm font-bold text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-2xl transition-all group"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all group"
+                onClick={() => { setShowMenu(false); router.push('/admin/settings?tab=profile'); }}
+              >
+                <div className="p-1.5 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                  <User className="h-4 w-4 text-slate-500 group-hover:text-indigo-600" />
+                </div>
+                <span>Profile Settings</span>
+              </button>
+
+              <button
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all group"
+                onClick={() => { setShowMenu(false); router.push('/admin/settings?tab=security'); }}
+              >
+                <div className="p-1.5 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                  <Lock className="h-4 w-4 text-slate-500 group-hover:text-indigo-600" />
+                </div>
+                <span>Account Security</span>
+              </button>
+
+              <button
+                className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all group"
                 onClick={() => { setShowMenu(false); router.push('/pricing'); }}
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-100 rounded-xl group-hover:bg-amber-200 transition-colors">
-                    <CreditCard className="h-4 w-4 text-amber-600" />
+                  <div className="p-1.5 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
+                    <CreditCard className="h-4 w-4 text-slate-500 group-hover:text-indigo-600" />
                   </div>
-                  <span>Billing & Credits</span>
+                  <span>Billing & Subscriptions</span>
                 </div>
-                <div className="px-2 py-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[9px] font-black rounded-lg uppercase shadow-sm group-hover:shadow-md">New!</div>
               </button>
 
+              <div className="h-px bg-gray-100 mx-2 my-1" />
 
               <button
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-gray-700 hover:bg-slate-50 hover:text-slate-900 rounded-2xl transition-all"
-                onClick={() => { setShowMenu(false); router.push('/admin/settings'); }}
-              >
-                <div className="p-2 bg-slate-100 rounded-xl group-hover:bg-slate-200">
-                  <User className="h-4 w-4 text-slate-600" />
-                </div>
-                <span>My Profile & Settings</span>
-              </button>
-
-              <div className="h-px bg-gray-100 mx-2" />
-
-              <button
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 rounded-2xl transition-all"
+                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all group"
                 onClick={handleLogout}
               >
-                <div className="p-2 bg-red-50 rounded-xl group-hover:bg-red-100">
-                  <LogOut className="h-4 w-4" />
+                <div className="p-1.5 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
+                  <LogOut className="h-4 w-4 text-red-500" />
                 </div>
                 <span>Logout Session</span>
               </button>
