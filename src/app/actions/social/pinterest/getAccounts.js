@@ -1,9 +1,10 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { getValidPinterestAccessToken } from "./connectAccount";
 
 /**
  * Fetch all connected Pinterest accounts for the current user
@@ -72,9 +73,19 @@ export async function getPinterestBoards(platformUserId) {
         }
 
         const account = snapshot.docs[0].data();
-        const accessToken = account.accessToken;
 
-        const url = `https://api.pinterest.com/v5/boards`;
+        // 1. Return cached boards if available
+        if (account.boards && Array.isArray(account.boards) && account.boards.length > 0) {
+            console.log("getPinterestBoards: Returning cached boards from Firestore");
+            return { success: true, boards: account.boards };
+        }
+
+        // 2. Fallback: Fetch from API if cache is empty
+        const { accessToken } = await getValidPinterestAccessToken(user.id, platformUserId);
+        console.log("getPinterestBoards: Cache empty, fetching from API");
+
+        const apiUrl = process.env.PINTEREST_API_URL || "https://api.pinterest.com/v5";
+        const url = `${apiUrl}/boards`;
         const response = await fetch(url, {
             method: "GET",
             headers: {
@@ -85,14 +96,25 @@ export async function getPinterestBoards(platformUserId) {
         });
 
         const data = await response.json();
-        console.log("getPinterestBoards: API Response", JSON.stringify(data));
+        // console.log("getPinterestBoards: API Response", JSON.stringify(data));
 
         if (!response.ok) {
             console.error("getPinterestBoards: API Error", data);
             throw new Error(data.message || "Failed to fetch boards");
         }
 
-        return { success: true, boards: data.items || [] };
+        const freshBoards = data.items || [];
+
+        // 3. Update cache
+        if (freshBoards.length > 0) {
+            await updateDoc(snapshot.docs[0].ref, {
+                boards: freshBoards,
+                updatedAt: new Date() // Use JS Date or imported serverTimestamp if needed, keeping simple Date for now as per previous patterns or imports
+            });
+            console.log("getPinterestBoards: Updated Firestore cache");
+        }
+
+        return { success: true, boards: freshBoards };
     } catch (error) {
         console.error("Error fetching Pinterest boards:", error);
         return { success: false, message: error.message };

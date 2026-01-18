@@ -178,7 +178,12 @@ export async function getPinterestPostsStats({ accountId = null } = {}) {
  * Helper: Make Pinterest Request
  */
 async function makePinterestRequest(endpoint, body, accessToken, method = "POST") {
-    const url = `https://api.pinterest.com/v5${endpoint}`;
+    const PINTEREST_API_URL = process.env.PINTEREST_API_URL || "https://api.pinterest.com/v5";
+    console.log("Using Pinterest API URL:", PINTEREST_API_URL);
+
+    // Ensure endpoint starts with slash if not present
+    const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const url = `${PINTEREST_API_URL}${path}`;
     const headers = {
         "Authorization": `Bearer ${accessToken}`,
         "Content-Type": "application/json",
@@ -190,6 +195,10 @@ async function makePinterestRequest(endpoint, body, accessToken, method = "POST"
     const response = await fetch(url, options);
     const data = await response.json();
     if (!response.ok) {
+        // Handle Trial Access Error specifically
+        if (data.code === 29) {
+            throw new Error("Pinterest Trial Mode Restriction: You cannot post Pins in Production until you add your account as a 'Tester' in your Pinterest Developer App settings.");
+        }
         throw new Error(data.message || "Pinterest API error");
     }
     return data;

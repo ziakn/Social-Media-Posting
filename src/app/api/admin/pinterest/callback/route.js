@@ -28,12 +28,14 @@ export async function GET(request) {
         const clientSecret = process.env.PINTEREST_APP_SECRET;
         const redirectUri = process.env.PINTEREST_REDIRECT_URI;
 
+        const apiUrl = process.env.PINTEREST_API_URL || "https://api.pinterest.com/v5";
+
         // 1. Exchange code → access token
         // Pinterest V5 uses Basic Auth for token exchange
         const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
         const tokenRes = await fetch(
-            `https://api.pinterest.com/v5/oauth/token`,
+            `${apiUrl}/oauth/token`,
             {
                 method: "POST",
                 headers: {
@@ -64,7 +66,7 @@ export async function GET(request) {
 
         // 2. Fetch User Profile Info
         const profileRes = await fetch(
-            `https://api.pinterest.com/v5/user_account`,
+            `${apiUrl}/user_account`,
             {
                 headers: {
                     "Authorization": `Bearer ${accessToken}`
@@ -82,9 +84,26 @@ export async function GET(request) {
         }
 
         // Pinterest user profile fields: account_type, profile_image, website_url, username
-        const accountId = profileData.username; // Pinterest doesn't seem to have a numeric ID in v5 user_account, username is unique. Update: Actually, there might be an ID. Let's check docs or use username.
+        const accountId = profileData.username;
 
-        // 3. Check if account already exists
+        // 3. Fetch Boards to store initially
+        let initialBoards = [];
+        try {
+            const boardsRes = await fetch(`${apiUrl}/boards`, {
+                headers: {
+                    "Authorization": `Bearer ${accessToken}`,
+                    "Content-Type": "application/json",
+                }
+            });
+            const boardsData = await boardsRes.json();
+            if (boardsRes.ok && boardsData.items) {
+                initialBoards = boardsData.items;
+            }
+        } catch (e) {
+            console.error("Failed to fetch initial boards during callback:", e);
+        }
+
+        // 4. Check if account already exists
         const existingQuery = query(
             collection(db, "socialAccounts"),
             where("userId", "==", portalUser.id),
@@ -100,6 +119,7 @@ export async function GET(request) {
             username: profileData.username,
             pageName: profileData.username,
             profilePicture: profileData.profile_image,
+            boards: initialBoards, // Store boards here
             tokenExpiresAt: new Date(Date.now() + (expiresIn || 3600) * 1000),
             updatedAt: serverTimestamp(),
         };

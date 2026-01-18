@@ -5,6 +5,8 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, update
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
+import { getValidPinterestAccessToken } from "./connectAccount";
+import { uploadPinterestVideo } from "./videoUtils";
 
 /**
  * Get authenticated user
@@ -24,26 +26,18 @@ async function getAuthenticatedUser() {
 /**
  * Get Pinterest account info
  */
-async function getPinterestAccount(userId, platformUserId) {
-    const q = query(
-        collection(db, "socialAccounts"),
-        where("userId", "==", userId),
-        where("accountId", "==", platformUserId),
-        where("platform", "==", "pinterest"),
-        where("status", "==", "active")
-    );
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) throw new Error("Pinterest account not found or inactive");
-
-    const account = snapshot.docs[0].data();
-    return { accountId: account.accountId, accessToken: account.accessToken };
-}
+// function removed
 
 /**
  * Make Pinterest API Request
  */
 async function makePinterestRequest(endpoint, body, accessToken, method = "POST") {
-    const url = `https://api.pinterest.com/v5${endpoint}`;
+    const PINTEREST_API_URL = process.env.PINTEREST_API_URL || "https://api.pinterest.com/v5";
+    console.log("Using Pinterest API URL:", PINTEREST_API_URL);
+
+    // Ensure endpoint starts with slash if not present (defensive)
+    const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    const url = `${PINTEREST_API_URL}${path}`;
     const headers = {
         "Authorization": `Bearer ${accessToken}`,
         "Content-Type": "application/json",
@@ -59,6 +53,12 @@ async function makePinterestRequest(endpoint, body, accessToken, method = "POST"
 
     if (!response.ok) {
         console.error("Pinterest API error:", data);
+
+        // Handle Trial Access Error specifically
+        if (data.code === 29) {
+            throw new Error("Pinterest Trial Mode Restriction: You cannot post Pins in Production until you add your account as a 'Tester' in your Pinterest Developer App settings.");
+        }
+
         throw new Error(data.message || "Pinterest API error");
     }
     return data;
@@ -79,7 +79,7 @@ export async function createPinterestPost({
 }) {
     try {
         const user = await getAuthenticatedUser();
-        const { accountId, accessToken } = await getPinterestAccount(user.id, pageId);
+        const { accountId, accessToken } = await getValidPinterestAccessToken(user.id, pageId);
 
         // If scheduling, save to Firestore and exit
         if (scheduling) {
@@ -120,10 +120,23 @@ export async function createPinterestPost({
                 }))
             };
         } else if (postType === "video") {
-            // NOTE: Pinterest API requires videos to be uploaded via /v5/media first to get a media_id.
-            // Passing a video URL directly in 'source_type' is not supported for creating Pins directly.
-            // For now, we return an error since the upload flow is complex.
-            throw new Error("Video publishing requires media upload flow. Currently only Image and Carousel are fully supported via API.");
+            const item = media[0] || { url: "", type: "video" };
+
+            // Upload Video to Pinterest
+            // This process registers, uploads, and waits for processing
+            const mediaId = await uploadPinterestVideo(accessToken, item.url);
+
+            // Get Cover Image URL if available (optional but recommended)
+            let coverImageUrl = item.coverUrl || null;
+            if (coverImageUrl) {
+                coverImageUrl = needsTestUrl(coverImageUrl) ? getTestUrl("image") : await getAbsoluteUrl(coverImageUrl);
+            }
+
+            mediaSource = {
+                source_type: "video_id",
+                media_id: mediaId,
+                ...(coverImageUrl ? { cover_image_url: coverImageUrl } : {})
+            };
         } else {
             // Default: Image
             const item = media[0] || { url: "", type: "image" };
@@ -135,11 +148,19 @@ export async function createPinterestPost({
             };
         }
 
+        // Sanitize Link
+        let finalLink = link;
+        if (finalLink && (finalLink.includes("localhost") || finalLink.includes("127.0.0.1"))) {
+            console.warn("Removing localhost link for Pinterest API compatibility");
+            finalLink = "";
+        }
+
         const pinData = {
             board_id: boardId,
             title: title || "",
             description: message || "",
-            link: link || "",
+            // Only include link if it's not empty
+            ...(finalLink ? { link: finalLink } : {}),
             media_source: mediaSource
         };
 

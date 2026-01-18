@@ -28,6 +28,7 @@ import {
 } from "@/app/actions/social/pinterest/getAccounts";
 import { createPinterestPost } from "@/app/actions/social/pinterest/createPost";
 import { updatePinterestPost } from "@/app/actions/social/pinterest/pinterestPostsActions";
+import { createPinterestBoard } from "@/app/actions/social/pinterest/boardActions";
 import { getDateTime } from "@/lib/utils";
 import PinterestLogo from "@/components/icons/PinterestLogo";
 import PinterestPreview from "./PinterestPreview";
@@ -63,6 +64,41 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
     const [galleryMediaType, setGalleryMediaType] = useState(["image"]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const selectionScrollRef = useRef(null);
+
+    // Create Board State
+    const [isCreatingBoard, setIsCreatingBoard] = useState(false);
+    const [newBoardName, setNewBoardName] = useState("");
+    const [isCreatingBoardPending, setIsCreatingBoardPending] = useState(false);
+
+    async function handleCreateBoard() {
+        if (!newBoardName.trim()) return;
+        if (!selectedAccount) {
+            toast.error("No account selected");
+            return;
+        }
+        console.log("UI: Creating board. Selected Account:", selectedAccount, "Name:", newBoardName);
+        setIsCreatingBoardPending(true);
+        try {
+            const res = await createPinterestBoard(selectedAccount, newBoardName);
+            if (res.success) {
+                toast.success("Board created!");
+                // Refresh boards
+                const boardsRes = await getPinterestBoards(selectedAccount);
+                if (boardsRes.success) {
+                    setBoards(boardsRes.boards);
+                    setSelectedBoard(res.board.id); // Select the new board
+                    setIsCreatingBoard(false);
+                    setNewBoardName("");
+                }
+            } else {
+                toast.error(res.message);
+            }
+        } catch (e) {
+            toast.error("Failed to create board");
+        } finally {
+            setIsCreatingBoardPending(false);
+        }
+    }
 
     useEffect(() => {
         async function loadAccounts() {
@@ -112,10 +148,20 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
             type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image')
         }));
 
-        setPostContent(prev => ({
-            ...prev,
-            media: [...prev.media, ...newMedia].slice(0, 5) // Pinterest up to 5 for carousel
-        }));
+        setPostContent(prev => {
+            if (postType === 'carousel') {
+                return {
+                    ...prev,
+                    media: [...prev.media, ...newMedia].slice(0, 5)
+                };
+            } else {
+                // For Image/Video, replace existing media
+                return {
+                    ...prev,
+                    media: newMedia.slice(0, 1)
+                };
+            }
+        });
         setGalleryOpen(false);
     };
 
@@ -318,25 +364,80 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Pin Board</Label>
-                                            <Select value={selectedBoard} onValueChange={setSelectedBoard} disabled={isReadOnly}>
-                                                <SelectTrigger className="h-11 rounded-xl border-gray-100 bg-gray-50/30 px-4 font-bold text-sm">
-                                                    <SelectValue placeholder="Select Board" />
-                                                </SelectTrigger>
-                                                <SelectContent className="rounded-xl">
-                                                    {boards.length === 0 ? (
-                                                        <div className="p-3 text-[10px] font-bold text-gray-400 text-center uppercase tracking-wider">
-                                                            No boards found
-                                                        </div>
-                                                    ) : (
-                                                        boards.map((board) => (
-                                                            <SelectItem key={board.id} value={board.id} className="font-bold text-sm">
-                                                                {board.name}
-                                                            </SelectItem>
-                                                        ))
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
+                                            <div className="flex justify-between items-center ml-1">
+                                                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pin Board</Label>
+                                                {!isCreatingBoard && (
+                                                    <span
+                                                        onClick={() => setIsCreatingBoard(true)}
+                                                        className="text-[9px] font-bold text-[#E60023] cursor-pointer hover:underline flex items-center gap-1 uppercase tracking-wider"
+                                                    >
+                                                        <Plus className="h-3 w-3" /> New Board
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            {isCreatingBoard ? (
+                                                <div className="flex gap-2">
+                                                    <Input
+                                                        autoFocus
+                                                        disabled={isCreatingBoardPending}
+                                                        placeholder="Board Name"
+                                                        value={newBoardName}
+                                                        onChange={(e) => setNewBoardName(e.target.value)}
+                                                        className="h-11 rounded-xl border-gray-100 bg-white px-4 font-bold text-sm"
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleCreateBoard();
+                                                            }
+                                                        }}
+                                                    />
+                                                    <Button
+                                                        onClick={handleCreateBoard}
+                                                        disabled={isCreatingBoardPending || !newBoardName.trim()}
+                                                        className="h-11 w-11 p-0 rounded-xl bg-[#E60023] hover:bg-[#ad001a] text-white shrink-0"
+                                                    >
+                                                        {isCreatingBoardPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-5 w-5 stroke-[3]" />}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={() => setIsCreatingBoard(false)}
+                                                        disabled={isCreatingBoardPending}
+                                                        className="h-11 w-11 p-0 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 shrink-0"
+                                                    >
+                                                        <X className="h-5 w-5" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Select value={selectedBoard} onValueChange={(val) => {
+                                                    if (val === "CREATE_NEW") {
+                                                        setIsCreatingBoard(true);
+                                                    } else {
+                                                        setSelectedBoard(val);
+                                                    }
+                                                }} disabled={isReadOnly}>
+                                                    <SelectTrigger className="h-11 rounded-xl border-gray-100 bg-gray-50/30 px-4 font-bold text-sm focus:bg-white transition-all">
+                                                        <SelectValue placeholder="Select Board" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-xl">
+                                                        <SelectItem value="CREATE_NEW" className="font-black text-[#E60023] focus:text-[#E60023] focus:bg-red-50">
+                                                            <div className="flex items-center gap-2">
+                                                                <Plus className="h-3.5 w-3.5" /> Create New Board...
+                                                            </div>
+                                                        </SelectItem>
+                                                        {boards.length === 0 ? (
+                                                            <div className="p-3 text-[10px] font-bold text-gray-400 text-center uppercase tracking-wider">
+                                                                No boards found
+                                                            </div>
+                                                        ) : (
+                                                            boards.map((board) => (
+                                                                <SelectItem key={board.id} value={board.id} className="font-bold text-sm">
+                                                                    {board.name}
+                                                                </SelectItem>
+                                                            ))
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                         </div>
                                     </div>
 
@@ -540,7 +641,14 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                     </Button>
                 )}
             </div>
-            <GalleryModal open={galleryOpen} onOpenChange={setGalleryOpen} onSelect={handleGallerySelect} allowedTypes={galleryMediaType} allowMultiple={true} maxSelection={5} />
+            <GalleryModal
+                open={galleryOpen}
+                onOpenChange={setGalleryOpen}
+                onSelect={handleGallerySelect}
+                allowedTypes={galleryMediaType}
+                allowMultiple={postType === 'carousel'}
+                maxSelection={postType === 'carousel' ? 5 : 1}
+            />
         </div>
     );
 }
