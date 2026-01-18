@@ -38,7 +38,7 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
     const isReadOnly = initialData?.readOnly || false;
 
     // Pinterest specific fields
-    const [postType, setPostType] = useState(initialData?.postType || "standard"); // standard or carousel
+    const [postType, setPostType] = useState(initialData?.postType || "image"); // Default to image
     const [title, setTitle] = useState(initialData?.title || "");
     const [link, setLink] = useState(initialData?.link || "");
     const [selectedBoard, setSelectedBoard] = useState(initialData?.boardId || "");
@@ -60,7 +60,7 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
     const [selectedAccount, setSelectedAccount] = useState(initialData?.accountId || null);
 
     const [galleryOpen, setGalleryOpen] = useState(false);
-    const [galleryMediaType, setGalleryMediaType] = useState("image");
+    const [galleryMediaType, setGalleryMediaType] = useState(["image"]);
     const [currentSlide, setCurrentSlide] = useState(0);
     const selectionScrollRef = useRef(null);
 
@@ -81,7 +81,9 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
     useEffect(() => {
         if (selectedAccount) {
             async function loadBoards() {
+                console.log("Client: Loading boards for", selectedAccount);
                 const res = await getPinterestBoards(selectedAccount);
+                console.log("Client: Board response", res);
                 if (res.success) {
                     setBoards(res.boards);
                     if (!selectedBoard && res.boards.length > 0) {
@@ -90,6 +92,8 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                         // If the initial selected board is no longer available, select the first one
                         setSelectedBoard(res.boards.length > 0 ? res.boards[0].id : null);
                     }
+                } else {
+                    toast.error("Failed to fetch boards: " + res.message);
                 }
             }
             loadBoards();
@@ -139,11 +143,18 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
         if (!selectedAccount) return toast.error("Please select a Pinterest account");
         if (!selectedBoard) return toast.error("Please select a board");
 
-        // Validation based on Post Type
-        if (postType === "standard") {
-            if (postContent.media.length === 0) return toast.error("Standard Pins require 1 image or video");
-            if (postContent.media.length > 1) return toast.error("Standard Pins only support 1 media item. Switch to Carousel for multiple images.");
-        } else if (postType === "carousel") {
+        // Validation based on Post Type (Strict)
+        if (postType === "image") {
+            if (postContent.media.length === 0) return toast.error("Image Pins require exactly 1 image");
+            if (postContent.media.length > 1) return toast.error("Image Pins can only have 1 image. Switch to Carousel.");
+            if (postContent.media[0].type === 'video') return toast.error("Selected media is a video. Switch to Video tab.");
+        }
+        else if (postType === "video") {
+            if (postContent.media.length === 0) return toast.error("Video Pins require exactly 1 video");
+            if (postContent.media.length > 1) return toast.error("Video Pins can only have 1 video.");
+            if (postContent.media[0].type !== 'video') return toast.error("Selected media is not a video.");
+        }
+        else if (postType === "carousel") {
             if (postContent.media.length < 2) return toast.error("Carousel Pins require at least 2 images");
             if (postContent.media.length > 5) return toast.error("Pinterest Carousel Pins support a maximum of 5 images");
 
@@ -176,6 +187,7 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                         link,
                         boardId: selectedBoard,
                         media: postContent.media,
+                        postType, // Pass the explicit type (image, video, carousel)
                         scheduling: scheduledTime
                     });
                 }
@@ -226,7 +238,7 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-6 lg:gap-10 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 lg:gap-8 items-start">
                         {/* Editor */}
                         <div className="space-y-6">
                             {/* Strategy / Scheduling */}
@@ -257,31 +269,36 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
 
                             {/* Content Section */}
                             <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-6">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-80 pl-1">Format</h3>
-                                    <div className="flex gap-1 bg-gray-50 p-1 rounded-xl">
-                                        {["standard", "carousel"].map(type => (
-                                            <button
-                                                key={type}
-                                                disabled={isReadOnly || isEditing}
-                                                onClick={() => { setPostType(type); }}
-                                                className={cn(
-                                                    "px-6 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-[0.2em]",
-                                                    postType === type
-                                                        ? "bg-white text-[#E60023] shadow-md ring-1 ring-black/5"
-                                                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50",
-                                                    (isReadOnly || isEditing) && "cursor-not-allowed opacity-50"
-                                                )}
-                                            >
-                                                {type}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
                                 <div className="space-y-6">
-                                    {/* Pinterest Fields: Title, Board, Link */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Format Selection - STRICT TABS */}
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-80 pl-1">Format</h3>
+                                        <div className="flex gap-1 bg-gray-50 p-1 rounded-xl">
+                                            {["image", "video", "carousel"].map(type => (
+                                                <button
+                                                    key={type}
+                                                    disabled={isReadOnly || isEditing}
+                                                    onClick={() => {
+                                                        setPostType(type);
+                                                        // Clear media when switching types to enforce strict rules
+                                                        setPostContent(prev => ({ ...prev, media: [] }));
+                                                    }}
+                                                    className={cn(
+                                                        "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-[0.2em]",
+                                                        postType === type
+                                                            ? "bg-white text-[#E60023] shadow-md ring-1 ring-black/5"
+                                                            : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50",
+                                                        (isReadOnly || isEditing) && "cursor-not-allowed opacity-50"
+                                                    )}
+                                                >
+                                                    {type}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Pinterest Fields: Title, Board */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center ml-1">
                                                 <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pin Title</Label>
@@ -307,30 +324,23 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                                                     <SelectValue placeholder="Select Board" />
                                                 </SelectTrigger>
                                                 <SelectContent className="rounded-xl">
-                                                    {boards.map((board) => (
-                                                        <SelectItem key={board.id} value={board.id} className="font-bold text-sm">
-                                                            {board.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {boards.length === 0 ? (
+                                                        <div className="p-3 text-[10px] font-bold text-gray-400 text-center uppercase tracking-wider">
+                                                            No boards found
+                                                        </div>
+                                                    ) : (
+                                                        boards.map((board) => (
+                                                            <SelectItem key={board.id} value={board.id} className="font-bold text-sm">
+                                                                {board.name}
+                                                            </SelectItem>
+                                                        ))
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Destination Link</Label>
-                                        <div className="relative">
-                                            <Input
-                                                disabled={isReadOnly}
-                                                placeholder="https://yourlink.com"
-                                                value={link}
-                                                onChange={(e) => setLink(e.target.value)}
-                                                className="h-11 rounded-xl border-gray-100 bg-gray-50/30 pl-10 pr-4 font-bold text-sm"
-                                            />
-                                            <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                                        </div>
-                                    </div>
-
+                                    {/* Description */}
                                     <div className="space-y-4 pt-2">
                                         <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Pin Description</Label>
                                         <SocialCaptionEditor
@@ -349,23 +359,43 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                                         </div>
                                     </div>
 
+                                    {/* Link */}
+                                    <div className="space-y-2">
+                                        <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Destination Link</Label>
+                                        <div className="relative">
+                                            <Input
+                                                disabled={isReadOnly}
+                                                placeholder="https://yourlink.com"
+                                                value={link}
+                                                onChange={(e) => setLink(e.target.value)}
+                                                className="h-11 rounded-xl border-gray-100 bg-gray-50/30 pl-10 pr-4 font-bold text-sm"
+                                            />
+                                            <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                                        </div>
+                                    </div>
+
                                     <Separator className="bg-gray-50/50" />
 
+                                    {/* Media Upload Area (Rearranged to Bottom) */}
                                     <div className="space-y-4">
                                         <div className="flex justify-between items-center">
                                             <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Media Assets</Label>
                                             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100">
                                                 <div className={cn("w-1 h-1 rounded-full", postContent.media.length > 0 ? "bg-green-500" : "bg-gray-300")} />
                                                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none">
-                                                    {postType === 'carousel' ? `${postContent.media.length} / 5` : `${postContent.media.length} / 1`}
+                                                    {postType === 'carousel'
+                                                        ? `${postContent.media.length} / 5`
+                                                        : `${postContent.media.length} / 1`}
                                                 </span>
                                             </div>
                                         </div>
+
                                         <Button
                                             disabled={isReadOnly}
                                             variant="outline"
                                             onClick={() => {
-                                                setGalleryMediaType(postType === 'carousel' ? "image" : "any");
+                                                // Strict Type Passing
+                                                setGalleryMediaType(postType === 'video' ? ["video"] : ["image"]);
                                                 setGalleryOpen(true);
                                             }}
                                             className={cn(
@@ -382,15 +412,16 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                                                 </div>
                                             </div>
                                             <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-black">
-                                                {postContent.media.length > 0 ? "Add More Media" : "Select Creative Asset"}
+                                                {postContent.media.length > 0 ? "Add More Media" : `Select ${postType === 'video' ? 'Video' : 'Image'}`}
                                             </span>
                                             <span className="text-[9px] text-gray-400 font-medium tracking-wide">
-                                                {postType === 'carousel'
-                                                    ? "Carousel Pins require 2-5 images"
-                                                    : "Standard Pins require 1 image or video"}
+                                                {postType === 'carousel' && "Requires 2-5 images"}
+                                                {postType === 'image' && "Requires 1 image"}
+                                                {postType === 'video' && "Requires 1 video"}
                                             </span>
                                         </Button>
                                     </div>
+
                                 </div>
                             </div>
                         </div>

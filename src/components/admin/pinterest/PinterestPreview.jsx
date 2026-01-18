@@ -21,7 +21,7 @@ export default function PinterestPreview({
     const isCarousel = media.length > 1;
 
     return (
-        <div className="flex flex-col items-center justify-center p-6 lg:p-12 bg-gray-100/30 rounded-[3rem] border border-dashed border-gray-200 h-full min-h-[600px] font-sans">
+        <div className="flex flex-col items-center justify-center p-4 lg:p-6 bg-gray-100/30 rounded-[3rem] border border-dashed border-gray-200 h-full min-h-[500px] font-sans">
             {/* Context Label */}
             <div className="mb-10 flex flex-col items-center gap-3">
                 <div className="flex items-center gap-2.5 px-3 py-1 bg-white rounded-full border border-gray-100 shadow-sm">

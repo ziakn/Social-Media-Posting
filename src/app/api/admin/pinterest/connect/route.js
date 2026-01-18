@@ -19,6 +19,7 @@ export async function GET() {
 
     const scopes = [
         "boards:read",
+        "boards:write",
         "pins:read",
         "pins:write",
         "user_accounts:read"

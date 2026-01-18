@@ -74,14 +74,12 @@ export async function createPinterestPost({
     link,
     boardId,
     media = [],
+    postType = "image", // Default to image
     scheduling = null
 }) {
     try {
         const user = await getAuthenticatedUser();
         const { accountId, accessToken } = await getPinterestAccount(user.id, pageId);
-
-        // Determine Post Type
-        const postType = media.length > 1 ? "carousel" : "standard";
 
         // If scheduling, save to Firestore and exit
         if (scheduling) {
@@ -90,7 +88,7 @@ export async function createPinterestPost({
                 accountId: accountId,
                 platform: "pinterest",
                 title,
-                message, // or description
+                message,
                 description: message,
                 link,
                 boardId,
@@ -108,7 +106,7 @@ export async function createPinterestPost({
         // Immediate Publishing
         let mediaSource = {};
 
-        if (postType === "carousel" && media.length > 1) {
+        if (postType === "carousel") {
             mediaSource = {
                 source_type: "multiple_image_urls",
                 items: media.map(item => ({
@@ -121,8 +119,14 @@ export async function createPinterestPost({
                     }
                 }))
             };
+        } else if (postType === "video") {
+            // NOTE: Pinterest API requires videos to be uploaded via /v5/media first to get a media_id.
+            // Passing a video URL directly in 'source_type' is not supported for creating Pins directly.
+            // For now, we return an error since the upload flow is complex.
+            throw new Error("Video publishing requires media upload flow. Currently only Image and Carousel are fully supported via API.");
         } else {
-            const item = media[0] || { url: "", type: "IMAGE" };
+            // Default: Image
+            const item = media[0] || { url: "", type: "image" };
             const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type) : getAbsoluteUrl(item.url);
 
             mediaSource = {

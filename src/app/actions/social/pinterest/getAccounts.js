@@ -52,8 +52,11 @@ export async function getPinterestBoards(platformUserId) {
         const user = await verifyToken(token);
 
         if (!user) {
+            console.error("getPinterestBoards: Unauthorized");
             return { success: false, message: "Unauthorized" };
         }
+
+        console.log(`getPinterestBoards: Fetching boards for user ${user.id}, account ${platformUserId}`);
 
         const q = query(
             collection(db, "socialAccounts"),
@@ -63,21 +66,29 @@ export async function getPinterestBoards(platformUserId) {
             where("status", "==", "active")
         );
         const snapshot = await getDocs(q);
-        if (snapshot.empty) throw new Error("Pinterest account not found or inactive");
+        if (snapshot.empty) {
+            console.error("getPinterestBoards: Account not found");
+            throw new Error("Pinterest account not found or inactive");
+        }
 
         const account = snapshot.docs[0].data();
         const accessToken = account.accessToken;
 
         const url = `https://api.pinterest.com/v5/boards`;
         const response = await fetch(url, {
+            method: "GET",
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
                 "Content-Type": "application/json",
-            }
+            },
+            cache: "no-store"
         });
 
         const data = await response.json();
+        console.log("getPinterestBoards: API Response", JSON.stringify(data));
+
         if (!response.ok) {
+            console.error("getPinterestBoards: API Error", data);
             throw new Error(data.message || "Failed to fetch boards");
         }
 
