@@ -9,82 +9,18 @@ import {
     limit,
     startAfter,
     getDocs,
-    getDoc,
     doc,
+    getDoc,
     updateDoc,
-    serverTimestamp,
-    addDoc
+    serverTimestamp
 } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "../threads/mediaUtils";
+import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 
 /**
- * Get authenticated user (Helper)
- */
-async function getAuthenticatedUser() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
-
-    if (!user) {
-        throw new Error("Unauthorized: Please log in again.");
-    }
-
-    return user;
-}
-
-/**
- * Get Pinterest account info (Helper)
- */
-async function getPinterestAccount(userId, platformUserId) {
-    const q = query(
-        collection(db, "socialAccounts"),
-        where("userId", "==", userId),
-        where("accountId", "==", platformUserId),
-        where("platform", "==", "pinterest"),
-        where("status", "==", "active")
-    );
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) throw new Error("Pinterest account not found or inactive");
-
-    const account = snapshot.docs[0].data();
-    return { accountId: account.accountId, accessToken: account.accessToken };
-}
-
-/**
- * Make request to Pinterest API (Helper)
- */
-async function makePinterestRequest(endpoint, body, accessToken, method = "POST") {
-    const url = `https://api.pinterest.com/v5${endpoint}`;
-
-    const headers = {
-        "Authorization": `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-    };
-
-    const options = {
-        method,
-        headers,
-    };
-
-    if (body && (method === "POST" || method === "PATCH" || method === "PUT")) {
-        options.body = JSON.stringify(body);
-    }
-
-    const response = await fetch(url, options);
-    const data = await response.json();
-
-    if (!response.ok) {
-        console.error("Pinterest API error:", data);
-        throw new Error(data.message || "Pinterest API error");
-    }
-    return data;
-}
-
-/**
- * Get all Pinterest posts with status filtering
+ * Get all Pinterest posts with status filtering, pagination, and enhanced filtering
  */
 export async function getPinterestPosts({
     pageSize = 12,
@@ -94,7 +30,13 @@ export async function getPinterestPosts({
     sortOrder = "desc"
 } = {}) {
     try {
-        const user = await getAuthenticatedUser();
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, message: "Unauthorized", posts: [], hasMore: false };
+        }
 
         let constraints = [
             where("userId", "==", user.id),
@@ -102,13 +44,25 @@ export async function getPinterestPosts({
             where("delete", "==", 0)
         ];
 
+        // Status filter
         if (filters.status && filters.status !== "all") {
             constraints.push(where("status", "==", filters.status));
         }
 
+        // Account filter
         if (filters.accountId && filters.accountId !== "all") {
             constraints.push(where("accountId", "==", filters.accountId));
         }
+
+        // Post type filter
+        if (filters.postType && filters.postType !== "all") {
+            constraints.push(where("postType", "==", filters.postType));
+        }
+
+        // Search Query (Client-side filtering usually if not using Algolia, but here we can try basic)
+        // Firestore doesn't support full text search easily. We will filter post-fetch if needed or rely on exact match if implemented differently.
+        // For now, consistent with threads, we fetch and filter or just ignore if complex. 
+        // Threads implementation fetched more and filtered in memory for search.
 
         const orderField = sortBy === "date" ? "createdAt" : sortBy;
         constraints.push(orderBy(orderField, sortOrder));
@@ -121,27 +75,44 @@ export async function getPinterestPosts({
             }
         }
 
-        constraints.push(limit(pageSize));
+        const fetchLimit = filters.searchQuery ? pageSize * 5 : pageSize;
+        constraints.push(limit(fetchLimit));
 
         const q = query(collection(db, "pinterest_posts"), ...constraints);
         const snapshot = await getDocs(q);
 
-        const posts = snapshot.docs.map(docSnap => {
+        let posts = [];
+        snapshot.forEach(docSnap => {
             const data = docSnap.data();
-            return {
-                id: docSnap.id,
-                ...data,
-                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
-                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
-                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
-                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
-            };
+
+            // Search filter
+            if (filters.searchQuery) {
+                const text = (data.title || data.message || data.description || "").toLowerCase();
+                if (!text.includes(filters.searchQuery.toLowerCase())) return;
+            }
+
+            if (posts.length < pageSize) {
+                posts.push({
+                    id: docSnap.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
+                    updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                    scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
+                    publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
+                });
+            }
         });
 
         const lastVisibleDoc = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1].id : null;
-        const hasMore = snapshot.docs.length === pageSize;
+        const hasMore = snapshot.docs.length >= fetchLimit || (posts.length === pageSize && snapshot.size > pageSize); // Approximation
 
-        return { success: true, posts, hasMore, lastPostId: lastVisibleDoc };
+        return {
+            success: true,
+            posts,
+            hasMore: posts.length === pageSize, // Simple check
+            lastPostId: lastVisibleDoc
+        };
+
     } catch (error) {
         console.error("Error in getPinterestPosts:", error);
         return { success: false, message: error.message, posts: [], hasMore: false };
@@ -149,27 +120,105 @@ export async function getPinterestPosts({
 }
 
 /**
- * Fetch available boards for a Pinterest account
+ * Get aggregate stats for Pinterest posts
  */
-export async function getPinterestBoards(platformUserId) {
+export async function getPinterestPostsStats({ accountId = null } = {}) {
     try {
-        const user = await getAuthenticatedUser();
-        const { accessToken } = await getPinterestAccount(user.id, platformUserId);
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
 
-        const data = await makePinterestRequest("/boards", null, accessToken, "GET");
-        return { success: true, boards: data.items || [] };
+        if (!user) return { success: false, message: "Unauthorized" };
+
+        let constraints = [
+            where("userId", "==", user.id),
+            where("platform", "==", "pinterest"),
+            where("status", "==", "published"),
+            where("delete", "==", 0)
+        ];
+
+        if (accountId && accountId !== "all") {
+            constraints.push(where("accountId", "==", accountId));
+        }
+
+        constraints.push(limit(2000));
+        const q = query(collection(db, "pinterest_posts"), ...constraints);
+        const snapshot = await getDocs(q);
+
+        let stats = {
+            totalPosts: snapshot.size,
+            totalLikes: 0,
+            totalReplies: 0, // Saves/Comments
+            totalEngagement: 0,
+            avgEngagement: 0
+        };
+
+        snapshot.docs.forEach(docSnap => {
+            const data = docSnap.data();
+            const metrics = data.metrics || {};
+            // Map Pinterest metrics
+            // likes usually not available, maybe saves?
+            stats.totalLikes += (metrics.saves || 0); // treating saves as likes equivalent for summary
+            stats.totalReplies += (metrics.clicks || 0); // or comments?
+        });
+
+        stats.totalEngagement = stats.totalLikes + stats.totalReplies;
+        if (stats.totalPosts > 0) {
+            stats.avgEngagement = parseFloat((stats.totalEngagement / stats.totalPosts).toFixed(1));
+        }
+
+        return { success: true, stats };
     } catch (error) {
-        console.error("Error fetching Pinterest boards:", error);
+        console.error("Error in getPinterestPostsStats:", error);
         return { success: false, message: error.message };
     }
 }
 
 /**
- * Publish a Pin now
+ * Helper: Make Pinterest Request
+ */
+async function makePinterestRequest(endpoint, body, accessToken, method = "POST") {
+    const url = `https://api.pinterest.com/v5${endpoint}`;
+    const headers = {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+    };
+    const options = { method, headers };
+    if (body && (method === "POST" || method === "PATCH")) {
+        options.body = JSON.stringify(body);
+    }
+    const response = await fetch(url, options);
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.message || "Pinterest API error");
+    }
+    return data;
+}
+
+/**
+ * Helper: Get Account
+ */
+async function getPinterestAccount(userId, platformUserId) {
+    const q = query(
+        collection(db, "socialAccounts"),
+        where("userId", "==", userId),
+        where("accountId", "==", platformUserId),
+        where("platform", "==", "pinterest"),
+        where("status", "==", "active")
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) throw new Error("Pinterest account not found");
+    return snapshot.docs[0].data();
+}
+
+/**
+ * Publish a scheduled Pinterest post immediately
  */
 export async function publishPinterestPostNow(postId) {
     try {
-        const user = await getAuthenticatedUser();
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
 
         const postRef = doc(db, "pinterest_posts", postId);
         const postSnap = await getDoc(postRef);
@@ -182,18 +231,39 @@ export async function publishPinterestPostNow(postId) {
         const { accessToken } = await getPinterestAccount(user.id, post.accountId);
 
         // Prepare Pin data
-        const item = post.content?.media?.[0] || { url: post.imageUrl, type: "IMAGE" };
-        const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type) : getAbsoluteUrl(item.url);
+        let mediaSource = {};
+        const media = post.content?.media || [];
+        const postType = post.postType || (media.length > 1 ? "carousel" : "standard");
+
+        if (postType === "carousel" && media.length > 1) {
+            mediaSource = {
+                source_type: "multiple_image_urls",
+                items: media.map(item => ({
+                    title: post.title || "",
+                    description: post.message || post.description || "",
+                    link: post.link || "",
+                    source: {
+                        source_type: "image_url",
+                        url: needsTestUrl(item.url) ? getTestUrl("image") : getAbsoluteUrl(item.url)
+                    }
+                }))
+            };
+        } else {
+            const item = media[0] || { url: post.imageUrl, type: "IMAGE" };
+            const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type) : getAbsoluteUrl(item.url);
+
+            mediaSource = {
+                source_type: "image_url",
+                url: mediaUrl
+            };
+        }
 
         const pinData = {
             board_id: post.boardId,
             title: post.title || "",
             description: post.message || post.description || "",
             link: post.link || "",
-            media_source: {
-                source_type: "image_url",
-                url: mediaUrl
-            }
+            media_source: mediaSource
         };
 
         const result = await makePinterestRequest("/pins", pinData, accessToken, "POST");
@@ -203,23 +273,27 @@ export async function publishPinterestPostNow(postId) {
             pinterestPinId: result.id,
             publishedAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
+            scheduledAt: serverTimestamp(), // Clears future schedule
             delete: 0
         });
 
         revalidatePath("/admin/social/pinterest/posts");
         return { success: true, message: "Pin published successfully", pinId: result.id };
     } catch (error) {
-        console.error("Error publishing Pinterest Pin:", error);
+        console.error("Error publishing Pinterest Pin now:", error);
         return { success: false, message: error.message };
     }
 }
 
 /**
- * Delete a Pinterest post (Soft delete)
+ * Delete a Pinterest post (Soft Delete)
  */
 export async function deletePinterestPost(postId) {
     try {
-        const user = await getAuthenticatedUser();
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
         const postRef = doc(db, "pinterest_posts", postId);
         const postSnap = await getDoc(postRef);
 
@@ -240,140 +314,78 @@ export async function deletePinterestPost(postId) {
 }
 
 /**
- * Create or Update a Pinterest post
+ * Update a scheduled Pinterest post
  */
-export async function savePinterestPost({
-    postId = null,
+export async function updatePinterestPost({
+    postId,
     title,
     message,
-    link,
-    boardId,
     media,
     scheduling,
-    accountId,
-    status = "draft"
+    boardId,
+    link,
+    accountId
 }) {
     try {
-        const user = await getAuthenticatedUser();
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
 
-        const postData = {
-            userId: user.id,
-            platform: "pinterest",
-            accountId,
-            boardId,
+        const postRef = doc(db, "pinterest_posts", postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) return { success: false, message: "Post not found" };
+        const postData = postSnap.data();
+
+        if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
+        if (postData.status === "published") return { success: false, message: "Cannot edit published posts" };
+
+        const updates = {
             title,
             message,
-            link,
+            description: message, // Synced
             content: { media },
-            status: scheduling ? "scheduled" : status,
-            scheduledAt: scheduling ? new Date(scheduling) : null,
-            updatedAt: serverTimestamp(),
-            delete: 0
+            accountId,
+            boardId,
+            link,
+            updatedAt: serverTimestamp()
         };
 
-        if (postId) {
-            const postRef = doc(db, "pinterest_posts", postId);
-            await updateDoc(postRef, postData);
-        } else {
-            postData.createdAt = serverTimestamp();
-            await addDoc(collection(db, "pinterest_posts"), postData);
+        if (scheduling) {
+            updates.scheduledAt = new Date(scheduling);
+            updates.status = "scheduled";
         }
 
+        await updateDoc(postRef, updates);
         revalidatePath("/admin/social/pinterest/posts");
-        return { success: true, message: postId ? "Post updated" : "Post created" };
+
+        return { success: true, message: "Post updated successfully" };
     } catch (error) {
-        console.error("Error saving Pinterest post:", error);
+        console.error("Error updating Pinterest post:", error);
         return { success: false, message: error.message };
     }
 }
 
 /**
- * Fetch all connected Pinterest accounts for the current user
- */
-export async function getPinterestAccounts() {
-    try {
-        const user = await getAuthenticatedUser();
-
-        const q = query(
-            collection(db, "socialAccounts"),
-            where("userId", "==", user.id),
-            where("platform", "==", "pinterest"),
-            where("status", "==", "active")
-        );
-
-        const snapshot = await getDocs(q);
-        const accounts = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            tokenExpiresAt: doc.data().tokenExpiresAt?.toDate?.().toISOString() || doc.data().tokenExpiresAt,
-            createdAt: doc.data().createdAt?.toDate?.().toISOString() || doc.data().createdAt,
-        }));
-
-        return { success: true, accounts };
-
-    } catch (error) {
-        console.error("Error fetching Pinterest accounts:", error);
-        return { success: false, message: error.message };
-    }
-}
-/**
- * Get aggregate stats for Pinterest posts
- */
-export async function getPinterestPostsStats({ accountId = null } = {}) {
-    try {
-        const user = await getAuthenticatedUser();
-
-        let constraints = [
-            where("userId", "==", user.id),
-            where("platform", "==", "pinterest"),
-            where("status", "==", "published"),
-            where("delete", "==", 0)
-        ];
-
-        if (accountId && accountId !== "all") {
-            constraints.push(where("accountId", "==", accountId));
-        }
-
-        constraints.push(limit(2000));
-        const q = query(collection(db, "pinterest_posts"), ...constraints);
-        const snapshot = await getDocs(q);
-
-        let stats = {
-            totalPosts: snapshot.size,
-            totalLikes: 0,
-            totalReplies: 0,
-            avgEngagement: 0
-        };
-
-        snapshot.docs.forEach(docSnap => {
-            const data = docSnap.data();
-            stats.totalLikes += (data.metrics?.likes || 0);
-            stats.totalReplies += (data.metrics?.replies || 0);
-        });
-
-        if (stats.totalPosts > 0) {
-            stats.avgEngagement = parseFloat(((stats.totalLikes + stats.totalReplies) / stats.totalPosts).toFixed(1));
-        }
-
-        return { success: true, stats };
-    } catch (error) {
-        console.error("Error in getPinterestPostsStats:", error);
-        return { success: false, message: error.message };
-    }
-}
-
-/**
- * Get all Pinterest posts for calendar within date range
+ * Get all Pinterest posts for calendar (date range)
+ * Re-included for calendar view compatibility
  */
 export async function getAllPinterestCalendarPosts({ startDate, endDate }) {
     try {
-        const user = await getAuthenticatedUser();
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) return { success: false, posts: [] };
 
         let constraints = [
             where("userId", "==", user.id),
             where("platform", "==", "pinterest"),
             where("delete", "==", 0)
         ];
+
+        // Simple optimization: if dates are provided, try to filter? 
+        // Firestore inequalities on multiple fields are tricky. Use broad fetch.
 
         const q = query(collection(db, "pinterest_posts"), ...constraints);
         const snapshot = await getDocs(q);
@@ -383,9 +395,8 @@ export async function getAllPinterestCalendarPosts({ startDate, endDate }) {
             return {
                 id: docSnap.id,
                 ...data,
-                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
-                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
                 scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
+                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
                 publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
             };
         }).filter(post => {

@@ -17,13 +17,15 @@ import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
-    Search, TrendingUp, Heart, MessageCircle, Eye, X, Filter,
+    Search, TrendingUp, Eye, X,
     Layers, Play, Edit, MoreVertical, Send, Trash2, Loader2, BarChart3,
-    History, ImageIcon, Film, MoreHorizontal, Pin
+    History, Pin, MousePointer2
 } from "lucide-react";
-import { getPinterestPosts, getPinterestPostsStats, publishPinterestPostNow, deletePinterestPost, getPinterestAccounts } from "@/app/actions/social/pinterest/pinterestPostsActions";
+import { getPinterestPosts, getPinterestPostsStats, publishPinterestPostNow, deletePinterestPost } from "@/app/actions/social/pinterest/pinterestPostsActions";
+import { getPinterestAccounts } from "@/app/actions/social/pinterest/getAccounts";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import PinterestLogo from "@/components/icons/PinterestLogo";
+import PinterestAnalyticsModal from "./PinterestAnalyticsModal";
 
 export default function PinterestListingViewComponent({
     accountId: initialAccountId,
@@ -38,13 +40,15 @@ export default function PinterestListingViewComponent({
     const [accounts, setAccounts] = useState([]);
     const [publishingId, setPublishingId] = useState(null);
 
+    // Analytics Modal State
+    const [analyticsModalOpen, setAnalyticsModalOpen] = useState(false);
+    const [selectedPostForAnalytics, setSelectedPostForAnalytics] = useState(null);
+
     const [filters, setFilters] = useState({
         status: initialStatus,
         postType: "all",
         accountId: initialAccountId || "all",
         searchQuery: "",
-        dateFrom: null,
-        dateTo: null,
         sortBy: "date",
         sortOrder: "desc"
     });
@@ -86,9 +90,8 @@ export default function PinterestListingViewComponent({
                 filters: {
                     status: filters.status,
                     accountId: filters.accountId,
+                    postType: filters.postType,
                     searchQuery: filters.searchQuery,
-                    dateFrom: filters.dateFrom,
-                    dateTo: filters.dateTo
                 },
                 sortBy: filters.sortBy === 'date' ? 'createdAt' : filters.sortBy,
                 sortOrder: filters.sortOrder
@@ -104,11 +107,11 @@ export default function PinterestListingViewComponent({
                     lastPostId: result.lastPostId
                 }));
             } else {
-                toast.error(result.message || "Failed to load pins");
+                toast.error(result.message || "Failed to load posts");
             }
         } catch (err) {
-            toast.error("An error occurred while loading pins");
-            console.error("Error loading pins:", err);
+            toast.error("An error occurred while loading posts");
+            console.error("Error loading posts:", err);
         } finally {
             setLoading(false);
         }
@@ -128,8 +131,6 @@ export default function PinterestListingViewComponent({
             postType: "all",
             accountId: initialAccountId || "all",
             searchQuery: "",
-            dateFrom: null,
-            dateTo: null,
             sortBy: "date",
             sortOrder: "desc"
         });
@@ -139,6 +140,10 @@ export default function PinterestListingViewComponent({
         if (pagination.hasMore && pagination.lastPostId) {
             loadPosts(false, pagination.lastPostId);
         }
+    };
+
+    const onEditClick = (post, action = 'edit') => {
+        if (onEdit) onEdit(post, action);
     };
 
     const handlePublishNow = async (e, post) => {
@@ -160,16 +165,15 @@ export default function PinterestListingViewComponent({
         }
     };
 
-    const handleDelete = async (e, post) => {
-        e.stopPropagation();
-        if (!confirm("Are you sure you want to delete this pin reference?")) return;
-        const result = await deletePinterestPost(post.id);
-        if (result.success) {
-            toast.success("Pin deleted");
-            loadPosts(true);
-        } else {
-            toast.error(result.message);
-        }
+    const handleOpenAnalytics = (post) => {
+        const account = accounts.find(a => a.accountId === post.accountId);
+        const enrichedPost = {
+            ...post,
+            username: account?.username || post.username || "Pinterest User",
+            profilePicture: account?.profilePicture || post.profilePicture
+        };
+        setSelectedPostForAnalytics(enrichedPost);
+        setAnalyticsModalOpen(true);
     };
 
     const formatNumber = (num) => {
@@ -177,15 +181,6 @@ export default function PinterestListingViewComponent({
         if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
         if (num >= 1000) return (num / 1000).toFixed(1) + "K";
         return num.toString();
-    };
-
-    const formatDate = (date) => {
-        if (!date) return "N/A";
-        try {
-            return format(new Date(date), "MMM dd, yyyy");
-        } catch {
-            return "N/A";
-        }
     };
 
     if (loading && posts.length === 0) {
@@ -208,8 +203,8 @@ export default function PinterestListingViewComponent({
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
-                                <Pin className="h-5 w-5 text-[#E60023]" />
+                            <div className="h-10 w-10 rounded-xl bg-zinc-50 flex items-center justify-center">
+                                <Layers className="h-5 w-5 text-zinc-600" />
                             </div>
                             <div>
                                 <div className="text-2xl font-black text-gray-900 leading-none mb-1">{stats.totalPosts || 0}</div>
@@ -220,22 +215,22 @@ export default function PinterestListingViewComponent({
                     <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-4">
                             <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
-                                <Heart className="h-5 w-5 text-red-600" />
+                                <Pin className="h-5 w-5 text-[#E60023]" />
                             </div>
                             <div>
                                 <div className="text-2xl font-black text-gray-900 leading-none mb-1">{formatNumber(stats.totalLikes || 0)}</div>
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Likes</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Saves</div>
                             </div>
                         </div>
                     </div>
                     <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
-                                <MessageCircle className="h-5 w-5 text-blue-600" />
+                            <div className="h-10 w-10 rounded-xl bg-green-50 flex items-center justify-center">
+                                <MousePointer2 className="h-5 w-5 text-green-600" />
                             </div>
                             <div>
                                 <div className="text-2xl font-black text-gray-900 leading-none mb-1">{formatNumber(stats.totalReplies || 0)}</div>
-                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Comments</div>
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Total Clicks</div>
                             </div>
                         </div>
                     </div>
@@ -260,7 +255,7 @@ export default function PinterestListingViewComponent({
                         <div className="w-full lg:w-96 relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                             <Input
-                                placeholder="Search by title or description..."
+                                placeholder="Search by content..."
                                 value={filters.searchQuery}
                                 onChange={(e) => handleFilterChange("searchQuery", e.target.value)}
                                 className="pl-9 rounded-xl border-gray-200"
@@ -300,8 +295,8 @@ export default function PinterestListingViewComponent({
                     <Table>
                         <TableHeader className="bg-gray-50/50">
                             <TableRow className="hover:bg-transparent border-gray-100">
-                                <TableHead className="w-[100px] font-bold">Image</TableHead>
-                                <TableHead className="font-bold">Title & Description</TableHead>
+                                <TableHead className="w-[100px] font-bold">Media</TableHead>
+                                <TableHead className="font-bold">Pin & Account</TableHead>
                                 <TableHead className="font-bold">Status</TableHead>
                                 <TableHead className="font-bold">Metrics</TableHead>
                                 <TableHead className="font-bold">Date</TableHead>
@@ -310,16 +305,20 @@ export default function PinterestListingViewComponent({
                         </TableHeader>
                         <TableBody>
                             {posts.map((post) => {
-                                const title = post.title || "Untitled Pin";
-                                const description = post.message || post.description || "";
-                                const mediaUrl = post.content?.media?.[0]?.url || post.imageUrl;
+                                const message = post.message || post.description || post.title || "";
+                                const media = post.content?.media || (post.imageUrl ? [{ url: post.imageUrl, type: "image", name: "Image" }] : []) || [];
                                 const date = post.scheduledAt || post.createdAt;
                                 return (
-                                    <TableRow key={post.id} className={cn("group hover:bg-gray-50/50 transition-colors border-gray-50 cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")}>
-                                        <TableCell onClick={() => onEdit && onEdit(post)}>
+                                    <TableRow key={post.id} className={cn("group hover:bg-gray-50/50 transition-colors border-gray-50 cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
+                                        <TableCell>
                                             <div className="h-12 w-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
-                                                {mediaUrl ? (
-                                                    <img src={mediaUrl} alt="" className="h-full w-full object-cover" />
+                                                {media.length > 0 ? (
+                                                    media[0].type?.startsWith('video') ? (
+                                                        <div className="w-full h-full bg-black relative flex items-center justify-center">
+                                                            <video src={media[0].url} className="w-full h-full object-cover" muted />
+                                                            <div className="absolute inset-0 flex items-center justify-center"><Play className="h-5 w-5 text-white fill-white opacity-80" /></div>
+                                                        </div>
+                                                    ) : (<img src={media[0].url} alt="" className="h-full w-full object-cover" />)
                                                 ) : (
                                                     <div className="h-full w-full flex items-center justify-center bg-zinc-50">
                                                         <PinterestLogo className="h-6 w-6 text-zinc-200" />
@@ -327,48 +326,52 @@ export default function PinterestListingViewComponent({
                                                 )}
                                                 {publishingId === post.id && (
                                                     <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                                        <Loader2 className="h-5 w-5 animate-spin text-[#E60023]" />
+                                                        <Loader2 className="h-5 w-5 animate-spin text-black" />
                                                     </div>
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell onClick={() => onEdit && onEdit(post)}>
+                                        <TableCell>
                                             <div className="space-y-1.5 max-w-md">
-                                                <p className="text-[14px] font-bold text-gray-900 truncate tracking-tight">{title}</p>
-                                                <p className="text-[11px] text-gray-500 line-clamp-1">{description}</p>
+                                                <p className="text-[14px] font-bold text-gray-900 truncate tracking-tight">{post.title || message || "No content provided"}</p>
+
                                                 <div className="flex items-center gap-2">
                                                     <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-full">
                                                         <Avatar className="h-4 w-4">
                                                             <AvatarImage src={post.profilePicture} />
                                                             <AvatarFallback className="text-[6px] font-black">{post.username?.[0]}</AvatarFallback>
                                                         </Avatar>
-                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-tight">@{post.username}</span>
+                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-tight">@{accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Pinterest"}</span>
                                                     </div>
+                                                    <div className="w-1 h-1 rounded-full bg-zinc-200" />
+                                                    <Badge variant="outline" className="text-[9px] font-black uppercase text-zinc-400 border-zinc-100 rounded-md py-0 px-1.5">
+                                                        {post.postType || (media.length > 0 ? (media[0].type?.startsWith('video') ? 'video' : 'image') : 'standard')}
+                                                    </Badge>
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell onClick={() => onEdit && onEdit(post)}>
+                                        <TableCell>
                                             <Badge className={cn("rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm", post.status === 'published' ? "bg-green-50 text-green-700 hover:bg-green-50 border-green-100" : "bg-purple-50 text-purple-700 hover:bg-purple-50 border-purple-100")}>
                                                 {post.status || "published"}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell onClick={() => onEdit && onEdit(post)}>
+                                        <TableCell>
                                             <div className="flex items-center gap-4">
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
-                                                        <Heart className="h-3.5 w-3.5 text-red-500 fill-red-50" /> {formatNumber(post.metrics?.likes)}
+                                                        <Eye className="h-3.5 w-3.5 text-gray-500" /> {formatNumber(post.metrics?.impressions || post.metrics?.views)}
                                                     </div>
-                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Likes</span>
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Views</span>
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
-                                                        <MessageCircle className="h-3.5 w-3.5 text-blue-500 fill-blue-50" /> {formatNumber(post.metrics?.replies)}
+                                                        <Pin className="h-3.5 w-3.5 text-[#E60023]" /> {formatNumber(post.metrics?.saves)}
                                                     </div>
-                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Comments</span>
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Saves</span>
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell onClick={() => onEdit && onEdit(post)}>
+                                        <TableCell>
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-gray-900">
                                                     {format(new Date(date), "MMM dd, yyyy")}
@@ -386,22 +389,26 @@ export default function PinterestListingViewComponent({
                                                 <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
                                                     {post.status === 'published' ? (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`https://www.pinterest.com/pin/${post.pinterestPinId}`, '_blank'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                                <BarChart3 className="h-5 w-5 text-gray-900" />
+                                                                <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                 <Eye className="h-5 w-5 text-gray-900" />
-                                                                <span className="font-bold text-[13px] text-gray-900">View on Pinterest</span>
+                                                                <span className="font-bold text-[13px] text-gray-900">Pin Details</span>
                                                             </DropdownMenuItem>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit && onEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                 <Edit className="h-5 w-5 text-gray-900" />
                                                                 <span className="font-bold text-[13px] text-gray-900">Edit Pin</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group">
-                                                                <Send className="h-5 w-5 text-[#E60023]" />
-                                                                <span className="font-bold text-[13px] text-[#E60023]">Publish Now</span>
+                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group">
+                                                                <Send className="h-5 w-5 text-purple-600" />
+                                                                <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => handleDelete(e, post)}>
+                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEditClick(post, 'delete'); }}>
                                                                 <Trash2 className="h-5 w-5 text-red-600" />
                                                                 <span className="font-bold text-[13px] text-red-600">Delete Pin</span>
                                                             </DropdownMenuItem>
@@ -425,6 +432,12 @@ export default function PinterestListingViewComponent({
                     </Button>
                 </div>
             )}
+            {/* Analytics Modal */}
+            <PinterestAnalyticsModal
+                open={analyticsModalOpen}
+                onOpenChange={setAnalyticsModalOpen}
+                post={selectedPostForAnalytics}
+            />
         </div>
     );
 }
