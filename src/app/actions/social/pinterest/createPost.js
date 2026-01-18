@@ -135,7 +135,10 @@ export async function createPinterestPost({
             mediaSource = {
                 source_type: "video_id",
                 media_id: mediaId,
-                ...(coverImageUrl ? { cover_image_url: coverImageUrl } : {})
+                ...(coverImageUrl
+                    ? { cover_image_url: coverImageUrl }
+                    : { cover_image_key_frame_time: 0 } // Fallback to first frame if no cover image
+                )
             };
         } else {
             // Default: Image
