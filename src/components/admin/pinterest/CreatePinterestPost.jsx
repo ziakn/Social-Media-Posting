@@ -103,13 +103,15 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
             const res = await getPinterestAccounts();
             if (res.success) {
                 setAccounts(res.accounts || []);
-                if (selectedAccount && !res.accounts.some(acc => acc.accountId === selectedAccount)) {
+                // Use loose equality or string conversion to handle potential type mismatches (string vs number)
+                if (selectedAccount && !res.accounts.some(acc => String(acc.accountId) === String(selectedAccount))) {
+                    console.log("Account not found in list, clearing selection", selectedAccount);
                     setSelectedAccount(null);
                 }
             }
         }
         loadAccounts();
-    }, []);
+    }, [selectedAccount]); // Added selectedAccount to dependencies
 
     useEffect(() => {
         if (selectedAccount) {
@@ -119,7 +121,7 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                     setBoards(res.boards);
                     if (!selectedBoard && res.boards.length > 0) {
                         setSelectedBoard(res.boards[0].id);
-                    } else if (selectedBoard && !res.boards.some(board => board.id === selectedBoard)) {
+                    } else if (selectedBoard && !res.boards.some(board => String(board.id) === String(selectedBoard))) {
                         setSelectedBoard(res.boards.length > 0 ? res.boards[0].id : null);
                     }
                 } else {
@@ -238,7 +240,7 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                         </div>
                         <div className="flex flex-wrap gap-4 sm:gap-6 items-center">
                             {accounts.map((acc) => {
-                                const isSelected = selectedAccount === acc.accountId;
+                                const isSelected = String(selectedAccount) === String(acc.accountId);
                                 return (
                                     <div key={acc.id} onClick={() => !isReadOnly && setSelectedAccount(acc.accountId)} className={cn("group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white", isSelected ? "border-[#E60023] bg-white shadow-xl shadow-red-50" : "w-10 h-10 sm:w-12 sm:h-12 border-gray-100 opacity-60 hover:opacity-100 scale-95 hover:scale-100", isReadOnly && "cursor-default opacity-100")}>
                                         <div className="w-8 h-8 sm:w-10 sm:h-10 relative">
@@ -257,7 +259,7 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-[7fr_3fr] gap-8 lg:gap-12 items-start">
+                    <div className="grid grid-cols-1 lg:grid-cols-[6.5fr_3.5fr] gap-8 lg:gap-12 items-start">
                         {/* Editor Section */}
                         <div className="space-y-6 lg:space-y-8">
 

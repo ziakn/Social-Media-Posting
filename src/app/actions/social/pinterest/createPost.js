@@ -107,11 +107,11 @@ export async function createPinterestPost({
         let mediaSource = {};
 
         if (postType === "carousel") {
-            const items = await Promise.all(media.map(async item => ({
+            const items = await Promise.all(media.map(async (item, index) => ({
                 title: title || "",
                 description: message || "",
                 link: link || "",
-                url: needsTestUrl(item.url) ? getTestUrl("image") : await getAbsoluteUrl(item.url)
+                url: needsTestUrl(item.url) ? getTestUrl("image", index) : await getAbsoluteUrl(item.url)
             })));
 
             mediaSource = {
@@ -142,7 +142,7 @@ export async function createPinterestPost({
         } else {
             // Default: Image
             const item = media[0] || { url: "", type: "image" };
-            const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type) : getAbsoluteUrl(item.url);
+            const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type) : await getAbsoluteUrl(item.url);
 
             mediaSource = {
                 source_type: "image_url",

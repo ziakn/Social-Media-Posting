@@ -61,6 +61,7 @@ export default function PinterestCalendarViewComponent({
                         accounts={accounts}
                         onDateClick={onDateClick}
                         onPostClick={onPostClick}
+                        onRefresh={onRefresh}
                     />
                 </div>
             </CardContent>

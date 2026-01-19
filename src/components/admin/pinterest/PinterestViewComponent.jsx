@@ -161,7 +161,8 @@ export default function PinterestViewComponent({
             const res = await deletePinterestPost(post.id);
             if (res.success) {
                 toast.success("Pin deleted");
-                loadPosts(true);
+                if (onRefresh) onRefresh();
+                else loadPosts(true);
             } else {
                 toast.error(res.message);
             }
@@ -175,7 +176,8 @@ export default function PinterestViewComponent({
             const result = await publishPinterestPostNow(post.id);
             if (result.success) {
                 toast.success("Pin published successfully!");
-                loadPosts(true);
+                if (onRefresh) onRefresh();
+                else loadPosts(true);
             } else {
                 toast.error(result.message || "Failed to publish pin");
             }

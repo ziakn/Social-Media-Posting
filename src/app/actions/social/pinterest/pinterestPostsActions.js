@@ -18,6 +18,7 @@ import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
+import { uploadPinterestVideo } from "./videoUtils";
 
 /**
  * Get all Pinterest posts with status filtering, pagination, and enhanced filtering
@@ -244,22 +245,52 @@ export async function publishPinterestPostNow(postId) {
         const media = post.content?.media || [];
         const postType = post.postType || (media.length > 1 ? "carousel" : "standard");
 
+        // Sanitize Link for API compatibility (no localhost)
+        let finalLink = post.link || "";
+        if (finalLink && (finalLink.includes("localhost") || finalLink.includes("127.0.0.1"))) {
+            console.warn("Removing localhost link for Pinterest API compatibility (Scheduled Publish)");
+            finalLink = "";
+        }
+
         if (postType === "carousel" && media.length > 1) {
-            mediaSource = {
-                source_type: "multiple_image_urls",
-                items: media.map(item => ({
+            const items = await Promise.all(media.map(async (item, index) => {
+                const mediaUrl = needsTestUrl(item.url) ? getTestUrl("image", index) : await getAbsoluteUrl(item.url);
+                return {
                     title: post.title || "",
                     description: post.message || post.description || "",
-                    link: post.link || "",
-                    source: {
-                        source_type: "image_url",
-                        url: needsTestUrl(item.url) ? getTestUrl("image") : getAbsoluteUrl(item.url)
-                    }
-                }))
+                    link: finalLink,
+                    url: mediaUrl
+                };
+            }));
+
+            mediaSource = {
+                source_type: "multiple_image_urls",
+                items: items
+            };
+        } else if (postType === "video") {
+            const item = media[0] || { url: "", type: "video" };
+
+            // Upload Video to Pinterest
+            // This process registers, uploads, and waits for processing
+            const mediaId = await uploadPinterestVideo(accessToken, item.url);
+
+            // Get Cover Image URL if available (optional but recommended)
+            let coverImageUrl = item.coverUrl || null;
+            if (coverImageUrl) {
+                coverImageUrl = needsTestUrl(coverImageUrl) ? getTestUrl("image") : await getAbsoluteUrl(coverImageUrl);
+            }
+
+            mediaSource = {
+                source_type: "video_id",
+                media_id: mediaId,
+                ...(coverImageUrl
+                    ? { cover_image_url: coverImageUrl }
+                    : { cover_image_key_frame_time: 0 } // Fallback to first frame if no cover image
+                )
             };
         } else {
-            const item = media[0] || { url: post.imageUrl, type: "IMAGE" };
-            const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type) : getAbsoluteUrl(item.url);
+            const item = media[0] || { url: post.imageUrl, type: "image" };
+            const mediaUrl = needsTestUrl(item.url) ? getTestUrl(String(item.type).toLowerCase()) : await getAbsoluteUrl(item.url);
 
             mediaSource = {
                 source_type: "image_url",
@@ -271,9 +302,12 @@ export async function publishPinterestPostNow(postId) {
             board_id: post.boardId,
             title: post.title || "",
             description: post.message || post.description || "",
-            link: post.link || "",
+            // Only include link if it's not empty
+            ...(finalLink ? { link: finalLink } : {}),
             media_source: mediaSource
         };
+
+        console.log("Pinterest Scheduled Publish Data:", JSON.stringify(pinData, null, 2));
 
         const result = await makePinterestRequest("/pins", pinData, accessToken, "POST");
 

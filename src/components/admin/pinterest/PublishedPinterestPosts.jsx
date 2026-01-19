@@ -223,6 +223,7 @@ export default function PublishedPinterestPosts({ accountId: initialAccountId })
                             </Button>
                         </div>
                         <CreatePinterestPost
+                            key={createInitialData?.id || 'new'}
                             initialData={createInitialData}
                             onSuccess={() => {
                                 setIsCreating(false);

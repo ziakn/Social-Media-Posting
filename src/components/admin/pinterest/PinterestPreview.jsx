@@ -30,7 +30,7 @@ export default function PinterestPreview({
             {/* Pin Card */}
             <div className={cn(
                 "w-full bg-white overflow-hidden group relative transition-all duration-500",
-                compact ? "rounded-2xl border border-gray-100" : "max-w-[280px] sm:max-w-[360px] rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.15)] transition-all duration-700"
+                compact ? "rounded-2xl border border-gray-100" : "max-w-[320px] sm:max-w-[420px] rounded-[1.5rem] sm:rounded-[3rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.15)] transition-all duration-700"
             )}>
 
                 {/* Board Context Header (Top) */}
