@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, serverTimestamp, query, collection, where, getDocs } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { getValidPinterestAccessToken } from "./connectAccount";
 
 /**
  * Fetch analytics for a Pinterest post
@@ -45,19 +46,9 @@ export async function getPinterestPostAnalytics(pageId, postId, forceRefresh = f
             // Get Account Access Token
             const targetAccountId = pageId || postData.accountId;
 
-            const q = query(
-                collection(db, "socialAccounts"),
-                where("userId", "==", user.id),
-                where("accountId", "==", targetAccountId),
-                where("platform", "==", "pinterest"),
-                where("status", "==", "active")
-            );
+            let { accessToken } = await getValidPinterestAccessToken(user.id, targetAccountId);
 
-            const accountSnap = await getDocs(q);
-
-            if (!accountSnap.empty) {
-                const accountData = accountSnap.docs[0].data();
-                const accessToken = accountData.accessToken;
+            if (accessToken) {
 
                 // 3. Call Pinterest API
                 // https://api.pinterest.com/v5/pins/{pin_id}/analytics
@@ -74,48 +65,97 @@ export async function getPinterestPostAnalytics(pageId, postId, forceRefresh = f
 
                 const url = `https://api.pinterest.com/v5/pins/${pinterestPinId}/analytics?start_date=${startDate}&end_date=${endDate}&metric_types=${metricsList}`;
 
-                const response = await fetch(url, {
+                let response = await fetch(url, {
                     headers: {
                         "Authorization": `Bearer ${accessToken}`,
                     }
                 });
 
-                const data = await response.json();
+                let data = await response.json();
 
                 if (!response.ok) {
-                    // Check if it's because pin is too new or other error
+                    // Check for Authentication Error (401) and retry once with forced refresh
+                    if (response.status === 401) {
+                        console.warn("Got 401 from Pinterest Analytics. Attempting token refresh and retry...");
+                        const { accessToken: newAccessToken } = await getValidPinterestAccessToken(user.id, targetAccountId, true);
+
+                        if (newAccessToken) {
+                            // Retry the request
+                            const retryResponse = await fetch(url, {
+                                headers: { "Authorization": `Bearer ${newAccessToken}` }
+                            });
+
+                            if (retryResponse.ok) {
+                                // Update variables to proceed with success path
+                                data = await retryResponse.json();
+                                response = retryResponse;
+                                accessToken = newAccessToken; // Update for fallbacks
+                            } else {
+                                console.warn("Retry failed:", await retryResponse.text());
+                                // Update accessToken anyway so fallbacks try with new token?
+                                // Yes, if we got a new token, it's better than the old one.
+                                accessToken = newAccessToken;
+                            }
+                        }
+                    }
+
                     console.warn("Pinterest Analytics API Error:", data);
 
-                    // Fallback: try to get basic pin info which has some counts
-                    const pinUrl = `https://api.pinterest.com/v5/pins/${pinterestPinId}`;
+                    // Fallback: try to get basic pin info with metrics
+                    const pinUrl = `https://api.pinterest.com/v5/pins/${pinterestPinId}?pin_metrics=true`;
                     const pinRes = await fetch(pinUrl, {
                         headers: { "Authorization": `Bearer ${accessToken}` }
                     });
                     const pinDataApi = await pinRes.json();
 
                     if (pinRes.ok) {
-                        // Note: Standard Pin object might not have detailed metrics but has saves/comments sometimes?
-                        // V5 Pin object usually has 'note', 'link', etc. Not metrics directly.
-                        // We will just store what we have or 0s.
+                        const lifetime = pinDataApi.pin_metrics?.lifetime || {};
+                        metrics = {
+                            views: lifetime.impression || metrics.views || 0,
+                            clicks: lifetime.pin_click || lifetime.outbound_click || metrics.clicks || 0,
+                            saves: lifetime.save || metrics.saves || 0,
+                            impressions: lifetime.impression || metrics.impressions || 0,
+                            outro: metrics.outro || 0,
+                            reactions: lifetime.reaction || 0,
+                            comments: lifetime.comment || 0
+                        };
+
+                        analyticsData = {
+                            ...analyticsData,
+                            ...pinDataApi,
+                            permalink: `https://www.pinterest.com/pin/${pinterestPinId}`
+                        };
+                    } else {
+                        analyticsData = {
+                            ...analyticsData,
+                            permalink: `https://www.pinterest.com/pin/${pinterestPinId}`
+                        };
                     }
-
-                    // Allow partial success if analytics fail
                 } else {
-                    // Pinterest V5 Analytics returns { "all": { "summary_metrics": { ... }, "daily_metrics": [...] } }
-                    // or similar structure.
+                    // Try to also get lifetime metrics for reactions/comments which are NOT in the analytics endpoint
+                    const pinUrl = `https://api.pinterest.com/v5/pins/${pinterestPinId}?pin_metrics=true`;
+                    const pinRes = await fetch(pinUrl, {
+                        headers: { "Authorization": `Bearer ${accessToken}` }
+                    });
+                    const pinDataApi = await pinRes.json();
+                    const lifetime = pinRes.ok ? (pinDataApi.pin_metrics?.lifetime || {}) : {};
 
-                    // Helper: map Pinterest metrics to our standard keys
-                    const summary = data.summary_metrics || {};
+                    // Pinterest V5 Analytics returns { "all": { "summary_metrics": { ... }, "daily_metrics": [...] } }
+                    const summary = data.all?.summary_metrics || data.summary_metrics || {};
 
                     metrics = {
-                        views: summary.IMPRESSION || 0,
-                        clicks: summary.PIN_CLICK || summary.CLICK || 0, // Outbound clicks
-                        saves: summary.SAVE || 0,
-                        impressions: summary.IMPRESSION || 0,
+                        views: summary.IMPRESSION || lifetime.impression || 0,
+                        clicks: summary.PIN_CLICK || summary.CLICK || lifetime.pin_click || 0,
+                        saves: summary.SAVE || lifetime.save || 0,
+                        impressions: summary.IMPRESSION || lifetime.impression || 0,
+                        outro: summary.OUTRO || 0,
+                        reactions: lifetime.reaction || 0,
+                        comments: lifetime.comment || 0
                     };
 
                     analyticsData = {
                         ...data,
+                        pin_details: pinRes.ok ? pinDataApi : null,
                         permalink: `https://www.pinterest.com/pin/${pinterestPinId}`
                     };
 
@@ -131,13 +171,24 @@ export async function getPinterestPostAnalytics(pageId, postId, forceRefresh = f
             }
         }
 
+        // Determine what to return for lastRefreshed
+        let resolvedSyncTime = null;
+        if (needsRefresh) {
+            // If we successfully performed a refresh (or at least attempted it with active account)
+            resolvedSyncTime = now.toISOString();
+        } else if (lastUpdate.getTime() > 0) {
+            // Use cached time if valid
+            resolvedSyncTime = lastUpdate.toISOString();
+        }
+
         return {
             success: true,
             data: {
                 ...analyticsData,
+                metrics: metrics, // Pass processed metrics directly
                 permalink: analyticsData.permalink || `https://www.pinterest.com/pin/${pinterestPinId}`
             },
-            lastRefreshed: (needsRefresh && !forceRefresh) ? now.toISOString() : lastUpdate.toISOString()
+            lastRefreshed: resolvedSyncTime
         };
 
     } catch (error) {

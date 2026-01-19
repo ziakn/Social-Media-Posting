@@ -78,7 +78,7 @@ export async function checkPinterestConnection() {
  * Checks if the current token is expired or about to expire.
  * If so, uses the refresh token to get a new access token.
  */
-export async function getValidPinterestAccessToken(userId, platformUserId) {
+export async function getValidPinterestAccessToken(userId, platformUserId, forceRefresh = false) {
     const q = query(
         collection(db, "socialAccounts"),
         where("userId", "==", userId),
@@ -105,8 +105,10 @@ export async function getValidPinterestAccessToken(userId, platformUserId) {
 
     let accessToken = account.accessToken;
 
-    if (expiryDate.getTime() - now.getTime() < fiveMinutes) {
-        console.log("Pinterest token expired or expiring soon. Refreshing...");
+
+
+    if (forceRefresh || (expiryDate.getTime() - now.getTime() < fiveMinutes)) {
+        console.log(`Pinterest token ${forceRefresh ? "forced refresh" : "expired/expiring soon"}. Refreshing...`);
         accessToken = await refreshPinterestToken(docRef, account.refreshToken);
     }
 

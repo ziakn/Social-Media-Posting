@@ -19,6 +19,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import { uploadPinterestVideo } from "./videoUtils";
+import { getValidPinterestAccessToken } from "./connectAccount";
 
 /**
  * Get all Pinterest posts with status filtering, pagination, and enhanced filtering
@@ -209,16 +210,9 @@ async function makePinterestRequest(endpoint, body, accessToken, method = "POST"
  * Helper: Get Account
  */
 async function getPinterestAccount(userId, platformUserId) {
-    const q = query(
-        collection(db, "socialAccounts"),
-        where("userId", "==", userId),
-        where("accountId", "==", platformUserId),
-        where("platform", "==", "pinterest"),
-        where("status", "==", "active")
-    );
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) throw new Error("Pinterest account not found");
-    return snapshot.docs[0].data();
+    // Proactively refresh token if needed ensure actions don't fail
+    const { accessToken } = await getValidPinterestAccessToken(userId, platformUserId);
+    return { accessToken };
 }
 
 /**

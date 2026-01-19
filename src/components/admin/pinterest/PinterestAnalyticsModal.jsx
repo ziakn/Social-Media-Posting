@@ -7,7 +7,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
@@ -22,7 +22,8 @@ import {
     RotateCw,
     MoreHorizontal,
     Pin,
-    ExternalLink
+    ExternalLink,
+    MessageSquare
 } from "lucide-react";
 import { getPinterestPostAnalytics } from "@/app/actions/social/pinterest/getAnalytics";
 import { toast } from "sonner";
@@ -105,8 +106,20 @@ export default function PinterestAnalyticsModal({
             desc: "Clicks to destination"
         },
         {
+            label: "Reactions",
+            value: data?.metrics?.reactions || 0,
+            icon: Heart,
+            desc: "Hearts & Likes"
+        },
+        {
+            label: "Comments",
+            value: data?.metrics?.comments || 0,
+            icon: MessageSquare,
+            desc: "Public responses"
+        },
+        {
             label: "Engagement",
-            value: (data?.metrics?.saves || 0) + (data?.metrics?.clicks || 0),
+            value: (data?.metrics?.saves || 0) + (data?.metrics?.clicks || 0) + (data?.metrics?.reactions || 0) + (data?.metrics?.comments || 0),
             icon: TrendingUp,
             desc: "Total interactions"
         }
@@ -127,20 +140,20 @@ export default function PinterestAnalyticsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-full max-w-full sm:w-[95vw] md:w-[85vw] md:max-w-[1200px] h-full sm:h-[90vh] p-0 overflow-hidden sm:rounded-[24px]">
+            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-full sm:h-[90vh] p-0 overflow-hidden sm:rounded-[24px]">
                 {/* Header */}
-                <div className="px-6 py-4 border-b flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-[#E60023] rounded-lg">
+                <div className="px-6 py-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
+                    <div className="flex items-center gap-3 text-[#E60023]">
+                        <div className="p-2 bg-[#E60023] rounded-lg shadow-sm">
                             <PinterestLogo className="h-5 w-5 fill-white" />
                         </div>
-                        <DialogTitle className="text-xl font-bold tracking-tight">Pinterest Analytics</DialogTitle>
+                        <DialogTitle className="text-xl font-black tracking-tight text-black">Pinterest Insights</DialogTitle>
                     </div>
                     <div className="flex items-center gap-4">
                         {lastRefreshed && (
                             <div className="hidden sm:flex flex-col items-end">
-                                <span className="text-[10px] uppercase font-bold text-gray-400 leading-tight">Last Updated</span>
-                                <span className="text-xs font-semibold text-gray-600">
+                                <span className="text-[10px] uppercase font-black text-gray-300 leading-tight tracking-widest">Last Synced</span>
+                                <span className="text-xs font-bold text-gray-500">
                                     {formatDistanceToNow(new Date(lastRefreshed), { addSuffix: true })}
                                 </span>
                             </div>
@@ -148,11 +161,11 @@ export default function PinterestAnalyticsModal({
                         <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 gap-2 rounded-full font-bold px-4"
+                            className="h-9 gap-2 rounded-full font-black px-4 text-xs uppercase tracking-wider border-gray-200 hover:bg-gray-50 transition-all active:scale-95"
                             onClick={() => loadAnalytics(true)}
                             disabled={loading || refreshing}
                         >
-                            <RotateCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
+                            <RotateCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
                             {refreshing ? "Updating..." : "Refresh"}
                         </Button>
                     </div>
@@ -160,35 +173,40 @@ export default function PinterestAnalyticsModal({
 
                 <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)] sm:h-[calc(90vh-73px)] overflow-hidden">
                     {/* Left Column - Metrics */}
-                    <ScrollArea className="flex-1 lg:border-r">
-                        <div className="p-6 space-y-8">
+                    <ScrollArea className="flex-1 lg:border-r bg-white p-6">
+                        <div className="max-w-3xl mx-auto space-y-10 py-2">
                             {loading ? (
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-10">
+                                    <div className="grid grid-cols-2 gap-6">
                                         {[...Array(4)].map((_, i) => (
-                                            <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+                                            <Skeleton key={i} className="h-32 w-full rounded-[24px]" />
                                         ))}
                                     </div>
-                                    <Skeleton className="h-40 w-full rounded-2xl" />
+                                    <Skeleton className="h-44 w-full rounded-[24px]" />
                                 </div>
                             ) : (
                                 <>
-                                    <div>
-                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Performance Summary</h3>
-                                        <div className="grid grid-cols-2 gap-4">
+                                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Core Performance</h3>
+                                            <Badge variant="secondary" className="bg-green-50 text-green-600 text-[10px] font-bold px-3 py-1 rounded-full border-none">
+                                                Active Since {post?.publishedAt ? format(new Date(post.publishedAt), "MMM dd") : "Publish"}
+                                            </Badge>
+                                        </div>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                                             {metrics.map((metric, i) => (
                                                 <div
                                                     key={i}
-                                                    className="flex flex-col gap-1 p-5 bg-gray-50/50 border border-gray-100 rounded-2xl transition-all hover:bg-white hover:shadow-sm"
+                                                    className="group flex flex-col gap-2 p-6 bg-gray-50/50 border border-gray-100 rounded-[24px] transition-all hover:bg-white hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-gray-200"
                                                 >
                                                     <div className="flex items-center justify-between">
-                                                        <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-50">
-                                                            <metric.icon className="h-4 w-4 text-[#E60023]" />
+                                                        <div className="p-2.5 bg-white rounded-xl shadow-sm border border-gray-50 group-hover:bg-[#E60023] group-hover:border-[#E60023] transition-colors">
+                                                            <metric.icon className="h-4 w-4 text-[#E60023] group-hover:text-white transition-colors" />
                                                         </div>
                                                     </div>
-                                                    <div className="mt-2">
-                                                        <div className="text-2xl font-black tracking-tight">{formatNumber(metric.value)}</div>
-                                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{metric.label}</p>
+                                                    <div className="mt-3">
+                                                        <div className="text-3xl font-black text-black tracking-tighter leading-none mb-1">{formatNumber(metric.value)}</div>
+                                                        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">{metric.label}</p>
                                                     </div>
                                                 </div>
                                             ))}
@@ -197,44 +215,54 @@ export default function PinterestAnalyticsModal({
 
                                     <Separator className="bg-gray-100" />
 
-                                    <div>
-                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Post Context</h3>
-                                        <div className="space-y-4">
-                                            <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-[13px] font-bold text-gray-600">Published On</span>
+                                    <div className="animate-in fade-in slide-in-from-bottom-6 duration-700">
+                                        <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Context & Metadata</h3>
+                                        <div className="grid grid-cols-1 gap-4">
+                                            <div className="p-5 bg-white rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-gray-50 rounded-lg">
+                                                        <Calendar className="h-4 w-4 text-gray-400" />
+                                                    </div>
+                                                    <span className="text-[13px] font-bold text-gray-500">Live Date</span>
                                                 </div>
-                                                <span className="text-[13px] font-bold text-black">
-                                                    {post?.publishedAt ? format(new Date(post.publishedAt), "MMM dd, yyyy HH:mm") : "N/A"}
+                                                <span className="text-[13px] font-black text-black">
+                                                    {post?.publishedAt ? format(new Date(post.publishedAt), "MMM dd, yyyy HH:mm") : "Not Published"}
                                                 </span>
                                             </div>
 
-                                            <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <Info className="h-4 w-4 text-gray-400" />
-                                                    <span className="text-[13px] font-bold text-gray-600">Pin Title & Description</span>
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <div className="text-[14px] font-bold text-gray-900 leading-snug">
-                                                        {post?.title || "No Title"}
+                                            <div className="p-6 bg-gray-50/30 rounded-[24px] border border-gray-100 space-y-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                                                        <Pin className="h-4 w-4 text-[#E60023]" />
                                                     </div>
-                                                    <div className="text-[13px] leading-relaxed text-gray-600 font-medium">
-                                                        {post?.message || post?.description || "No description"}
+                                                    <span className="text-[13px] font-bold text-gray-500">Editorial Content</span>
+                                                </div>
+                                                <div className="space-y-3">
+                                                    <div className="text-[16px] font-black text-black leading-tight">
+                                                        {post?.title || "Untitled Pin"}
+                                                    </div>
+                                                    <div className="text-[14px] leading-relaxed text-gray-600 font-medium bg-white p-5 rounded-xl border border-gray-50 max-h-[120px] overflow-y-auto">
+                                                        {post?.message || post?.description || "No description provided."}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             {data?.permalink && (
-                                                <Button variant="outline" className="w-full h-12 rounded-xl border-gray-200 justify-between group" asChild>
-                                                    <a href={data.permalink} target="_blank" rel="noopener noreferrer">
-                                                        <span className="flex items-center gap-2 text-gray-600 font-bold group-hover:text-[#E60023]">
-                                                            <PinterestLogo className="h-4 w-4 fill-current" />
-                                                            View on Pinterest
-                                                        </span>
-                                                        <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-[#E60023]" />
-                                                    </a>
-                                                </Button>
+                                                <a
+                                                    href={data.permalink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={cn(
+                                                        buttonVariants({ variant: "outline", size: "lg" }),
+                                                        "w-full h-14 rounded-2xl border-gray-200 justify-between group px-6 hover:bg-[#E60023] hover:border-[#E60023] transition-all flex items-center"
+                                                    )}
+                                                >
+                                                    <span className="flex items-center gap-3 text-gray-600 font-bold group-hover:text-white transition-colors">
+                                                        <PinterestLogo className="h-5 w-5 fill-current" />
+                                                        Open on Pinterest.com
+                                                    </span>
+                                                    <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-white transition-colors" />
+                                                </a>
                                             )}
                                         </div>
                                     </div>
@@ -243,51 +271,63 @@ export default function PinterestAnalyticsModal({
                         </div>
                     </ScrollArea>
 
-                    {/* Right Column - Preview */}
-                    <div className="w-full lg:w-[440px] bg-gray-50/30 flex items-center justify-center p-4 lg:p-8 border-t lg:border-t-0">
+                    {/* Right Column - Premium Pinterest Preview */}
+                    <div className="w-full lg:w-[480px] bg-gray-50/50 flex flex-col items-center justify-center p-8 lg:p-12 border-t lg:border-t-0 relative">
                         {loading ? (
-                            <Skeleton className="w-[340px] h-[500px] rounded-[32px]" />
+                            <Skeleton className="w-[360px] h-[540px] rounded-[40px] shadow-2xl" />
                         ) : (
-                            <div className="w-full max-w-[340px] bg-white rounded-[32px] shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
-                                <div className="relative">
-                                    {getMediaUrl() && (
-                                        <div className="w-full aspect-[2/3] bg-gray-100 relative group overflow-hidden">
-                                            {isVideo() ? (
-                                                <video
-                                                    src={getMediaUrl()}
-                                                    className="w-full h-full object-cover"
-                                                    controls
-                                                    playsInline
-                                                />
-                                            ) : (
-                                                <img
-                                                    src={getMediaUrl()}
-                                                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                                    alt="Pin"
-                                                />
-                                            )}
-                                            <div className="absolute top-4 right-4 bg-red-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-                                                Save
+                            <div className="w-full max-w-[360px] animate-in zoom-in-95 duration-500">
+                                <div className="text-center mb-6">
+                                    <span className="text-[10px] font-black uppercase text-gray-300 tracking-[0.3em]">Live Pinterest Preview</span>
+                                </div>
+                                <div className="bg-white rounded-[40px] shadow-[0_40px_100px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden flex flex-col group cursor-default">
+                                    <div className="relative">
+                                        {getMediaUrl() && (
+                                            <div className="w-full aspect-[2/3] bg-gray-100 relative overflow-hidden">
+                                                {isVideo() ? (
+                                                    <video
+                                                        src={getMediaUrl()}
+                                                        className="w-full h-full object-cover"
+                                                        controls
+                                                        playsInline
+                                                    />
+                                                ) : (
+                                                    <img
+                                                        src={getMediaUrl()}
+                                                        className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                                                        alt="Pin"
+                                                    />
+                                                )}
+                                                <div className="absolute top-6 right-6 bg-[#E60023] text-white text-[13px] font-black px-5 py-2.5 rounded-full shadow-2xl transition-transform active:scale-90 opacity-100 scale-100">
+                                                    Save
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="p-8 flex flex-col gap-4">
+                                        <h3 className="font-black text-black text-xl leading-[1.2] line-clamp-3">
+                                            {post?.title || "The perfect inspiration for your next project"}
+                                        </h3>
+                                        <div className="flex items-center gap-3 mt-4 p-2 bg-gray-50 rounded-2xl border border-gray-100 shadow-sm transition-all hover:bg-white group/user overflow-hidden">
+                                            <Avatar className="h-10 w-10 ring-2 ring-white">
+                                                <AvatarImage src={post?.profilePicture} className="object-cover" />
+                                                <AvatarFallback className="bg-gray-200 font-bold text-gray-400">{post?.username?.[0] || 'P'}</AvatarFallback>
+                                            </Avatar>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-[13px] font-black text-black truncate pr-4">
+                                                    {post?.username || "Studio Admin"}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active Creator</span>
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                                <div className="p-5 flex flex-col gap-2">
-                                    <h3 className="font-bold text-gray-900 text-lg leading-tight line-clamp-2">
-                                        {post?.title || "No Title"}
-                                    </h3>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <Avatar className="h-8 w-8">
-                                            <AvatarImage src={post?.profilePicture} />
-                                            <AvatarFallback>{post?.username?.[0]}</AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-sm font-semibold text-gray-700">
-                                            {post?.username || "Pinterest User"}
-                                        </span>
                                     </div>
                                 </div>
                             </div>
                         )}
+
+                        {/* Decorative Background Element */}
+                        <div className="absolute -top-20 -right-20 w-64 h-64 bg-red-50 rounded-full blur-3xl opacity-50 z-0 pointer-events-none" />
+                        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gray-100 rounded-full blur-3xl opacity-50 z-0 pointer-events-none" />
                     </div>
                 </div>
             </DialogContent>
