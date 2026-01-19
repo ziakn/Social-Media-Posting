@@ -198,46 +198,39 @@ export default function PublishedPinterestPosts({ accountId: initialAccountId })
             </Tabs>
 
             <Dialog open={isCreating} onOpenChange={setIsCreating}>
-                <DialogContent className="!w-[80vw] !max-w-[80vw] h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none" aria-describedby={undefined} showCloseButton={false}>
-                    <div className="hidden">
-                        <DialogTitle>Post Creator</DialogTitle>
-                    </div>
-                    {isCreating && (
-                        <div className="bg-white w-full h-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-                            <div className="px-6 py-4 bg-white border-b border-gray-50 flex items-center justify-between font-sans shrink-0">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-8 h-8 bg-[#E60023] rounded-xl shadow-lg flex items-center justify-center transform rotate-3">
-                                        <PinterestLogo className="h-4 w-4 fill-white" />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <h2 className="text-sm font-black text-gray-900 leading-none">Post Creator</h2>
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Pinterest Studio v2.0</span>
-                                    </div>
+                <DialogContent className="!w-full sm:!w-[80vw] sm:!max-w-[80vw] !h-full sm:!h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none" aria-describedby={undefined} showCloseButton={false}>
+                    <div className="bg-white w-full h-full rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                        <div className="px-6 py-4 bg-white border-b border-gray-50 flex items-center justify-between font-sans shrink-0">
+                            <div className="flex items-center gap-4">
+                                <div className="w-8 h-8 bg-[#E60023] rounded-xl shadow-lg flex items-center justify-center transform rotate-3">
+                                    <PinterestLogo className="h-4 w-4 fill-white" />
                                 </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => {
-                                        setIsCreating(false);
-                                        setCreateInitialData(null);
-                                    }}
-                                    className="rounded-full hover:bg-gray-50 text-gray-400 hover:text-black transition-all"
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
+                                <div className="flex flex-col">
+                                    <DialogTitle className="text-sm font-black text-gray-900 leading-none">Post Creator</DialogTitle>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Pinterest Studio v2.0</span>
+                                </div>
                             </div>
-                            <div className="flex-1 overflow-hidden">
-                                <CreatePinterestPost
-                                    initialData={createInitialData}
-                                    onSuccess={() => {
-                                        setIsCreating(false);
-                                        setCreateInitialData(null);
-                                        handleRefresh();
-                                    }}
-                                />
-                            </div>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                    setIsCreating(false);
+                                    setCreateInitialData(null);
+                                }}
+                                className="rounded-full hover:bg-gray-50 text-gray-400 hover:text-black transition-all"
+                            >
+                                <X className="h-4 w-4" />
+                            </Button>
                         </div>
-                    )}
+                        <CreatePinterestPost
+                            initialData={createInitialData}
+                            onSuccess={() => {
+                                setIsCreating(false);
+                                setCreateInitialData(null);
+                                handleRefresh();
+                            }}
+                        />
+                    </div>
                 </DialogContent>
             </Dialog>
 

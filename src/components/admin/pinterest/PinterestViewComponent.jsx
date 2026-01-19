@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -361,67 +362,27 @@ export default function PinterestViewComponent({
                         const mediaUrl = post.content?.media?.[0]?.url || post.imageUrl;
 
                         return (
-                            <div key={post.id} className={cn("group relative flex flex-col transition-all duration-300", publishingId === post.id && "opacity-70 pointer-events-none")}>
-                                <DropdownMenu>
-                                    <div className="relative aspect-[2/3] rounded-[32px] overflow-hidden bg-neutral-100 group/media shadow-sm hover:shadow-xl transition-shadow duration-300">
-                                        <DropdownMenuTrigger asChild>
-                                            <div className="group/media relative w-full aspect-[2/3] rounded-[32px] overflow-hidden bg-gray-50 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer">
-                                                {mediaUrl ? (
-                                                    <img
-                                                        src={mediaUrl}
-                                                        alt={post.title}
-                                                        className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-700"
-                                                    />
-                                                ) : (
-                                                    <div className="flex items-center justify-center w-full h-full text-gray-400">No Media</div>
-                                                )}
+                            <Card key={post.id} className={cn("group relative flex flex-col transition-all duration-300 cursor-pointer rounded-[32px] overflow-hidden border border-gray-100 shadow-sm hover:shadow-md bg-white", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => handleEditClick(post)}>
+                                <div className="relative aspect-[2/3] rounded-[32px] overflow-hidden bg-neutral-100 group/media shadow-sm hover:shadow-xl transition-shadow duration-300">
+                                    <div className="group/media relative w-full aspect-[2/3] rounded-[32px] overflow-hidden bg-gray-50 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500">
+                                        {mediaUrl ? (
+                                            <img
+                                                src={mediaUrl}
+                                                alt={post.title}
+                                                className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-700"
+                                            />
+                                        ) : (
+                                            <div className="flex items-center justify-center w-full h-full text-gray-400">No Media</div>
+                                        )}
 
-                                                {/* Top Right Three Dots Overlay */}
-                                                <div className="absolute top-4 right-4 h-9 w-9 rounded-full bg-white/95 hover:bg-white flex items-center justify-center shadow-lg border border-gray-100 opacity-60 group-hover/media:opacity-100 transition-all duration-300 z-10 scale-90 group-hover/media:scale-110 active:scale-95 cursor-pointer">
+                                        {/* Top Right Three Dots Overlay */}
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <div onClick={(e) => e.stopPropagation()} className="absolute top-4 right-4 h-9 w-9 rounded-full bg-white/95 hover:bg-white flex items-center justify-center shadow-lg border border-gray-100 opacity-60 group-hover/media:opacity-100 transition-all duration-300 z-10 scale-90 group-hover/media:scale-110 active:scale-95 cursor-pointer">
                                                     <MoreHorizontal className="h-5 w-5 text-gray-900" />
                                                 </div>
-
-                                                {/* Dark Overlay on Hover */}
-                                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                                            </div>
-                                        </DropdownMenuTrigger>
-
-                                        {isScheduled && (
-                                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
-                                                <Calendar className="w-3.5 h-3.5" />
-                                                <span className="uppercase tracking-widest">{formatDate(post.scheduledAt)}</span>
-                                            </div>
-                                        )}
-
-                                        {publishingId === post.id && (
-                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-[60]">
-                                                <Loader2 className="h-8 w-8 animate-spin text-[#E60023]" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <DropdownMenuContent align="start" className="w-[540px] p-0 overflow-hidden border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white rounded-[32px]">
-                                        <div className="flex">
-                                            {/* Left side: Pinterest post design */}
-                                            <div className="w-[320px] flex-shrink-0 bg-gray-50/50 p-4 border-r border-gray-100/50">
-                                                <PinterestPreview
-                                                    title={post.title}
-                                                    description={post.message || post.description}
-                                                    content={{
-                                                        message: post.message || post.description || "",
-                                                        media: post.content?.media || (post.imageUrl ? [{ url: post.imageUrl, type: "image/jpeg" }] : [])
-                                                    }}
-                                                    imageUrl={mediaUrl}
-                                                    page={accounts.find(a => a.accountId === post.accountId) || { username: post.username || "Pinterest User" }}
-                                                    boardName={(() => {
-                                                        const account = accounts.find(a => a.accountId === post.accountId);
-                                                        return account?.boards?.find(b => b.id === post.boardId)?.name || "";
-                                                    })()}
-                                                    compact={true}
-                                                />
-                                            </div>
-
-                                            {/* Right side: Actions */}
-                                            <div className="w-[220px] bg-white p-3 flex flex-col justify-center gap-1.5">
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
                                                 {post.status === 'published' ? (
                                                     <>
                                                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
@@ -450,10 +411,23 @@ export default function PinterestViewComponent({
                                                         </DropdownMenuItem>
                                                     </>
                                                 )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+
+                                        {isScheduled && (
+                                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                                                <Calendar className="w-3.5 h-3.5" />
+                                                <span className="uppercase tracking-widest">{formatDate(post.scheduledAt)}</span>
                                             </div>
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
+                                        )}
+
+                                        {publishingId === post.id && (
+                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-[60]">
+                                                <Loader2 className="h-8 w-8 animate-spin text-[#E60023]" />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
 
                                 <div className="mt-3 px-2 space-y-1.5">
                                     <div className="flex items-start justify-between gap-2">
@@ -464,7 +438,7 @@ export default function PinterestViewComponent({
                                             "rounded-full px-2 py-0 text-[8px] font-black uppercase tracking-wider shrink-0",
                                             post.status === 'published' ? "bg-green-50 text-green-700 border-green-100" : "bg-purple-50 text-purple-700 border-purple-100"
                                         )}>
-                                            {post.status === 'published' ? "Published" : "Future Pin"}
+                                            {post.status === 'published' ? "Published" : "Scheduled"}
                                         </Badge>
                                     </div>
 
@@ -500,20 +474,23 @@ export default function PinterestViewComponent({
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </Card>
                         );
                     })}
                 </div>
-            )}
+            )
+            }
 
-            {pagination.hasMore && (
-                <div className="flex justify-center pt-6">
-                    <Button onClick={handleLoadMore} disabled={loading} variant="outline" size="lg" className="w-full sm:w-auto min-w-[200px]">
-                        {loading ? "Loading..." : "Load More Activity"}
-                        {!loading && <History className="ml-2 h-4 w-4" />}
-                    </Button>
-                </div>
-            )}
+            {
+                pagination.hasMore && (
+                    <div className="flex justify-center pt-6">
+                        <Button onClick={handleLoadMore} disabled={loading} variant="outline" size="lg" className="w-full sm:w-auto min-w-[200px]">
+                            {loading ? "Loading..." : "Load More Activity"}
+                            {!loading && <History className="ml-2 h-4 w-4" />}
+                        </Button>
+                    </div>
+                )
+            }
 
             {/* Analytics Modal */}
             <PinterestAnalyticsModal
@@ -521,6 +498,6 @@ export default function PinterestViewComponent({
                 onOpenChange={setAnalyticsModalOpen}
                 post={selectedPostForAnalytics}
             />
-        </div>
+        </div >
     );
 }

@@ -127,7 +127,7 @@ export default function PinterestAnalyticsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-[24px]">
+            <DialogContent className="w-full max-w-full sm:w-[95vw] md:w-[85vw] md:max-w-[1200px] h-full sm:h-[90vh] p-0 overflow-hidden sm:rounded-[24px]">
                 {/* Header */}
                 <div className="px-6 py-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -158,9 +158,9 @@ export default function PinterestAnalyticsModal({
                     </div>
                 </div>
 
-                <div className="flex h-[calc(90vh-73px)] overflow-hidden">
+                <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)] sm:h-[calc(90vh-73px)] overflow-hidden">
                     {/* Left Column - Metrics */}
-                    <ScrollArea className="flex-1 border-r">
+                    <ScrollArea className="flex-1 lg:border-r">
                         <div className="p-6 space-y-8">
                             {loading ? (
                                 <div className="space-y-6">
@@ -244,11 +244,11 @@ export default function PinterestAnalyticsModal({
                     </ScrollArea>
 
                     {/* Right Column - Preview */}
-                    <div className="w-[440px] bg-gray-50/30 flex items-center justify-center p-8">
+                    <div className="w-full lg:w-[440px] bg-gray-50/30 flex items-center justify-center p-4 lg:p-8 border-t lg:border-t-0">
                         {loading ? (
                             <Skeleton className="w-[340px] h-[500px] rounded-[32px]" />
                         ) : (
-                            <div className="w-[340px] bg-white rounded-[32px] shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
+                            <div className="w-full max-w-[340px] bg-white rounded-[32px] shadow-2xl border border-gray-100 overflow-hidden flex flex-col">
                                 <div className="relative">
                                     {getMediaUrl() && (
                                         <div className="w-full aspect-[2/3] bg-gray-100 relative group overflow-hidden">

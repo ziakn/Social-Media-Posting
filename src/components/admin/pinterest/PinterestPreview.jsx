@@ -23,25 +23,14 @@ export default function PinterestPreview({
 
     return (
         <div className={cn(
-            "flex flex-col items-center justify-center font-sans",
-            compact ? "p-0 bg-transparent border-none h-auto min-h-0 w-full" : "p-4 lg:p-6 bg-gray-100/30 rounded-[3rem] border border-dashed border-gray-200 h-full min-h-[500px]"
+            "flex flex-col items-center justify-center font-sans transition-all duration-500 h-full",
+            compact ? "p-0 bg-transparent" : "p-4 sm:p-6"
         )}>
-            {/* Context Label */}
-            {!compact && (
-                <div className="mb-10 flex flex-col items-center gap-3">
-                    <div className="flex items-center gap-2.5 px-3 py-1 bg-white rounded-full border border-gray-100 shadow-sm">
-                        <PinterestLogo className="h-3 w-3" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Pinterest Preview</span>
-                        <div className="w-1 h-1 rounded-full bg-red-400" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-[#E60023]">Live</span>
-                    </div>
-                </div>
-            )}
 
             {/* Pin Card */}
             <div className={cn(
-                "w-full bg-white overflow-hidden group relative",
-                compact ? "rounded-2xl border border-gray-100" : "max-w-[360px] rounded-[2.5rem] shadow-[0_30px_70px_rgba(0,0,0,0.12)] hover:shadow-[0_50px_100px_rgba(0,0,0,0.15)] transition-all duration-700"
+                "w-full bg-white overflow-hidden group relative transition-all duration-500",
+                compact ? "rounded-2xl border border-gray-100" : "max-w-[280px] sm:max-w-[360px] rounded-[1.5rem] sm:rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_40px_80px_rgba(0,0,0,0.15)] transition-all duration-700"
             )}>
 
                 {/* Board Context Header (Top) */}
@@ -196,16 +185,6 @@ export default function PinterestPreview({
                 </div>
             </div>
 
-            {/* Verification Footer */}
-            {!compact && (
-                <div className="mt-10 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-2 duration-1000">
-                    <div className="flex items-center gap-2 py-1 px-3 bg-white/50 border border-gray-100 rounded-full">
-                        <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Platform Synchronized Architecture</span>
-                    </div>
-                    <p className="text-[9px] font-bold text-gray-300 uppercase tracking-[0.2em]">Studio v2.0 • Pinterest Core Engine</p>
-                </div>
-            )}
         </div>
     );
 }

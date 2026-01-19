@@ -311,218 +311,134 @@ export default function PinterestListingViewComponent({
                                 const mediaUrl = media[0]?.url || post.imageUrl;
                                 const date = post.scheduledAt || post.createdAt;
                                 return (
-                                    <DropdownMenu key={post.id}>
-                                        <DropdownMenuTrigger asChild>
-                                            <TableRow className={cn("group hover:bg-gray-50/50 transition-colors border-gray-50 cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")}>
-                                                <TableCell>
-                                                    <div className="h-12 w-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
-                                                        {media.length > 0 ? (
-                                                            media[0].type?.startsWith('video') ? (
-                                                                <div className="w-full h-full bg-black relative flex items-center justify-center">
-                                                                    <video src={media[0].url} className="w-full h-full object-cover" muted />
-                                                                    <div className="absolute inset-0 flex items-center justify-center"><Play className="h-5 w-5 text-white fill-white opacity-80" /></div>
-                                                                </div>
-                                                            ) : (<img src={media[0].url} alt="" className="h-full w-full object-cover" />)
-                                                        ) : (
-                                                            <div className="h-full w-full flex items-center justify-center bg-zinc-50">
-                                                                <PinterestLogo className="h-6 w-6 text-zinc-200" />
-                                                            </div>
-                                                        )}
-                                                        {publishingId === post.id && (
-                                                            <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                                                                <Loader2 className="h-5 w-5 animate-spin text-black" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="space-y-1.5 max-w-md">
-                                                        <p className="text-[14px] font-bold text-gray-900 truncate tracking-tight">{post.title || message || "No content provided"}</p>
-
-                                                        <div className="flex items-center gap-1 opacity-60">
-                                                            <Badge variant="secondary" className={cn(
-                                                                "px-2 py-0.5 rounded-full text-[10px] font-bold border-none",
-                                                                post.status === 'published' ? "bg-green-50 text-green-600" : "bg-purple-50 text-purple-600"
-                                                            )}>
-                                                                {post.status === 'published' ? "Published" : "Future Pin"}
-                                                            </Badge>
+                                    <TableRow key={post.id} className={cn("group hover:bg-gray-50/50 transition-colors border-gray-50 cursor-pointer", publishingId === post.id && "opacity-70 pointer-events-none")} onClick={() => onEditClick(post)}>
+                                        <TableCell>
+                                            <div className="h-12 w-12 rounded-lg bg-gray-100 overflow-hidden relative border border-gray-200 shadow-sm group-hover:scale-105 transition-transform">
+                                                {media.length > 0 ? (
+                                                    media[0].type?.startsWith('video') ? (
+                                                        <div className="w-full h-full bg-black relative flex items-center justify-center">
+                                                            <video src={media[0].url} className="w-full h-full object-cover" muted />
+                                                            <div className="absolute inset-0 flex items-center justify-center"><Play className="h-5 w-5 text-white fill-white opacity-80" /></div>
                                                         </div>
-
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-full">
-                                                                <Avatar className="h-4 w-4">
-                                                                    <AvatarImage src={post.profilePicture} />
-                                                                    <AvatarFallback className="text-[6px] font-black">{post.username?.[0]}</AvatarFallback>
-                                                                </Avatar>
-                                                                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-tight">@{accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Pinterest"}</span>
-                                                            </div>
-                                                            <div className="w-1 h-1 rounded-full bg-zinc-200" />
-                                                            <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
-                                                                <Layers className="w-3 h-3" />
-                                                                <span>
-                                                                    {(() => {
-                                                                        const account = accounts.find(a => a.accountId === post.accountId);
-                                                                        return account?.boards?.find(b => b.id === post.boardId)?.name || "Default Board";
-                                                                    })()}
-                                                                </span>
-                                                            </div>
-                                                            <div className="w-1 h-1 rounded-full bg-zinc-200" />
-                                                            <Badge variant="outline" className="text-[9px] font-black uppercase text-zinc-400 border-zinc-100 rounded-md py-0 px-1.5">
-                                                                {post.postType || (media.length > 0 ? (media[0].type?.startsWith('video') ? 'video' : 'image') : 'standard')}
-                                                            </Badge>
-                                                        </div>
+                                                    ) : (<img src={media[0].url} alt="" className="h-full w-full object-cover" />)
+                                                ) : (
+                                                    <div className="h-full w-full flex items-center justify-center bg-zinc-50">
+                                                        <PinterestLogo className="h-6 w-6 text-zinc-200" />
                                                     </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge className={cn("rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm", post.status === 'published' ? "bg-green-50 text-green-700 hover:bg-green-50 border-green-100" : "bg-purple-50 text-purple-700 hover:bg-purple-50 border-purple-100")}>
-                                                        {post.status === 'published' ? "Published" : "Future Pin"}
+                                                )}
+                                                {publishingId === post.id && (
+                                                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                                        <Loader2 className="h-5 w-5 animate-spin text-black" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="space-y-1.5 max-w-md">
+                                                <p className="text-[14px] font-bold text-gray-900 truncate tracking-tight">{post.title || message || "No content provided"}</p>
+
+                                                <div className="flex items-center gap-1 opacity-60">
+                                                    <Badge variant="secondary" className={cn(
+                                                        "px-2 py-0.5 rounded-full text-[10px] font-bold border-none",
+                                                        post.status === 'published' ? "bg-green-50 text-green-600" : "bg-purple-50 text-purple-600"
+                                                    )}>
+                                                        {post.status === 'published' ? "Published" : "Scheduled"}
                                                     </Badge>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-4">
-                                                        <div className="flex flex-col">
-                                                            <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
-                                                                <Eye className="h-3.5 w-3.5 text-gray-500" /> {formatNumber(post.metrics?.impressions || post.metrics?.views)}
-                                                            </div>
-                                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Views</span>
-                                                        </div>
-                                                        <div className="flex flex-col">
-                                                            <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
-                                                                <Pin className="h-3.5 w-3.5 text-[#E60023]" /> {formatNumber(post.metrics?.saves)}
-                                                            </div>
-                                                            <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Saves</span>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-col">
-                                                        <span className="text-sm font-bold text-gray-900">
-                                                            {format(new Date(date), "MMM dd, yyyy")}
-                                                        </span>
-                                                        <span className="text-[10px] font-medium text-gray-400">
-                                                            {format(new Date(date), "h:mm a")}
-                                                        </span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div onClick={(e) => e.stopPropagation()}>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black"><MoreVertical className="h-4 w-4" /></Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
-                                                                {post.status === 'published' ? (
-                                                                    <>
-                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
-                                                                            <BarChart3 className="h-5 w-5 text-gray-900" />
-                                                                            <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
-                                                                            <Eye className="h-5 w-5 text-gray-900" />
-                                                                            <span className="font-bold text-[13px] text-gray-900">Pin Details</span>
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
-                                                                            <Edit className="h-5 w-5 text-gray-900" />
-                                                                            <span className="font-bold text-[13px] text-gray-900">Edit Pin</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group">
-                                                                            <Send className="h-5 w-5 text-purple-600" />
-                                                                            <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
-                                                                        </DropdownMenuItem>
-                                                                        <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEditClick(post, 'delete'); }}>
-                                                                            <Trash2 className="h-5 w-5 text-red-600" />
-                                                                            <span className="font-bold text-[13px] text-red-600">Delete Pin</span>
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                )}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start" className="w-[540px] p-0 overflow-hidden border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white rounded-[32px]">
-                                            <div className="flex">
-                                                {/* Left side: Pinterest post design */}
-                                                <div className="w-[320px] flex-shrink-0 bg-gray-50/50 p-4 border-r border-gray-100/50">
-                                                    <PinterestPreview
-                                                        title={post.title}
-                                                        description={post.message || post.description}
-                                                        content={{
-                                                            message: post.message || post.description || "",
-                                                            media: post.content?.media || (post.imageUrl ? [{ url: post.imageUrl, type: "image/jpeg" }] : [])
-                                                        }}
-                                                        imageUrl={mediaUrl}
-                                                        page={accounts.find(a => a.accountId === post.accountId) || { username: post.username || "Pinterest User" }}
-                                                        boardName={(() => {
-                                                            const account = accounts.find(a => a.accountId === post.accountId);
-                                                            return account?.boards?.find(b => b.id === post.boardId)?.name || "";
-                                                        })()}
-                                                        compact={true}
-                                                    />
                                                 </div>
 
-                                                {/* Right side: Actions */}
-                                                <div className="w-[220px] bg-white p-3 flex flex-col justify-center gap-1.5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="flex items-center gap-1.5 bg-zinc-100 px-2 py-0.5 rounded-full">
+                                                        <Avatar className="h-4 w-4">
+                                                            <AvatarImage src={post.profilePicture} />
+                                                            <AvatarFallback className="text-[6px] font-black">{post.username?.[0]}</AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-tight">@{accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Pinterest"}</span>
+                                                    </div>
+                                                    <div className="w-1 h-1 rounded-full bg-zinc-200" />
+                                                    <div className="flex items-center gap-1 text-[10px] font-bold text-zinc-400 uppercase tracking-tight">
+                                                        <Layers className="w-3 h-3" />
+                                                        <span>
+                                                            {(() => {
+                                                                const account = accounts.find(a => a.accountId === post.accountId);
+                                                                return account?.boards?.find(b => b.id === post.boardId)?.name || "Default Board";
+                                                            })()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="w-1 h-1 rounded-full bg-zinc-200" />
+                                                    <Badge variant="outline" className="text-[9px] font-black uppercase text-zinc-400 border-zinc-100 rounded-md py-0 px-1.5">
+                                                        {post.postType || (media.length > 0 ? (media[0].type?.startsWith('video') ? 'video' : 'image') : 'standard')}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge className={cn("rounded-full px-2 py-0 text-[8px] font-black uppercase tracking-wider", post.status === 'published' ? "bg-green-50 text-green-700 border-green-100" : "bg-purple-50 text-purple-700 border-purple-100")}>
+                                                {post.status === 'published' ? "Published" : "Scheduled"}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
+                                                        <Eye className="h-3.5 w-3.5 text-gray-500" /> {formatNumber(post.metrics?.impressions || post.metrics?.views)}
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Views</span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <div className="flex items-center gap-1.5 text-[13px] font-bold text-gray-900">
+                                                        <Pin className="h-3.5 w-3.5 text-[#E60023]" /> {formatNumber(post.metrics?.saves)}
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-zinc-400 uppercase tracking-tighter ml-5">Saves</span>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-gray-900">
+                                                    {format(new Date(date), "MMM dd, yyyy")}
+                                                </span>
+                                                <span className="text-[10px] font-medium text-gray-400">
+                                                    {format(new Date(date), "h:mm a")}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button onClick={(e) => e.stopPropagation()} variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-gray-100 text-gray-400 hover:text-black"><MoreVertical className="h-4 w-4" /></Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
                                                     {post.status === 'published' ? (
                                                         <>
-                                                            <DropdownMenuItem
-                                                                onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }}
-                                                                className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
-                                                            >
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                 <BarChart3 className="h-5 w-5 text-gray-900" />
                                                                 <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={(e) => { e.stopPropagation(); onEditClick(post, 'delete'); }}
-                                                                className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group"
-                                                            >
-                                                                <Trash2 className="h-5 w-5 text-red-600" />
-                                                                <span className="font-bold text-[13px] text-red-600">Delete Pin</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={(e) => { e.stopPropagation(); onEditClick(post, 'view'); }}
-                                                                className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
-                                                            >
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                 <Eye className="h-5 w-5 text-gray-900" />
-                                                                <div className="flex flex-col">
-                                                                    <span className="font-bold text-[13px] text-gray-900">View Pin</span>
-                                                                    <span className="text-[10px] text-gray-400 font-medium">Open on Pinterest</span>
-                                                                </div>
+                                                                <span className="font-bold text-[13px] text-gray-900">Pin Details</span>
                                                             </DropdownMenuItem>
                                                         </>
                                                     ) : (
                                                         <>
-                                                            <DropdownMenuItem
-                                                                onClick={(e) => { e.stopPropagation(); onEditClick(post, 'edit'); }}
-                                                                className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
-                                                            >
+                                                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEditClick(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                                 <Edit className="h-5 w-5 text-gray-900" />
                                                                 <span className="font-bold text-[13px] text-gray-900">Edit Pin</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={(e) => handlePublishNow(e, post)}
-                                                                className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group"
-                                                            >
+                                                            <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group">
                                                                 <Send className="h-5 w-5 text-purple-600" />
                                                                 <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group"
-                                                                onClick={(e) => { e.stopPropagation(); onEditClick(post, 'delete'); }}
-                                                            >
+                                                            <DropdownMenuItem className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group" onClick={(e) => { e.stopPropagation(); onEditClick(post, 'delete'); }}>
                                                                 <Trash2 className="h-5 w-5 text-red-600" />
                                                                 <span className="font-bold text-[13px] text-red-600">Delete Pin</span>
                                                             </DropdownMenuItem>
                                                         </>
                                                     )}
-                                                </div>
-                                            </div>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </TableCell>
+                                    </TableRow>
                                 );
                             })}
                         </TableBody>
