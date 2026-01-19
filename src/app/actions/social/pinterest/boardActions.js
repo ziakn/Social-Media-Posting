@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { getValidPinterestAccessToken } from "./connectAccount";
 
 /**
  * Create a new Pinterest Board
@@ -20,18 +21,7 @@ export async function createPinterestBoard(platformUserId, boardName) {
 
         console.log(`createPinterestBoard: User ${user.id} attempting to create board '${boardName}' for account '${platformUserId}'`);
 
-        const q = query(
-            collection(db, "socialAccounts"),
-            where("userId", "==", user.id),
-            where("accountId", "==", platformUserId),
-            where("platform", "==", "pinterest"),
-            where("status", "==", "active")
-        );
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) throw new Error("Pinterest account not found or inactive");
-
-        const account = snapshot.docs[0].data();
-        const accessToken = account.accessToken;
+        const { accessToken } = await getValidPinterestAccessToken(user.id, platformUserId);
 
         const apiUrl = process.env.PINTEREST_API_URL || "https://api.pinterest.com/v5";
 
@@ -67,12 +57,32 @@ export async function createPinterestBoard(platformUserId, boardName) {
         const boardsData = await boardsRes.json();
 
         if (boardsRes.ok && boardsData.items) {
-            const docRef = snapshot.docs[0].ref;
-            await updateDoc(docRef, {
-                boards: boardsData.items,
-                updatedAt: new Date()
-            });
-            console.log("Updated Firestore with fresh Pinterest boards");
+            // Ensure the newly created board is in the list (handle eventual consistency)
+            const createdBoardId = data.id;
+            const boardExists = boardsData.items.some(b => b.id === createdBoardId);
+
+            if (!boardExists) {
+                console.log("Newly created board not found in fetch, appending manually.");
+                // Ensure data has the minimal required fields if needed, 
+                // but usually the create response is sufficient.
+                boardsData.items.push(data);
+            }
+
+            const q = query(
+                collection(db, "socialAccounts"),
+                where("userId", "==", user.id),
+                where("accountId", "==", platformUserId),
+                where("platform", "==", "pinterest")
+            );
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                await updateDoc(snapshot.docs[0].ref, {
+                    boards: boardsData.items,
+                    updatedAt: new Date()
+                });
+                console.log("Updated Firestore with fresh Pinterest boards");
+            }
         }
         // --- UPDATE FIRESTORE END ---
 

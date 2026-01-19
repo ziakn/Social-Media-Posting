@@ -127,7 +127,15 @@ export default function PinterestPreview({
                         {link && (
                             <div className="flex items-center gap-1.5 text-blue-600 font-bold text-xs mt-3">
                                 <Globe className="h-3 w-3" />
-                                <span className="underline underline-offset-4 decoration-2">{new URL(link).hostname}</span>
+                                <span className="underline underline-offset-4 decoration-2 truncate max-w-[200px]">
+                                    {(() => {
+                                        try {
+                                            return new URL(link).hostname.replace(/^www\./, '');
+                                        } catch (e) {
+                                            return link;
+                                        }
+                                    })()}
+                                </span>
                             </div>
                         )}
                     </div>

@@ -107,17 +107,16 @@ export async function createPinterestPost({
         let mediaSource = {};
 
         if (postType === "carousel") {
+            const items = await Promise.all(media.map(async item => ({
+                title: title || "",
+                description: message || "",
+                link: link || "",
+                url: needsTestUrl(item.url) ? getTestUrl("image") : await getAbsoluteUrl(item.url)
+            })));
+
             mediaSource = {
                 source_type: "multiple_image_urls",
-                items: media.map(item => ({
-                    title: title || "",
-                    description: message || "",
-                    link: link || "",
-                    source: {
-                        source_type: "image_url",
-                        url: needsTestUrl(item.url) ? getTestUrl("image") : getAbsoluteUrl(item.url)
-                    }
-                }))
+                items: items
             };
         } else if (postType === "video") {
             const item = media[0] || { url: "", type: "video" };
