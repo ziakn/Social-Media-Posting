@@ -329,6 +329,69 @@ export async function publishPinterestPostNow(postId) {
 }
 
 /**
+ * Get all Pinterest posts for calendar within a date range
+ */
+export async function getPinterestCalendarPosts({ startDate, endDate } = {}) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) return { success: false, posts: [] };
+
+        let constraints = [
+            where("userId", "==", user.id),
+            where("platform", "==", "pinterest"),
+            where("delete", "==", 0)
+        ];
+
+        // Add date range filters if provided
+        // Note: Similar to Threads, we use the display date logic
+        // We filter by createdAt but since we might be looking at scheduled times, 
+        // we'll fetch a wider range or just rely on a recent window for now.
+        // Actually, let's use scheduledAt if we want to be precise, 
+        // but status: 'all' usually works for simple calendars.
+
+        const q = query(
+            collection(db, "pinterest_posts"),
+            ...constraints,
+            orderBy("createdAt", "desc"),
+            limit(1000) // Safety limit for calendar view
+        );
+
+        const snapshot = await getDocs(q);
+        const posts = snapshot.docs.map(doc => {
+            const data = doc.data();
+
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
+                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
+                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
+            };
+        });
+
+        // Client-side filtering if needed, or refine Firestore query if field is consistent
+        let filteredPosts = posts;
+        if (startDate && endDate) {
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            filteredPosts = posts.filter(post => {
+                const date = new Date(post.scheduledAt || post.publishedAt || post.createdAt);
+                return date >= start && date <= end;
+            });
+        }
+
+        return { success: true, posts: filteredPosts };
+    } catch (error) {
+        console.error("Error in getPinterestCalendarPosts:", error);
+        return { success: false, posts: [] };
+    }
+}
+
+/**
  * Delete a Pinterest post (Soft Delete)
  */
 export async function deletePinterestPost(postId) {

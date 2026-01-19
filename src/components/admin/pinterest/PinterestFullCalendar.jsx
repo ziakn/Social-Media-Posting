@@ -117,7 +117,11 @@ export default function PinterestFullCalendar({
                     <div className="w-[1px] h-4 bg-gray-200 mx-1" />
                     <Button
                         variant="ghost"
-                        onClick={() => setCurrentMonth(new Date())}
+                        onClick={() => {
+                            const today = new Date();
+                            setCurrentMonth(today);
+                            if (onMonthChange) onMonthChange(today);
+                        }}
                         className="px-2 h-8 text-[10px] font-bold text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                         Today
