@@ -372,7 +372,7 @@ export default function PinterestViewComponent({
 
                         return (
                             <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 bg-white overflow-hidden rounded-2xl flex flex-col", publishingId === post.id && "opacity-70 pointer-events-none")}>
-                                <div className="relative aspect-[2/3] bg-neutral-100 overflow-hidden cursor-pointer" onClick={() => handleEdit(post)}>
+                                <div className="relative aspect-[2/3] bg-neutral-100 overflow-hidden cursor-pointer" onClick={() => post.status === 'published' ? handleOpenAnalytics(post) : handleEdit(post)}>
                                     {hasMedia ? (
                                         media[0].type?.startsWith('video') ? (
                                             <video src={media[0].url} className="w-full h-full object-cover" muted />
@@ -404,13 +404,34 @@ export default function PinterestViewComponent({
                                             <DropdownMenuTrigger asChild>
                                                 <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full bg-white/80 hover:bg-white text-black"><MoreVertical className="h-3.5 w-3.5" /></Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-[160px] rounded-xl">
-                                                <DropdownMenuItem onClick={() => handleEdit(post)} className="cursor-pointer">
-                                                    <Edit className="h-4 w-4 mr-2" /> Edit Pin
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDelete(post)} className="cursor-pointer text-red-600 focus:text-red-600">
-                                                    <Trash2 className="h-4 w-4 mr-2" /> Delete Pin
-                                                </DropdownMenuItem>
+                                            <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
+                                                {post.status === 'published' ? (
+                                                    <>
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                            <BarChart3 className="h-5 w-5 text-gray-900" />
+                                                            <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                            <Eye className="h-5 w-5 text-gray-900" />
+                                                            <span className="font-bold text-[13px] text-gray-900">Pin Details</span>
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                            <Edit className="h-5 w-5 text-gray-900" />
+                                                            <span className="font-bold text-[13px] text-gray-900">Edit Pin</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-purple-50 transition-colors group">
+                                                            <Send className="h-5 w-5 text-purple-600" />
+                                                            <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group">
+                                                            <Trash2 className="h-5 w-5 text-red-600" />
+                                                            <span className="font-bold text-[13px] text-red-600">Delete Pin</span>
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </div>

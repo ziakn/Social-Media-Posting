@@ -17,7 +17,7 @@ import {
     startOfToday,
     isBefore,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Clock, Eye, Edit, Trash2, Send, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckCircle2, Clock, Eye, Edit, Trash2, Send, Loader2, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -240,7 +240,12 @@ export default function PinterestFullCalendar({
                                                             <Clock className="h-3 w-3 text-gray-400 shrink-0" />
                                                         )}
                                                         <p className="font-black text-gray-900 truncate tracking-tighter">
-                                                            {post.scheduledAt ? format(new Date(post.scheduledAt), "h:mm a") : "Draft"}
+                                                            {(() => {
+                                                                const timeToShow = isPublished
+                                                                    ? (post.publishedAt || post.createdAt)
+                                                                    : post.scheduledAt;
+                                                                return timeToShow ? format(new Date(timeToShow), "h:mm a") : "Draft";
+                                                            })()}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -252,8 +257,17 @@ export default function PinterestFullCalendar({
                                                         <PinterestPreview
                                                             title={post.title}
                                                             description={post.message || post.description}
+                                                            content={{
+                                                                message: post.message || post.description || "",
+                                                                media: post.content?.media || [{ url: mediaUrl || "", type: "image/jpeg" }]
+                                                            }}
                                                             imageUrl={mediaUrl}
-                                                            accountName={accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Pinterest User"}
+                                                            page={accounts.find(a => a.accountId === post.accountId) || { username: post.username || "Pinterest User" }}
+                                                            boardName={(() => {
+                                                                const account = accounts.find(a => a.accountId === post.accountId);
+                                                                return account?.boards?.find(b => b.id === post.boardId)?.name || "";
+                                                            })()}
+                                                            compact={true}
                                                         />
                                                     </div>
 
@@ -261,6 +275,13 @@ export default function PinterestFullCalendar({
                                                     <div className="w-[220px] bg-white p-3 flex flex-col justify-center gap-1.5">
                                                         {isPublished ? (
                                                             <>
+                                                                <DropdownMenuItem
+                                                                    onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'analytics'); }}
+                                                                    className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
+                                                                >
+                                                                    <BarChart3 className="h-5 w-5 text-gray-900" />
+                                                                    <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
+                                                                </DropdownMenuItem>
                                                                 <DropdownMenuItem
                                                                     onClick={(e) => { e.stopPropagation(); onPostClick && onPostClick(post, 'view'); }}
                                                                     className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group"
