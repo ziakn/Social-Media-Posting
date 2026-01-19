@@ -307,15 +307,44 @@ export async function deletePinterestPost(postId) {
         const postSnap = await getDoc(postRef);
 
         if (!postSnap.exists()) return { success: false, message: "Post not found" };
-        if (postSnap.data().userId !== user.id) return { success: false, message: "Unauthorized" };
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
 
+        let apiDeleteSuccess = false;
+        let apiError = null;
+
+        // 1. Delete from Pinterest API if published
+        if (postData.status === "published" && postData.pinterestPinId && postData.accountId) {
+            try {
+                const { accessToken } = await getPinterestAccount(user.id, postData.accountId);
+                await makePinterestRequest(`/pins/${postData.pinterestPinId}`, null, accessToken, "DELETE");
+                apiDeleteSuccess = true;
+            } catch (error) {
+                console.error("Pinterest API Delete Error:", error);
+                apiError = error.message;
+                // If it's already deleted on Pinterest, we can consider it a success for our records
+                if (error.message?.includes("not found")) {
+                    apiDeleteSuccess = true;
+                }
+            }
+        }
+
+        // 2. Soft delete in Firestore
         await updateDoc(postRef, {
             delete: 1,
-            updatedAt: serverTimestamp()
+            deletedAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            apiDeleteSuccess,
+            apiDeleteError: apiError
         });
 
         revalidatePath("/admin/social/pinterest/posts");
-        return { success: true, message: "Post deleted successfully" };
+        return {
+            success: true,
+            message: apiDeleteSuccess || !postData.pinterestPinId
+                ? "Post deleted successfully"
+                : "Post deleted from dashboard (Pinterest API deletion failed)"
+        };
     } catch (error) {
         console.error("Error deleting Pinterest post:", error);
         return { success: false, message: error.message };

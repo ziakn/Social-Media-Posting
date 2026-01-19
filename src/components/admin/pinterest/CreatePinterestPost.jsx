@@ -288,310 +288,311 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                         {/* Editor */}
                         <div className="space-y-6">
                             {/* Strategy / Scheduling */}
-                            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2.5">
-                                        <div className="p-1.5 bg-red-50 rounded-lg"><Clock className="h-3.5 w-3.5 text-[#E60023]" /></div>
-                                        <h3 className="text-[11px] font-black text-gray-900 leading-none tracking-widest uppercase">Smart Scheduler</h3>
-                                    </div>
-                                    <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-[#E60023] scale-75" />
-                                </div>
-                                {scheduling.schedule && (
-                                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-50">
-                                        <Popover>
-                                            <PopoverTrigger asChild>
-                                                <Button disabled={isReadOnly} variant="outline" className="w-full h-9 rounded-xl text-[10px] uppercase font-black justify-start px-3 tracking-widest leading-none border-gray-100 hover:bg-gray-50">
-                                                    <CalendarIcon className="mr-2 h-3.5 w-3.5 text-[#E60023]" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 border-0 rounded-3xl overflow-hidden shadow-2xl" align="start">
-                                                <Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus />
-                                            </PopoverContent>
-                                        </Popover>
-                                        <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-9 rounded-xl text-xs font-bold border-gray-100 bg-gray-50/20 px-3" />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Content Section */}
-                            <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-6">
-                                <div className="space-y-6">
-                                    {/* Format Selection - STRICT TABS */}
+                            {!isReadOnly && (
+                                <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex flex-col gap-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-80 pl-1">Format</h3>
-                                        <div className="flex gap-1 bg-gray-50 p-1 rounded-xl">
-                                            {["image", "video", "carousel"].map(type => (
-                                                <button
-                                                    key={type}
-                                                    disabled={isReadOnly || isEditing}
-                                                    onClick={() => {
-                                                        setPostType(type);
-                                                        // Clear media when switching types to enforce strict rules
-                                                        setPostContent(prev => ({ ...prev, media: [] }));
-                                                    }}
-                                                    className={cn(
-                                                        "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-[0.2em]",
-                                                        postType === type
-                                                            ? "bg-white text-[#E60023] shadow-md ring-1 ring-black/5"
-                                                            : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50",
-                                                        (isReadOnly || isEditing) && "cursor-not-allowed opacity-50"
-                                                    )}
-                                                >
-                                                    {type}
-                                                </button>
-                                            ))}
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 bg-red-50 rounded-lg"><Clock className="h-3.5 w-3.5 text-[#E60023]" /></div>
+                                            <h3 className="text-[11px] font-black text-gray-900 leading-none tracking-widest uppercase">Smart Scheduler</h3>
                                         </div>
+                                        <Switch disabled={isReadOnly} checked={scheduling.schedule} onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))} className="data-[state=checked]:bg-[#E60023] scale-75" />
                                     </div>
-
-                                    {/* Pinterest Fields: Title, Board */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center ml-1">
-                                                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pin Title</Label>
-                                                <span className={cn("text-[8px] font-black uppercase tracking-widest", title.length > 100 ? "text-red-500" : "text-gray-300")}>
-                                                    {title.length} / 100
-                                                </span>
-                                            </div>
-                                            <Input
-                                                disabled={isReadOnly}
-                                                placeholder="Add a title..."
-                                                value={title}
-                                                onChange={(e) => setTitle(e.target.value.slice(0, 100))}
-                                                className={cn(
-                                                    "h-11 rounded-xl border-gray-100 bg-gray-50/30 px-4 font-bold text-sm transition-all focus:bg-white",
-                                                    title.length > 90 && "border-yellow-200"
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center ml-1">
-                                                <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pin Board</Label>
-                                                {!isCreatingBoard && (
-                                                    <span
-                                                        onClick={() => setIsCreatingBoard(true)}
-                                                        className="text-[9px] font-bold text-[#E60023] cursor-pointer hover:underline flex items-center gap-1 uppercase tracking-wider"
-                                                    >
-                                                        <Plus className="h-3 w-3" /> New Board
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {isCreatingBoard ? (
-                                                <div className="flex gap-2">
-                                                    <Input
-                                                        autoFocus
-                                                        disabled={isCreatingBoardPending}
-                                                        placeholder="Board Name"
-                                                        value={newBoardName}
-                                                        onChange={(e) => setNewBoardName(e.target.value)}
-                                                        className="h-11 rounded-xl border-gray-100 bg-white px-4 font-bold text-sm"
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter') {
-                                                                e.preventDefault();
-                                                                handleCreateBoard();
-                                                            }
-                                                        }}
-                                                    />
-                                                    <Button
-                                                        onClick={handleCreateBoard}
-                                                        disabled={isCreatingBoardPending || !newBoardName.trim()}
-                                                        className="h-11 w-11 p-0 rounded-xl bg-[#E60023] hover:bg-[#ad001a] text-white shrink-0"
-                                                    >
-                                                        {isCreatingBoardPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-5 w-5 stroke-[3]" />}
+                                    {scheduling.schedule && (
+                                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-50">
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button disabled={isReadOnly} variant="outline" className="w-full h-9 rounded-xl text-[10px] uppercase font-black justify-start px-3 tracking-widest leading-none border-gray-100 hover:bg-gray-50">
+                                                        <CalendarIcon className="mr-2 h-3.5 w-3.5 text-[#E60023]" /> {scheduling.date ? format(scheduling.date, "MMM dd, yyyy") : "Date"}
                                                     </Button>
-                                                    <Button
-                                                        onClick={() => setIsCreatingBoard(false)}
-                                                        disabled={isCreatingBoardPending}
-                                                        className="h-11 w-11 p-0 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 shrink-0"
-                                                    >
-                                                        <X className="h-5 w-5" />
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <Select value={selectedBoard} onValueChange={(val) => {
-                                                    if (val === "CREATE_NEW") {
-                                                        setIsCreatingBoard(true);
-                                                    } else {
-                                                        setSelectedBoard(val);
-                                                    }
-                                                }} disabled={isReadOnly}>
-                                                    <SelectTrigger className="h-11 rounded-xl border-gray-100 bg-gray-50/30 px-4 font-bold text-sm focus:bg-white transition-all">
-                                                        <SelectValue placeholder="Select Board" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-xl">
-                                                        <SelectItem value="CREATE_NEW" className="font-black text-[#E60023] focus:text-[#E60023] focus:bg-red-50">
-                                                            <div className="flex items-center gap-2">
-                                                                <Plus className="h-3.5 w-3.5" /> Create New Board...
-                                                            </div>
-                                                        </SelectItem>
-                                                        {boards.length === 0 ? (
-                                                            <div className="p-3 text-[10px] font-bold text-gray-400 text-center uppercase tracking-wider">
-                                                                No boards found
-                                                            </div>
-                                                        ) : (
-                                                            boards.map((board) => (
-                                                                <SelectItem key={board.id} value={board.id} className="font-bold text-sm">
-                                                                    {board.name}
-                                                                </SelectItem>
-                                                            ))
-                                                        )}
-                                                    </SelectContent>
-                                                </Select>
-                                            )}
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0 border-0 rounded-3xl overflow-hidden shadow-2xl" align="start">
+                                                    <Calendar mode="single" selected={scheduling.date} onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))} disabled={{ before: new Date() }} initialFocus />
+                                                </PopoverContent>
+                                            </Popover>
+                                            <Input disabled={isReadOnly} type="time" value={scheduling.time} onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))} className="h-9 rounded-xl text-xs font-bold border-gray-100 bg-gray-50/20 px-3" />
                                         </div>
-                                    </div>
-
-                                    {/* Description */}
-                                    <div className="space-y-4 pt-2">
-                                        <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Pin Description</Label>
-                                        <SocialCaptionEditor
-                                            disabled={isReadOnly}
-                                            value={postContent.message}
-                                            onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
-                                            placeholder="Tell everyone what your Pin is about..."
-                                            platform="pinterest"
-                                            className="rounded-2xl border-gray-100 bg-gray-50/10 p-6 font-sans text-[15px] text-gray-800 leading-relaxed min-h-[160px] focus:bg-white focus:ring-4 focus:ring-red-50 transition-all shadow-inner"
-                                        />
-
-                                        <div className="flex justify-between items-center px-1">
-                                            <span className={cn("text-[10px] font-black uppercase tracking-widest", characterCount > maxCharacters ? "text-red-500" : "text-gray-300 font-bold")}>
-                                                {characterCount} <span className="text-gray-200 mx-1">/</span> {maxCharacters}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Link */}
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Destination Link</Label>
-                                        <div className="relative">
-                                            <Input
-                                                disabled={isReadOnly}
-                                                placeholder="https://yourlink.com"
-                                                value={link}
-                                                onChange={(e) => setLink(e.target.value)}
-                                                className="h-11 rounded-xl border-gray-100 bg-gray-50/30 pl-10 pr-4 font-bold text-sm"
-                                            />
-                                            <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                                        </div>
-                                    </div>
-
-                                    <Separator className="bg-gray-50/50" />
-
-                                    {/* Media Upload Area (Rearranged to Bottom) */}
-                                    <div className="space-y-4">
-                                        <div className="flex justify-between items-center">
-                                            <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Media Assets</Label>
-                                            <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100">
-                                                <div className={cn("w-1 h-1 rounded-full", postContent.media.length > 0 ? "bg-green-500" : "bg-gray-300")} />
-                                                <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none">
-                                                    {postType === 'carousel'
-                                                        ? `${postContent.media.length} / 5`
-                                                        : `${postContent.media.length} / 1`}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        <Button
-                                            disabled={isReadOnly}
-                                            variant="outline"
-                                            onClick={() => {
-                                                // Strict Type Passing
-                                                setGalleryMediaType(postType === 'video' ? ["video"] : ["image"]);
-                                                setGalleryOpen(true);
-                                            }}
-                                            className={cn(
-                                                "h-28 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#E60023] hover:bg-red-50/10 flex flex-col gap-2 group transition-all duration-300",
-                                                postContent.media.length > 0 && "border-green-100 bg-green-50/5"
-                                            )}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className={cn(
-                                                    "p-2 rounded-lg transition-colors duration-300",
-                                                    postContent.media.length > 0 ? "bg-green-50 text-green-600" : "bg-gray-50 group-hover:bg-[#E60023] group-hover:text-white"
-                                                )}>
-                                                    <ImageIcon className="h-5 w-5" />
-                                                </div>
-                                            </div>
-                                            <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-black">
-                                                {postContent.media.length > 0 ? "Add More Media" : `Select ${postType === 'video' ? 'Video' : 'Image'}`}
-                                            </span>
-                                            <span className="text-[9px] text-gray-400 font-medium tracking-wide">
-                                                {postType === 'carousel' && "Requires 2-5 images"}
-                                                {postType === 'image' && "Requires 1 image"}
-                                                {postType === 'video' && "Requires 1 video"}
-                                            </span>
-                                        </Button>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Preview & Media Tray */}
-                        <div className="lg:sticky top-0 flex gap-4 h-fit">
-                            <div className="flex-1 min-w-0">
-                                <PinterestPreview
-                                    content={postContent}
-                                    page={accounts.find(a => a.accountId === selectedAccount)}
-                                    currentSlide={currentSlide}
-                                    title={title}
-                                    link={link}
-                                    boardName={boards.find(b => b.id === selectedBoard)?.name}
-                                />
-                            </div>
-
-                            {/* Media Selection Tray (Exact Threads Copy) */}
-                            {postContent.media.length > 0 && (
-                                <div className="hidden lg:flex flex-col items-center py-2 bg-white rounded-2xl border border-gray-100 shadow-sm w-20 shrink-0 h-fit">
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSelection('up')} className="h-6 w-6 text-gray-400 hover:text-black mb-2">
-                                        <ChevronUp className="h-4 w-4" />
-                                    </Button>
-
-                                    <div ref={selectionScrollRef} className="flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[450px] px-2 font-sans">
-                                        {postContent.media.map((item, index) => (
-                                            <div
-                                                key={index}
-                                                className={cn(
-                                                    "relative group shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer",
-                                                    currentSlide === index
-                                                        ? "border-[#E60023] ring-2 ring-red-50 scale-105 shadow-md"
-                                                        : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-200"
-                                                )}
-                                                onClick={() => setCurrentSlide(index)}
-                                            >
-                                                {item.type === 'video' ? (
-                                                    <div className="w-full h-full bg-black relative">
-                                                        <video src={item.url} className="w-full h-full object-cover" />
-                                                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                                                            <Play className="h-4 w-4 text-white fill-white" />
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <img src={item.url} alt="" className="w-full h-full object-cover" />
-                                                )}
-
-                                                {!isReadOnly && (
-                                                    <div
-                                                        onClick={(e) => { e.stopPropagation(); removeMedia(index); }}
-                                                        className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-[1px]"
-                                                    >
-                                                        <Trash2 className="h-5 w-5 text-white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <Button variant="ghost" size="icon" onClick={() => scrollSelection('down')} className="h-6 w-6 text-gray-400 hover:text-black mt-2">
-                                        <ChevronDown className="h-4 w-4" />
-                                    </Button>
+                                    )}
                                 </div>
                             )}
                         </div>
+
+                        {/* Content Section */}
+                        <div className="bg-white rounded-[1.5rem] p-6 border border-gray-100 shadow-sm space-y-6">
+                            <div className="space-y-6">
+                                {/* Format Selection - STRICT TABS */}
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-80 pl-1">Format</h3>
+                                    <div className="flex gap-1 bg-gray-50 p-1 rounded-xl">
+                                        {["image", "video", "carousel"].map(type => (
+                                            <button
+                                                key={type}
+                                                disabled={isReadOnly || isEditing}
+                                                onClick={() => {
+                                                    setPostType(type);
+                                                    // Clear media when switching types to enforce strict rules
+                                                    setPostContent(prev => ({ ...prev, media: [] }));
+                                                }}
+                                                className={cn(
+                                                    "px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-[0.2em]",
+                                                    postType === type
+                                                        ? "bg-white text-[#E60023] shadow-md ring-1 ring-black/5"
+                                                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-100/50",
+                                                    (isReadOnly || isEditing) && "cursor-not-allowed opacity-50"
+                                                )}
+                                            >
+                                                {type}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Pinterest Fields: Title, Board */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center ml-1">
+                                            <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pin Title</Label>
+                                            <span className={cn("text-[8px] font-black uppercase tracking-widest", title.length > 100 ? "text-red-500" : "text-gray-300")}>
+                                                {title.length} / 100
+                                            </span>
+                                        </div>
+                                        <Input
+                                            disabled={isReadOnly}
+                                            placeholder="Add a title..."
+                                            value={title}
+                                            onChange={(e) => setTitle(e.target.value.slice(0, 100))}
+                                            className={cn(
+                                                "h-11 rounded-xl border-gray-100 bg-gray-50/30 px-4 font-bold text-sm transition-all focus:bg-white",
+                                                title.length > 90 && "border-yellow-200"
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between items-center ml-1">
+                                            <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Pin Board</Label>
+                                            {!isCreatingBoard && (
+                                                <span
+                                                    onClick={() => setIsCreatingBoard(true)}
+                                                    className="text-[9px] font-bold text-[#E60023] cursor-pointer hover:underline flex items-center gap-1 uppercase tracking-wider"
+                                                >
+                                                    <Plus className="h-3 w-3" /> New Board
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {isCreatingBoard ? (
+                                            <div className="flex gap-2">
+                                                <Input
+                                                    autoFocus
+                                                    disabled={isCreatingBoardPending}
+                                                    placeholder="Board Name"
+                                                    value={newBoardName}
+                                                    onChange={(e) => setNewBoardName(e.target.value)}
+                                                    className="h-11 rounded-xl border-gray-100 bg-white px-4 font-bold text-sm"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            e.preventDefault();
+                                                            handleCreateBoard();
+                                                        }
+                                                    }}
+                                                />
+                                                <Button
+                                                    onClick={handleCreateBoard}
+                                                    disabled={isCreatingBoardPending || !newBoardName.trim()}
+                                                    className="h-11 w-11 p-0 rounded-xl bg-[#E60023] hover:bg-[#ad001a] text-white shrink-0"
+                                                >
+                                                    {isCreatingBoardPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-5 w-5 stroke-[3]" />}
+                                                </Button>
+                                                <Button
+                                                    onClick={() => setIsCreatingBoard(false)}
+                                                    disabled={isCreatingBoardPending}
+                                                    className="h-11 w-11 p-0 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 shrink-0"
+                                                >
+                                                    <X className="h-5 w-5" />
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <Select value={selectedBoard} onValueChange={(val) => {
+                                                if (val === "CREATE_NEW") {
+                                                    setIsCreatingBoard(true);
+                                                } else {
+                                                    setSelectedBoard(val);
+                                                }
+                                            }} disabled={isReadOnly}>
+                                                <SelectTrigger className="h-11 rounded-xl border-gray-100 bg-gray-50/30 px-4 font-bold text-sm focus:bg-white transition-all">
+                                                    <SelectValue placeholder="Select Board" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl">
+                                                    <SelectItem value="CREATE_NEW" className="font-black text-[#E60023] focus:text-[#E60023] focus:bg-red-50">
+                                                        <div className="flex items-center gap-2">
+                                                            <Plus className="h-3.5 w-3.5" /> Create New Board...
+                                                        </div>
+                                                    </SelectItem>
+                                                    {boards.length === 0 ? (
+                                                        <div className="p-3 text-[10px] font-bold text-gray-400 text-center uppercase tracking-wider">
+                                                            No boards found
+                                                        </div>
+                                                    ) : (
+                                                        boards.map((board) => (
+                                                            <SelectItem key={board.id} value={board.id} className="font-bold text-sm">
+                                                                {board.name}
+                                                            </SelectItem>
+                                                        ))
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <div className="space-y-4 pt-2">
+                                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Pin Description</Label>
+                                    <SocialCaptionEditor
+                                        disabled={isReadOnly}
+                                        value={postContent.message}
+                                        onChange={(e) => setPostContent(prev => ({ ...prev, message: e.target.value }))}
+                                        placeholder="Tell everyone what your Pin is about..."
+                                        platform="pinterest"
+                                        className="rounded-2xl border-gray-100 bg-gray-50/10 p-6 font-sans text-[15px] text-gray-800 leading-relaxed min-h-[160px] focus:bg-white focus:ring-4 focus:ring-red-50 transition-all shadow-inner"
+                                    />
+
+                                    <div className="flex justify-between items-center px-1">
+                                        <span className={cn("text-[10px] font-black uppercase tracking-widest", characterCount > maxCharacters ? "text-red-500" : "text-gray-300 font-bold")}>
+                                            {characterCount} <span className="text-gray-200 mx-1">/</span> {maxCharacters}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Link */}
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Destination Link</Label>
+                                    <div className="relative">
+                                        <Input
+                                            disabled={isReadOnly}
+                                            placeholder="https://yourlink.com"
+                                            value={link}
+                                            onChange={(e) => setLink(e.target.value)}
+                                            className="h-11 rounded-xl border-gray-100 bg-gray-50/30 pl-10 pr-4 font-bold text-sm"
+                                        />
+                                        <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                                    </div>
+                                </div>
+
+                                <Separator className="bg-gray-50/50" />
+
+                                {/* Media Upload Area (Rearranged to Bottom) */}
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <Label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] ml-1">Media Assets</Label>
+                                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-gray-50 rounded-full border border-gray-100">
+                                            <div className={cn("w-1 h-1 rounded-full", postContent.media.length > 0 ? "bg-green-500" : "bg-gray-300")} />
+                                            <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none">
+                                                {postType === 'carousel'
+                                                    ? `${postContent.media.length} / 5`
+                                                    : `${postContent.media.length} / 1`}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <Button
+                                        disabled={isReadOnly}
+                                        variant="outline"
+                                        onClick={() => {
+                                            // Strict Type Passing
+                                            setGalleryMediaType(postType === 'video' ? ["video"] : ["image"]);
+                                            setGalleryOpen(true);
+                                        }}
+                                        className={cn(
+                                            "h-28 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-[#E60023] hover:bg-red-50/10 flex flex-col gap-2 group transition-all duration-300",
+                                            postContent.media.length > 0 && "border-green-100 bg-green-50/5"
+                                        )}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={cn(
+                                                "p-2 rounded-lg transition-colors duration-300",
+                                                postContent.media.length > 0 ? "bg-green-50 text-green-600" : "bg-gray-50 group-hover:bg-[#E60023] group-hover:text-white"
+                                            )}>
+                                                <ImageIcon className="h-5 w-5" />
+                                            </div>
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover:text-black">
+                                            {postContent.media.length > 0 ? "Add More Media" : `Select ${postType === 'video' ? 'Video' : 'Image'}`}
+                                        </span>
+                                        <span className="text-[9px] text-gray-400 font-medium tracking-wide">
+                                            {postType === 'carousel' && "Requires 2-5 images"}
+                                            {postType === 'image' && "Requires 1 image"}
+                                            {postType === 'video' && "Requires 1 video"}
+                                        </span>
+                                    </Button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Preview & Media Tray */}
+                    <div className="lg:sticky top-0 flex gap-4 h-fit">
+                        <div className="flex-1 min-w-0">
+                            <PinterestPreview
+                                content={postContent}
+                                page={accounts.find(a => a.accountId === selectedAccount)}
+                                currentSlide={currentSlide}
+                                title={title}
+                                link={link}
+                                boardName={boards.find(b => b.id === selectedBoard)?.name}
+                            />
+                        </div>
+
+                        {/* Media Selection Tray (Exact Threads Copy) */}
+                        {postContent.media.length > 0 && (
+                            <div className="hidden lg:flex flex-col items-center py-2 bg-white rounded-2xl border border-gray-100 shadow-sm w-20 shrink-0 h-fit">
+                                <Button variant="ghost" size="icon" onClick={() => scrollSelection('up')} className="h-6 w-6 text-gray-400 hover:text-black mb-2">
+                                    <ChevronUp className="h-4 w-4" />
+                                </Button>
+
+                                <div ref={selectionScrollRef} className="flex flex-col gap-3 overflow-y-auto no-scrollbar max-h-[450px] px-2 font-sans">
+                                    {postContent.media.map((item, index) => (
+                                        <div
+                                            key={index}
+                                            className={cn(
+                                                "relative group shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer",
+                                                currentSlide === index
+                                                    ? "border-[#E60023] ring-2 ring-red-50 scale-105 shadow-md"
+                                                    : "border-transparent opacity-60 hover:opacity-100 hover:border-gray-200"
+                                            )}
+                                            onClick={() => setCurrentSlide(index)}
+                                        >
+                                            {item.type === 'video' ? (
+                                                <div className="w-full h-full bg-black relative">
+                                                    <video src={item.url} className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                                        <Play className="h-4 w-4 text-white fill-white" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <img src={item.url} alt="" className="w-full h-full object-cover" />
+                                            )}
+
+                                            {!isReadOnly && (
+                                                <div
+                                                    onClick={(e) => { e.stopPropagation(); removeMedia(index); }}
+                                                    className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 backdrop-blur-[1px]"
+                                                >
+                                                    <Trash2 className="h-5 w-5 text-white" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <Button variant="ghost" size="icon" onClick={() => scrollSelection('down')} className="h-6 w-6 text-gray-400 hover:text-black mt-2">
+                                    <ChevronDown className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-
             {/* Sticky Footer */}
             <div className="shrink-0 px-8 py-4 bg-white border-t border-gray-100 flex items-center justify-end gap-3">
                 <Button variant="ghost" className="text-xs font-black uppercase tracking-widest text-gray-400 hover:text-gray-900" onClick={() => onSuccess?.()}>
@@ -649,6 +650,6 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
                 allowMultiple={postType === 'carousel'}
                 maxSelection={postType === 'carousel' ? 5 : 1}
             />
-        </div>
+        </div >
     );
 }

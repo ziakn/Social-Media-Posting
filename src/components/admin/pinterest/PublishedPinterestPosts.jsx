@@ -73,7 +73,7 @@ export default function PublishedPinterestPosts({ accountId: initialAccountId })
         // Map post to initialData format if needed
         const initialData = {
             ...post,
-            readOnly: post.status === 'published' && false // Allow editing published pins for now or restrict? Threads allows some edits.
+            readOnly: post.status === 'published' || action === 'view'
         };
         setCreateInitialData(initialData);
         setIsCreating(true);
@@ -198,7 +198,7 @@ export default function PublishedPinterestPosts({ accountId: initialAccountId })
             </Tabs>
 
             <Dialog open={isCreating} onOpenChange={setIsCreating}>
-                <DialogContent className="!w-[80vw] !max-w-[80vw] h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none" aria-describedby={undefined}>
+                <DialogContent className="!w-[80vw] !max-w-[80vw] h-[90vh] overflow-hidden p-0 border-0 bg-transparent shadow-none" aria-describedby={undefined} showCloseButton={false}>
                     <div className="hidden">
                         <DialogTitle>Post Creator</DialogTitle>
                     </div>

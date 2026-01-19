@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Card, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
     Search, TrendingUp, Heart, Eye, ChevronRight, X, Filter,
-    Layers, ImageIcon, Play, Edit, MoreVertical, Send, Trash2, History, Loader2, BarChart3,
+    Layers, ImageIcon, Play, Edit, MoreVertical, MoreHorizontal, Send, Trash2, History, Loader2, BarChart3,
     Pin, MousePointer2, Calendar
 } from "lucide-react";
 import { getPinterestPosts, getPinterestPostsStats, publishPinterestPostNow, deletePinterestPost } from "@/app/actions/social/pinterest/pinterestPostsActions";
@@ -24,13 +23,15 @@ import PinterestLogo from "@/components/icons/PinterestLogo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import PinterestAnalyticsModal from "./PinterestAnalyticsModal";
 import CreatePinterestPost from "./CreatePinterestPost";
+import PinterestPreview from "./PinterestPreview";
 
 export default function PinterestViewComponent({
     accountId: initialAccountId,
     initialStatus = "all",
+    onEdit = null,
+    onRefresh = null,
+    refreshTrigger = 0
 }) {
-    const [view, setView] = useState("list"); // 'list' or 'create'
-    const [editingPost, setEditingPost] = useState(null);
 
     const [posts, setPosts] = useState([]);
     const [stats, setStats] = useState(null);
@@ -115,10 +116,8 @@ export default function PinterestViewComponent({
     }, [filters, pagination.pageSize]);
 
     useEffect(() => {
-        if (view === 'list') {
-            loadPosts(true);
-        }
-    }, [loadPosts, view]);
+        loadPosts(true);
+    }, [loadPosts, refreshTrigger]);
 
     const handleFilterChange = (key, value) => {
         setFilters(prev => ({ ...prev, [key]: value }));
@@ -152,9 +151,8 @@ export default function PinterestViewComponent({
         setAnalyticsModalOpen(true);
     };
 
-    const handleEdit = (post) => {
-        setEditingPost(post);
-        setView("create");
+    const handleEditClick = (post, action = 'edit') => {
+        if (onEdit) onEdit(post, action);
     };
 
     const handleDelete = async (post) => {
@@ -203,21 +201,6 @@ export default function PinterestViewComponent({
         }
     };
 
-    if (view === 'create') {
-        return (
-            <div className="space-y-4">
-                <Button variant="ghost" onClick={() => { setView('list'); setEditingPost(null); }} className="gap-2">
-                    <ChevronRight className="h-4 w-4 rotate-180" /> Back to Dashboard
-                </Button>
-                <div className="bg-white rounded-[24px] border border-gray-100 shadow-sm overflow-hidden min-h-[800px]">
-                    <CreatePinterestPost
-                        initialData={editingPost}
-                        onSuccess={() => { setView('list'); setEditingPost(null); loadPosts(true); }}
-                    />
-                </div>
-            </div>
-        );
-    }
 
     if (loading && posts.length === 0) {
         return (
@@ -225,13 +208,19 @@ export default function PinterestViewComponent({
                 <Skeleton className="h-32 w-full" />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {[...Array(8)].map((_, i) => (
-                        <Card key={i} className="overflow-hidden">
-                            <Skeleton className="aspect-[2/3] w-full" />
-                            <CardContent className="p-4 space-y-2">
-                                <Skeleton className="h-4 w-20" />
-                                <Skeleton className="h-4 w-full" />
-                            </CardContent>
-                        </Card>
+                        <div key={i} className="space-y-3">
+                            <Skeleton className="aspect-[2/3] w-full rounded-[32px]" />
+                            <div className="px-2 space-y-2">
+                                <Skeleton className="h-4 w-3/4 rounded-full" />
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Skeleton className="h-5 w-5 rounded-full" />
+                                        <Skeleton className="h-3 w-12" />
+                                    </div>
+                                    <Skeleton className="h-3 w-10" />
+                                </div>
+                            </div>
+                        </div>
                     ))}
                 </div>
             </div>
@@ -291,8 +280,8 @@ export default function PinterestViewComponent({
             )}
 
             {/* Advanced Filters */}
-            <Card>
-                <CardContent className="p-6">
+            <div className="bg-white border border-gray-100 rounded-[24px] shadow-sm">
+                <div className="p-6">
                     <div className="space-y-6">
                         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
                             <div className="flex-1 w-full flex flex-col lg:flex-row gap-4">
@@ -330,7 +319,7 @@ export default function PinterestViewComponent({
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
-                                <Button className="gap-2 bg-[#E60023] hover:bg-[#ad001b] text-white" onClick={() => { setEditingPost(null); setView('create'); }}>
+                                <Button className="gap-2 bg-[#E60023] hover:bg-[#ad001b] text-white" onClick={() => onEdit && onEdit(null)}>
                                     <Pin className="h-4 w-4" /> Create Pin
                                 </Button>
                             </div>
@@ -346,21 +335,21 @@ export default function PinterestViewComponent({
                             </div>
                         )}
                     </div>
-                </CardContent>
-            </Card>
+                </div>
+            </div>
 
             {/* Content */}
             {posts.length === 0 && !loading ? (
-                <Card className="border-dashed">
-                    <CardContent className="p-12 text-center">
+                <div className="border border-dashed border-gray-200 rounded-[32px] bg-white hover:bg-gray-50/50 transition-colors duration-300">
+                    <div className="p-12 text-center">
                         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
                             <Pin className="h-8 w-8 text-muted-foreground" />
                         </div>
                         <h3 className="text-lg font-semibold mb-2">{filters.searchQuery ? "No matching pins found" : "No pins available"}</h3>
                         <p className="text-muted-foreground mb-6">{filters.searchQuery ? "Try adjusting your search or filters" : "Start by creating a pin"}</p>
-                        <Button onClick={clearFilters} variant="outline">Clear All Filters</Button>
-                    </CardContent>
-                </Card>
+                        <Button onClick={clearFilters} variant="outline" className="rounded-xl font-bold border-gray-200">Clear All Filters</Button>
+                    </div>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {posts.map((post) => {
@@ -369,56 +358,85 @@ export default function PinterestViewComponent({
                         const message = post.message || post.description || post.title || "";
                         const name = accounts.find(a => a.accountId === post.accountId)?.username || post.username || "Pinterest User";
                         const isScheduled = post.status === 'scheduled';
+                        const mediaUrl = post.content?.media?.[0]?.url || post.imageUrl;
 
                         return (
-                            <Card key={post.id} className={cn("group relative border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 bg-white overflow-hidden rounded-2xl flex flex-col", publishingId === post.id && "opacity-70 pointer-events-none")}>
-                                <div className="relative aspect-[2/3] bg-neutral-100 overflow-hidden cursor-pointer" onClick={() => post.status === 'published' ? handleOpenAnalytics(post) : handleEdit(post)}>
-                                    {hasMedia ? (
-                                        media[0].type?.startsWith('video') ? (
-                                            <video src={media[0].url} className="w-full h-full object-cover" muted />
-                                        ) : (
-                                            <img
-                                                src={media[0].url}
-                                                alt={post.title}
-                                                className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                                            />
-                                        )
-                                    ) : (
-                                        <div className="flex items-center justify-center w-full h-full text-gray-400">No Media</div>
-                                    )}
+                            <div key={post.id} className={cn("group relative flex flex-col transition-all duration-300", publishingId === post.id && "opacity-70 pointer-events-none")}>
+                                <DropdownMenu>
+                                    <div className="relative aspect-[2/3] rounded-[32px] overflow-hidden bg-neutral-100 group/media shadow-sm hover:shadow-xl transition-shadow duration-300">
+                                        <DropdownMenuTrigger asChild>
+                                            <div className="group/media relative w-full aspect-[2/3] rounded-[32px] overflow-hidden bg-gray-50 border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer">
+                                                {mediaUrl ? (
+                                                    <img
+                                                        src={mediaUrl}
+                                                        alt={post.title}
+                                                        className="w-full h-full object-cover group-hover/media:scale-105 transition-transform duration-700"
+                                                    />
+                                                ) : (
+                                                    <div className="flex items-center justify-center w-full h-full text-gray-400">No Media</div>
+                                                )}
 
-                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 px-2 z-10">
-                                        {post.status === 'published' ? (
-                                            <Button size="sm" variant="secondary" className="rounded-full h-8 px-3" onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }}>
-                                                <BarChart3 className="w-3.5 h-3.5 mr-1" /> View
-                                            </Button>
-                                        ) : (
-                                            <Button size="sm" variant="secondary" className="rounded-full h-8 px-3" onClick={(e) => handlePublishNow(e, post)}>
-                                                <Send className="w-3.5 h-3.5 mr-1" /> Post
-                                            </Button>
+                                                {/* Top Right Three Dots Overlay */}
+                                                <div className="absolute top-4 right-4 h-9 w-9 rounded-full bg-white/95 hover:bg-white flex items-center justify-center shadow-lg border border-gray-100 opacity-60 group-hover/media:opacity-100 transition-all duration-300 z-10 scale-90 group-hover/media:scale-110 active:scale-95 cursor-pointer">
+                                                    <MoreHorizontal className="h-5 w-5 text-gray-900" />
+                                                </div>
+
+                                                {/* Dark Overlay on Hover */}
+                                                <div className="absolute inset-0 bg-black/5 opacity-0 group-hover/media:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                            </div>
+                                        </DropdownMenuTrigger>
+
+                                        {isScheduled && (
+                                            <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-2.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg">
+                                                <Calendar className="w-3.5 h-3.5" />
+                                                <span className="uppercase tracking-widest">{formatDate(post.scheduledAt)}</span>
+                                            </div>
+                                        )}
+
+                                        {publishingId === post.id && (
+                                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-[60]">
+                                                <Loader2 className="h-8 w-8 animate-spin text-[#E60023]" />
+                                            </div>
                                         )}
                                     </div>
+                                    <DropdownMenuContent align="start" className="w-[540px] p-0 overflow-hidden border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.15)] bg-white rounded-[32px]">
+                                        <div className="flex">
+                                            {/* Left side: Pinterest post design */}
+                                            <div className="w-[320px] flex-shrink-0 bg-gray-50/50 p-4 border-r border-gray-100/50">
+                                                <PinterestPreview
+                                                    title={post.title}
+                                                    description={post.message || post.description}
+                                                    content={{
+                                                        message: post.message || post.description || "",
+                                                        media: post.content?.media || (post.imageUrl ? [{ url: post.imageUrl, type: "image/jpeg" }] : [])
+                                                    }}
+                                                    imageUrl={mediaUrl}
+                                                    page={accounts.find(a => a.accountId === post.accountId) || { username: post.username || "Pinterest User" }}
+                                                    boardName={(() => {
+                                                        const account = accounts.find(a => a.accountId === post.accountId);
+                                                        return account?.boards?.find(b => b.id === post.boardId)?.name || "";
+                                                    })()}
+                                                    compact={true}
+                                                />
+                                            </div>
 
-                                    <div className="absolute top-2 right-2">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="secondary" size="icon" className="h-7 w-7 rounded-full bg-white/80 hover:bg-white text-black"><MoreVertical className="h-3.5 w-3.5" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-[200px] rounded-[32px] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.1)] border border-gray-100 p-2.5">
+                                            {/* Right side: Actions */}
+                                            <div className="w-[220px] bg-white p-3 flex flex-col justify-center gap-1.5">
                                                 {post.status === 'published' ? (
                                                     <>
                                                         <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenAnalytics(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                             <BarChart3 className="h-5 w-5 text-gray-900" />
                                                             <span className="font-bold text-[13px] text-gray-900">View Analytics</span>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditClick(post, 'view'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                             <Eye className="h-5 w-5 text-gray-900" />
                                                             <span className="font-bold text-[13px] text-gray-900">Pin Details</span>
                                                         </DropdownMenuItem>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEdit(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditClick(post, 'edit'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-gray-50 transition-colors group">
                                                             <Edit className="h-5 w-5 text-gray-900" />
                                                             <span className="font-bold text-[13px] text-gray-900">Edit Pin</span>
                                                         </DropdownMenuItem>
@@ -426,54 +444,63 @@ export default function PinterestViewComponent({
                                                             <Send className="h-5 w-5 text-purple-600" />
                                                             <span className="font-bold text-[13px] text-purple-600">Publish Now</span>
                                                         </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleDelete(post); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group">
+                                                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditClick(post, 'delete'); }} className="flex items-center gap-3 p-3.5 cursor-pointer rounded-[20px] hover:bg-red-50 transition-colors group">
                                                             <Trash2 className="h-5 w-5 text-red-600" />
                                                             <span className="font-bold text-[13px] text-red-600">Delete Pin</span>
                                                         </DropdownMenuItem>
                                                     </>
                                                 )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                            </div>
+                                        </div>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+
+                                <div className="mt-3 px-2 space-y-1.5">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <h4 className="font-black text-[13px] truncate text-gray-900 tracking-tight flex-1" title={post.title}>
+                                            {post.title || "No Title"}
+                                        </h4>
+                                        <Badge className={cn(
+                                            "rounded-full px-2 py-0 text-[8px] font-black uppercase tracking-wider shrink-0",
+                                            post.status === 'published' ? "bg-green-50 text-green-700 border-green-100" : "bg-purple-50 text-purple-700 border-purple-100"
+                                        )}>
+                                            {post.status === 'published' ? "Published" : "Future Pin"}
+                                        </Badge>
                                     </div>
 
-                                    {isScheduled && (
-                                        <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1">
-                                            <Calendar className="w-3 h-3" />
-                                            {formatDate(post.scheduledAt)}
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                                            <Layers className="w-3 h-3" />
+                                            <span className="truncate">
+                                                {(() => {
+                                                    const account = accounts.find(a => a.accountId === post.accountId);
+                                                    return account?.boards?.find(b => b.id === post.boardId)?.name || "Default Board";
+                                                })()}
+                                            </span>
                                         </div>
-                                    )}
+
+                                        <div className="flex items-center justify-between py-1">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6 border border-gray-100 shadow-sm">
+                                                    <AvatarImage src={post.profilePicture} />
+                                                    <AvatarFallback className="text-[10px] font-black">{name[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-[11px] font-bold text-gray-700 max-w-[100px] truncate">{name}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="flex items-center gap-1 text-gray-400">
+                                                    <Eye className="w-3.5 h-3.5" />
+                                                    <span className="text-[10px] font-bold">{formatNumber(post.metrics?.impressions || post.metrics?.views)}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-gray-400">
+                                                    <Pin className="w-3.5 h-3.5 text-red-500/30" />
+                                                    <span className="text-[10px] font-bold">{formatNumber(post.metrics?.saves)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <CardContent className="p-4 space-y-2 flex-1 flex flex-col">
-                                    <h4 className="font-bold text-sm truncate text-gray-900" title={post.title}>{post.title || "No Title"}</h4>
-                                    <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed flex-1">{message}</p>
-                                    <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-auto">
-                                        <div className="flex items-center gap-1.5">
-                                            <Avatar className="h-5 w-5">
-                                                <AvatarImage src={post.profilePicture} />
-                                                <AvatarFallback className="text-[9px]">{name[0]}</AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-[10px] font-bold text-gray-600 max-w-[80px] truncate">{name}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex items-center gap-1 text-gray-400">
-                                                <Eye className="w-3 h-3" />
-                                                <span className="text-[10px] font-bold">{formatNumber(post.metrics?.impressions || post.metrics?.views)}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1 text-gray-400">
-                                                <Pin className="w-3 h-3" />
-                                                <span className="text-[10px] font-bold">{formatNumber(post.metrics?.saves)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                                {publishingId === post.id && (
-                                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center z-50 rounded-2xl">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Loader2 className="h-8 w-8 animate-spin text-[#E60023]" />
-                                        </div>
-                                    </div>
-                                )}
-                            </Card>
+                            </div>
                         );
                     })}
                 </div>
@@ -487,6 +514,7 @@ export default function PinterestViewComponent({
                     </Button>
                 </div>
             )}
+
             {/* Analytics Modal */}
             <PinterestAnalyticsModal
                 open={analyticsModalOpen}
