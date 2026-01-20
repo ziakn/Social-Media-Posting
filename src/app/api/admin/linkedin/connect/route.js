@@ -9,8 +9,8 @@ export async function GET() {
             hasClientId: !!client_id,
             hasRedirectUri: !!redirect_uri
         });
-        return NextResponse.json({ 
-            error: "OAuth configuration missing. Please check LINKEDIN_CLIENT_ID and LINKEDIN_REDIRECT_URI in your .env file." 
+        return NextResponse.json({
+            error: "OAuth configuration missing. Please check LINKEDIN_CLIENT_ID and LINKEDIN_REDIRECT_URI in your .env file."
         }, { status: 500 });
     }
 
@@ -19,10 +19,11 @@ export async function GET() {
         "openid",
         "profile",
         "email",
-        "w_member_social"
+        "w_member_social",
+        "w_organization_social",
+        "r_organization_social",
+        "rw_organization_admin",
     ];
-
-    // LinkedIn OAuth 2.0 Authorization URL
     const params = new URLSearchParams({
         response_type: 'code',
         client_id: client_id,

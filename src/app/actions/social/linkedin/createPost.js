@@ -35,7 +35,7 @@ async function handleLinkedinResponse(res, context = "LinkedIn API") {
 /**
  * Upload Image/Video to LinkedIn
  */
-async function uploadMedia(accessToken, platformUserId, mediaUrl, mediaType) {
+async function uploadMedia(accessToken, ownerUrn, mediaUrl, mediaType) {
     // 1. Register Upload
     const registerRes = await fetch("https://api.linkedin.com/v2/assets?action=registerUpload", {
         method: "POST",
@@ -51,7 +51,7 @@ async function uploadMedia(accessToken, platformUserId, mediaUrl, mediaType) {
                         ? "urn:li:digitalmediaRecipe:feedshare-image"
                         : "urn:li:digitalmediaRecipe:feedshare-video"
                 ],
-                owner: `urn:li:person:${platformUserId}`,
+                owner: ownerUrn,
                 serviceRelationships: [{
                     relationshipType: "OWNER",
                     identifier: "urn:li:userGeneratedContent"
@@ -139,7 +139,18 @@ export async function createLinkedinPost({
         const accountData = accountDoc.data();
         const accessToken = accountData.accessToken;
         const platformUserId = accountData.platformUserId;
+        const accountType = accountData.accountType || "person"; // Default to person for legacy data
         const accountId = accountDoc.id;
+
+        let authorUrn;
+        if (accountData.platformUrn) {
+            authorUrn = accountData.platformUrn;
+        } else {
+            // Fallback construction
+            authorUrn = accountType === "organization"
+                ? `urn:li:organization:${platformUserId}`
+                : `urn:li:person:${platformUserId}`;
+        }
 
         let result;
         if (scheduledTime) {
@@ -148,7 +159,7 @@ export async function createLinkedinPost({
         } else {
             // Immediate post
             let postBody = {
-                author: `urn:li:person:${platformUserId}`,
+                author: authorUrn,
                 lifecycleState: "PUBLISHED",
                 specificContent: {
                     "com.linkedin.ugc.ShareContent": {
@@ -166,7 +177,8 @@ export async function createLinkedinPost({
             if (imageUrl || videoUrl) {
                 const mediaType = imageUrl ? "image" : "video";
                 const mediaUrl = imageUrl || videoUrl;
-                const asset = await uploadMedia(accessToken, platformUserId, mediaUrl, mediaType);
+                // Pass full authorUrn to uploadMedia
+                const asset = await uploadMedia(accessToken, authorUrn, mediaUrl, mediaType);
 
                 postBody.specificContent["com.linkedin.ugc.ShareContent"].shareMediaCategory = mediaType.toUpperCase();
                 postBody.specificContent["com.linkedin.ugc.ShareContent"].media = [{
@@ -328,18 +340,29 @@ export async function replaceLinkedinPost(postDocId, {
         if (postDoc.empty) throw new Error("Post not found");
         const existingData = postDoc.docs[0].data();
         const oldLinkedinPostId = existingData.linkedinPostId;
+        const accountId = existingData.accountId;
 
-        // Get LinkedIn account
-        const q = query(
-            collection(db, "socialAccounts"),
-            where("userId", "==", user.id),
-            where("platform", "==", "linkedin"),
-            where("status", "==", "active")
-        );
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) throw new Error("LinkedIn not connected");
+        // Get LinkedIn account specifically used for this post
+        let accountDoc;
+        if (accountId) {
+            accountDoc = await getDoc(doc(db, "socialAccounts", accountId));
+        }
 
-        const account = snapshot.docs[0].data();
+        // Fallback or validation
+        if (!accountDoc || !accountDoc.exists()) {
+            // Try finding any active linkedin account if the specific one is missing (edge case)
+            const q = query(
+                collection(db, "socialAccounts"),
+                where("userId", "==", user.id),
+                where("platform", "==", "linkedin"),
+                where("status", "==", "active")
+            );
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) throw new Error("LinkedIn not connected");
+            accountDoc = snapshot.docs[0];
+        }
+
+        const account = accountDoc.data();
         const accessToken = account.accessToken;
 
         // DELETE OLD LINKEDIN POST if it exists
@@ -356,6 +379,7 @@ export async function replaceLinkedinPost(postDocId, {
             text,
             imageUrl: imageUrl || existingData.imageUrl,
             videoUrl: videoUrl || existingData.videoUrl,
+            accountId: accountId || accountDoc.id, // Pass the account ID
         });
 
         if (!createResult.success) throw new Error(createResult.message);
