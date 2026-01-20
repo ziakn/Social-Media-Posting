@@ -21,7 +21,8 @@ import {
     Calendar,
     Info,
     RotateCw,
-    MoreHorizontal
+    MoreHorizontal,
+    X
 } from "lucide-react";
 import { getBlueSkyPostAnalytics } from "@/app/actions/social/bluesky/getAnalytics";
 import { toast } from "sonner";
@@ -148,8 +149,9 @@ export default function BlueSkyAnalyticsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-[24px]">
+            <DialogContent showCloseButton={false} className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-[24px]">
                 {/* Header */}
+
                 <div className="px-6 py-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-black rounded-lg">
@@ -181,6 +183,14 @@ export default function BlueSkyAnalyticsModal({
                         >
                             <RotateCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
                             {refreshing ? "Updating..." : "Refresh"}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-full"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            <X className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
@@ -322,22 +332,11 @@ export default function BlueSkyAnalyticsModal({
                                                     </div>
                                                 )}
 
-                                                <div className="flex items-center gap-5 pt-2 text-gray-900 mt-2">
-                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
-                                                        <MessageCircle className="h-5 w-5 stroke-[2] group-hover:text-blue-500 transition-colors" />
-                                                        <span className="text-[13px] font-medium text-gray-500">0</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
-                                                        <Repeat2 className="h-5 w-5 stroke-[2] group-hover:text-green-500 transition-colors" />
-                                                        <span className="text-[13px] font-medium text-gray-500">0</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
-                                                        <Heart className="h-5 w-5 stroke-[2] group-hover:text-pink-500 transition-colors" />
-                                                        <span className="text-[13px] font-medium text-gray-500">0</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1 group cursor-pointer transition-all active:scale-90">
-                                                        <Send className="h-5 w-5 stroke-[2] group-hover:text-gray-600 transition-colors" />
-                                                    </div>
+                                                <div className="flex items-center gap-4 text-black pt-1">
+                                                    <MessageCircle className="h-[18px] w-[18px] stroke-[1.5px]" />
+                                                    <Repeat2 className="h-[18px] w-[18px] stroke-[1.5px]" />
+                                                    <Heart className="h-[18px] w-[18px] stroke-[1.5px]" />
+                                                    <MoreHorizontal className="h-[18px] w-[18px] stroke-[1.5px]" />
                                                 </div>
                                             </div>
                                         </div>

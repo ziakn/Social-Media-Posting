@@ -23,7 +23,8 @@ import {
     MoreHorizontal,
     Pin,
     ExternalLink,
-    MessageSquare
+    MessageSquare,
+    X
 } from "lucide-react";
 import { getPinterestPostAnalytics } from "@/app/actions/social/pinterest/getAnalytics";
 import { toast } from "sonner";
@@ -140,9 +141,10 @@ export default function PinterestAnalyticsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-full sm:h-[90vh] p-0 overflow-hidden sm:rounded-[24px]">
+            <DialogContent showCloseButton={false} className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-[24px]">
                 {/* Header */}
-                <div className="px-6 py-4 border-b flex items-center justify-between bg-white sticky top-0 z-10">
+
+                <div className="px-6 py-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-3 text-[#E60023]">
                         <div className="p-2 bg-[#E60023] rounded-lg shadow-sm">
                             <PinterestLogo className="h-5 w-5 fill-white" />
@@ -168,13 +170,21 @@ export default function PinterestAnalyticsModal({
                             <RotateCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
                             {refreshing ? "Updating..." : "Refresh"}
                         </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-full"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            <X className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row h-[calc(100vh-73px)] sm:h-[calc(90vh-73px)] overflow-hidden">
+                <div className="flex h-[calc(90vh-73px)] overflow-hidden">
                     {/* Left Column - Metrics */}
-                    <ScrollArea className="flex-1 lg:border-r bg-white p-6">
-                        <div className="max-w-3xl mx-auto space-y-10 py-2">
+                    <ScrollArea className="flex-1 border-r">
+                        <div className="max-w-3xl mx-auto space-y-10 p-6">
                             {loading ? (
                                 <div className="space-y-10">
                                     <div className="grid grid-cols-2 gap-6">
@@ -272,11 +282,11 @@ export default function PinterestAnalyticsModal({
                     </ScrollArea>
 
                     {/* Right Column - Premium Pinterest Preview */}
-                    <div className="w-full lg:w-[480px] bg-gray-50/50 flex flex-col items-center justify-center p-8 lg:p-12 border-t lg:border-t-0 relative">
+                    <div className="w-[440px] bg-gray-50/30 flex items-center justify-center p-8">
                         {loading ? (
-                            <Skeleton className="w-[360px] h-[540px] rounded-[40px] shadow-2xl" />
+                            <Skeleton className="w-[340px] h-[540px] rounded-[40px] shadow-2xl" />
                         ) : (
-                            <div className="w-full max-w-[360px] animate-in zoom-in-95 duration-500">
+                            <div className="w-[340px] animate-in zoom-in-95 duration-500">
                                 <div className="text-center mb-6">
                                     <span className="text-[10px] font-black uppercase text-gray-300 tracking-[0.3em]">Live Pinterest Preview</span>
                                 </div>
@@ -324,10 +334,6 @@ export default function PinterestAnalyticsModal({
                                 </div>
                             </div>
                         )}
-
-                        {/* Decorative Background Element */}
-                        <div className="absolute -top-20 -right-20 w-64 h-64 bg-red-50 rounded-full blur-3xl opacity-50 z-0 pointer-events-none" />
-                        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gray-100 rounded-full blur-3xl opacity-50 z-0 pointer-events-none" />
                     </div>
                 </div>
             </DialogContent>
