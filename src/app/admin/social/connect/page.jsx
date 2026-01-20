@@ -165,6 +165,15 @@ export default function SocialConnectPage() {
   };
 
   const fetchConnections = async () => {
+    // Initialize loading state for all platforms that have a check function
+    const initialLoadingState = {};
+    socials.forEach(platform => {
+      if (platform.checkConnection) {
+        initialLoadingState[platform.key] = { connected: false, loading: true };
+      }
+    });
+    setConnections(prev => ({ ...prev, ...initialLoadingState }));
+
     socials.forEach(async (platform) => {
       if (platform.checkConnection) {
         try {
@@ -257,6 +266,7 @@ export default function SocialConnectPage() {
             const status = connections[item.key];
             const isConnected = !!status?.connected;
             const accountCount = status?.count || 0;
+            const isChecking = status?.loading !== false; // Default to true (loading) if undefined
 
             return (
               <Card key={item.key} className="flex flex-col h-full border-slate-200 hover:shadow-lg transition-all group">
@@ -265,7 +275,12 @@ export default function SocialConnectPage() {
                     <div className="p-2.5 rounded-xl bg-slate-50 group-hover:bg-white border border-transparent group-hover:border-slate-100 transition-all">
                       {item.icon}
                     </div>
-                    {isConnected && (
+                    {isChecking ? (
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse" />
+                        Checking
+                      </span>
+                    ) : isConnected && (
                       <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold uppercase tracking-wider">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         Connected
@@ -279,7 +294,7 @@ export default function SocialConnectPage() {
                 </CardHeader>
 
                 <CardContent className="flex-1">
-                  {isConnected ? (
+                  {isConnected && !isChecking ? (
                     <div className="p-3 rounded-lg bg-slate-50 border border-slate-100">
                       <div className="flex items-center justify-between text-[11px] font-medium">
                         <span className="text-slate-400 uppercase">Accounts</span>
@@ -292,7 +307,16 @@ export default function SocialConnectPage() {
                 </CardContent>
 
                 <CardFooter className="pt-2">
-                  {isConnected ? (
+                  {isChecking ? (
+                    <Button
+                      disabled
+                      variant="outline"
+                      className="w-full text-xs font-semibold bg-slate-50 text-slate-400"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5 mr-2 animate-spin" />
+                      Checking Status...
+                    </Button>
+                  ) : isConnected ? (
                     <Button
                       variant="outline"
                       className="w-full text-xs font-semibold"
