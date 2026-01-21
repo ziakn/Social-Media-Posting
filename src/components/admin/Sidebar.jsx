@@ -115,6 +115,12 @@ export function AppSidebar({ user, ...props }) {
   // Group B: Business (Monetization)
   const businessNavItems = [
     {
+      title: "Pricing Packages",
+      url: "/admin/packages",
+      icon: CreditCard,
+      permission: "view_packages",
+    },
+    {
       title: "Billing & Plans",
       url: "/pricing",
       icon: CreditCard,
