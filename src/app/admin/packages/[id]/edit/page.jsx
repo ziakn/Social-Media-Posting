@@ -6,7 +6,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { getPackage, updatePackage } from "@/app/actions/admin/packages";
+import { getPackage, updatePackage } from "@/app/actions/packages/packagesActions";
 import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
 
 export default function EditPackage({ params }) {

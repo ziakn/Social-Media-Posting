@@ -14,7 +14,7 @@ import {
     orderBy,
     serverTimestamp,
 } from "firebase/firestore";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const COLLECTION_NAME = "packages";
 
@@ -90,6 +90,7 @@ export async function createPackage(data) {
         });
 
         revalidatePath("/admin/packages");
+        revalidateTag("public-packages"); // Clear public cache
         return { success: true, id: docRef.id, message: "Package created successfully" };
     } catch (error) {
         console.error("Error creating package:", error);
@@ -112,6 +113,7 @@ export async function updatePackage(id, data) {
         });
 
         revalidatePath("/admin/packages");
+        revalidateTag("public-packages"); // Clear public cache
         return { success: true, message: "Package updated successfully" };
     } catch (error) {
         console.error("Error updating package:", error);
@@ -128,6 +130,7 @@ export async function deletePackage(id) {
     try {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
         revalidatePath("/admin/packages");
+        revalidateTag("public-packages"); // Clear public cache
         return { success: true, message: "Package deleted successfully" };
     } catch (error) {
         console.error("Error deleting package:", error);

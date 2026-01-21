@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Star, MessageSquare, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,46 @@ import PricingFeatureMatrix from "@/components/pricing/PricingFeatureMatrix";
 import PricingFaq from "@/components/pricing/PricingFaq";
 
 // Data
-import { getPlans, planFeatures, pricingFaqs } from "@/lib/constants/pricing-data";
+import { planFeatures, pricingFaqs } from "@/lib/constants/pricing-data";
 
-export default function PricingContent() {
+export default function PricingContent({ packages = [] }) {
   const [isAnnual, setIsAnnual] = useState(true);
-  const plans = getPlans(isAnnual);
+
+  // Transform database packages into the format expected by PricingCards
+  const plans = useMemo(() => {
+    if (!packages || packages.length === 0) return [];
+
+    // Group packages by name and get the appropriate billing cycle
+    const packagesByName = {};
+
+    packages.forEach(pkg => {
+      if (!packagesByName[pkg.name]) {
+        packagesByName[pkg.name] = {};
+      }
+      packagesByName[pkg.name][pkg.billingCycle] = pkg;
+    });
+
+    // Transform to the expected format
+    return Object.entries(packagesByName).map(([name, cycles]) => {
+      // Get the package for the current billing cycle
+      const currentCycle = isAnnual ? 'yearly' : 'monthly';
+      const pkg = cycles[currentCycle] || cycles['monthly'] || Object.values(cycles)[0];
+
+      return {
+        name: pkg.name,
+        id: pkg.name.toLowerCase(),
+        description: pkg.description,
+        price: pkg.price,
+        interval: isAnnual ? "month" : "month",
+        features: pkg.features || [],
+        cta: pkg.ctaText || "Get Started",
+        ctaLink: pkg.ctaLink || "/auth/register",
+        popular: pkg.isPopular || false,
+        gradient: pkg.isPopular || false,
+        order: pkg.order || 0
+      };
+    }).sort((a, b) => a.order - b.order);
+  }, [packages, isAnnual]);
 
   return (
     <div className="bg-gray-50 min-h-screen pt-32 pb-0 font-inter text-gray-900">

@@ -1,4 +1,5 @@
 import PricingContent from "./PricingContent";
+import { getPublicPackages } from "@/app/actions/website/packages/packagesActions";
 
 export const metadata = {
     title: "Pricing Plans for Social Media Management | SocialHub",
@@ -15,7 +16,11 @@ export const metadata = {
     }
 };
 
-export default function PricingPage() {
+export default async function PricingPage() {
+    // Fetch active packages from database (using public action)
+    const result = await getPublicPackages();
+    const packages = result.success ? result.packages : [];
+
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Product",
@@ -86,7 +91,7 @@ export default function PricingPage() {
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
             />
-            <PricingContent />
+            <PricingContent packages={packages} />
         </>
     );
 }

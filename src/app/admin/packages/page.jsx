@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 import { toast } from "sonner";
-import { getPackages, deletePackage } from "@/app/actions/admin/packages";
+import { getPackages, deletePackage } from "@/app/actions/packages/packagesActions";
 import { Badge } from "@/components/ui/badge";
 
 export default function PackagesList() {
