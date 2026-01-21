@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Coins, ChevronDown, User, CreditCard, LogOut, Lock } from 'lucide-react';
+import { ChevronDown, User, CreditCard, LogOut, Lock } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 import { API_ROUTES } from '@/constants/api';
 import { cn } from '@/lib/utils';
@@ -10,22 +10,8 @@ import { cn } from '@/lib/utils';
 export default function Navbar({ user: initialUser }) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
-  const [coinBalance, setCoinBalance] = useState(null);
 
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        const res = await fetch("/api/user/me");
-        const data = await res.json();
-        if (data.user) {
-          setCoinBalance(data.user.coinBalance);
-        }
-      } catch (err) {
-        console.error("Failed to fetch balance:", err);
-      }
-    };
-    fetchBalance();
-  }, []);
+
 
   const handleLogout = async () => {
     try {
@@ -48,118 +34,82 @@ export default function Navbar({ user: initialUser }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 shadow-sm">
       <div className="flex items-center space-x-4">
-        <h1 className="text-xl font-semibold tracking-tight">Portal</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-gray-900">SocialHub</h1>
       </div>
 
       <div className="ml-auto flex items-center gap-4 relative">
-        {/* Main Account Capsule */}
-        <div className="flex items-center bg-white border-2 border-indigo-50 rounded-full p-1.5 shadow-md hover:shadow-lg hover:border-indigo-100 transition-all duration-300">
+        {/* User Profile Section */}
+        <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm hover:shadow transition-all gap-2">
 
-          {/* Enhanced Coin Section */}
           <div
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 rounded-full shadow-inner cursor-pointer hover:brightness-110 active:scale-95 transition-all text-white"
-            onClick={() => router.push('/pricing')}
-          >
-            <Coins className="h-5 w-5 drop-shadow-sm animate-bounce" style={{ animationDuration: '3s' }} />
-            <div className="flex flex-col items-start">
-              <span className="text-[10px] font-black leading-none opacity-80 uppercase tracking-tighter">Total Coins</span>
-              <span className="text-base font-extrabold leading-none drop-shadow-sm">
-                {coinBalance !== null ? coinBalance : '...'}
-              </span>
-            </div>
-          </div>
-
-          {/* User Profile Section */}
-          <div
-            className="flex items-center gap-3 ml-3 cursor-pointer group pr-4"
+            className="flex items-center gap-2 cursor-pointer group"
             onClick={() => setShowMenu(!showMenu)}
           >
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white ring-2 ring-white shadow-md group-hover:scale-105 transition-all duration-300">
+            <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center text-white shadow-sm hover:shadow transition-all">
               {initialUser?.name ? (
-                <span className="text-base font-black tracking-tighter">
+                <span className="text-sm font-bold">
                   {initialUser.name.charAt(0).toUpperCase()}
                 </span>
               ) : (
-                <User className="h-5 w-5" />
+                <User className="h-4 w-4" />
               )}
             </div>
 
             <div className="hidden sm:flex flex-col">
-              <span className="text-sm font-black text-gray-900 leading-none group-hover:text-indigo-600 transition-colors">
+              <span className="text-sm font-semibold text-gray-900 leading-none group-hover:text-primary transition-colors">
                 {initialUser?.name || 'Loading user...'}
               </span>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-                <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Online</span>
-              </div>
+              <span className="text-xs text-gray-500 mt-0.5">Administrator</span>
             </div>
 
             <ChevronDown
               size={16}
-              className={cn("text-gray-400 group-hover:text-indigo-500 transition-all duration-300", showMenu && "rotate-180")}
+              className="text-gray-400 group-hover:text-primary transition-colors"
             />
           </div>
         </div>
 
-        {/* Improved Dropdown menu */}
+        {/* Dropdown menu */}
         {showMenu && (
-          <div className="absolute right-0 top-full mt-3 w-64 bg-white border border-gray-100 rounded-3xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-90 duration-200 origin-top-right ring-1 ring-black/5">
-            <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 p-6 text-white relative overflow-hidden">
-              <div className="relative z-10">
-                <p className="text-xs font-bold opacity-70 uppercase tracking-widest mb-1">Authenticated Account</p>
-                <p className="text-lg font-black truncate">{initialUser?.name || 'Administrator'}</p>
-                <p className="text-xs font-medium opacity-80 truncate mt-1">{initialUser?.email || 'admin@socialposting.com'}</p>
-              </div>
-              <div className="absolute -right-4 -bottom-4 opacity-10 rotate-12">
-                <User size={80} />
-              </div>
+          <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+            <div className="border-b border-gray-100 p-4 bg-gray-50">
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Account</p>
+              <p className="text-sm font-semibold text-gray-900 truncate mt-1">{initialUser?.name || 'Administrator'}</p>
+              <p className="text-xs text-gray-500 truncate">{initialUser?.email || 'admin@socialposting.com'}</p>
             </div>
-            <div className="p-3 space-y-1">
+            <div className="p-2 space-y-0.5">
               <button
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all group"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-lg transition-colors group"
                 onClick={() => { setShowMenu(false); router.push('/admin/settings?tab=profile'); }}
               >
-                <div className="p-1.5 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                  <User className="h-4 w-4 text-slate-500 group-hover:text-indigo-600" />
-                </div>
+                <User className="h-4 w-4 text-gray-500 group-hover:text-primary" />
                 <span>Profile Settings</span>
               </button>
 
               <button
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all group"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-lg transition-colors group"
                 onClick={() => { setShowMenu(false); router.push('/admin/settings?tab=security'); }}
               >
-                <div className="p-1.5 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                  <Lock className="h-4 w-4 text-slate-500 group-hover:text-indigo-600" />
-                </div>
+                <Lock className="h-4 w-4 text-gray-500 group-hover:text-primary" />
                 <span>Account Security</span>
               </button>
 
               <button
-                className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-slate-50 hover:text-indigo-600 rounded-xl transition-all group"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-primary rounded-lg transition-colors group"
                 onClick={() => { setShowMenu(false); router.push('/pricing'); }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-slate-100 rounded-lg group-hover:bg-indigo-100 transition-colors">
-                    <CreditCard className="h-4 w-4 text-slate-500 group-hover:text-indigo-600" />
-                  </div>
-                  <span>Billing & Subscriptions</span>
-                </div>
+                <CreditCard className="h-4 w-4 text-gray-500 group-hover:text-primary" />
+                <span>Billing & Subscriptions</span>
               </button>
 
-              <div className="h-px bg-gray-100 mx-2 my-1" />
+              <div className="h-px bg-gray-100 my-1" />
 
               <button
-                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-all group"
+                className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors group"
                 onClick={handleLogout}
               >
-                <div className="p-1.5 bg-red-50 rounded-lg group-hover:bg-red-100 transition-colors">
-                  <LogOut className="h-4 w-4 text-red-500" />
-                </div>
-                <span>Logout Session</span>
+                <LogOut className="h-4 w-4 text-red-500" />
+                <span>Logout</span>
               </button>
             </div>
           </div>
