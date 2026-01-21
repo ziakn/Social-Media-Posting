@@ -47,19 +47,25 @@ export default function TiktokPreview({ content = {}, account = {} }) {
                                 <div className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center">
                                     <Heart className="w-7 h-7 text-white fill-white" />
                                 </div>
-                                <span className="text-white text-[10px] font-bold">12.5K</span>
+                                <span className="text-white text-[10px] font-bold">
+                                    {content.metrics?.likes ? (content.metrics.likes >= 1000 ? (content.metrics.likes / 1000).toFixed(1) + 'K' : content.metrics.likes) : '0'}
+                                </span>
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <div className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center">
                                     <MessageCircle className="w-7 h-7 text-white fill-white" />
                                 </div>
-                                <span className="text-white text-[10px] font-bold">842</span>
+                                <span className="text-white text-[10px] font-bold">
+                                    {content.metrics?.comments ? (content.metrics.comments >= 1000 ? (content.metrics.comments / 1000).toFixed(1) + 'K' : content.metrics.comments) : '0'}
+                                </span>
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <div className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center">
                                     <Share2 className="w-7 h-7 text-white fill-white" />
                                 </div>
-                                <span className="text-white text-[10px] font-bold">1.2K</span>
+                                <span className="text-white text-[10px] font-bold">
+                                    {content.metrics?.shares ? (content.metrics.shares >= 1000 ? (content.metrics.shares / 1000).toFixed(1) + 'K' : content.metrics.shares) : '0'}
+                                </span>
                             </div>
                             <div className="w-11 h-11 bg-black rounded-full border-2 border-white/20 overflow-hidden mt-2">
                                 <img src={account.profilePicture || `https://i.pravatar.cc/150?u=${account.id}`} className="w-full h-full object-cover" alt="" />

@@ -119,7 +119,7 @@ export default function TiktokAnalyticsModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-[24px]">
+            <DialogContent showCloseButton={false} className="w-[95vw] md:w-[85vw] md:max-w-[1200px] h-[90vh] p-0 overflow-hidden rounded-[24px]">
                 {/* Header */}
                 <div className="px-6 py-4 border-b flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -146,6 +146,14 @@ export default function TiktokAnalyticsModal({
                         >
                             <RotateCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
                             {refreshing ? "Updating..." : "Refresh"}
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 rounded-full"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            <X className="h-4 w-4" />
                         </Button>
                     </div>
                 </div>
