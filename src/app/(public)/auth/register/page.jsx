@@ -241,7 +241,7 @@ export default function Register() {
               </label>
               <select
                 id="creatorType"
-                className="flex h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest ring-offset-white focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-plus-jakarta transition-all text-[#0C1B33]"
+                className="flex h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] disabled:cursor-not-allowed disabled:opacity-50 font-plus-jakarta transition-all text-[#0C1B33]"
                 value={form.creatorType}
                 onChange={(e) => setForm({ ...form, creatorType: e.target.value })}
               >
@@ -270,7 +270,7 @@ export default function Register() {
                 </PopoverTrigger>
                 <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
                   <Command className="font-plus-jakarta">
-                    <CommandInput placeholder="Search Node..." className="h-9 text-[10px] font-bold uppercase tracking-widest" />
+                    <CommandInput placeholder="Search Country..." className="h-9 text-[10px] font-bold uppercase tracking-widest" />
                     <CommandList className="max-h-[200px]">
                       <CommandEmpty className="text-[10px] font-bold uppercase py-4">Unknown Sector.</CommandEmpty>
                       <CommandGroup heading="Priorities" className="text-[9px] font-black uppercase opacity-60">

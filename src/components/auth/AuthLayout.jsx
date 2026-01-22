@@ -46,7 +46,7 @@ export default function AuthLayout({ children, title, subtitle, visualTitle, vis
                 {/* Decorative sub-bg */}
                 <div className="absolute inset-0 bg-slate-50/50 pointer-events-none" />
 
-                <div className="w-full max-w-[440px] mx-auto relative z-10">
+                <div className="w-full max-w-[500px] mx-auto relative z-10">
                     <div className="mb-12 text-center lg:text-left">
                         <h1 className="text-4xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tighter mb-4 uppercase leading-none">
                             {title}
