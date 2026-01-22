@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { ROUTES } from "@/constants/routes";
 import AuthLayout from "@/components/auth/AuthLayout";
 
 export default function Login() {
-  const [email, setEmail] = useState("zia@gmail.com");
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState(searchParams.get("email") || "zia@gmail.com");
   const [password, setPassword] = useState("asdasdasd");
   const [showPassword, setShowPassword] = useState(false);
   const [alert, setAlert] = useState("");
@@ -42,7 +43,8 @@ export default function Login() {
       }
 
       setSuccess(true);
-      setTimeout(() => router.push(ROUTES.ADMIN_DASHBOARD), 800);
+      const redirectPath = searchParams.get("redirect") || ROUTES.ADMIN_DASHBOARD;
+      setTimeout(() => router.push(redirectPath), 800);
     } catch (error) {
       console.error(error);
       setLoading(false);
@@ -52,8 +54,8 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Welcome Back"
-      subtitle="Log in to manage and publish your social media posts in one place."
+      title="Access Control"
+      subtitle="Authenticate your identity to manage your multi-platform network."
     >
       <div className="space-y-6">
         {alert && (
@@ -64,7 +66,7 @@ export default function Login() {
 
         {success && (
           <Alert variant="default" className="bg-emerald-50 border-emerald-100 text-emerald-600 rounded-lg">
-            <AlertDescription className="font-bold text-xs uppercase tracking-tight">Successfully logged in! Redirecting...</AlertDescription>
+            <AlertDescription className="font-bold text-xs uppercase tracking-tight">Access Granted. Synchronizing...</AlertDescription>
           </Alert>
         )}
 
@@ -76,11 +78,12 @@ export default function Login() {
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               placeholder="zia@gmail.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300"
+              className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300 transition-all"
             />
           </div>
 
@@ -89,7 +92,7 @@ export default function Login() {
               <label htmlFor="password" className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
                 <Lock className="h-3 w-3 text-[#3B82F6]" /> Access Key
               </label>
-              <Link href="/auth/reset" className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] hover:text-[#0081cc]">
+              <Link href="/auth/reset" className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] hover:text-[#0081cc] transition-colors">
                 Recovery?
               </Link>
             </div>
@@ -97,16 +100,18 @@ export default function Login() {
               <Input
                 id="password"
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300 pr-12"
+                className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300 pr-12 transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -136,10 +141,10 @@ export default function Login() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
+          <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33] transition-all">
             <Chrome className="h-4 w-4 text-[#3B82F6]" /> Google
           </Button>
-          <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
+          <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33] transition-all">
             <Github className="h-4 w-4" /> GitHub
           </Button>
         </div>
@@ -147,7 +152,7 @@ export default function Login() {
         <div className="pt-6 text-center">
           <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
             New to the network?{" "}
-            <Link href="/auth/register" className="text-[#3B82F6] font-black hover:underline ml-1">
+            <Link href="/auth/register" className="text-[#3B82F6] font-black hover:underline ml-1 transition-all">
               Join Today
             </Link>
           </p>

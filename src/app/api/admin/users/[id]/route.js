@@ -56,7 +56,7 @@ export async function DELETE(req, { params }) {
 export async function PUT(req, { params }) {
   try {
     const { id } = await params;
-    const { name, email, password, role_id } = await req.json();
+    const { name, email, password, role_id, subscription } = await req.json();
 
     const userRef = doc(db, "users", id);
     const userSnap = await getDoc(userRef);
@@ -65,7 +65,7 @@ export async function PUT(req, { params }) {
       return new Response(JSON.stringify({ success: false, message: "User not found" }), { status: 404 });
     }
 
-    const data = { name, email, role_id };
+    const data = { name, email, role_id, subscription };
     if (password && password.trim() !== "") {
       data.password = await bcrypt.hash(password, 10);
     }

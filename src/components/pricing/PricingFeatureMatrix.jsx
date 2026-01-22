@@ -1,3 +1,4 @@
+import React from "react";
 import { Check, Minus } from "lucide-react";
 import {
     Table,
@@ -25,7 +26,7 @@ export default function PricingFeatureMatrix({ features }) {
                     </TableHeader>
                     <TableBody>
                         {features.map((section, idx) => (
-                            <>
+                            <React.Fragment key={idx}>
                                 <TableRow key={idx} className="bg-gray-50/30 hover:bg-gray-50/30">
                                     <TableCell colSpan={5} className="font-bold text-gray-900 py-3 uppercase text-xs tracking-wider">
                                         {section.category}
@@ -48,7 +49,7 @@ export default function PricingFeatureMatrix({ features }) {
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                            </>
+                            </React.Fragment>
                         ))}
                     </TableBody>
                 </Table>

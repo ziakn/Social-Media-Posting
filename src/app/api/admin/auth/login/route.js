@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { createToken } from "@/lib/auth";
-import { collection, query, where, getDocs, documentId } from "firebase/firestore";
+import { collection, query, where, getDocs, getDoc, doc, documentId } from "firebase/firestore";
 import bcrypt from "bcryptjs";
 
 export async function POST(req) {
@@ -45,16 +45,14 @@ export async function POST(req) {
     // Fetch role data
     let roleData = null;
     if (userDoc.role_id) {
-      const roleSnap = await getDocs(
-        query(collection(db, "roles"), where("__name__", "==", userDoc.role_id))
-      );
-      if (!roleSnap.empty) {
-        roleData = roleSnap.docs[0].data();
+      const roleSnap = await getDoc(doc(db, "roles", userDoc.role_id));
+      if (roleSnap.exists()) {
+        roleData = roleSnap.data();
       }
     }
 
     const permissionData = [];
-    if (roleData.permissions && roleData.permissions.length > 0) {
+    if (roleData && roleData.permissions && roleData.permissions.length > 0) {
       // Chunk permissions into batches of 30 (Firestore limit for 'in' operator)
       const chunkSize = 30;
       const permissionChunks = [];
@@ -85,6 +83,7 @@ export async function POST(req) {
       name: userDoc.name,
       role: roleData?.name || null,
       permissions: permissionData.map(item => item.name) || [],
+      subscription: userDoc.subscription || null,
     };
 
     // Create JWT token
@@ -97,6 +96,7 @@ export async function POST(req) {
       email: userDoc.email,
       role: roleData?.name || null,
       permissions: permissionData.map(item => item.name) || [],
+      subscription: userDoc.subscription || null,
 
     };
 

@@ -38,10 +38,8 @@ export default function PricingContent({ packages = [] }) {
       const currentCycle = isAnnual ? 'yearly' : 'monthly';
       const pkg = cycles[currentCycle] || cycles['monthly'] || Object.values(cycles)[0];
 
-      // Build checkout link with package and billing cycle
-      const checkoutLink = pkg.price === 0
-        ? "/auth/register"
-        : `/checkout?package=${encodeURIComponent(pkg.name)}&billing=${currentCycle}`;
+      // Build registration link with package and billing cycle
+      const registrationLink = `/auth/register?package=${encodeURIComponent(pkg.name)}&billing=${currentCycle}`;
 
       return {
         name: pkg.name,
@@ -51,7 +49,7 @@ export default function PricingContent({ packages = [] }) {
         interval: isAnnual ? "month" : "month",
         features: pkg.features || [],
         cta: pkg.ctaText || "Get Started",
-        ctaLink: checkoutLink,
+        ctaLink: registrationLink,
         popular: pkg.isPopular || false,
         gradient: pkg.isPopular || false,
         order: pkg.order || 0

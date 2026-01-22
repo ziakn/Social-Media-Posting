@@ -83,6 +83,18 @@ export async function POST(req) {
       role_id,
       password: hash_password,
       coinBalance: 100,
+      subscription: {
+        status: "active",
+        packageId: "XX7Bf4wU3MkJAHu6Ohzm",
+        packageName: "Free",
+        limits: {
+          socialAccounts: 3,
+          scheduledPosts: 30,
+          userSeats: 1,
+          aiCaptions: 0
+        },
+        currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+      },
       created_at: new Date(),
     });
 

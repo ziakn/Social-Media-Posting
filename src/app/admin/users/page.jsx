@@ -70,7 +70,34 @@ export default function UsersList() {
       },
     });
   };
+  const renderPlanBadge = (subscription) => {
+    if (!subscription) return <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">—</span>;
 
+    const planName = subscription.packageName || "Free";
+    const status = subscription.status || "active";
+
+    const colorMap = {
+      "Creator": "bg-blue-100 text-blue-700 border-blue-200",
+      "Pro": "bg-purple-100 text-purple-700 border-purple-200",
+      "Agency": "bg-amber-100 text-amber-700 border-amber-200",
+      "Free": "bg-slate-100 text-slate-700 border-slate-200",
+    };
+
+    const color = colorMap[planName] || colorMap["Free"];
+
+    return (
+      <div className="flex flex-col gap-1">
+        <span className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-black uppercase tracking-wider w-fit ${color}`}>
+          {planName}
+        </span>
+        {status !== "active" && (
+          <span className="text-[8px] font-bold text-red-500 uppercase tracking-tight">
+            ({status})
+          </span>
+        )}
+      </div>
+    );
+  };
 
   if (loading) return <Spinner />;
 
@@ -108,6 +135,7 @@ export default function UsersList() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Plan</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -117,7 +145,10 @@ export default function UsersList() {
                   <TableRow key={user.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role.name || "—"}</TableCell>
+                    <TableCell>
+                      {renderPlanBadge(user.subscription)}
+                    </TableCell>
+                    <TableCell>{user.role?.name || "—"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       {hasPermission('edit_users') &&
                         <Button

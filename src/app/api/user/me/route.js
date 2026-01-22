@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const token = (await cookies()).get('token')?.value;
-    
+
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -35,7 +35,7 @@ export async function GET() {
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("id", "==", userId));
       const querySnapshot = await getDocs(q);
-      
+
       if (!querySnapshot.empty) {
         userDoc = querySnapshot.docs[0].data();
         userDocId = querySnapshot.docs[0].id;
@@ -54,14 +54,15 @@ export async function GET() {
       });
       userDoc.coinBalance = 100;
     }
-    
-    return NextResponse.json({ 
+
+    return NextResponse.json({
       user: {
         id: userDoc.id || userDocId,
         name: userDoc.name,
         email: userDoc.email,
         coinBalance: userDoc.coinBalance,
         role_id: userDoc.role_id,
+        subscription: userDoc.subscription || null,
       }
     });
   } catch (error) {
