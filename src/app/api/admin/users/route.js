@@ -53,7 +53,7 @@ export const GET = async () => {
 
 export async function POST(req) {
   try {
-    const { name, email, role_id, password } = await req.json();
+    const { name, email, role_id, password, creatorType, country } = await req.json();
 
     if (!name || !email || !role_id || !password) {
       return new Response(
@@ -81,6 +81,8 @@ export async function POST(req) {
       name,
       email,
       role_id,
+      creatorType,
+      country,
       password: hash_password,
       coinBalance: 100,
       subscription: {

@@ -11,6 +11,25 @@ import { collection, getDocs } from "firebase/firestore";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
 
+const creatorTypes = [
+  "Influencer", "Content Creator", "Agency", "Digital Artist", "Social Marketer"
+];
+
+const allCountries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
+  "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
+  "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Djibouti",
+  "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji",
+  "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland",
+  "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait",
+  "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi",
+  "Malaysia", "Maldives", "Mali", "Malta", "Mauritania", "Mauritius", "Mexico", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+  "Mozambique", "Myanmar", "Namibia", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "Norway", "Oman", "Pakistan",
+  "Palestine", "Panama", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saudi Arabia", "Singapore", "Slovakia",
+  "Slovenia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand", "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Vietnam"
+].sort();
+
 
 export default function EditUser() {
   const { id } = useParams();
@@ -149,24 +168,26 @@ export default function EditUser() {
 
             <div>
               <label className="block text-sm font-medium mb-1">Identity (Creator Type)</label>
-              <input
-                type="text"
+              <select
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
                 value={form.creatorType || ""}
                 onChange={(e) => setForm({ ...form, creatorType: e.target.value })}
-                placeholder="e.g. Content Creator"
-              />
+              >
+                <option value="">Select Identity</option>
+                {creatorTypes.map(type => <option key={type} value={type}>{type}</option>)}
+              </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-1">Origin (Country)</label>
-              <input
-                type="text"
+              <select
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
                 value={form.country || ""}
                 onChange={(e) => setForm({ ...form, country: e.target.value })}
-                placeholder="e.g. United Arab Emirates"
-              />
+              >
+                <option value="">Select Country</option>
+                {allCountries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
 
             <div className="md:col-span-2">

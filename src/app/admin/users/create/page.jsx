@@ -11,12 +11,33 @@ import { ROUTES } from "@/constants/routes";
 import { toast } from "sonner";
 import { db } from "@/lib/firebase";
 
+const creatorTypes = [
+  "Influencer", "Content Creator", "Agency", "Digital Artist", "Social Marketer"
+];
+
+const allCountries = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan",
+  "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
+  "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic",
+  "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark", "Djibouti",
+  "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji",
+  "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland",
+  "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait",
+  "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi",
+  "Malaysia", "Maldives", "Mali", "Malta", "Mauritania", "Mauritius", "Mexico", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+  "Mozambique", "Myanmar", "Namibia", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "Norway", "Oman", "Pakistan",
+  "Palestine", "Panama", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saudi Arabia", "Singapore", "Slovakia",
+  "Slovenia", "South Africa", "South Korea", "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand", "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom", "United States", "Vietnam"
+].sort();
+
 export default function CreateUser() {
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
     role_id: "",
+    creatorType: "Content Creator",
+    country: "United Arab Emirates",
   });
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +50,7 @@ export default function CreateUser() {
 
   const fetchRoles = async () => {
     try {
-    setLoading(true);
+      setLoading(true);
 
       const res = await fetch(API_ROUTES.ROLES, {
         method: "GET",
@@ -67,7 +88,7 @@ export default function CreateUser() {
     } catch (error) {
       console.error("Error adding user:", error);
       toast.error("Some Thing went Wrong !");
-    } 
+    }
   };
 
 
@@ -112,6 +133,28 @@ export default function CreateUser() {
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Identity (Creator Type)</label>
+              <select
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                value={form.creatorType}
+                onChange={(e) => setForm({ ...form, creatorType: e.target.value })}
+              >
+                {creatorTypes.map(type => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Origin (Country)</label>
+              <select
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                value={form.country}
+                onChange={(e) => setForm({ ...form, country: e.target.value })}
+              >
+                {allCountries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
 
             <div className="md:col-span-2">
