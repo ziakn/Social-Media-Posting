@@ -74,20 +74,36 @@ export async function registerUserAction(formData, selectedPlan, receiveUpdates)
         await setDoc(userRef, userData);
 
         // 6️⃣ Secure Session Generation (Silent Auto-Login)
-
-        // Fetch role & permissions for token payload
-        const roleSnap = await getDoc(doc(db, "roles", roleId));
+        // Fetch role & permissions for token payload (Matching login logic)
         let roleName = "Admin";
         let permissions = [];
+
+        const roleSnap = await getDoc(doc(db, "roles", roleId));
         if (roleSnap.exists()) {
             const roleData = roleSnap.data();
             roleName = roleData.name || "Admin";
 
             if (roleData.permissions?.length > 0) {
-                // Chunk if necessary (Admin usually has < 30 perms currently)
-                const permQ = query(collection(db, "permissions"), where(documentId(), "in", roleData.permissions.slice(0, 30)));
-                const permSnap = await getDocs(permQ);
-                permissions = permSnap.docs.map(doc => doc.data().name);
+                // Chunk permissions into batches of 30 (Firestore limit for 'in' operator)
+                const chunkSize = 30;
+                const permissionChunks = [];
+
+                for (let i = 0; i < roleData.permissions.length; i += chunkSize) {
+                    permissionChunks.push(roleData.permissions.slice(i, i + chunkSize));
+                }
+
+                // Execute queries in parallel
+                const queryPromises = permissionChunks.map(chunk => {
+                    const q = query(collection(db, "permissions"), where(documentId(), "in", chunk));
+                    return getDocs(q);
+                });
+
+                const snapshots = await Promise.all(queryPromises);
+                snapshots.forEach(permSnap => {
+                    permSnap.forEach((doc) => {
+                        permissions.push(doc.data().name);
+                    });
+                });
             }
         }
 

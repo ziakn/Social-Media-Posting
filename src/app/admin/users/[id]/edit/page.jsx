@@ -21,6 +21,8 @@ export default function EditUser() {
     email: "",
     password: "",
     role_id: "",
+    creatorType: "",
+    country: "",
     subscription: null
   });
   const [roles, setRoles] = useState([]);
@@ -142,6 +144,28 @@ export default function EditUser() {
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={form.password || ""}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Identity (Creator Type)</label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                value={form.creatorType || ""}
+                onChange={(e) => setForm({ ...form, creatorType: e.target.value })}
+                placeholder="e.g. Content Creator"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Origin (Country)</label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                value={form.country || ""}
+                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                placeholder="e.g. United Arab Emirates"
               />
             </div>
 
