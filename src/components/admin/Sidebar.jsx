@@ -122,7 +122,7 @@ export function AppSidebar({ user, ...props }) {
     },
     {
       title: "Billing & Plans",
-      url: "/pricing",
+      url: "/admin/subscription",
       icon: CreditCard,
     },
     {
@@ -130,6 +130,12 @@ export function AppSidebar({ user, ...props }) {
       url: "/admin/invoices",
       icon: FileText,
       permission: "view_invoices",
+    },
+    {
+      title: "Billing Analytics",
+      url: "/admin/billing/analytics",
+      icon: BarChart3,
+      permission: "view_billing_analytics",
     },
     {
       title: "Team & Access",

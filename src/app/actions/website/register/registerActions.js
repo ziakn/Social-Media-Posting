@@ -5,6 +5,7 @@ import { setDoc, doc, collection, query, where, getDocs, getDoc, documentId } fr
 import { cookies } from "next/headers";
 import { createToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { initializeBillingProfile } from "@/app/actions/billing/billingActions";
 
 /**
  * Server action to register a user via the website frontend.
@@ -72,6 +73,9 @@ export async function registerUserAction(formData, selectedPlan, receiveUpdates)
         };
 
         await setDoc(userRef, userData);
+
+        // 5.1 Initialize Billing Profile
+        await initializeBillingProfile(userId, selectedPlan, selectedPlan.billingCycle || "monthly");
 
         // 6️⃣ Secure Session Generation (Silent Auto-Login)
         // Fetch role & permissions for token payload (Matching login logic)
