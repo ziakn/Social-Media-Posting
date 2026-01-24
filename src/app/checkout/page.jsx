@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import { createSubscriptionCheckout } from "@/app/actions/subscriptions/subscriptionActions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Check, ArrowLeft } from "lucide-react";
 export default function CheckoutPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = usePermissions();
 
     const [loading, setLoading] = useState(false);
     const [packageData, setPackageData] = useState(null);
@@ -22,6 +22,9 @@ export default function CheckoutPage() {
     const billingCycle = searchParams.get("billing") || "monthly"; // monthly or yearly
 
     useEffect(() => {
+        // Wait for auth to load
+        if (authLoading) return;
+
         // Redirect to login if not authenticated
         if (!user) {
             router.push(`/auth/login?redirect=/checkout?package=${packageName}&billing=${billingCycle}`);
@@ -30,7 +33,7 @@ export default function CheckoutPage() {
 
         // Load package data
         loadPackageData();
-    }, [user, packageName, billingCycle]);
+    }, [user, packageName, billingCycle, authLoading]);
 
     const loadPackageData = async () => {
         // In a real implementation, fetch package details from database
@@ -87,7 +90,7 @@ export default function CheckoutPage() {
             setLoading(true);
 
             const result = await createSubscriptionCheckout({
-                userId: user.uid,
+                userId: user.id,
                 packageId: packageName,
                 billingCycle,
             });

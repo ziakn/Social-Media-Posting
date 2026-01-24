@@ -384,7 +384,7 @@ export async function updateBillingSubscription(userId, newPackageData, newBilli
         const profileSnap = await getDoc(profileRef);
 
         if (!profileSnap.exists()) {
-            throw new Error("Billing profile not found");
+            return await initializeBillingProfile(userId, newPackageData, newBillingCycle);
         }
 
         const currentProfile = profileSnap.data();

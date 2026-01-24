@@ -190,50 +190,108 @@ export default function SubscriptionPage() {
                         </div>
                     )}
 
-                    {/* Available Plans - Compact Grid */}
-                    <div className="space-y-4 pt-2">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Available Upgrades</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {allPackages.filter(p => p.billingCycle === (profile?.billingCycle || 'monthly')).map((pkg) => {
-                                const isCurrent = pkg.name === profile?.packageName;
-                                const isHigher = (pkg.price || 0) > (profile?.amount || 0);
+                    {/* Available Plans */}
+                    <div className="space-y-8 pt-2">
+                        {/* Monthly Plans */}
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Monthly Protocols</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {allPackages.filter(p => p.billingCycle === 'monthly').map((pkg) => {
+                                    const isCurrent = pkg.name === profile?.packageName && profile?.billingCycle === 'monthly';
+                                    const isHigher = (pkg.price || 0) > (profile?.amount || 0);
 
-                                if (isCurrent) return null;
-
-                                return (
-                                    <div key={pkg.id} className="p-4 rounded-lg border border-gray-200 flex flex-col hover:border-gray-300 transition-colors">
-                                        <div className="flex justify-between items-start mb-1">
-                                            <h4 className="text-sm font-bold text-gray-900 uppercase tracking-tight">{pkg.name}</h4>
-                                            <p className="text-sm font-black text-gray-900">${pkg.price}<span className="text-[10px] text-gray-400 font-normal">/mo</span></p>
-                                        </div>
-                                        <p className="text-[11px] text-gray-500 font-medium mb-4 line-clamp-1">{pkg.description || 'Pro features'}</p>
-
-                                        <div className="space-y-1.5 mb-5 flex-grow">
-                                            <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-tight">
-                                                <Check className="h-3 w-3 text-primary" />
-                                                {pkg.limits?.socialAccounts === -1 ? 'Unlimited' : pkg.limits?.socialAccounts} connected networks
+                                    return (
+                                        <div key={pkg.id} className={`p-4 rounded-lg border flex flex-col transition-colors ${isCurrent ? 'border-primary/50 bg-primary/5' : 'border-gray-200 hover:border-gray-300'}`}>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
+                                                    {pkg.name}
+                                                    {isCurrent && <span className="ml-2 text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">CURRENT</span>}
+                                                </h4>
+                                                <p className="text-sm font-black text-gray-900">${pkg.price}<span className="text-[10px] text-gray-400 font-normal">/mo</span></p>
                                             </div>
-                                            <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-tight">
-                                                <Check className="h-3 w-3 text-primary" />
-                                                {pkg.limits?.scheduledPosts === -1 ? 'Unlimited' : pkg.limits?.scheduledPosts} posts / mo
-                                            </div>
-                                        </div>
+                                            <p className="text-[11px] text-gray-500 font-medium mb-4 line-clamp-1">{pkg.description || 'Pro features'}</p>
 
-                                        <Button
-                                            size="sm"
-                                            variant={isHigher ? "secondary" : "outline"}
-                                            className="w-full h-8 text-[10px] font-black uppercase tracking-widest shadow-none"
-                                            onClick={() => {
-                                                setTargetPlan(pkg);
-                                                setSelectedAction('upgrade');
-                                                setIsManageModalOpen(true);
-                                            }}
-                                        >
-                                            {isHigher ? 'Upgrade' : 'Select'}
-                                        </Button>
-                                    </div>
-                                );
-                            })}
+                                            <div className="space-y-1.5 mb-5 flex-grow">
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-tight">
+                                                    <Check className="h-3 w-3 text-primary" />
+                                                    {pkg.limits?.socialAccounts === -1 ? 'Unlimited' : pkg.limits?.socialAccounts} connected networks
+                                                </div>
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-tight">
+                                                    <Check className="h-3 w-3 text-primary" />
+                                                    {pkg.limits?.scheduledPosts === -1 ? 'Unlimited' : pkg.limits?.scheduledPosts} posts / mo
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                size="sm"
+                                                disabled={isCurrent}
+                                                variant={isHigher ? "secondary" : "outline"}
+                                                className="w-full h-8 text-[10px] font-black uppercase tracking-widest shadow-none"
+                                                onClick={() => {
+                                                    setTargetPlan(pkg);
+                                                    setSelectedAction('upgrade');
+                                                    setIsManageModalOpen(true);
+                                                }}
+                                            >
+                                                {isCurrent ? 'Current Plan' : (isHigher ? 'Upgrade' : 'Select')}
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Yearly Plans */}
+                        <div className="space-y-4">
+                            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Yearly Protocols <span className="ml-2 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[9px] normal-case tracking-normal font-bold">Save up to 20%</span></h3>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {allPackages.filter(p => p.billingCycle === 'yearly').map((pkg) => {
+                                    const isCurrent = pkg.name === profile?.packageName && profile?.billingCycle === 'yearly';
+                                    const isHigher = (pkg.price || 0) > (profile?.amount || 0); // Logic might be tricky comparing monthly amount to yearly price, but price field usually stores strictly the cycle price. 
+                                    // If profile is monthly ($29) and pkg is yearly ($290), isHigher is true.
+
+                                    return (
+                                        <div key={pkg.id} className={`p-4 rounded-lg border flex flex-col transition-colors ${isCurrent ? 'border-primary/50 bg-primary/5' : 'border-gray-200 hover:border-gray-300'}`}>
+                                            <div className="flex justify-between items-start mb-1">
+                                                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
+                                                    {pkg.name}
+                                                    {isCurrent && <span className="ml-2 text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">CURRENT</span>}
+                                                </h4>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-black text-gray-900">${pkg.price}<span className="text-[10px] text-gray-400 font-normal">/yr</span></p>
+                                                    <p className="text-[9px] text-emerald-600 font-bold">{(pkg.price / 12).toFixed(0)}/mo</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-[11px] text-gray-500 font-medium mb-4 line-clamp-1">{pkg.description || 'Pro features'}</p>
+
+                                            <div className="space-y-1.5 mb-5 flex-grow">
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-tight">
+                                                    <Check className="h-3 w-3 text-primary" />
+                                                    {pkg.limits?.socialAccounts === -1 ? 'Unlimited' : pkg.limits?.socialAccounts} connected networks
+                                                </div>
+                                                <div className="flex items-center gap-2 text-[10px] text-gray-600 font-bold uppercase tracking-tight">
+                                                    <Check className="h-3 w-3 text-primary" />
+                                                    {pkg.limits?.scheduledPosts === -1 ? 'Unlimited' : pkg.limits?.scheduledPosts} posts / mo
+                                                </div>
+                                            </div>
+
+                                            <Button
+                                                size="sm"
+                                                disabled={isCurrent}
+                                                variant={isHigher ? "secondary" : "outline"}
+                                                className="w-full h-8 text-[10px] font-black uppercase tracking-widest shadow-none"
+                                                onClick={() => {
+                                                    setTargetPlan(pkg);
+                                                    setSelectedAction('upgrade');
+                                                    setIsManageModalOpen(true);
+                                                }}
+                                            >
+                                                {isCurrent ? 'Current Plan' : (isHigher ? 'Upgrade' : 'Select')}
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
 
