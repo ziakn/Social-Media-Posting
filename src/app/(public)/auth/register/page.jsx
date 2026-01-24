@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
-export default function Register() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -128,262 +128,274 @@ export default function Register() {
   ].sort();
 
   return (
+    <div className="space-y-5">
+      {selectedPlan && (
+        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3.5 mb-2">
+          <div className="flex justify-between items-center mb-1.5">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 font-plus-jakarta">Protocol Selection</span>
+            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border font-plus-jakarta ${selectedPlan.name.toLowerCase() === 'free' ? 'bg-slate-200 border-slate-300 text-slate-600' : 'bg-blue-100 border-blue-200 text-blue-600'}`}>
+              {selectedPlan.name}
+            </span>
+          </div>
+          <select
+            className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-[11px] font-bold outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-plus-jakarta h-10"
+            value={selectedPlan.id}
+            onChange={(e) => {
+              const pkg = packages.find(p => p.id === e.target.value);
+              if (pkg) setSelectedPlan(pkg);
+            }}
+          >
+            {packages.map(p => (
+              <option key={p.id} value={p.id}>{p.name} — ${p.price}/{p.billingCycle}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {alert && (
+        <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-lg py-3">
+          <AlertDescription className="font-bold text-[10px] uppercase tracking-tight font-plus-jakarta">{alert}</AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-3.5">
+        <div className="space-y-1.5">
+          <label htmlFor="name" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
+            <User className="h-3 w-3 text-[#3B82F6]" /> Creator Name
+          </label>
+          <Input
+            id="name"
+            type="text"
+            autoComplete="name"
+            placeholder="Zia Muhammad"
+            required
+            className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
+            <Mail className="h-3 w-3 text-[#3B82F6]" /> Communications
+          </label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="zia@example.com"
+            required
+            className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3.5">
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
+              <Lock className="h-3 w-3 text-[#3B82F6]" /> Secure Key
+            </label>
+            <Input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••"
+              required
+              className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label htmlFor="confirmPassword" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
+              <Lock className="h-3 w-3 text-[#3B82F6]" /> Confirm Key
+            </label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              autoComplete="new-password"
+              placeholder="••••"
+              required
+              className={`h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33] ${form.password && form.confirmPassword && form.password !== form.confirmPassword ? 'border-red-300 ring-red-100' : ''}`}
+              value={form.confirmPassword}
+              onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3.5">
+          <div className="space-y-1.5">
+            <label htmlFor="creatorType" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
+              <Building2 className="h-3 w-3 text-[#3B82F6]" /> Identity
+            </label>
+            <select
+              id="creatorType"
+              className="flex h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] disabled:cursor-not-allowed disabled:opacity-50 font-plus-jakarta transition-all text-[#0C1B33]"
+              value={form.creatorType}
+              onChange={(e) => setForm({ ...form, creatorType: e.target.value })}
+            >
+              {creatorTypes.map(type => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </div>
+          <div className="space-y-1.5 flex flex-col">
+            <label htmlFor="country" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
+              <Globe className="h-3 w-3 text-[#3B82F6]" /> Origin
+            </label>
+            <Popover open={open} onOpenChange={setOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className={cn(
+                    "h-11 w-full justify-between rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest font-plus-jakarta transition-all hover:bg-slate-50 text-[#0C1B33]",
+                    !form.country && "text-muted-foreground"
+                  )}
+                >
+                  {form.country
+                    ? allCountries.find((c) => c === form.country)
+                    : "Search..."}
+                  <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <Command className="font-plus-jakarta">
+                  <CommandInput placeholder="Search Country..." className="h-9 text-[10px] font-bold uppercase tracking-widest" />
+                  <CommandList className="max-h-[200px]">
+                    <CommandEmpty className="text-[10px] font-bold uppercase py-4">Unknown Sector.</CommandEmpty>
+                    <CommandGroup heading="Priorities" className="text-[9px] font-black uppercase opacity-60">
+                      {priorities.map((c) => (
+                        <CommandItem
+                          key={c}
+                          value={c}
+                          onSelect={() => {
+                            setForm({ ...form, country: c });
+                            setOpen(false);
+                          }}
+                          className="text-[10px] font-bold uppercase cursor-pointer"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-3 w-3",
+                              form.country === c ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {c}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    <CommandGroup heading="Global Registry" className="text-[9px] font-black uppercase opacity-60">
+                      {allCountries.map((c) => (
+                        <CommandItem
+                          key={c}
+                          value={c}
+                          onSelect={() => {
+                            setForm({ ...form, country: c });
+                            setOpen(false);
+                          }}
+                          className="text-[10px] font-bold uppercase cursor-pointer"
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-3 w-3",
+                              form.country === c ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {c}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+
+        <div className="space-y-2 pt-1">
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="terms"
+              checked={agreeToTerms}
+              onCheckedChange={setAgreeToTerms}
+              className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6] transition-all"
+            />
+            <label htmlFor="terms" className="text-[9px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta cursor-pointer">
+              Agree to <Link href="/terms" className="text-[#3B82F6] font-black hover:underline transition-all">Terms</Link> & <Link href="/privacy" className="text-[#3B82F6] font-black hover:underline transition-all">Privacy</Link>.
+            </label>
+          </div>
+
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="updates"
+              checked={receiveUpdates}
+              onCheckedChange={setReceiveUpdates}
+              className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6] transition-all"
+            />
+            <label htmlFor="updates" className="text-[9px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta cursor-pointer">
+              Receive release node protocols.
+            </label>
+          </div>
+        </div>
+
+        <Button
+          type="submit"
+          className="w-full h-12 bg-[#F9C80E] hover:bg-[#eac00d] text-[#0C1B33] rounded-[6px] font-black text-xs uppercase tracking-[0.15em] transition-all active:scale-[0.98] shadow-subtle mt-2 font-plus-jakarta"
+          disabled={loading}
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Deploy Account"}
+        </Button>
+      </form>
+
+      <div className="relative py-4">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-slate-100" />
+        </div>
+        <div className="relative flex justify-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
+          <span className="bg-white px-4 font-plus-jakarta">Native Integration</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Button variant="outline" className="h-11 rounded-[6px] border-slate-200 font-black text-[9px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
+          <Chrome className="h-3 w-3 text-[#3B82F6]" /> Google
+        </Button>
+        <Button variant="outline" className="h-11 rounded-[6px] border-slate-200 font-black text-[9px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
+          <Github className="h-3 w-3" /> GitHub
+        </Button>
+      </div>
+
+      <div className="pt-6 text-center">
+        <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
+          Already registered?{" "}
+          <Link href="/auth/login" className="text-[#3B82F6] font-black hover:underline ml-1">
+            Log in instead
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function Register() {
+  return (
     <AuthLayout
       title="Join the Network"
       subtitle="Start your zero-friction content scale today."
-      visualTitle={<>Deploy your <br /><span className='text-[#3B82F6]'>Social Influence</span> <br />with {selectedPlan?.name || 'Intelligence'}.</>}
-      visualFeatures={selectedPlan?.features || [
+      visualTitle={<>Deploy your <br /><span className='text-[#3B82F6]'>Social Influence</span> <br />with Intelligence.</>}
+      visualFeatures={[
         "Multi-platform scheduling across every major node.",
         "AI-powered resonance optimization for peak window triggers.",
         "Unified analytics tracking your entire social graph."
       ]}
     >
-      <div className="space-y-5">
-        {selectedPlan && (
-          <div className="bg-slate-50 border border-slate-100 rounded-lg p-3.5 mb-2">
-            <div className="flex justify-between items-center mb-1.5">
-              <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 font-plus-jakarta">Protocol Selection</span>
-              <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border font-plus-jakarta ${selectedPlan.name.toLowerCase() === 'free' ? 'bg-slate-200 border-slate-300 text-slate-600' : 'bg-blue-100 border-blue-200 text-blue-600'}`}>
-                {selectedPlan.name}
-              </span>
-            </div>
-            <select
-              className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-[11px] font-bold outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-plus-jakarta h-10"
-              value={selectedPlan.id}
-              onChange={(e) => {
-                const pkg = packages.find(p => p.id === e.target.value);
-                if (pkg) setSelectedPlan(pkg);
-              }}
-            >
-              {packages.map(p => (
-                <option key={p.id} value={p.id}>{p.name} — ${p.price}/{p.billingCycle}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {alert && (
-          <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-lg py-3">
-            <AlertDescription className="font-bold text-[10px] uppercase tracking-tight font-plus-jakarta">{alert}</AlertDescription>
-          </Alert>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-3.5">
-          <div className="space-y-1.5">
-            <label htmlFor="name" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <User className="h-3 w-3 text-[#3B82F6]" /> Creator Name
-            </label>
-            <Input
-              id="name"
-              type="text"
-              autoComplete="name"
-              placeholder="Zia Muhammad"
-              required
-              className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Mail className="h-3 w-3 text-[#3B82F6]" /> Communications
-            </label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="zia@example.com"
-              required
-              className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-                <Lock className="h-3 w-3 text-[#3B82F6]" /> Secure Key
-              </label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="new-password"
-                placeholder="••••"
-                required
-                className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label htmlFor="confirmPassword" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-                <Lock className="h-3 w-3 text-[#3B82F6]" /> Confirm Key
-              </label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                placeholder="••••"
-                required
-                className={`h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33] ${form.password && form.confirmPassword && form.password !== form.confirmPassword ? 'border-red-300 ring-red-100' : ''}`}
-                value={form.confirmPassword}
-                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3.5">
-            <div className="space-y-1.5">
-              <label htmlFor="creatorType" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-                <Building2 className="h-3 w-3 text-[#3B82F6]" /> Identity
-              </label>
-              <select
-                id="creatorType"
-                className="flex h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] disabled:cursor-not-allowed disabled:opacity-50 font-plus-jakarta transition-all text-[#0C1B33]"
-                value={form.creatorType}
-                onChange={(e) => setForm({ ...form, creatorType: e.target.value })}
-              >
-                {creatorTypes.map(type => <option key={type} value={type}>{type}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1.5 flex flex-col">
-              <label htmlFor="country" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-                <Globe className="h-3 w-3 text-[#3B82F6]" /> Origin
-              </label>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className={cn(
-                      "h-11 w-full justify-between rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest font-plus-jakarta transition-all hover:bg-slate-50 text-[#0C1B33]",
-                      !form.country && "text-muted-foreground"
-                    )}
-                  >
-                    {form.country
-                      ? allCountries.find((c) => c === form.country)
-                      : "Search..."}
-                    <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                  <Command className="font-plus-jakarta">
-                    <CommandInput placeholder="Search Country..." className="h-9 text-[10px] font-bold uppercase tracking-widest" />
-                    <CommandList className="max-h-[200px]">
-                      <CommandEmpty className="text-[10px] font-bold uppercase py-4">Unknown Sector.</CommandEmpty>
-                      <CommandGroup heading="Priorities" className="text-[9px] font-black uppercase opacity-60">
-                        {priorities.map((c) => (
-                          <CommandItem
-                            key={c}
-                            value={c}
-                            onSelect={() => {
-                              setForm({ ...form, country: c });
-                              setOpen(false);
-                            }}
-                            className="text-[10px] font-bold uppercase cursor-pointer"
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-3 w-3",
-                                form.country === c ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {c}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                      <CommandGroup heading="Global Registry" className="text-[9px] font-black uppercase opacity-60">
-                        {allCountries.map((c) => (
-                          <CommandItem
-                            key={c}
-                            value={c}
-                            onSelect={() => {
-                              setForm({ ...form, country: c });
-                              setOpen(false);
-                            }}
-                            className="text-[10px] font-bold uppercase cursor-pointer"
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-3 w-3",
-                                form.country === c ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {c}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-1">
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="terms"
-                checked={agreeToTerms}
-                onCheckedChange={setAgreeToTerms}
-                className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6] transition-all"
-              />
-              <label htmlFor="terms" className="text-[9px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta cursor-pointer">
-                Agree to <Link href="/terms" className="text-[#3B82F6] font-black hover:underline transition-all">Terms</Link> & <Link href="/privacy" className="text-[#3B82F6] font-black hover:underline transition-all">Privacy</Link>.
-              </label>
-            </div>
-
-            <div className="flex items-start space-x-3">
-              <Checkbox
-                id="updates"
-                checked={receiveUpdates}
-                onCheckedChange={setReceiveUpdates}
-                className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6] transition-all"
-              />
-              <label htmlFor="updates" className="text-[9px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta cursor-pointer">
-                Receive release node protocols.
-              </label>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full h-12 bg-[#F9C80E] hover:bg-[#eac00d] text-[#0C1B33] rounded-[6px] font-black text-xs uppercase tracking-[0.15em] transition-all active:scale-[0.98] shadow-subtle mt-2 font-plus-jakarta"
-            disabled={loading}
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Deploy Account"}
-          </Button>
-        </form>
-
-        <div className="relative py-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-100" />
-          </div>
-          <div className="relative flex justify-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
-            <span className="bg-white px-4 font-plus-jakarta">Native Integration</span>
-          </div>
+      <Suspense fallback={
+        <div className="flex justify-center p-8">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
         </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" className="h-11 rounded-[6px] border-slate-200 font-black text-[9px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
-            <Chrome className="h-3 w-3 text-[#3B82F6]" /> Google
-          </Button>
-          <Button variant="outline" className="h-11 rounded-[6px] border-slate-200 font-black text-[9px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
-            <Github className="h-3 w-3" /> GitHub
-          </Button>
-        </div>
-
-        <div className="pt-6 text-center">
-          <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
-            Already registered?{" "}
-            <Link href="/auth/login" className="text-[#3B82F6] font-black hover:underline ml-1">
-              Log in instead
-            </Link>
-          </p>
-        </div>
-      </div>
+      }>
+        <RegisterForm />
+      </Suspense>
     </AuthLayout>
   );
 }

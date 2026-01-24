@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePermissions } from "@/hooks/usePermissions";
 import { createSubscriptionCheckout } from "@/app/actions/subscriptions/subscriptionActions";
@@ -10,7 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { Check, ArrowLeft } from "lucide-react";
 
-export default function CheckoutPage() {
+function CheckoutForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, loading: authLoading } = usePermissions();
@@ -258,5 +258,17 @@ export default function CheckoutPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function CheckoutPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center">
+                <Spinner />
+            </div>
+        }>
+            <CheckoutForm />
+        </Suspense>
     );
 }

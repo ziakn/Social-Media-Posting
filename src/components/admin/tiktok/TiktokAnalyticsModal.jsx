@@ -20,7 +20,8 @@ import {
     Calendar,
     RotateCw,
     MoreHorizontal,
-    Play
+    Play,
+    X
 } from "lucide-react";
 import { getTiktokPostAnalytics } from "@/app/actions/social/tiktok/getAnalytics";
 import { toast } from "sonner";
