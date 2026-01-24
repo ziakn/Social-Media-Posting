@@ -296,10 +296,10 @@ export async function getAllInvoices(userId = null) {
 }
 
 /**
- * Get paginated invoices with role-based access control
+ * Get paginated invoices with role-based access control and search
  * Admins see all invoices, Users see only their own
  */
-export async function getPaginatedInvoices(pageSize = 10, lastDocCreatedAt = null) {
+export async function getPaginatedInvoices(pageSize = 10, cursor = null, searchQuery = "") {
     try {
         const user = await verifyToken();
 
@@ -308,22 +308,38 @@ export async function getPaginatedInvoices(pageSize = 10, lastDocCreatedAt = nul
         }
 
         const invoicesRef = collection(db, "invoices");
-        let constraints = [
-            orderBy("createdAt", "desc"),
-            limit(pageSize)
-        ];
+        let constraints = [];
 
-        // If we have a cursor, add startAfter
-        if (lastDocCreatedAt) {
-            constraints.push(startAfter(new Date(lastDocCreatedAt)));
+        const isSearching = searchQuery && searchQuery.trim().length > 0;
+        const normalizedQuery = isSearching ? searchQuery.trim().toUpperCase() : "";
+
+        if (isSearching) {
+            // Search by Invoice ID (Prefix)
+            constraints.push(where("invoiceId", ">=", normalizedQuery));
+            constraints.push(where("invoiceId", "<=", normalizedQuery + "\uf8ff"));
+            constraints.push(orderBy("invoiceId", "asc")); // Firestore requires orderBy to match range filter
+        } else {
+            // Default: newest first
+            constraints.push(orderBy("createdAt", "desc"));
         }
+
+        // Apply pagination cursor
+        if (cursor) {
+            // If searching, cursor is likely an ID (string). If not, it's a date string/timestamp.
+            const startVal = isSearching ? cursor : new Date(cursor);
+            constraints.push(startAfter(startVal));
+        }
+
+        constraints.push(limit(pageSize));
 
         let q;
         if (user.role === 'Administrator') {
-            // Admin sees all
             q = query(invoicesRef, ...constraints);
         } else {
-            // User sees only their own
+            // Standard users must filter by userId
+            // Note: Firestore requires composite index for 'userId' + 'invoiceId' or 'userId' + 'createdAt'
+            // And if searching by range on 'invoiceId', we generally can't simultaneously filter by 'userId' inequality.
+            // But 'userId' == '...' is an equality filter, so it should be fine with a composite index.
             q = query(invoicesRef, where("userId", "==", user.id), ...constraints);
         }
 
@@ -339,10 +355,16 @@ export async function getPaginatedInvoices(pageSize = 10, lastDocCreatedAt = nul
             billingPeriodEnd: doc.data().billingPeriodEnd?.toDate ? doc.data().billingPeriodEnd.toDate().toISOString() : doc.data().billingPeriodEnd,
         }));
 
-        // Determine if there are potentially more results
         const hasMore = invoices.length === pageSize;
 
-        return { success: true, invoices, hasMore };
+        // Calculate next cursor
+        let nextCursor = null;
+        if (hasMore) {
+            const lastDoc = invoices[invoices.length - 1];
+            nextCursor = isSearching ? lastDoc.invoiceId : lastDoc.createdAt;
+        }
+
+        return { success: true, invoices, hasMore, nextCursor };
     } catch (error) {
         console.error("Error fetching paginated invoices:", error);
         return { success: false, error: error.message };

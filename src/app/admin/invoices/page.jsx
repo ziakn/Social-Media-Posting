@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getBillingProfile, getPaginatedInvoices } from "@/app/actions/billing/billingActions";
 import {
@@ -14,10 +14,12 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Download, FileText, AlertCircle, CheckCircle2, Clock, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CreditCard, Download, FileText, AlertCircle, CheckCircle2, Clock, ChevronDown, Search } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
 import { toast } from "sonner";
+import debounce from "lodash/debounce";
 
 export default function InvoicesPage() {
     const { user } = usePermissions();
@@ -26,6 +28,8 @@ export default function InvoicesPage() {
     const [loading, setLoading] = useState(true);
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [nextCursor, setNextCursor] = useState(null);
 
     useEffect(() => {
         if (user?.id) {
@@ -33,11 +37,47 @@ export default function InvoicesPage() {
         }
     }, [user]);
 
+    // Debounced search handler
+    const debouncedSearch = useCallback(
+        debounce((query) => {
+            fetchInvoices(query, true);
+        }, 500),
+        [user]
+    );
+
+    const handleSearchChange = (e) => {
+        const query = e.target.value;
+        setSearchQuery(query);
+        debouncedSearch(query);
+    };
+
+    const fetchInvoices = async (query = "", reset = false) => {
+        if (!user?.id) return;
+
+        try {
+            if (reset) {
+                setLoading(true); // Show loading state when searching/resetting
+                setInvoices([]);
+            }
+
+            const res = await getPaginatedInvoices(10, null, query);
+
+            if (res.success) {
+                setInvoices(res.invoices);
+                setHasMore(res.hasMore);
+                setNextCursor(res.nextCursor);
+            }
+        } catch (error) {
+            console.error("Error fetching invoices:", error);
+            toast.error("Failed to load invoices");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const fetchBillingData = async () => {
         try {
             setLoading(true);
-            // Fetch profile for the top cards (always user's own profile for now)
-            // Fetch invoices using the new paginated action (Admin gets all, User gets theirs)
             const [profileRes, invoicesRes] = await Promise.all([
                 getBillingProfile(user.id),
                 getPaginatedInvoices(10)
@@ -48,6 +88,7 @@ export default function InvoicesPage() {
             if (invoicesRes.success) {
                 setInvoices(invoicesRes.invoices);
                 setHasMore(invoicesRes.hasMore);
+                setNextCursor(invoicesRes.nextCursor);
             }
         } catch (error) {
             console.error("Error fetching billing data:", error);
@@ -62,13 +103,13 @@ export default function InvoicesPage() {
 
         try {
             setLoadingMore(true);
-            const lastInvoice = invoices[invoices.length - 1];
-            // Pass the createdAt of the last invoice as the cursor
-            const res = await getPaginatedInvoices(10, lastInvoice.createdAt);
+            // Use the nextCursor returned from the server
+            const res = await getPaginatedInvoices(10, nextCursor, searchQuery);
 
             if (res.success) {
                 setInvoices(prev => [...prev, ...res.invoices]);
                 setHasMore(res.hasMore);
+                setNextCursor(res.nextCursor);
             }
         } catch (error) {
             console.error("Error loading more invoices:", error);
@@ -113,7 +154,7 @@ export default function InvoicesPage() {
         }
     };
 
-    if (loading) return <div className="p-12 flex justify-center"><Spinner /></div>;
+    if (loading && !invoices.length && !profile) return <div className="p-12 flex justify-center"><Spinner /></div>;
 
     return (
         <div className="space-y-8 max-w-6xl mx-auto">
@@ -176,15 +217,26 @@ export default function InvoicesPage() {
 
             {/* Invoices Table */}
             <Card className="shadow-subtle border-slate-100 overflow-hidden">
-                <CardHeader className="border-b border-slate-50 bg-slate-50/50">
+                <CardHeader className="border-b border-slate-50 bg-slate-50/50 flex flex-row items-center justify-between pb-4">
                     <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center gap-2">
                         <FileText className="w-4 h-4" /> Transaction History
                     </CardTitle>
+                    <div className="relative w-64">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+                        <Input
+                            placeholder="Search Invoice ID..."
+                            className="h-9 pl-9 text-xs font-medium"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    {invoices.length === 0 ? (
+                    {loading && invoices.length === 0 ? (
+                        <div className="p-12 flex justify-center"><Spinner /></div>
+                    ) : invoices.length === 0 ? (
                         <div className="p-12 text-center text-slate-400 font-bold uppercase text-[11px] tracking-widest">
-                            No ledger entries found.
+                            {searchQuery ? "No matching invoices found." : "No ledger entries found."}
                         </div>
                     ) : (
                         <>
