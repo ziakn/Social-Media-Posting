@@ -57,9 +57,7 @@ async function handleTwitterResponse(res, context = "Twitter API") {
  */
 export async function getUserTwitterAccounts() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -102,9 +100,7 @@ export async function getTwitterPublishedPosts({
     sortBy = "newest"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -227,9 +223,7 @@ export async function getTwitterScheduledPosts({
     sortBy = "newest"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -326,9 +320,7 @@ export async function getTwitterScheduledPosts({
  */
 export async function deleteTwitterPost(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -430,9 +422,7 @@ export async function deleteTwitterPost(postId) {
  */
 export async function updateTwitterPost(postId, message) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -605,9 +595,7 @@ export async function updateTwitterPost(postId, message) {
  */
 export async function updateTwitterPostSchedule(postId, scheduledAt) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -644,9 +632,7 @@ export async function updateTwitterPostSchedule(postId, scheduledAt) {
  */
 export async function getAllTwitterCalendarPosts({ startDate, endDate }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -716,9 +702,7 @@ export async function getAllTwitterCalendarPosts({ startDate, endDate }) {
  */
 export async function publishTwitterPostNow(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -818,9 +802,7 @@ export async function getTwitterPosts({
     sortBy = "newest"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };

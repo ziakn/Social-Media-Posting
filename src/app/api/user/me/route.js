@@ -8,13 +8,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const token = (await cookies()).get('token')?.value;
 
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const decoded = await verifyToken(token);
+    const decoded = await verifyToken();
     if (!decoded) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

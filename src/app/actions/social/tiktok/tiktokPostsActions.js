@@ -30,9 +30,7 @@ export async function getTiktokPosts({
     sortOrder = "desc"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized", posts: [], hasMore: false };
@@ -100,9 +98,7 @@ export async function getTiktokPosts({
  */
 export async function deleteTiktokPost(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };
@@ -138,9 +134,7 @@ export async function deleteTiktokPost(postId) {
  */
 export async function getTiktokPostsStats({ accountId = null } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -186,9 +180,7 @@ export async function getTiktokPostsStats({ accountId = null } = {}) {
  */
 export async function publishTiktokPostNow(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -221,9 +213,7 @@ export async function publishTiktokPostNow(postId) {
  */
 export async function updateTiktokPost({ postId, text, media, scheduling, accountId }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -268,9 +258,7 @@ export async function updateTiktokPost({ postId, text, media, scheduling, accoun
  */
 export async function getAllTiktokCalendarPosts({ startDate, endDate } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, posts: [] };
 

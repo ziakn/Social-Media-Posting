@@ -30,9 +30,7 @@ export async function getThreadsPosts({
     sortOrder = "desc"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized", posts: [], hasMore: false };
@@ -132,9 +130,7 @@ export async function getThreadsPosts({
  */
 export async function getThreadsPostsStats({ accountId = null } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -222,9 +218,7 @@ async function makeThreadsRequest(endpoint, params, accessToken, method = "POST"
  * Get authenticated user (Helper)
  */
 async function getAuthenticatedUser() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
         throw new Error("Invalid or expired token. Please log in again.");
@@ -409,9 +403,7 @@ export async function publishThreadsPostNow(postId) {
  */
 export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, posts: [] };
 
@@ -462,9 +454,7 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
  */
 export async function deleteThreadsPost(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };
@@ -507,9 +497,7 @@ export async function updateThreadsPost({
     accountId
 }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };

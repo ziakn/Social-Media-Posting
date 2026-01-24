@@ -60,9 +60,7 @@ export async function getLinkedinPosts({
     sortOrder = "desc"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized", posts: [], hasMore: false };
@@ -202,9 +200,7 @@ export async function getLinkedinPosts({
  */
 export async function getLinkedinPostsStats({ accountId = null } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -253,9 +249,7 @@ export async function getLinkedinPostsStats({ accountId = null } = {}) {
  */
 export async function publishLinkedinPostNow(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -303,9 +297,7 @@ export async function publishLinkedinPostNow(postId) {
  */
 export async function getAllLinkedinCalendarPosts({ startDate, endDate } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, posts: [] };
 
@@ -339,9 +331,7 @@ export async function getAllLinkedinCalendarPosts({ startDate, endDate } = {}) {
  */
 export async function deleteLinkedinPost(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -379,9 +369,7 @@ export async function updateLinkedinPostAction({
     accountId
 }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -425,9 +413,7 @@ export async function updateLinkedinPostAction({
  */
 export async function fetchLinkedinAccounts() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 

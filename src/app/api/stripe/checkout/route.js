@@ -6,13 +6,8 @@ import { verifyToken } from "@/lib/auth";
 export async function POST(req) {
   try {
     const { priceId, coinAmount } = await req.json();
-    const token = (await cookies()).get('token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
@@ -20,8 +15,8 @@ export async function POST(req) {
     const isBypassEnabled = process.env.BYPASS_STRIPE_FOR_TESTING === 'true';
 
     if (!isBypassEnabled && (priceId === 'price_...' || !priceId)) {
-      return NextResponse.json({ 
-        error: "Stripe Price ID is missing or invalid. Please set the real Price IDs in your .env file or enable BYPASS_STRIPE_FOR_TESTING for development." 
+      return NextResponse.json({
+        error: "Stripe Price ID is missing or invalid. Please set the real Price IDs in your .env file or enable BYPASS_STRIPE_FOR_TESTING for development."
       }, { status: 400 });
     }
 
@@ -30,12 +25,12 @@ export async function POST(req) {
       try {
         const { doc, updateDoc, increment, getDoc } = await import("firebase/firestore");
         const { db } = await import("@/lib/firebase");
-        
+
         // Find user document - we need to find it by the field 'id' or document ID
         // To be safe, try direct document ID first
         const userRef = doc(db, "users", user.id);
         const userSnap = await getDoc(userRef);
-        
+
         if (userSnap.exists()) {
           await updateDoc(userRef, {
             coinBalance: increment(coinAmount),
@@ -57,8 +52,8 @@ export async function POST(req) {
         console.error("Bypass credit error:", err);
       }
 
-      return NextResponse.json({ 
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/dashboard?success=true&bypass=true` 
+      return NextResponse.json({
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/dashboard?success=true&bypass=true`
       });
     }
 

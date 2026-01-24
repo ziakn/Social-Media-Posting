@@ -3,14 +3,10 @@
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth"; // your existing verifyToken logic
-import { cookies } from "next/headers";
 
 export async function checkFacebookConnection() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { connected: false, message: "Invalid token" };
     }

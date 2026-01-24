@@ -3,16 +3,13 @@
 import { BskyAgent, RichText } from "@atproto/api";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
-import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
 /**
  * Get authenticated user (Helper)
  */
 async function getAuthenticatedUser() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
         throw new Error("Invalid or expired token. Please log in again.");

@@ -13,10 +13,7 @@ export async function getScheduledPosts({
     status = "scheduled" // 'scheduled', 'paused', 'draft'
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-
-        const user = await verifyToken(token);
+        const user = await verifyToken();
         if (!user) {
             return { success: false, message: "Invalid token" };
         }
@@ -161,10 +158,7 @@ export async function getScheduledPosts({
 
 export async function updateScheduledPost(postId, updates) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-
-        const user = await verifyToken(token);
+        const user = await verifyToken();
         if (!user) {
             return { success: false, message: "Invalid token" };
         }
@@ -218,10 +212,7 @@ export async function updateScheduledPost(postId, updates) {
 
 export async function deleteScheduledPost(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-
-        const user = await verifyToken(token);
+        const user = await verifyToken();
         if (!user) {
             return { success: false, message: "Invalid token" };
         }
@@ -268,10 +259,7 @@ export async function deleteScheduledPost(postId) {
 
 export async function togglePostStatus(postId, currentStatus) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-
-        const user = await verifyToken(token);
+        const user = await verifyToken();
         if (!user) {
             return { success: false, message: "Invalid token" };
         }
@@ -304,10 +292,7 @@ export async function togglePostStatus(postId, currentStatus) {
 
 export async function reschedulePost(postId, newScheduledAt) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-
-        const user = await verifyToken(token);
+        const user = await verifyToken();
         if (!user) {
             return { success: false, message: "Invalid token" };
         }

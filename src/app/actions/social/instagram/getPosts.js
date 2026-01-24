@@ -11,7 +11,6 @@ import {
   startAfter,
   getCountFromServer
 } from "firebase/firestore";
-import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
 /**
@@ -19,9 +18,7 @@ import { verifyToken } from "@/lib/auth";
  */
 export async function fetchInstagramPosts(igUserId) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return { success: false, message: "Invalid or expired token", posts: [] };
@@ -78,9 +75,7 @@ export async function getPublishedPosts({
   sorting = {}
 }) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return {
@@ -234,9 +229,7 @@ export async function getPublishedPosts({
  */
 export async function getPublishedPostsCount({ pageId, filters = {} }) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return { success: false, message: "Invalid or expired token", count: 0 };
@@ -279,9 +272,7 @@ export async function getPublishedPostsCount({ pageId, filters = {} }) {
  */
 export async function getPublishedPostsStats({ pageId }) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return {
@@ -375,9 +366,7 @@ export async function getScheduledInstagramPosts({
   sorting = {}
 }) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return {
@@ -496,9 +485,7 @@ export async function getScheduledInstagramPosts({
  */
 export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return { success: false, message: "Invalid or expired token", posts: [] };

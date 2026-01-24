@@ -11,9 +11,7 @@ import { verifyToken } from "@/lib/auth";
 export async function getFacebookPostAnalytics(pageId, postId, refresh = false) {
     try {
         /* ================= AUTH ================= */
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };

@@ -32,9 +32,7 @@ export async function getPinterestPosts({
     sortOrder = "desc"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized", posts: [], hasMore: false };
@@ -126,9 +124,7 @@ export async function getPinterestPosts({
  */
 export async function getPinterestPostsStats({ accountId = null } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 
@@ -220,9 +216,7 @@ async function getPinterestAccount(userId, platformUserId) {
  */
 export async function publishPinterestPostNow(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         const postRef = doc(db, "pinterest_posts", postId);
         const postSnap = await getDoc(postRef);
@@ -327,9 +321,7 @@ export async function publishPinterestPostNow(postId) {
  */
 export async function getPinterestCalendarPosts({ startDate, endDate } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, posts: [] };
 
@@ -390,9 +382,7 @@ export async function getPinterestCalendarPosts({ startDate, endDate } = {}) {
  */
 export async function deletePinterestPost(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         const postRef = doc(db, "pinterest_posts", postId);
         const postSnap = await getDoc(postRef);
@@ -456,9 +446,7 @@ export async function updatePinterestPost({
     accountId
 }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         const postRef = doc(db, "pinterest_posts", postId);
         const postSnap = await getDoc(postRef);
@@ -501,9 +489,7 @@ export async function updatePinterestPost({
  */
 export async function getAllPinterestCalendarPosts({ startDate, endDate }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, posts: [] };
 

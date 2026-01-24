@@ -7,7 +7,6 @@ import { fetchFacebookPages } from "./getPages";
 
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { spendCoin } from "@/lib/subscription";
 
@@ -25,9 +24,7 @@ export async function createFacebookPostBase({
   additionalData = {},
 }) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return { success: false, message: "Invalid or expired token" };

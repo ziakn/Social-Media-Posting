@@ -45,9 +45,7 @@ async function handleYoutubeResponse(res, context = "YouTube API") {
  */
 export async function getUserYoutubeAccounts() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -86,9 +84,7 @@ export async function getYoutubePublishedPosts({
     sortBy = "newest"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -172,9 +168,7 @@ export async function getYoutubeScheduledPosts({
     sortBy = "newest"
 } = {}) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -239,9 +233,7 @@ export async function getYoutubeScheduledPosts({
  */
 export async function deleteYoutubePost(postId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -311,9 +303,7 @@ export async function deleteYoutubePost(postId) {
  */
 export async function updateYoutubePost(postId, updates) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -390,9 +380,7 @@ export async function updateYoutubePost(postId, updates) {
  */
 export async function updateYoutubePostSchedule(postId, scheduledAt) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };

@@ -15,9 +15,7 @@ import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 export async function updateInstagramPost(postId, updates) {
     try {
         // 1. Authenticate
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };

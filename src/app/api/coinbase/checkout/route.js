@@ -5,13 +5,8 @@ import { verifyToken } from "@/lib/auth";
 export async function POST(req) {
   try {
     const { coinAmount, price } = await req.json();
-    const token = (await cookies()).get('token')?.value;
-    
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

@@ -16,9 +16,7 @@ import { verifyToken } from "@/lib/auth";
 export async function deleteInstagramPost(postId) {
     try {
         // 1. Authenticate
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };

@@ -7,9 +7,7 @@ import { cookies } from "next/headers";
 
 export async function checkPinterestConnection() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { connected: false };

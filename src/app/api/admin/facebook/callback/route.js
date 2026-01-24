@@ -7,8 +7,7 @@ import { verifyToken } from "@/lib/auth"; // your JWT or session logic
 export async function GET(request) {
 
 
-  const token = request.cookies.get("token")?.value;
-  const user = await verifyToken(token);
+  const user = await verifyToken();
 
 
   try {

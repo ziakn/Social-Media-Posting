@@ -7,8 +7,7 @@ import { verifyToken } from "@/lib/auth";
 
 export async function fetchInstagramAccounts() {
   try {
-    const token = (await cookies()).get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) return { success: false, message: "Invalid or expired token", accounts: [] };
 

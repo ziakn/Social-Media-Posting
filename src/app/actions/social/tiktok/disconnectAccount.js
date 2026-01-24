@@ -9,9 +9,7 @@ import { revalidatePath } from "next/cache";
 
 export async function disconnectTiktokAccount(accountId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
         if (!user) throw new Error("Unauthorized");
 
         const accountRef = doc(db, "socialAccounts", accountId);

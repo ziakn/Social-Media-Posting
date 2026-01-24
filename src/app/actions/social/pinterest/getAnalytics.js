@@ -11,9 +11,7 @@ import { getValidPinterestAccessToken } from "./connectAccount";
  */
 export async function getPinterestPostAnalytics(pageId, postId, forceRefresh = false) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };

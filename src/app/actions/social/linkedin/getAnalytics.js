@@ -15,9 +15,7 @@ import { cookies } from "next/headers";
  */
 export async function getLinkedinPostAnalytics(accountId, postId, forceRefresh = false) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) return { success: false, message: "Unauthorized" };
 

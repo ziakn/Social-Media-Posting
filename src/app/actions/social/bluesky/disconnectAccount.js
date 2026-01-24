@@ -3,13 +3,10 @@
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, updateDoc, deleteDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
-import { cookies } from "next/headers";
 
 export async function disconnectBlueSkyAccount() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             throw new Error("Unauthorized");

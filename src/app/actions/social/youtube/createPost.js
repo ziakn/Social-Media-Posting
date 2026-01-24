@@ -37,9 +37,7 @@ export async function createYoutubePost({
     privacyStatus = "public", // public, private, unlisted
 }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };

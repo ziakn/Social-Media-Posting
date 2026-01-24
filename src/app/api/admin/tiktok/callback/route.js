@@ -4,8 +4,7 @@ import { collection, addDoc, serverTimestamp, getDocs, query, where, updateDoc }
 import { verifyToken } from "@/lib/auth";
 
 export async function GET(request) {
-    const token = request.cookies.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

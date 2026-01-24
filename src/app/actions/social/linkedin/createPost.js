@@ -103,9 +103,7 @@ export async function createLinkedinPost({
     accountId: customAccountId,
 }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
@@ -274,9 +272,7 @@ export async function deleteLinkedinPostAPI(accessToken, linkedinPostId) {
 
 export async function deletelinkedinPost({ postId }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Invalid token" };
@@ -330,9 +326,7 @@ export async function replaceLinkedinPost(postDocId, {
     videoUrl,
 }) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
         if (!user) throw new Error("Invalid token");
 
         // Fetch the existing post to get linkedinPostId

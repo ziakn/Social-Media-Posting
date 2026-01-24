@@ -11,9 +11,7 @@ import { getValidPinterestAccessToken } from "./connectAccount";
  */
 export async function getPinterestAccounts() {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };
@@ -48,9 +46,7 @@ export async function getPinterestAccounts() {
  */
 export async function getPinterestBoards(platformUserId) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             console.error("getPinterestBoards: Unauthorized");

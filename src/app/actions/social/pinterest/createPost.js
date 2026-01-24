@@ -12,9 +12,7 @@ import { uploadPinterestVideo } from "./videoUtils";
  * Get authenticated user
  */
 async function getAuthenticatedUser() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
         throw new Error("Invalid or expired token. Please log in again.");

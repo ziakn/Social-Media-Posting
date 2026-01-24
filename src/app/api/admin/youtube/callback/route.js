@@ -4,8 +4,7 @@ import { collection, addDoc, serverTimestamp, getDocs, query, where, updateDoc }
 import { verifyToken } from "@/lib/auth";
 
 export async function GET(request) {
-    const token = request.cookies.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     try {
         const url = new URL(request.url);
@@ -97,6 +96,6 @@ async function fetchYoutubeProfile(accessToken) {
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
     if (!data.items || data.items.length === 0) throw new Error("No YouTube channel found for this account.");
-    
+
     return data.items[0];
 }

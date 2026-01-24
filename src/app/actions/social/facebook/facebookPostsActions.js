@@ -30,10 +30,7 @@ import {
 // Get user's Facebook pages for filtering
 export async function getUserFacebookPages() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -83,10 +80,7 @@ export async function getFacebookPosts({
   sortBy = "createdAt_desc"
 } = {}) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -298,10 +292,7 @@ export async function getFacebookPosts({
 // Delete a post
 export async function deleteFacebookPost(postId) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -369,10 +360,7 @@ export async function deleteFacebookPost(postId) {
 // Update a post
 export async function updateFacebookPost(postId, message, mediaUrls = null, additionalData = null) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -442,10 +430,7 @@ export async function updateFacebookPost(postId, message, mediaUrls = null, addi
 // Update post schedule
 export async function updatePostSchedule(postId, scheduledAt) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -479,10 +464,7 @@ export async function updatePostSchedule(postId, scheduledAt) {
 // Duplicate a post
 export async function duplicateFacebookPost(postId) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -537,10 +519,7 @@ export async function duplicateFacebookPost(postId) {
 // Export posts to CSV
 export async function exportPostsToCSV(filters = {}) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -651,10 +630,7 @@ export async function exportPostsToCSV(filters = {}) {
 // Get post statistics summary
 export async function getPostsStatistics() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -707,10 +683,7 @@ export async function getPostsStatistics() {
 // Publish a scheduled post now
 export async function publishFacebookPostNow(postId) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
     if (!user) {
       return { success: false, message: "Invalid token" };
     }
@@ -809,9 +782,7 @@ export async function publishFacebookPostNow(postId) {
  */
 export async function getAllCalendarPosts({ pageId, startDate, endDate } = {}) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
       return { success: false, message: "Invalid or expired token", posts: [] };

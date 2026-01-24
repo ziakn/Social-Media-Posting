@@ -3,7 +3,6 @@
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy, doc, getDoc, updateDoc, serverTimestamp, addDoc } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
-import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
 /**
@@ -11,9 +10,7 @@ import { revalidatePath } from "next/cache";
  */
 export async function fetchBlueSkyPosts(status = "published") {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, message: "Unauthorized" };
