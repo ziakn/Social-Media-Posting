@@ -17,27 +17,19 @@ import {
   limit,
   startAfter
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, deleteObject } from 'firebase/storage';
 import { unlink } from 'fs/promises';
 import path from 'path';
-import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { Timestamp } from "firebase/firestore";
 
 // Helper function to get authenticated user
 async function getAuthenticatedUser() {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
-      throw new Error('Invalid token');
+      throw new Error('Unauthorized');
     }
 
     return user;
@@ -115,28 +107,38 @@ export async function getUserGallery(options = {}) {
       cursor = null // Changed from lastCreatedAt to cursor object { createdAt, id }
     } = options;
 
-    let q = query(
-      collection(db, 'gallery'),
-      where('userId', '==', user.id),
-      orderBy('createdAt', 'desc'),
-      orderBy('__name__', 'desc') // Secondary sort for stable pagination
-    );
+    let q;
 
-    // Apply filters
+    // Base query logic
+    const galleryRef = collection(db, "gallery");
+    const constraints = [];
+
+    // Filter by User ID unless Administrator
+    if (user.role !== 'Administrator') {
+      constraints.push(where("userId", "==", user.id));
+    }
+
+    // Apply other filters
     if (category) {
-      q = query(q, where('category', '==', category));
+      constraints.push(where('category', '==', category));
     }
     if (mediaType && mediaType !== 'all') {
-      q = query(q, where('mediaType', '==', mediaType));
+      constraints.push(where('mediaType', '==', mediaType));
     }
 
-    // Apply pagination
+    // Sort order
+    constraints.push(orderBy('createdAt', 'desc'));
+    constraints.push(orderBy('__name__', 'desc')); // Secondary sort for stable pagination
+
+    // Apply pagination cursor
     if (cursor) {
       const cursorTime = Timestamp.fromDate(new Date(cursor.createdAt));
-      q = query(q, startAfter(cursorTime, cursor.id));
+      constraints.push(startAfter(cursorTime, cursor.id));
     }
 
-    q = query(q, limit(limitCount));
+    constraints.push(limit(limitCount));
+
+    q = query(galleryRef, ...constraints);
 
     const querySnapshot = await getDocs(q);
     const items = [];
@@ -187,8 +189,8 @@ export async function deleteGalleryItem(itemId) {
 
     const item = itemSnap.data();
 
-    // Verify ownership
-    if (item.userId !== user.id) {
+    // Verify ownership (Admin can delete any)
+    if (item.userId !== user.id && user.role !== 'Administrator') {
       throw new Error('Unauthorized to delete this item');
     }
 
@@ -238,7 +240,7 @@ export async function updateGalleryItem(itemId, updates) {
     const item = itemSnap.data();
 
     // Verify ownership
-    if (item.userId !== user.id) {
+    if (item.userId !== user.id && user.role !== 'Administrator') {
       throw new Error('Unauthorized to update this item');
     }
 
@@ -270,7 +272,7 @@ export async function getGalleryItem(itemId) {
     const item = itemSnap.data();
 
     // Verify ownership
-    if (item.userId !== user.id) {
+    if (item.userId !== user.id && user.role !== 'Administrator') {
       throw new Error('Unauthorized to access this item');
     }
 
