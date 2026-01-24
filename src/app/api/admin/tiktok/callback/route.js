@@ -4,26 +4,28 @@ import { collection, addDoc, serverTimestamp, getDocs, query, where, updateDoc }
 import { verifyToken } from "@/lib/auth";
 
 export async function GET(request) {
-    const user = await verifyToken();
-
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     try {
         const url = new URL(request.url);
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
 
-        // 1. Verify state to prevent CSRF
-        const storedState = request.cookies.get("tiktok_oauTHREADS_state")?.value;
+        // 1. Verify user session explicitly from request cookies for robustness
+        const user = await verifyToken();
+
+        if (!user) {
+            console.error("TikTok Callback: Unauthorized - No user session found");
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // 2. Verify state to prevent CSRF (Must match name in connect/route.js)
+        const storedState = request.cookies.get("tiktok_oauth_state")?.value;
         if (!state || state !== storedState) {
             console.error("TikTok OAuth State Mismatch:", { received: state, stored: storedState });
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
             return NextResponse.redirect(`${baseUrl}/admin/social/connect?status=failed&platform=tiktok&message=Security check failed: State mismatch.`);
         }
 
-        // 2. Retrieve code_verifier for PKCE
+        // 3. Retrieve code_verifier for PKCE
         const code_verifier = request.cookies.get("tiktok_code_verifier")?.value;
         if (!code_verifier) {
             console.error("TikTok OAuth Missing Code Verifier");
@@ -35,14 +37,14 @@ export async function GET(request) {
             return NextResponse.json({ error: "Missing code" }, { status: 400 });
         }
 
-        // 3. Exchange code for access token using code_verifier
+        // 4. Exchange code for access token using code_verifier
         const tokenResponse = await exchangeCodeForToken(code, code_verifier);
-        const { access_token, refresh_token, open_id, expires_in, refresh_expires_in } = tokenResponse;
+        const { access_token, refresh_token, open_id, expires_in } = tokenResponse;
 
-        // 4. Fetch User Profile Info
+        // 5. Fetch User Profile Info
         const profileInfo = await fetchUserProfile(access_token);
 
-        // 5. Deactivate existing active TikTok accounts for this portal user
+        // 6. Deactivate existing active TikTok accounts for this portal user
         const socialAccountsRef = collection(db, "socialAccounts");
         const q = query(
             socialAccountsRef,
@@ -55,7 +57,7 @@ export async function GET(request) {
             await updateDoc(docSnap.ref, { status: "inactive", updatedAt: serverTimestamp() });
         }
 
-        // 6. Save new account to Firestore
+        // 7. Save new account to Firestore
         await addDoc(collection(db, "socialAccounts"), {
             userId: user.id,
             platform: "tiktok",
@@ -72,13 +74,13 @@ export async function GET(request) {
             updatedAt: serverTimestamp()
         });
 
-        // 7. Clear temporary cookies and redirect
+        // 8. Clear temporary cookies and redirect
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
         const response = NextResponse.redirect(
             `${baseUrl}/admin/social/connect?status=success&platform=tiktok&name=${encodeURIComponent(profileInfo.display_name)}`
         );
 
-        response.cookies.delete("tiktok_oauTHREADS_state");
+        response.cookies.delete("tiktok_oauth_state");
         response.cookies.delete("tiktok_code_verifier");
 
         return response;
@@ -104,7 +106,7 @@ async function exchangeCodeForToken(code, code_verifier) {
             code: code,
             grant_type: "authorization_code",
             redirect_uri: process.env.TIKTOK_REDIRECT_URI,
-            code_verifier: code_verifier, // Requirement for PKCE
+            code_verifier: code_verifier,
         }),
     });
 
