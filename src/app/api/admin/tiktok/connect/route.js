@@ -28,6 +28,7 @@ export async function GET() {
 
     const scopes = [
         "user.info.basic",
+        "user.info.profile",
         "video.publish",
         "video.upload",
         "video.list"
@@ -35,7 +36,7 @@ export async function GET() {
 
     // TikTok OAuth 2.0 URL with PKCE (Matching documentation trailing slash exactly)
     const authUrl =
-        "https://www.tiktok.com/v2/auth/authorize" +
+        "https://www.tiktok.com/v2/auth/authorize/" +
         `?client_key=${client_key}` +
         `&scope=${scopes.join(",")}` +
         `&response_type=code` +

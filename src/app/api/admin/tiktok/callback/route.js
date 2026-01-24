@@ -72,7 +72,7 @@ export async function GET(request) {
             platform: "tiktok",
             platformUserId: open_id,
             accountId: open_id,
-            username: profileInfo.display_name || "TikTok User",
+            username: profileInfo.username || profileInfo.display_name || "TikTok User",
             displayName: profileInfo.display_name,
             profilePicture: profileInfo.avatar_url,
             accessToken: access_token,
@@ -128,14 +128,14 @@ async function exchangeCodeForToken(code, code_verifier) {
 }
 
 async function fetchUserProfile(accessToken) {
-    const res = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name", {
+    const res = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,avatar_url,display_name,username", {
         headers: {
             Authorization: `Bearer ${accessToken}`,
         },
     });
 
     const data = await res.json();
-    if (data.error) {
+    if (data.error && data.error.code !== "ok") {
         console.error("TikTok Profile Fetch Failed:", data);
         throw new Error(data.error.message || "Failed to fetch profile");
     }
