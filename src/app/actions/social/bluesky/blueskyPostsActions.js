@@ -4,7 +4,7 @@ import { BskyAgent } from "@atproto/api";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy, limit, startAfter, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
-import { cookies } from "next/headers";
+// import { cookies } from "next/headers"; // Removed as no longer needed for token extraction
 import { revalidatePath } from "next/cache";
 import { uploadMedia, getLinkMetadata } from "./createPost";
 import { RichText } from "@atproto/api";
@@ -13,9 +13,7 @@ import { RichText } from "@atproto/api";
  * Get authenticated user (Helper)
  */
 async function getAuthenticatedUser() {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
-    const user = await verifyToken(token);
+    const user = await verifyToken();
 
     if (!user) {
         throw new Error("Invalid or expired token. Please log in again.");
@@ -55,10 +53,14 @@ export async function getBlueSkyPosts({
         const user = await getAuthenticatedUser();
 
         let constraints = [
-            where("userId", "==", user.id),
             where("platform", "==", "bluesky"),
             where("delete", "==", 0)
         ];
+
+        // Filter by User ID unless Administrator
+        if (user.role !== 'Administrator') {
+            constraints.push(where("userId", "==", user.id));
+        }
 
         // Status filter
         if (filters.status && filters.status !== "all") {
@@ -148,11 +150,15 @@ export async function getBlueSkyPostsStats({ accountId = null } = {}) {
         const user = await getAuthenticatedUser();
 
         let constraints = [
-            where("userId", "==", user.id),
             where("platform", "==", "bluesky"),
             where("status", "==", "published"),
             where("delete", "==", 0)
         ];
+
+        // Filter by User ID unless Administrator
+        if (user.role !== 'Administrator') {
+            constraints.push(where("userId", "==", user.id));
+        }
 
         if (accountId && accountId !== "all") {
             constraints.push(where("accountId", "==", accountId));
@@ -200,9 +206,9 @@ export async function publishBlueSkyPostNow(postId) {
         if (!postSnap.exists()) return { success: false, message: "Post not found" };
         const post = postSnap.data();
 
-        if (post.userId !== user.id) return { success: false, message: "Unauthorized" };
+        if (post.userId !== user.id && user.role !== 'Administrator') return { success: false, message: "Unauthorized" };
 
-        const account = await getBlueSkyAccount(user.id, post.accountId);
+        const account = await getBlueSkyAccount(post.userId, post.accountId); // Use post.userId to get account owner's credentials
         const agent = new BskyAgent({ service: "https://bsky.social" });
         await agent.login({ identifier: account.identifier, password: account.password });
 
@@ -278,7 +284,7 @@ export async function deleteBlueSkyPost(postId) {
         const postSnap = await getDoc(postRef);
 
         if (!postSnap.exists()) return { success: false, message: "Post not found" };
-        if (postSnap.data().userId !== user.id) return { success: false, message: "Unauthorized" };
+        if (postSnap.data().userId !== user.id && user.role !== 'Administrator') return { success: false, message: "Unauthorized" };
 
         await updateDoc(postRef, {
             delete: 1,
@@ -304,7 +310,7 @@ export async function updateBlueSkyPost({ postId, text, media, link, scheduling,
         if (!postSnap.exists()) return { success: false, message: "Post not found" };
         const postData = postSnap.data();
 
-        if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
+        if (postData.userId !== user.id && user.role !== 'Administrator') return { success: false, message: "Unauthorized" };
         if (postData.status === "published") return { success: false, message: "Cannot edit published posts" };
 
         const updates = {
@@ -335,10 +341,14 @@ export async function getAllBlueSkyCalendarPosts({ startDate, endDate } = {}) {
         const user = await getAuthenticatedUser();
 
         let constraints = [
-            where("userId", "==", user.id),
             where("platform", "==", "bluesky"),
             where("delete", "==", 0)
         ];
+
+        // Filter by User ID unless Administrator
+        if (user.role !== 'Administrator') {
+            constraints.push(where("userId", "==", user.id));
+        }
 
         if (startDate && endDate) {
             constraints.push(where("createdAt", ">=", new Date(startDate)));
