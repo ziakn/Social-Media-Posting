@@ -13,8 +13,11 @@ import {
     serverTimestamp,
     updateDoc,
     increment,
-    runTransaction
+    runTransaction,
+    limit
 } from "firebase/firestore";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
 
 /**
  * Initialize a billing profile for a new user
@@ -62,22 +65,41 @@ export async function initializeBillingProfile(userId, packageData, billingCycle
 /**
  * Generate a new invoice
  */
-export async function generateInvoice(userId, billingProfile, isInitial = false) {
+export async function generateInvoice(userId, billingProfile, isInitial = false, prorationData = null) {
     try {
         const invoiceRef = doc(collection(db, "invoices"));
         const timestamp = new Date();
         const year = timestamp.getFullYear();
+        const month = String(timestamp.getMonth() + 1).padStart(2, '0');
 
-        // Simple friendly ID generation (in a real app, use a tracker/sequence)
-        const friendlyId = `INV-${year}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+        const randomPart = Math.random().toString(36).substring(2, 7).toUpperCase();
+        const friendlyId = `INV-${year}${month}-${randomPart}`;
 
         const billingPeriodStart = new Date();
         const billingPeriodEnd = new Date(billingProfile.nextBillingDate);
-        const dueDate = isInitial ? new Date() : new Date(billingPeriodStart.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days grace
+        const dueDate = isInitial ? new Date() : new Date(billingPeriodStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-        // Fetch user data for invoice records
         const userSnap = await getDoc(doc(db, "users", userId));
         const userData = userSnap.exists() ? userSnap.data() : {};
+
+        const lineItems = [
+            {
+                description: `${billingProfile.packageName} Plan - ${billingProfile.billingCycle === 'monthly' ? 'Monthly' : 'Annual'} Subscription`,
+                amount: billingProfile.amount,
+                quantity: 1
+            }
+        ];
+
+        // Add proration credits if they exist
+        if (prorationData && prorationData.creditAmount > 0) {
+            lineItems.push({
+                description: `Prorated Credit: Unused time on ${prorationData.oldPackageName}`,
+                amount: -prorationData.creditAmount,
+                quantity: 1
+            });
+        }
+
+        const totalAmount = lineItems.reduce((acc, item) => acc + (item.amount * item.quantity), 0);
 
         const invoiceData = {
             invoiceId: friendlyId,
@@ -85,19 +107,20 @@ export async function generateInvoice(userId, billingProfile, isInitial = false)
             userName: userData.name || "Subscriber",
             userEmail: userData.email || "",
             userCountry: userData.country || "",
-            amount: billingProfile.amount,
+            amount: Math.max(0, totalAmount), // Don't let total go negative
             currency: billingProfile.currency,
-            status: "unpaid",
+            status: totalAmount <= 0 ? "paid" : "unpaid",
             billingPeriodStart,
             billingPeriodEnd,
             dueDate,
-            lineItems: [
-                {
-                    description: `${billingProfile.packageName} Plan - ${billingProfile.billingCycle === 'monthly' ? 'Monthly' : 'Annual'} Subscription`,
-                    amount: billingProfile.amount,
-                    quantity: 1
-                }
-            ],
+            billingCycle: billingProfile.billingCycle,
+            lineItems,
+            sellerInfo: {
+                company: "Social Media Posting Platform",
+                address: "Global HQ, Tech District",
+                taxId: "TAX-123456789-GLOBAL",
+                vatId: "VAT-987654321"
+            },
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
@@ -127,16 +150,24 @@ export async function recordPayment(invoiceId, paymentData) {
             const invoice = invoiceSnap.data();
             const userId = invoice.userId;
 
-            // 1. Create payment record
+            // 1. Create payment record (Detailed Audit Trail)
             const paymentRef = doc(collection(db, "payments"));
             const paymentRecord = {
                 paymentId: paymentRef.id,
                 invoiceId,
+                invoiceFriendlyId: invoice.invoiceId,
                 userId,
                 amount: invoice.amount,
-                method: paymentData.method || "stripe",
-                confirmationId: paymentData.confirmationId,
+                currency: invoice.currency,
+                method: paymentData.method || "card",
+                paymentProvider: paymentData.provider || "Stripe",
+                transactionId: paymentData.confirmationId,
+                receiptNumber: `REC-${Date.now()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`,
                 status: "succeeded",
+                auditMetadata: {
+                    ipAddress: paymentData.ipAddress || null,
+                    userAgent: paymentData.userAgent || null,
+                },
                 createdAt: serverTimestamp(),
             };
             transaction.set(paymentRef, paymentRecord);
@@ -173,12 +204,26 @@ export async function recordPayment(invoiceId, paymentData) {
 /**
  * Get billing history for a user
  */
-export async function getBillingHistory(userId) {
+export async function getBillingHistory(userId = null) {
     try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, error: "Unauthorized access node." };
+        }
+
+        // Use token user.id if no userId provided, or verify admin role if querying others
+        const targetId = userId || user.id;
+        if (targetId !== user.id && user.role !== 'Administrator') {
+            return { success: false, error: "Access Denied: Permission scope limited." };
+        }
+
         const invoicesRef = collection(db, "invoices");
         const q = query(
             invoicesRef,
-            where("userId", "==", userId),
+            where("userId", "==", targetId),
             orderBy("createdAt", "desc")
         );
 
@@ -203,9 +248,22 @@ export async function getBillingHistory(userId) {
 /**
  * Get billing profile for a user
  */
-export async function getBillingProfile(userId) {
+export async function getBillingProfile(userId = null) {
     try {
-        const profileRef = doc(db, "billing_profiles", userId);
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const targetId = userId || user.id;
+        if (targetId !== user.id && user.role !== 'Administrator') {
+            return { success: false, error: "Access Denied" };
+        }
+
+        const profileRef = doc(db, "billing_profiles", targetId);
         const snap = await getDoc(profileRef);
 
         if (!snap.exists()) {
@@ -231,10 +289,33 @@ export async function getBillingProfile(userId) {
 /**
  * Get all invoices for admin analytics
  */
-export async function getAllInvoices() {
+export async function getAllInvoices(userId = null) {
     try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, error: "Unauthorized" };
+        }
+
         const invoicesRef = collection(db, "invoices");
-        const q = query(invoicesRef, orderBy("createdAt", "asc"));
+        let q;
+
+        // If not admin, force filter by user.id even if userId parameter was provided
+        const isAdmin = user.role === 'Administrator';
+        const finalUserId = isAdmin ? userId : user.id;
+
+        if (finalUserId) {
+            q = query(invoicesRef, where("userId", "==", finalUserId), orderBy("createdAt", "asc"));
+        } else if (!isAdmin) {
+            // Standard users MUST have a userId filter
+            q = query(invoicesRef, where("userId", "==", user.id), orderBy("createdAt", "asc"));
+        } else {
+            // Only admins get here without a userId
+            q = query(invoicesRef, orderBy("createdAt", "asc"));
+        }
+
         const snapshot = await getDocs(q);
 
         return {
@@ -258,6 +339,34 @@ export async function getAllInvoices() {
 export async function updateBillingSubscription(userId, newPackageData, newBillingCycle) {
     try {
         const profileRef = doc(db, "billing_profiles", userId);
+        const profileSnap = await getDoc(profileRef);
+
+        if (!profileSnap.exists()) {
+            throw new Error("Billing profile not found");
+        }
+
+        const currentProfile = profileSnap.data();
+        let prorationData = null;
+
+        // Calculate proration if upgrading/downgrading mid-cycle
+        if (currentProfile.status === 'active' && currentProfile.packageName !== 'Free') {
+            const now = new Date();
+            const nextBillingDate = currentProfile.nextBillingDate?.toDate ? currentProfile.nextBillingDate.toDate() : new Date(currentProfile.nextBillingDate);
+            const cycleStart = currentProfile.updatedAt?.toDate ? currentProfile.updatedAt.toDate() : new Date(currentProfile.updatedAt);
+
+            const totalCycleTime = nextBillingDate - cycleStart;
+            const remainingTime = nextBillingDate - now;
+
+            if (remainingTime > 0 && totalCycleTime > 0) {
+                const prorationFactor = remainingTime / totalCycleTime;
+                const creditAmount = Math.round(currentProfile.amount * prorationFactor * 100) / 100;
+
+                prorationData = {
+                    creditAmount,
+                    oldPackageName: currentProfile.packageName
+                };
+            }
+        }
 
         const nextBillingDate = new Date();
         if (newBillingCycle === "monthly") {
@@ -273,12 +382,12 @@ export async function updateBillingSubscription(userId, newPackageData, newBilli
             amount: newPackageData.price,
             nextBillingDate,
             updatedAt: serverTimestamp(),
-            status: "active" // Reset status to active if they just upgraded/downgraded
+            status: "active"
         });
 
-        // Trigger a fresh invoice for the new plan
-        const profileSnap = await getDoc(profileRef);
-        await generateInvoice(userId, profileSnap.data(), true);
+        // Trigger a fresh invoice with potential proration credit
+        const updatedProfileSnap = await getDoc(profileRef);
+        await generateInvoice(userId, updatedProfileSnap.data(), true, prorationData);
 
         // Also update standard subscription fields in user doc
         const userRef = doc(db, "users", userId);
@@ -317,6 +426,50 @@ export async function cancelBillingSubscription(userId) {
         return { success: true };
     } catch (error) {
         console.error("Error canceling billing subscription:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get the latest invoice for a user
+ */
+export async function getLatestInvoice(userId = null) {
+    try {
+        const cookieStore = await cookies();
+        const token = cookieStore.get("token")?.value;
+        const user = await verifyToken(token);
+
+        if (!user) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const targetId = userId || user.id;
+        if (targetId !== user.id && user.role !== 'Administrator') {
+            return { success: false, error: "Access Denied" };
+        }
+
+        const invoicesRef = collection(db, "invoices");
+        const q = query(
+            invoicesRef,
+            where("userId", "==", targetId),
+            orderBy("createdAt", "desc"),
+            limit(1)
+        );
+
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) return { success: true, invoice: null };
+
+        const docSnap = snapshot.docs[0];
+        const invoice = {
+            id: docSnap.id,
+            ...docSnap.data(),
+            createdAt: docSnap.data().createdAt?.toDate ? docSnap.data().createdAt.toDate().toISOString() : docSnap.data().createdAt,
+            dueDate: docSnap.data().dueDate?.toDate ? docSnap.data().dueDate.toDate().toISOString() : docSnap.data().dueDate,
+        };
+
+        return { success: true, invoice };
+    } catch (error) {
+        console.error("Error fetching latest invoice:", error);
         return { success: false, error: error.message };
     }
 }

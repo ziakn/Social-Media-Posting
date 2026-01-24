@@ -86,9 +86,10 @@ export default function InvoiceDetailPage() {
                                 </div>
                             </div>
                             <div className="text-[10px] font-bold text-slate-500 space-y-0.5 uppercase tracking-tight">
-                                <p>123 Digital Plaza, Silicon Oasis</p>
-                                <p>Dubai, United Arab Emirates</p>
-                                <p>VAT: AE123456789</p>
+                                <p>{invoice.sellerInfo?.address || "123 Digital Plaza, Silicon Oasis"}</p>
+                                <p>{invoice.sellerInfo?.city || "Dubai, United Arab Emirates"}</p>
+                                <p>VAT: {invoice.sellerInfo?.vatId || "AE123456789"}</p>
+                                <p>TAX ID: {invoice.sellerInfo?.taxId || "TAX-GLOBAL-001"}</p>
                             </div>
                         </div>
 
@@ -146,11 +147,17 @@ export default function InvoiceDetailPage() {
                                     <tr key={idx} className="border-b border-slate-50">
                                         <td className="py-6 pr-4">
                                             <p className="text-sm font-black text-[#0C1B33] uppercase">{item.description}</p>
-                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">Full access to all multi-platform scheduling protocols.</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">
+                                                {item.amount < 0 ? 'Adjustment for plan migration.' : 'Full access to all multi-platform scheduling protocols.'}
+                                            </p>
                                         </td>
                                         <td className="text-center py-6 text-sm font-bold text-slate-600">{item.quantity}</td>
-                                        <td className="text-right py-6 text-sm font-bold text-slate-600">${item.amount}</td>
-                                        <td className="text-right py-6 text-sm font-black text-[#0C1B33]">${item.amount * item.quantity}</td>
+                                        <td className="text-right py-6 text-sm font-bold text-slate-600">
+                                            {item.amount < 0 ? `- $${Math.abs(item.amount)}` : `$${item.amount}`}
+                                        </td>
+                                        <td className="text-right py-6 text-sm font-black text-[#0C1B33]">
+                                            {item.amount < 0 ? `- $${Math.abs(item.amount * item.quantity)}` : `$${item.amount * item.quantity}`}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -162,16 +169,19 @@ export default function InvoiceDetailPage() {
                         <div className="w-64 space-y-3">
                             <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
                                 <span>Subtotal</span>
-                                <span>${invoice.amount}</span>
+                                <span>${invoice.lineItems?.reduce((acc, i) => acc + (i.amount * i.quantity), 0).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                <span>Tax (0%)</span>
+                                <span>Tax (0.00%)</span>
                                 <span>$0.00</span>
                             </div>
                             <div className="flex justify-between pt-3 border-t border-slate-200">
                                 <span className="text-sm font-black text-[#0C1B33] uppercase">Total Amount</span>
                                 <span className="text-lg font-black text-[#0C1B33]">${invoice.amount} {invoice.currency}</span>
                             </div>
+                            {invoice.status === 'unpaid' && (
+                                <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest text-right">Payment due by {invoice.dueDate?.toDate ? invoice.dueDate.toDate().toLocaleDateString() : new Date(invoice.dueDate).toLocaleDateString()}</p>
+                            )}
                         </div>
                     </div>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getBillingProfile, updateBillingSubscription, cancelBillingSubscription } from "@/app/actions/billing/billingActions";
+import { getBillingProfile, updateBillingSubscription, cancelBillingSubscription, getLatestInvoice } from "@/app/actions/billing/billingActions";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -17,7 +17,9 @@ import {
     Zap,
     XCircle,
     Info,
-    ExternalLink
+    ExternalLink,
+    AlertCircle,
+    Clock
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -32,6 +34,7 @@ import {
 export default function SubscriptionPage() {
     const { user } = usePermissions();
     const [profile, setProfile] = useState(null);
+    const [latestInvoice, setLatestInvoice] = useState(null);
     const [allPackages, setAllPackages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [managementLoading, setManagementLoading] = useState(false);
@@ -52,6 +55,9 @@ export default function SubscriptionPage() {
             setLoading(true);
             const profileRes = await getBillingProfile(user.id);
             if (profileRes.success) setProfile(profileRes.profile);
+
+            const invoiceRes = await getLatestInvoice(user.id);
+            if (invoiceRes.success) setLatestInvoice(invoiceRes.invoice);
 
             const pkgSnap = await getDocs(query(collection(db, "packages"), where("isActive", "==", true)));
             const pkgs = pkgSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
@@ -127,23 +133,25 @@ export default function SubscriptionPage() {
                                 <h3 className="text-sm font-bold text-gray-900 leading-none mb-1">
                                     {profile?.packageName || "Free"} Protocol
                                     <span className="ml-2 px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] rounded font-black tracking-widest uppercase">
-                                        Active
+                                        {profile?.status?.toUpperCase() || 'ACTIVE'}
                                     </span>
                                 </h3>
-                                <p className="text-xs text-gray-500 font-medium tracking-tight">
-                                    Next billing on {profile?.nextBillingDate ? new Date(profile.nextBillingDate).toLocaleDateString() : 'N/A'} • ${profile?.amount || 0}/{billingCycleLabel}
-                                </p>
+                                <div className="flex items-center gap-3">
+                                    <p className="text-xs text-gray-500 font-medium tracking-tight flex items-center gap-1">
+                                        <Clock className="h-3 w-3" /> Next billing: {profile?.nextBillingDate ? new Date(profile.nextBillingDate).toLocaleDateString() : 'N/A'}
+                                    </p>
+                                    <p className="text-xs text-gray-500 font-medium tracking-tight border-l pl-3 border-gray-200">
+                                        Amount: ${profile?.amount || 0}/{billingCycleLabel}
+                                    </p>
+                                </div>
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <Link href="/admin/invoices" className="text-xs font-bold text-primary hover:underline flex items-center gap-1 mr-2">
-                                Billing History <ArrowRight className="h-3 w-3" />
-                            </Link>
                             {profile?.packageName !== 'Free' && profile?.status !== 'canceled' && (
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="h-8 text-[10px] font-bold uppercase tracking-widest border-red-100 text-red-600 hover:bg-red-50"
+                                    className="h-8 text-[10px] font-bold uppercase tracking-widest border-red-100 text-red-600 hover:bg-red-50 shadow-none"
                                     onClick={() => { setSelectedAction('cancel'); setIsManageModalOpen(true); }}
                                 >
                                     Cancel
@@ -151,6 +159,36 @@ export default function SubscriptionPage() {
                             )}
                         </div>
                     </div>
+
+                    {/* Industry Standard: Last Bill Status */}
+                    {latestInvoice && (
+                        <div className="p-3 bg-white rounded-lg border border-gray-200 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {latestInvoice.status === 'paid' ? (
+                                    <div className="h-8 w-8 bg-green-50 rounded-full flex items-center justify-center">
+                                        <Check className="h-4 w-4 text-green-600" />
+                                    </div>
+                                ) : (
+                                    <div className="h-8 w-8 bg-amber-50 rounded-full flex items-center justify-center animate-pulse">
+                                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Latest Statement</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs font-bold text-gray-900">{latestInvoice.invoiceId}</span>
+                                        <span className={`text-[9px] px-1 rounded font-bold uppercase ${latestInvoice.status === 'paid' ? 'bg-green-100 text-green-600' : 'bg-amber-100 text-amber-600'}`}>
+                                            {latestInvoice.status}
+                                        </span>
+                                        <span className="text-[10px] text-gray-500 font-medium">Recorded: {new Date(latestInvoice.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <Link href={`/admin/invoices`} className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
+                                Full History <ArrowRight className="h-3 w-3" />
+                            </Link>
+                        </div>
+                    )}
 
                     {/* Available Plans - Compact Grid */}
                     <div className="space-y-4 pt-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePermissions } from "@/hooks/usePermissions";
 import { getAllInvoices } from "@/app/actions/billing/billingActions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -18,6 +19,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { TrendingUp, DollarSign, AlertCircle, CheckCircle2 } from "lucide-react";
 
 export default function BillingAnalyticsPage() {
+    const { user } = usePermissions();
     const [data, setData] = useState({
         totalRevenue: 0,
         outstanding: 0,
@@ -28,9 +30,14 @@ export default function BillingAnalyticsPage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!user) return;
+
         const fetchData = async () => {
             try {
-                const res = await getAllInvoices();
+                // Determine if user is Administrator or a standard user
+                const isAdmin = user.role === 'Administrator' || user.role_name === 'Administrator';
+                const res = isAdmin ? await getAllInvoices() : await getAllInvoices(user.id);
+
                 if (res.success) {
                     processAnalytics(res.invoices);
                 }
@@ -41,7 +48,7 @@ export default function BillingAnalyticsPage() {
             }
         };
         fetchData();
-    }, []);
+    }, [user]);
 
     const processAnalytics = (invoices) => {
         let revenue = 0;
