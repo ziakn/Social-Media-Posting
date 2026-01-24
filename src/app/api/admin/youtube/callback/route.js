@@ -6,6 +6,10 @@ import { verifyToken } from "@/lib/auth";
 export async function GET(request) {
     const user = await verifyToken();
 
+    if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
         const url = new URL(request.url);
         const code = url.searchParams.get("code");

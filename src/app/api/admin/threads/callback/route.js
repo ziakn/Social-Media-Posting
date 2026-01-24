@@ -9,8 +9,7 @@ import { verifyToken } from "@/lib/auth";
  * Callback endpoint for Threads OAuth
  */
 export async function GET(request) {
-    const sessionToken = request.cookies.get("token")?.value;
-    const portalUser = await verifyToken(sessionToken);
+    const portalUser = await verifyToken();
 
     if (!portalUser) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

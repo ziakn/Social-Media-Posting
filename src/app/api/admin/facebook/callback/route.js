@@ -9,6 +9,9 @@ export async function GET(request) {
 
   const user = await verifyToken();
 
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const url = new URL(request.url);
@@ -36,11 +39,7 @@ export async function GET(request) {
     );
     const pagesData = await pagesRes.json();
 
-    if (!user) {
-      return NextResponse.json({ valid: false, message: "Invalid token" }, { status: 403 });
-    }
-
-    const portalUserId = user.id; // must be sent from frontend
+    const portalUserId = user.id;
 
     if (!portalUserId) {
       return NextResponse.json({ error: "Missing portal user ID" }, { status: 400 });
