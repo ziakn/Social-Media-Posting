@@ -8,19 +8,21 @@ import { cookies } from "next/headers";
 /**
  * Check if the user has a connected BlueSky account
  */
-export async function checkBlueSkyConnection() {
+export async function checkBlueSkyConnection(userId = null) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { connected: false };
         }
 
+        // Determine target user ID
+        // If admin and userId provided, use that. Otherwise use authenticated user's id.
+        const targetUserId = (user.role === 'Administrator' && userId) ? userId : user.id;
+
         const q = query(
             collection(db, "socialAccounts"),
-            where("userId", "==", user.id),
+            where("userId", "==", targetUserId),
             where("platform", "==", "bluesky"),
             where("status", "==", "active")
         );
