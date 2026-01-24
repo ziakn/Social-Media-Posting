@@ -81,7 +81,7 @@ export async function POST(req) {
       id: userDocRef.id,
       email: userDoc.email,
       name: userDoc.name,
-      role: roleData?.name || null,
+      role: roleData?.name || "Admin",
       permissions: permissionData.map(item => item.name) || [],
       subscription: userDoc.subscription || null,
     };

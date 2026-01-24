@@ -39,7 +39,7 @@ export async function proxy(req) {
     }
 
     // Optional: Role-based access control
-    if (pathname.startsWith("/admin") && payload.role !== "Admin") {
+    if (pathname.startsWith("/admin") && payload.role !== "Admin" && payload.role !== "Administrator") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 

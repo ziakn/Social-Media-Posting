@@ -16,7 +16,6 @@ import {
     runTransaction,
     limit
 } from "firebase/firestore";
-import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
 /**
@@ -24,6 +23,10 @@ import { verifyToken } from "@/lib/auth";
  */
 export async function initializeBillingProfile(userId, packageData, billingCycle) {
     try {
+        const user = await verifyToken();
+        if (!user) return { success: false, error: "Unauthorized" };
+        if (userId !== user.id && user.role !== 'Administrator') return { success: false, error: "Access Denied" };
+
         const billingProfileRef = doc(db, "billing_profiles", userId);
 
         const nextBillingDate = new Date();
@@ -67,6 +70,10 @@ export async function initializeBillingProfile(userId, packageData, billingCycle
  */
 export async function generateInvoice(userId, billingProfile, isInitial = false, prorationData = null) {
     try {
+        const user = await verifyToken();
+        if (!user) return { success: false, error: "Unauthorized" };
+        if (userId !== user.id && user.role !== 'Administrator') return { success: false, error: "Access Denied" };
+
         const invoiceRef = doc(collection(db, "invoices"));
         const timestamp = new Date();
         const year = timestamp.getFullYear();
@@ -206,9 +213,7 @@ export async function recordPayment(invoiceId, paymentData) {
  */
 export async function getBillingHistory(userId = null) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, error: "Unauthorized access node." };
@@ -250,9 +255,7 @@ export async function getBillingHistory(userId = null) {
  */
 export async function getBillingProfile(userId = null) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, error: "Unauthorized" };
@@ -291,9 +294,7 @@ export async function getBillingProfile(userId = null) {
  */
 export async function getAllInvoices(userId = null) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, error: "Unauthorized" };
@@ -338,6 +339,10 @@ export async function getAllInvoices(userId = null) {
  */
 export async function updateBillingSubscription(userId, newPackageData, newBillingCycle) {
     try {
+        const user = await verifyToken();
+        if (!user) return { success: false, error: "Unauthorized" };
+        if (userId !== user.id && user.role !== 'Administrator') return { success: false, error: "Access Denied" };
+
         const profileRef = doc(db, "billing_profiles", userId);
         const profileSnap = await getDoc(profileRef);
 
@@ -410,6 +415,10 @@ export async function updateBillingSubscription(userId, newPackageData, newBilli
  */
 export async function cancelBillingSubscription(userId) {
     try {
+        const user = await verifyToken();
+        if (!user) return { success: false, error: "Unauthorized" };
+        if (userId !== user.id && user.role !== 'Administrator') return { success: false, error: "Access Denied" };
+
         const profileRef = doc(db, "billing_profiles", userId);
         await updateDoc(profileRef, {
             status: "canceled",
@@ -435,9 +444,7 @@ export async function cancelBillingSubscription(userId) {
  */
 export async function getLatestInvoice(userId = null) {
     try {
-        const cookieStore = await cookies();
-        const token = cookieStore.get("token")?.value;
-        const user = await verifyToken(token);
+        const user = await verifyToken();
 
         if (!user) {
             return { success: false, error: "Unauthorized" };

@@ -59,7 +59,7 @@ export default function Navbar({ user: initialUser }) {
               <span className="text-sm font-semibold text-gray-900 leading-none group-hover:text-primary transition-colors">
                 {initialUser?.name || 'Loading user...'}
               </span>
-              <span className="text-xs text-gray-500 mt-0.5">Administrator</span>
+              <span className="text-xs text-gray-500 mt-0.5">{initialUser?.role || 'Loading role...'}</span>
             </div>
 
             <ChevronDown
