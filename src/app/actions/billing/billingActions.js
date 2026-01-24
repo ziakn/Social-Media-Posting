@@ -209,47 +209,7 @@ export async function recordPayment(invoiceId, paymentData) {
     }
 }
 
-/**
- * Get billing history for a user
- */
-export async function getBillingHistory(userId = null) {
-    try {
-        const user = await verifyToken();
 
-        if (!user) {
-            return { success: false, error: "Unauthorized access node." };
-        }
-
-        // Use token user.id if no userId provided, or verify admin role if querying others
-        const targetId = userId || user.id;
-        if (targetId !== user.id && user.role !== 'Administrator') {
-            return { success: false, error: "Access Denied: Permission scope limited." };
-        }
-
-        const invoicesRef = collection(db, "invoices");
-        const q = query(
-            invoicesRef,
-            where("userId", "==", targetId),
-            orderBy("createdAt", "desc")
-        );
-
-        const snapshot = await getDocs(q);
-        const invoices = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
-            updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate().toISOString() : doc.data().updatedAt,
-            dueDate: doc.data().dueDate?.toDate ? doc.data().dueDate.toDate().toISOString() : doc.data().dueDate,
-            billingPeriodStart: doc.data().billingPeriodStart?.toDate ? doc.data().billingPeriodStart.toDate().toISOString() : doc.data().billingPeriodStart,
-            billingPeriodEnd: doc.data().billingPeriodEnd?.toDate ? doc.data().billingPeriodEnd.toDate().toISOString() : doc.data().billingPeriodEnd,
-        }));
-
-        return { success: true, invoices };
-    } catch (error) {
-        console.error("Error fetching billing history:", error);
-        return { success: false, error: error.message };
-    }
-}
 
 /**
  * Get billing profile for a user
