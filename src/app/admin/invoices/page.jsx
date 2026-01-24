@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getBillingProfile, getBillingHistory } from "@/app/actions/billing/billingActions";
+import { getBillingProfile, getPaginatedInvoices } from "@/app/actions/billing/billingActions";
 import {
     Table,
     TableBody,
@@ -14,7 +14,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Download, FileText, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { CreditCard, Download, FileText, AlertCircle, CheckCircle2, Clock, ChevronDown } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -24,6 +24,8 @@ export default function InvoicesPage() {
     const [profile, setProfile] = useState(null);
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     useEffect(() => {
         if (user?.id) {
@@ -34,18 +36,45 @@ export default function InvoicesPage() {
     const fetchBillingData = async () => {
         try {
             setLoading(true);
-            const [profileRes, historyRes] = await Promise.all([
+            // Fetch profile for the top cards (always user's own profile for now)
+            // Fetch invoices using the new paginated action (Admin gets all, User gets theirs)
+            const [profileRes, invoicesRes] = await Promise.all([
                 getBillingProfile(user.id),
-                getBillingHistory(user.id)
+                getPaginatedInvoices(10)
             ]);
 
             if (profileRes.success) setProfile(profileRes.profile);
-            if (historyRes.success) setInvoices(historyRes.invoices);
+
+            if (invoicesRes.success) {
+                setInvoices(invoicesRes.invoices);
+                setHasMore(invoicesRes.hasMore);
+            }
         } catch (error) {
             console.error("Error fetching billing data:", error);
             toast.error("Failed to load billing information");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadMore = async () => {
+        if (!hasMore || loadingMore) return;
+
+        try {
+            setLoadingMore(true);
+            const lastInvoice = invoices[invoices.length - 1];
+            // Pass the createdAt of the last invoice as the cursor
+            const res = await getPaginatedInvoices(10, lastInvoice.createdAt);
+
+            if (res.success) {
+                setInvoices(prev => [...prev, ...res.invoices]);
+                setHasMore(res.hasMore);
+            }
+        } catch (error) {
+            console.error("Error loading more invoices:", error);
+            toast.error("Failed to load more invoices");
+        } finally {
+            setLoadingMore(false);
         }
     };
 
@@ -158,42 +187,57 @@ export default function InvoicesPage() {
                             No ledger entries found.
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="bg-slate-50/30">
-                                <TableRow>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Invoice Node</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Date</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Status</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Amount</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Protocol</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {invoices.map((invoice) => (
-                                    <TableRow key={invoice.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <TableCell className="font-bold text-slate-700">
-                                            {invoice.invoiceId}
-                                        </TableCell>
-                                        <TableCell className="text-xs font-medium text-slate-500">
-                                            {new Date(invoice.createdAt).toLocaleDateString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            {getStatusBadge(invoice.status)}
-                                        </TableCell>
-                                        <TableCell className="font-black text-slate-900">
-                                            ${invoice.amount} {invoice.currency}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm" asChild className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600">
-                                                <Link href={`/admin/invoices/${invoice.id}`}>
-                                                    View Invoice
-                                                </Link>
-                                            </Button>
-                                        </TableCell>
+                        <>
+                            <Table>
+                                <TableHeader className="bg-slate-50/30">
+                                    <TableRow>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Invoice Node</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Date</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Status</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Amount</TableHead>
+                                        <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Protocol</TableHead>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody>
+                                    {invoices.map((invoice) => (
+                                        <TableRow key={invoice.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <TableCell className="font-bold text-slate-700">
+                                                {invoice.invoiceId}
+                                            </TableCell>
+                                            <TableCell className="text-xs font-medium text-slate-500">
+                                                {new Date(invoice.createdAt).toLocaleDateString()}
+                                            </TableCell>
+                                            <TableCell>
+                                                {getStatusBadge(invoice.status)}
+                                            </TableCell>
+                                            <TableCell className="font-black text-slate-900">
+                                                ${invoice.amount} {invoice.currency}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="ghost" size="sm" asChild className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600">
+                                                    <Link href={`/admin/invoices/${invoice.id}`}>
+                                                        View Invoice
+                                                    </Link>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            {hasMore && (
+                                <div className="p-4 flex justify-center border-t border-slate-50 bg-slate-50/30">
+                                    <Button
+                                        variant="outline"
+                                        onClick={loadMore}
+                                        disabled={loadingMore}
+                                        className="text-xs font-bold uppercase tracking-widest gap-2"
+                                    >
+                                        {loadingMore ? <Spinner className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        Load More Transactions
+                                    </Button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </CardContent>
             </Card>

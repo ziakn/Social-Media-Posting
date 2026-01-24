@@ -14,7 +14,8 @@ import {
     updateDoc,
     increment,
     runTransaction,
-    limit
+    limit,
+    startAfter
 } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 
@@ -330,6 +331,60 @@ export async function getAllInvoices(userId = null) {
         };
     } catch (error) {
         console.error("Error fetching all invoices:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Get paginated invoices with role-based access control
+ * Admins see all invoices, Users see only their own
+ */
+export async function getPaginatedInvoices(pageSize = 10, lastDocCreatedAt = null) {
+    try {
+        const user = await verifyToken();
+
+        if (!user) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const invoicesRef = collection(db, "invoices");
+        let constraints = [
+            orderBy("createdAt", "desc"),
+            limit(pageSize)
+        ];
+
+        // If we have a cursor, add startAfter
+        if (lastDocCreatedAt) {
+            constraints.push(startAfter(new Date(lastDocCreatedAt)));
+        }
+
+        let q;
+        if (user.role === 'Administrator') {
+            // Admin sees all
+            q = query(invoicesRef, ...constraints);
+        } else {
+            // User sees only their own
+            q = query(invoicesRef, where("userId", "==", user.id), ...constraints);
+        }
+
+        const snapshot = await getDocs(q);
+
+        const invoices = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
+            updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate().toISOString() : doc.data().updatedAt,
+            dueDate: doc.data().dueDate?.toDate ? doc.data().dueDate.toDate().toISOString() : doc.data().dueDate,
+            billingPeriodStart: doc.data().billingPeriodStart?.toDate ? doc.data().billingPeriodStart.toDate().toISOString() : doc.data().billingPeriodStart,
+            billingPeriodEnd: doc.data().billingPeriodEnd?.toDate ? doc.data().billingPeriodEnd.toDate().toISOString() : doc.data().billingPeriodEnd,
+        }));
+
+        // Determine if there are potentially more results
+        const hasMore = invoices.length === pageSize;
+
+        return { success: true, invoices, hasMore };
+    } catch (error) {
+        console.error("Error fetching paginated invoices:", error);
         return { success: false, error: error.message };
     }
 }
