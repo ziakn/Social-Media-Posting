@@ -44,17 +44,26 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
     });
 
     const [galleryOpen, setGalleryOpen] = useState(false);
+    const [coinBalance, setCoinBalance] = useState(0);
     const selectionScrollRef = useRef(null);
 
     useEffect(() => {
-        async function loadAccounts() {
-            const res = await getUserTikTokAccounts();
-            if (res.success && res.accounts.length > 0) {
-                setAccounts(res.accounts);
-                if (!selectedAccount) setSelectedAccount(res.accounts[0].id);
+        async function loadData() {
+            const [accRes, userRes] = await Promise.all([
+                getUserTikTokAccounts(),
+                fetch("/api/user/me").then(r => r.json())
+            ]);
+
+            if (accRes.success && accRes.accounts.length > 0) {
+                setAccounts(accRes.accounts);
+                if (!selectedAccount) setSelectedAccount(accRes.accounts[0].id);
+            }
+
+            if (userRes.user) {
+                setCoinBalance(userRes.user.coinBalance);
             }
         }
-        loadAccounts();
+        loadData();
     }, [selectedAccount]);
 
     const handleGallerySelect = (selectedItems) => {
@@ -82,6 +91,7 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
 
     const handleSubmit = async () => {
         if (!selectedAccount) return toast.error("Please select a TikTok account");
+        if (coinBalance <= 0) return toast.error("Insufficient coins. Please buy more coins to post.");
         if (postContent.media.length === 0) return toast.error("Please select a video for your TikTok post");
 
         const scheduledTime = scheduling.schedule ? getDateTime(scheduling.date, scheduling.time) : null;
@@ -108,6 +118,7 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
 
                 if (result.success) {
                     toast.success(result.message || (isEditing ? "Post updated!" : "Post created!"));
+                    setCoinBalance(prev => prev - 1);
                     onSuccess?.();
                 } else {
                     toast.error(result.message || "Failed to submit post");
@@ -318,15 +329,23 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
                     <Button
                         onClick={handleSubmit}
                         disabled={isPending}
-                        className="h-11 px-8 rounded-xl bg-black hover:bg-gray-800 text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-gray-100 transition-all active:scale-95"
+                        className="h-14 px-8 rounded-xl bg-black hover:bg-gray-800 text-white font-black uppercase tracking-[0.2em] shadow-xl shadow-gray-100 transition-all active:scale-95"
                     >
                         {isPending ? (
                             <>
-                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Processing...
                             </>
                         ) : (
-                            scheduling.schedule ? (isEditing ? "Update Schedule" : "Schedule Video") : (isEditing ? "Save Changes" : "Post Now")
+                            <div className="flex flex-col items-center">
+                                <div className="flex items-center gap-2">
+                                    <Send className="h-4 w-4" />
+                                    {scheduling.schedule ? (isEditing ? "Update Schedule" : "Schedule Video") : (isEditing ? "Save Changes" : "Post Now (1 Coin)")}
+                                </div>
+                                <span className="text-[9px] opacity-70 font-normal mt-0.5 lowercase tracking-wider">
+                                    Available: {coinBalance} Coins
+                                </span>
+                            </div>
                         )}
                     </Button>
                 )}
