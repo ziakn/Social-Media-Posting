@@ -10,15 +10,24 @@ export async function GET(request) {
         const state = url.searchParams.get("state");
 
         // 1. Verify user session explicitly from request cookies for robustness
-        const user = await verifyToken();
+        const sessionToken = request.cookies.get("token")?.value;
+        const user = await verifyToken(sessionToken);
 
         if (!user) {
-            console.error("TikTok Callback: Unauthorized - No user session found");
+            console.error("TikTok Callback: Unauthorized - No user session found. Token cookie:", !!sessionToken);
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
         // 2. Verify state to prevent CSRF (Must match name in connect/route.js)
         const storedState = request.cookies.get("tiktok_oauth_state")?.value;
+
+        // Debugging state issues
+        console.log("TikTok State Check:", {
+            received: state,
+            stored: storedState,
+            match: state === storedState
+        });
+
         if (!state || state !== storedState) {
             console.error("TikTok OAuth State Mismatch:", { received: state, stored: storedState });
             const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -112,6 +121,7 @@ async function exchangeCodeForToken(code, code_verifier) {
 
     const data = await res.json();
     if (data.error) {
+        console.error("TikTok Token Exchange Failed:", data);
         throw new Error(data.error_description || data.error);
     }
     return data;
@@ -126,6 +136,7 @@ async function fetchUserProfile(accessToken) {
 
     const data = await res.json();
     if (data.error) {
+        console.error("TikTok Profile Fetch Failed:", data);
         throw new Error(data.error.message || "Failed to fetch profile");
     }
     return data.data.user;

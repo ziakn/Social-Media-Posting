@@ -14,10 +14,14 @@ export async function createToken(payload) {
 }
 
 // Verify JWT token
-export async function verifyToken() {
+export async function verifyToken(tokenParam = null) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("token")?.value;
+    let token = tokenParam;
+
+    if (!token) {
+      const cookieStore = await cookies();
+      token = cookieStore.get("token")?.value;
+    }
 
     if (!token) return null;
 
