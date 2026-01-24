@@ -13,12 +13,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.bsky.app',
-      }
+      },
     ],
   },
-  serverActions: {
-    bodySizeLimit: '1000mb', // or 20mb if you want
-  },
+
+  // Allow Stripe on the server
   serverExternalPackages: ['stripe'],
 };
 
