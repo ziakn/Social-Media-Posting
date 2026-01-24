@@ -32,7 +32,7 @@ export async function proxy(req) {
 
   // Validate JWT token
   try {
-    const payload = await verifyToken(token);
+    const payload = await verifyToken();
 
     if (!payload) {
       return redirectToLogin(req, pathname);
