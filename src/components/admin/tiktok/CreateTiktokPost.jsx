@@ -52,7 +52,6 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
 
             if (accRes.success && accRes.accounts.length > 0) {
                 setAccounts(accRes.accounts);
-                if (!selectedAccount) setSelectedAccount(accRes.accounts[0].id);
             }
         }
         loadData();
@@ -119,7 +118,7 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
         });
     };
 
-    const account = accounts.find(a => a.id === selectedAccount) || {};
+    const account = accounts.find(a => a.accountId === selectedAccount) || {};
 
     return (
         <div className="w-full h-full flex flex-col bg-gray-50 overflow-hidden">
@@ -133,11 +132,11 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
                         </div>
                         <div className="flex flex-wrap gap-5 items-center">
                             {accounts.map((acc) => {
-                                const isSelected = selectedAccount === acc.id;
+                                const isSelected = selectedAccount === acc.accountId;
                                 return (
                                     <div
                                         key={acc.id}
-                                        onClick={() => !isReadOnly && setSelectedAccount(acc.id)}
+                                        onClick={() => !isReadOnly && setSelectedAccount(acc.accountId)}
                                         className={cn(
                                             "group relative cursor-pointer transition-all duration-300 flex items-center justify-center rounded-full border p-1 bg-white",
                                             isSelected ? "border-black bg-white shadow-xl shadow-gray-100" : "w-12 h-12 border-gray-100 opacity-60 hover:opacity-100 scale-95 hover:scale-100",

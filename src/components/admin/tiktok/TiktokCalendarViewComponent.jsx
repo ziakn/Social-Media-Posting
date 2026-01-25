@@ -10,7 +10,8 @@ export default function TiktokCalendarViewComponent({
     onDateClick,
     onPostClick,
     onRefresh,
-    refreshTrigger = 0
+    refreshTrigger = 0,
+    accountId = "all"
 }) {
     const [calendarPosts, setCalendarPosts] = useState([]);
     const [accounts, setAccounts] = useState([]);
@@ -29,10 +30,10 @@ export default function TiktokCalendarViewComponent({
         const startDate = startOfMonth(calendarDate);
         const endDate = endOfMonth(calendarDate);
 
-        getAllTiktokCalendarPosts({ startDate, endDate }).then(res => {
+        getAllTiktokCalendarPosts({ startDate, endDate, accountId }).then(res => {
             if (res.success) setCalendarPosts(res.posts);
         }).finally(() => setLoadingCalendar(false));
-    }, [calendarDate, refreshTrigger]);
+    }, [calendarDate, refreshTrigger, accountId]);
 
     return (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden min-h-[500px] relative">

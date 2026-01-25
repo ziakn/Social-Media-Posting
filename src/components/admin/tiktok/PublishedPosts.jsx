@@ -42,6 +42,7 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [accounts, setAccounts] = useState([]);
     const [stats, setStats] = useState(null);
+    const [selectedAccountId, setSelectedAccountId] = useState(initialAccountId || "all");
 
     // Analytics Modal State
     const [analyticsOpen, setAnalyticsOpen] = useState(false);
@@ -61,12 +62,12 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
 
     const loadStats = useCallback(async () => {
         try {
-            const result = await getTiktokPostsStats({ accountId: initialAccountId || "all" });
+            const result = await getTiktokPostsStats({ accountId: selectedAccountId });
             if (result.success) setStats(result.stats);
         } catch (err) {
             console.error("Error loading stats:", err);
         }
-    }, [initialAccountId]);
+    }, [selectedAccountId]);
 
     useEffect(() => {
         loadStats();
@@ -93,7 +94,6 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
         const initialData = {
             scheduledAt: date,
             status: 'draft', // To ensure it opens in edit mode
-            accountId: initialAccountId || (accounts.length > 0 ? accounts[0].id : null)
         };
         setSelectedPost(initialData);
         setIsCreating(true);
@@ -140,26 +140,53 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
                     </div>
 
                     <div className="flex items-center gap-6">
-                        {accounts.length > 0 && stats && (
-                            <div className="hidden lg:flex items-center gap-8 mr-4">
-                                <div className="text-center">
-                                    <p className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalPosts)}</p>
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Posts</p>
-                                </div>
-                                <div className="w-[1px] h-8 bg-gray-100" />
-                                <div className="text-center">
-                                    <p className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalViews)}</p>
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Views</p>
-                                </div>
-                                <div className="w-[1px] h-8 bg-gray-100" />
-                                <div className="text-center">
-                                    <p className="text-xl font-black text-gray-900 leading-none">{formatNumber(stats.totalLikes)}</p>
-                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-1">Likes</p>
-                                </div>
+                        {accounts.length > 0 && (
+                            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-4">
+                                {accounts.slice(0, 3).map((account, i) => (
+                                    <div
+                                        key={account.id}
+                                        onClick={() => setSelectedAccountId(prev => prev === account.accountId ? "all" : account.accountId)}
+                                        className={cn(
+                                            "w-8 h-8 rounded-full border-2 border-white overflow-hidden shadow-sm cursor-pointer transition-all hover:scale-110 relative",
+                                            selectedAccountId === account.accountId ? "z-30 ring-2 ring-black ring-offset-2" : `z-${10 - i}`
+                                        )}
+                                        title={account.username}
+                                    >
+                                        {account.profilePicture ? (
+                                            <img src={account.profilePicture} alt={account.username} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-200 text-[10px] font-bold text-gray-500">
+                                                {account.username?.charAt(0).toUpperCase() || "T"}
+                                            </div>
+                                        )}
+                                        {selectedAccountId === account.accountId && (
+                                            <div className="absolute inset-0 bg-black/10 flex items-center justify-center">
+                                                <div className="bg-white rounded-full p-0.5 shadow-sm">
+                                                    <Check className="h-2 w-2 text-black stroke-[4]" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                {accounts.length > 3 && (
+                                    <div
+                                        onClick={() => setSelectedAccountId("all")}
+                                        className={cn(
+                                            "w-8 h-8 rounded-full border-2 border-white bg-black flex items-center justify-center shadow-sm z-10 cursor-pointer hover:scale-110",
+                                            selectedAccountId === "all" && "ring-2 ring-black ring-offset-2"
+                                        )}
+                                        title="View All"
+                                    >
+                                        <span className="text-[10px] font-black text-white">+{accounts.length - 3}</span>
+                                    </div>
+                                )}
                             </div>
                         )}
                         <Button
-                            onClick={() => { setSelectedPost(null); setIsCreating(true); }}
+                            onClick={() => {
+                                setSelectedPost(null);
+                                setIsCreating(true);
+                            }}
                             className="group h-14 px-8 rounded-2xl bg-black hover:bg-gray-800 text-white font-black uppercase tracking-[0.2em] shadow-2xl shadow-black/10 active:scale-95 transition-all flex gap-3"
                         >
                             <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" /> Compose Masterpiece
@@ -199,6 +226,7 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
 
                 <TabsContent value="calendar" className="mt-0 outline-none">
                     <TiktokCalendarViewComponent
+                        accountId={selectedAccountId}
                         refreshTrigger={refreshTrigger}
                         onRefresh={handleRefresh}
                         onPostClick={handlePostAction}
@@ -208,6 +236,7 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
 
                 <TabsContent value="grid" className="mt-0 outline-none">
                     <TiktokViewComponent
+                        accountId={selectedAccountId}
                         refreshTrigger={refreshTrigger}
                         onRefresh={handleRefresh}
                         onEdit={(p) => handlePostAction(p, 'edit')}
@@ -216,6 +245,7 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
 
                 <TabsContent value="listing" className="mt-0 outline-none">
                     <TiktokListingViewComponent
+                        accountId={selectedAccountId}
                         refreshTrigger={refreshTrigger}
                         onRefresh={handleRefresh}
                         onEdit={(p) => handlePostAction(p, 'edit')}

@@ -29,7 +29,7 @@ export async function getUserTikTokAccounts() {
             const data = doc.data();
             return {
                 id: doc.id,
-                accountId: doc.id,
+                accountId: data.accountId, // Real platform ID
                 name: data.displayName,
                 username: data.username,
                 profilePicture: data.profilePicture,

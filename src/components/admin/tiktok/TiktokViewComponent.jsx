@@ -46,6 +46,12 @@ export default function TiktokViewComponent({
         sortOrder: "desc"
     });
 
+    useEffect(() => {
+        if (initialAccountId) {
+            setFilters(prev => ({ ...prev, accountId: initialAccountId }));
+        }
+    }, [initialAccountId]);
+
     const [pagination, setPagination] = useState({
         pageSize: 12,
         hasMore: false,
@@ -316,19 +322,6 @@ export default function TiktokViewComponent({
                                         <SelectItem value="scheduled">Scheduled</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                <Select value={filters.accountId} onValueChange={(value) => handleFilterChange("accountId", value)}>
-                                    <SelectTrigger className="w-full lg:w-[200px] rounded-xl border-gray-200 h-10 font-bold"><SelectValue placeholder="TikTok Account" /></SelectTrigger>
-                                    <SelectContent className="rounded-xl">
-                                        <SelectItem value="all">All Accounts</SelectItem>
-                                        {accounts.map((account) => (
-                                            <SelectItem key={account.id} value={account.id}>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="truncate">{account.username}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
                             </div>
                         </div>
                         {/* Active Filters */}
@@ -450,8 +443,8 @@ export default function TiktokViewComponent({
                                         <div className="flex items-center justify-between pt-4 border-t border-white/10">
                                             <div className="flex items-center gap-2">
                                                 <Avatar className="h-8 w-8 border-2 border-white/20 ring-1 ring-black/20 shadow-xl">
-                                                    <AvatarImage src={account?.profilePicture} />
-                                                    <AvatarFallback className="bg-white/10 text-white font-black text-[10px]">@{account?.username?.[0]}</AvatarFallback>
+                                                    <AvatarImage src={accounts.find(a => a.accountId === post.accountId)?.profilePicture} />
+                                                    <AvatarFallback className="bg-white/10 text-white font-black text-[10px]">@{accounts.find(a => a.accountId === post.accountId)?.username?.[0]}</AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex flex-col">
                                                     <span className="text-[11px] font-black text-white hover:underline">@{account?.username || 'tiktok'}</span>

@@ -256,7 +256,7 @@ export async function updateTiktokPost({ postId, text, media, scheduling, accoun
 /**
  * Get all TikTok posts for calendar
  */
-export async function getAllTiktokCalendarPosts({ startDate, endDate } = {}) {
+export async function getAllTiktokCalendarPosts({ startDate, endDate, accountId = "all" } = {}) {
     try {
         const user = await verifyToken();
 
@@ -267,6 +267,10 @@ export async function getAllTiktokCalendarPosts({ startDate, endDate } = {}) {
             where("platform", "==", "tiktok"),
             where("delete", "==", 0)
         ];
+
+        if (accountId && accountId !== "all") {
+            constraints.push(where("accountId", "==", accountId));
+        }
 
         const q = query(
             collection(db, "tiktok_posts"),

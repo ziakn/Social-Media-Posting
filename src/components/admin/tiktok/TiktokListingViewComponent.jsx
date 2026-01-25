@@ -45,6 +45,12 @@ export default function TiktokListingViewComponent({
         sortOrder: "desc"
     });
 
+    useEffect(() => {
+        if (initialAccountId) {
+            setFilters(prev => ({ ...prev, accountId: initialAccountId }));
+        }
+    }, [initialAccountId]);
+
     const [pagination, setPagination] = useState({
         pageSize: 15,
         hasMore: false,
@@ -112,7 +118,7 @@ export default function TiktokListingViewComponent({
     };
 
     const handleOpenAnalytics = (post) => {
-        const account = accounts.find(a => a.id === post.accountId);
+        const account = accounts.find(a => a.accountId === post.accountId);
         const enrichedPost = {
             ...post,
             username: account?.username || post.username || "TikTok User",
@@ -171,15 +177,6 @@ export default function TiktokListingViewComponent({
                         <SelectItem value="scheduled">Scheduled</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={filters.accountId} onValueChange={(v) => handleFilterChange("accountId", v)}>
-                    <SelectTrigger className="w-[200px] rounded-xl border-gray-200 font-bold"><SelectValue placeholder="Account" /></SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                        <SelectItem value="all">All Accounts</SelectItem>
-                        {accounts.map(acc => (
-                            <SelectItem key={acc.id} value={acc.id}>{acc.username}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
                 <Button variant="ghost" size="icon" onClick={clearFilters} className="rounded-xl"><X className="h-4 w-4" /></Button>
             </Card>
 
@@ -217,10 +214,10 @@ export default function TiktokListingViewComponent({
                                 <TableCell>
                                     <div className="flex items-center gap-2.5">
                                         <Avatar className="h-7 w-7 border-2 border-white shadow-sm ring-1 ring-gray-100">
-                                            <AvatarImage src={accounts.find(a => a.id === post.accountId)?.profilePicture} />
+                                            <AvatarImage src={accounts.find(a => a.accountId === post.accountId)?.profilePicture} />
                                             <AvatarFallback className="text-[8px] font-black bg-gray-50 text-gray-400">T</AvatarFallback>
                                         </Avatar>
-                                        <span className="text-[11px] font-black text-gray-700">@{accounts.find(a => a.id === post.accountId)?.username || post.username}</span>
+                                        <span className="text-[11px] font-black text-gray-700">@{accounts.find(a => a.accountId === post.accountId)?.username || post.username}</span>
                                     </div>
                                 </TableCell>
                                 <TableCell>
