@@ -18,6 +18,8 @@ import {
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { getAuthenticatedUser, getTiktokAccount } from "./accountUtils";
+import { triggerTiktokPublish } from "./publishUtils";
 
 /**
  * Get all TikTok posts with filtering and pagination
@@ -180,9 +182,7 @@ export async function getTiktokPostsStats({ accountId = null } = {}) {
  */
 export async function publishTiktokPostNow(postId) {
     try {
-        const user = await verifyToken();
-
-        if (!user) return { success: false, message: "Unauthorized" };
+        const user = await getAuthenticatedUser();
 
         const postRef = doc(db, "tiktok_posts", postId);
         const postSnap = await getDoc(postRef);
@@ -192,13 +192,16 @@ export async function publishTiktokPostNow(postId) {
         const postData = postSnap.data();
         if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
 
-        // In a real app, trigger TikTok Content Posting API here
-        // For now, we update Firestore status
-        await updateDoc(postRef, {
-            status: "published",
-            publishedAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-        });
+        // 1. Get account with fresh token
+        const { accessToken } = await getTiktokAccount(user.id, postData.accountId);
+
+        // 2. Trigger real TikTok API
+        const text = postData.content?.text || "";
+        const mediaUrl = postData.content?.media?.[0]?.url;
+
+        if (!mediaUrl) throw new Error("No video found for this post");
+
+        await triggerTiktokPublish(accessToken, postRef, text, mediaUrl);
 
         revalidatePath("/admin/social/tiktok/posts");
         return { success: true, message: "Post published successfully" };
