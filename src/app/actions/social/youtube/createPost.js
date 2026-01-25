@@ -7,7 +7,6 @@ import { verifyToken } from "@/lib/auth";
 import { refreshYoutubeToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
-import path from 'path';
 
 /**
  * Handle YouTube API response

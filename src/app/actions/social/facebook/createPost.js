@@ -8,7 +8,6 @@ import { fetchFacebookPages } from "./getPages";
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { verifyToken } from "@/lib/auth";
-import { verifyToken } from "@/lib/auth";
 
 // ... existing imports
 
