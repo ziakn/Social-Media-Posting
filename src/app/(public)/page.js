@@ -12,13 +12,17 @@ import ReliabilitySection from "@/components/home/ReliabilitySection";
 import PricingPreview from "@/components/home/PricingPreview";
 import ResourcesTeaser from "@/components/home/ResourcesTeaser";
 import FinalCTA from "@/components/home/FinalCTA";
+import { getPublicPackages } from "@/app/actions/website/packages/packagesActions";
 
 export const metadata = {
   title: "Multi-Platform Social Media Scheduler | SocialHub",
   description: "Manage TikTok, Pinterest, Instagram, and more in one AI-powered platform. Schedule, publish, and analyze your content effortlessly.",
 };
 
-export default function Home() {
+export default async function Home() {
+  const result = await getPublicPackages();
+  const packages = result.success ? result.packages : [];
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -75,7 +79,7 @@ export default function Home() {
       <SolutionsSection />
       <TestimonialsSection />
       <ReliabilitySection />
-      <PricingPreview />
+      <PricingPreview packages={packages} />
       <ResourcesTeaser />
       <FinalCTA />
     </main>
