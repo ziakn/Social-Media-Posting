@@ -67,7 +67,6 @@ export async function registerUserAction(formData, selectedPlan, receiveUpdates)
             role_name: "Admin",
             password: hashedPassword,
             subscription,
-            coinBalance: 100,
             created_at: new Date(),
             receiveUpdates
         };

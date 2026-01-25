@@ -84,7 +84,6 @@ export async function POST(req) {
       creatorType,
       country,
       password: hash_password,
-      coinBalance: 100,
       subscription: {
         status: "active",
         packageId: "XX7Bf4wU3MkJAHu6Ohzm",
@@ -104,7 +103,7 @@ export async function POST(req) {
     return new Response(
       JSON.stringify({
         success: true,
-        user: { id: userId, name, email, role_id, coinBalance: 100 },
+        user: { id: userId, name, email, role_id },
       }),
       { status: 201 }
     );

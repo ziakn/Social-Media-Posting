@@ -41,21 +41,11 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Give 100 free coins to existing users who haven't received them yet
-    if (userDoc.coinBalance === undefined) {
-      await updateDoc(doc(db, "users", userDocId), {
-        coinBalance: 100,
-        updatedAt: new Date()
-      });
-      userDoc.coinBalance = 100;
-    }
-
     return NextResponse.json({
       user: {
         id: userDoc.id || userDocId,
         name: userDoc.name,
         email: userDoc.email,
-        coinBalance: userDoc.coinBalance,
         role_id: userDoc.role_id,
         subscription: userDoc.subscription || null,
       }

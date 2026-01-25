@@ -103,16 +103,12 @@ export default function CreateFacebookPost() {
   const [pages, setPages] = useState([]);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryMediaType, setGalleryMediaType] = useState("image"); // 'image' or 'video'
-  const [coinBalance, setCoinBalance] = useState(0);
 
   const { uploadFiles, uploading, progress } = useFileUpload();
 
   useEffect(() => {
     async function loadData() {
-      const [fbRes, userRes] = await Promise.all([
-        fetchFacebookPages(),
-        fetch("/api/user/me").then(r => r.json())
-      ]);
+      const fbRes = await fetchFacebookPages();
 
       if (fbRes.success) {
         setPages(
@@ -123,10 +119,6 @@ export default function CreateFacebookPost() {
             category: p.category,
           }))
         );
-      }
-
-      if (userRes.user) {
-        setCoinBalance(userRes.user.coinBalance);
       }
     }
     loadData();
@@ -282,11 +274,6 @@ export default function CreateFacebookPost() {
   const validateForm = () => {
     if (!selectedPage) {
       toast.error("Please select a Facebook page");
-      return false;
-    }
-
-    if (coinBalance <= 0) {
-      toast.error("Insufficient coins. Please buy more coins to post.");
       return false;
     }
 
@@ -800,14 +787,9 @@ export default function CreateFacebookPost() {
                 {scheduling.schedule ? "Scheduling..." : "Publishing..."}
               </div>
             ) : (
-              <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2">
-                  {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                  {scheduling.schedule ? "Schedule Post (1 Coin)" : "Publish Now (1 Coin)"}
-                </div>
-                <span className="text-[10px] opacity-70 font-normal mt-0.5">
-                  Balance: {coinBalance} Coins
-                </span>
+              <div className="flex items-center gap-2">
+                {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                {scheduling.schedule ? "Schedule Post" : "Publish Now"}
               </div>
             )}
           </Button>

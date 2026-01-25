@@ -46,14 +46,10 @@ export default function CreateTwitterPost() {
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
     const [galleryMediaType, setGalleryMediaType] = useState("image");
-    const [coinBalance, setCoinBalance] = useState(0);
 
     useEffect(() => {
         async function loadData() {
-            const [twRes, userRes] = await Promise.all([
-                checkTwitterConnection(),
-                fetch("/api/user/me").then(r => r.json())
-            ]);
+            const twRes = await checkTwitterConnection();
 
             if (twRes.connected) {
                 if (twRes.accounts && twRes.accounts.length > 0) {
@@ -66,10 +62,6 @@ export default function CreateTwitterPost() {
                         profilePicture: twRes.profilePicture
                     }]);
                 }
-            }
-
-            if (userRes.user) {
-                setCoinBalance(userRes.user.coinBalance);
             }
         }
         loadData();
@@ -128,10 +120,6 @@ export default function CreateTwitterPost() {
             toast.error("Please select a Twitter account");
             return false;
         }
-        if (coinBalance <= 0) {
-            toast.error("Insufficient coins. Please buy more coins to post.");
-            return false;
-        }
         if (!postContent.text.trim() && postType === "text") {
             toast.error("Please enter some text for your tweet");
             return false;
@@ -170,7 +158,6 @@ export default function CreateTwitterPost() {
 
                 if (res.success) {
                     toast.success(res.message);
-                    setCoinBalance(prev => prev - 1);
                     setPostContent({ text: "", images: [], video: null, link: "" });
                     setScheduling({ schedule: false, date: new Date(), time: "12:00" });
                 } else {

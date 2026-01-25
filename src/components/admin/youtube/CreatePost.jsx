@@ -42,14 +42,10 @@ export default function CreateYoutubePost() {
     const [privacyStatus, setPrivacyStatus] = useState("public");
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
-    const [coinBalance, setCoinBalance] = useState(0);
 
     useEffect(() => {
         async function loadData() {
-            const [ytRes, userRes] = await Promise.all([
-                checkYoutubeConnection(),
-                fetch("/api/user/me").then(r => r.json())
-            ]);
+            const ytRes = await checkYoutubeConnection();
 
             if (ytRes.connected) {
                 if (ytRes.accounts && ytRes.accounts.length > 0) {
@@ -61,10 +57,6 @@ export default function CreateYoutubePost() {
                         profilePicture: ytRes.profilePicture
                     }]);
                 }
-            }
-
-            if (userRes.user) {
-                setCoinBalance(userRes.user.coinBalance);
             }
         }
         loadData();
@@ -98,10 +90,6 @@ export default function CreateYoutubePost() {
             toast.error("Please select a YouTube channel");
             return false;
         }
-        if (coinBalance <= 0) {
-            toast.error("Insufficient coins. Please buy more coins to post.");
-            return false;
-        }
         if (!postContent.title.trim()) {
             toast.error("Please enter a video title");
             return false;
@@ -132,7 +120,6 @@ export default function CreateYoutubePost() {
 
                 if (res.success) {
                     toast.success(res.message);
-                    setCoinBalance(prev => prev - 1);
                     setPostContent({ title: "", description: "", video: null });
                     setScheduling({ schedule: false, date: new Date(), time: "12:00" });
                 } else {
@@ -385,14 +372,9 @@ export default function CreateYoutubePost() {
                                 {scheduling.schedule ? "Scheduling..." : "Uploading..."}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center">
-                                <div className="flex items-center gap-2">
-                                    {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                                    {scheduling.schedule ? "Schedule Upload (1 Coin)" : "Upload Now (1 Coin)"}
-                                </div>
-                                <span className="text-[10px] opacity-70 font-normal mt-0.5">
-                                    Balance: {coinBalance} Coins
-                                </span>
+                            <div className="flex items-center gap-2">
+                                {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+                                {scheduling.schedule ? "Schedule Upload" : "Upload Now"}
                             </div>
                         )}
                     </Button>

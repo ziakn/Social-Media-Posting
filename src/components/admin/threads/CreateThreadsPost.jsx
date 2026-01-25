@@ -19,22 +19,14 @@ export default function CreateThreadsPost() {
     const [text, setText] = useState("");
     const [mediaUrl, setMediaUrl] = useState("");
     const [mediaType, setMediaType] = useState("TEXT");
-    const [coinBalance, setCoinBalance] = useState(0);
 
     useEffect(() => {
         const loadData = async () => {
-            const [thRes, userRes] = await Promise.all([
-                fetchThreadsAccounts(),
-                fetch("/api/user/me").then(r => r.json())
-            ]);
+            const thRes = await fetchThreadsAccounts();
 
             if (thRes.success && thRes.accounts.length > 0) {
                 setAccounts(thRes.accounts);
                 setSelectedAccount(thRes.accounts[0].accountId);
-            }
-
-            if (userRes.user) {
-                setCoinBalance(userRes.user.coinBalance);
             }
         };
         loadData();
@@ -43,7 +35,6 @@ export default function CreateThreadsPost() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedAccount) return toast.error("Please select an account");
-        if (coinBalance <= 0) return toast.error("Insufficient coins. Please buy more coins to post.");
         if (!text && !mediaUrl) return toast.error("Please enter text or a media URL");
 
         setLoading(true);
@@ -57,7 +48,6 @@ export default function CreateThreadsPost() {
 
             if (result.success) {
                 toast.success("Post published successfully to Threads!");
-                setCoinBalance(prev => prev - 1);
                 setText("");
                 setMediaUrl("");
                 setMediaType("TEXT");
@@ -149,14 +139,9 @@ export default function CreateThreadsPost() {
                                     Publishing...
                                 </>
                             ) : (
-                                <div className="flex flex-col items-center">
-                                    <div className="flex items-center gap-2">
-                                        <Send className="h-4 w-4" />
-                                        Post to Threads (1 Coin)
-                                    </div>
-                                    <span className="text-[10px] opacity-70 font-normal mt-0.5">
-                                        Balance: {coinBalance} Coins
-                                    </span>
+                                <div className="flex items-center gap-2">
+                                    <Send className="h-4 w-4" />
+                                    Post to Threads
                                 </div>
                             )}
                         </Button>

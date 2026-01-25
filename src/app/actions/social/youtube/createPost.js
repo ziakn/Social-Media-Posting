@@ -7,7 +7,7 @@ import { verifyToken } from "@/lib/auth";
 import { refreshYoutubeToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
-import { spendCoin } from "@/lib/subscription";
+import path from 'path';
 
 /**
  * Handle YouTube API response
@@ -44,12 +44,6 @@ export async function createYoutubePost({
         }
 
         const userId = user.id;
-
-        // Check and spend coin
-        const coinSpend = await spendCoin(userId);
-        if (!coinSpend.success) {
-            return { success: false, message: coinSpend.message };
-        }
 
         // 1. Get YouTube Access Token from Firestore
         const q = query(

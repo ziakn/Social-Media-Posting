@@ -8,7 +8,7 @@ import { fetchFacebookPages } from "./getPages";
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { verifyToken } from "@/lib/auth";
-import { spendCoin } from "@/lib/subscription";
+import { verifyToken } from "@/lib/auth";
 
 // ... existing imports
 
@@ -31,12 +31,6 @@ export async function createFacebookPostBase({
     }
 
     const userId = user.id || user.uid;
-
-    // Check and spend coin
-    const coinSpend = await spendCoin(userId);
-    if (!coinSpend.success) {
-      return { success: false, message: coinSpend.message };
-    }
 
     const { pages } = await fetchFacebookPages();
 

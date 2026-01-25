@@ -104,13 +104,6 @@ export async function createTiktokPost({
 
         if (media.length === 0) throw new Error("No video provided for TikTok post");
 
-        // 1. Credit Check - Spend 1 coin
-        const { spendCoin } = await import("@/lib/subscription");
-        const spendRes = await spendCoin(user.id);
-        if (!spendRes.success) {
-            throw new Error(spendRes.message || "Could not deduct credits");
-        }
-
         const postData = {
             userId: user.id,
             accountId: pageId,
