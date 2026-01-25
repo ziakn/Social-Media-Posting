@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,14 +13,23 @@ const inter = Inter({
 
 export const metadata = {
   title: {
-    default: "SocialHub | Multi-Platform Social Media Scheduling Tool",
+    default: "SocialHub | #1 AI Social Media Scheduler & Analytics",
     template: "%s | SocialHub"
   },
-  description: "The 2026 command center for creators to schedule, analyze, and grow across every major platform. AI-powered tiktok, instagram, and pinterest scheduling.",
-  keywords: ["social media scheduler", "multi-platform posting", "AI social media", "TikTok scheduler", "Instagram planner"],
-  authors: [{ name: "SocialHub" }],
-  creator: "SocialHub",
-  publisher: "SocialHub",
+  description: "SocialHub is the ultimate AI-powered social media command center. Schedule, publish, and analyze performance across TikTok, Instagram, Pinterest, and Twitter from one dashboard.",
+  keywords: [
+    "social media scheduler",
+    "AI social media management",
+    "TikTok auto-posting",
+    "Instagram planner",
+    "Pinterest marketing tool",
+    "social media analytics 2026",
+    "content calendar",
+    "SocialHub"
+  ],
+  authors: [{ name: "SocialHub Team" }],
+  creator: "SocialHub AI",
+  publisher: "SocialHub Global",
   formatDetection: {
     email: false,
     address: false,
@@ -30,16 +40,16 @@ export const metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "SocialHub | Multi-Platform Social Media Scheduling Tool",
-    description: "Manage TikTok, Pinterest, Bluesky, Instagram posts in one tool. AI-powered scheduling, analytics, and publishing.",
+    title: "SocialHub | Streamline Your Social Media with AI",
+    description: "Connect all your social accounts. Schedule posts, track viral trends, and scale your brand with SocialHub's AI-driven platform.",
     url: "https://social-hub-demo.vercel.app",
     siteName: "SocialHub",
     images: [
       {
-        url: "/og-image.png", // Need to ensure this exists or use a generic one
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "SocialHub Dashboard",
+        alt: "SocialHub AI Dashboard Preview",
       },
     ],
     locale: "en_US",
@@ -47,10 +57,21 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SocialHub | Multi-Platform Social Media Scheduling Tool",
-    description: "Manage TikTok, Pinterest, Bluesky, Instagram posts in one tool. AI-powered scheduling, analytics, and publishing.",
+    title: "SocialHub | The Future of Social Media Management",
+    description: "One tool to rule them all. Schedule content for TikTok, Instagram, and more with AI precision.",
     creator: "@socialhub",
     images: ["/twitter-card.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   icons: {
     icon: "/favicon.ico",
@@ -63,6 +84,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.variable} font-sans antialiased text-gray-900 bg-gray-50`}>
+        <JsonLdSchema />
         {children}
         <Toaster position="top-right" expand={false} richColors />
       </body>
