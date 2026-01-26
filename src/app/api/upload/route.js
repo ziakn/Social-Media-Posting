@@ -18,8 +18,10 @@ export async function POST(request) {
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
+        const hour = String(now.getHours()).padStart(2, '0');
+        const randomSalt = Math.floor(100000 + Math.random() * 900000);
 
-        const relativeUploadDir = `/uploads/${year}/${month}/${day}`;
+        const relativeUploadDir = `/uploads/${year}/${month}/${day}/${hour}/${randomSalt}`;
         const uploadDir = path.join(process.cwd(), 'public', relativeUploadDir);
 
         try {
@@ -29,7 +31,7 @@ export async function POST(request) {
         }
 
         const ext = path.extname(file.name);
-        const randomSalt = Math.floor(100000 + Math.random() * 900000);
+
         const timestamp = Date.now();
         const filename = `${year}${month}${day}_${randomSalt}_${timestamp}${ext}`;
         const filepath = path.join(uploadDir, filename);
