@@ -22,7 +22,7 @@ export async function triggerTiktokPublish(accessToken, postRef, text, mediaUrl)
             body: JSON.stringify({
                 post_info: {
                     title: text.slice(0, 150), // TikTok title limit
-                    privacy_level: "PUBLIC_TO_EVERYONE",
+                    privacy_level: "SELF_ONLY", // Mandatory for Sandbox/Staging mode testing
                     disable_comment: false,
                     disable_duet: false,
                     disable_stitch: false
@@ -38,13 +38,17 @@ export async function triggerTiktokPublish(accessToken, postRef, text, mediaUrl)
 
         if (tiktokData.error && tiktokData.error.code !== "ok") {
             let errorMsg = tiktokData.error.message || "TikTok API rejection";
+            const errorCode = tiktokData.error.code;
 
             // Helpful guidance for domain verification
             if (errorMsg.includes("URL ownership verification")) {
                 errorMsg = "TikTok Error: You must verify your video domain (e.g. firebasestorage.googleapis.com) in the TikTok Developer Portal under 'URL ownership verification'.";
+            } else if (errorMsg.toLowerCase().includes("guideline")) {
+                errorMsg = `TikTok Integration Error: ${errorMsg}. This often means your app is in 'Staging' mode and cannot post public videos yet. Try asking TikTok for 'Production' access or check if your account is a 'Business Account' in the console. (Status Code: ${errorCode})`;
             }
 
-            await updateDoc(postRef, { status: "failed", error: errorMsg });
+            console.error("TikTok API Detailed Error:", JSON.stringify(tiktokData.error, null, 2));
+            await updateDoc(postRef, { status: "failed", error: errorMsg, tiktokErrorCode: errorCode });
             throw new Error(errorMsg);
         }
 
