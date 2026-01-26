@@ -95,9 +95,18 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
   const [selectedPage, setSelectedPage] = useState(initialData?.pageId || null);
 
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryMediaType, setGalleryMediaType] = useState("image");
+  const [galleryMediaType, setGalleryMediaType] = useState(["image"]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const selectionScrollRef = useRef(null);
+
+  // Sync gallery media type with post type tab
+  useEffect(() => {
+    if (postType === 'images' || postType === 'carousel') {
+      setGalleryMediaType(["image"]);
+    } else if (postType === 'video') {
+      setGalleryMediaType(["video"]);
+    }
+  }, [postType]);
 
   useEffect(() => {
     async function loadPages() {
@@ -109,8 +118,12 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     loadPages();
   }, []);
 
-  const openGallery = (types) => {
-    setGalleryMediaType(types);
+  const openGallery = (type) => {
+    if (type) {
+      setGalleryMediaType(Array.isArray(type) ? type : [type]);
+    } else {
+      setGalleryMediaType(postType === 'video' ? ["video"] : ["image"]);
+    }
     setGalleryOpen(true);
   };
 
@@ -122,7 +135,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       mimeType: item.fileType, file: null
     }));
 
-    if (postType === "video") {
+    if (galleryMediaType.includes("video") || postType === "video") {
       setPostContent(prev => ({ ...prev, media: [newMedia[0]] }));
       setGalleryOpen(false);
       setCurrentSlide(0);
@@ -370,11 +383,13 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                     <Button
                       disabled={isReadOnly}
                       variant="outline"
-                      onClick={() => openGallery(["image", "video"])}
+                      onClick={() => openGallery(postType === "video" ? "video" : "image")}
                       className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-blue-500 hover:bg-blue-50 flex flex-col gap-2"
                     >
                       <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-blue-600" /></div>
-                      <span className="text-xs font-black uppercase text-gray-600">Select Media</span>
+                      <span className="text-xs font-black uppercase text-gray-600">
+                        {postType === 'video' ? "Select Video" : "Select Images"}
+                      </span>
                     </Button>
                   </div>
                 )}
@@ -411,14 +426,16 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         </div>
       </div>
 
-      {!isReadOnly && (
-        <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
-          <Button disabled={isPending} onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-12 h-11">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />)}
-            {isEditing ? "Save Changes" : (scheduling.schedule ? "Schedule Post" : "Publish Now")}
-          </Button>
-        </div>
-      )}
+      {
+        !isReadOnly && (
+          <div className="p-4 border-t bg-white shrink-0 flex justify-end gap-3 px-8">
+            <Button disabled={isPending} onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl px-12 h-11">
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : (isEditing ? <Edit className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />)}
+              {isEditing ? "Save Changes" : (scheduling.schedule ? "Schedule Post" : "Publish Now")}
+            </Button>
+          </div>
+        )
+      }
       <GalleryModal
         open={galleryOpen}
         onOpenChange={setGalleryOpen}
@@ -427,7 +444,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         allowMultiple={postType !== 'video'}
         maxSelection={postType === 'video' ? 1 : 10}
       />
-    </div>
+    </div >
   );
 }
 

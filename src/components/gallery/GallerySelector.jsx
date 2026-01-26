@@ -47,19 +47,30 @@ export default function GallerySelector({
 
     useEffect(() => {
         fetchGallery();
-    }, []);
+    }, [JSON.stringify(allowedTypes)]); // Re-fetch when allowedTypes change
 
     const fetchGallery = async () => {
         setLoading(true);
         try {
-            const res = await getUserGallery();
+            // Determine filter for server query
+            let mediaTypeFilter = 'all';
+
+            // Handle both array and string (defensive)
+            const types = Array.isArray(allowedTypes) ? allowedTypes : [allowedTypes];
+
+            // If we have exactly one type, filter by it on server
+            if (types.length === 1) {
+                mediaTypeFilter = types[0];
+            }
+
+            const res = await getUserGallery({ mediaType: mediaTypeFilter });
             if (res.success) {
                 setItems(res.items);
             } else {
                 toast.error("Failed to load gallery");
             }
         } catch (error) {
-            console.error(error);
+            console.error('[GallerySelector] Error loading gallery:', error);
             toast.error("Error loading gallery");
         } finally {
             setLoading(false);
