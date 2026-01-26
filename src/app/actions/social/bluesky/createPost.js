@@ -41,6 +41,7 @@ async function getBlueSkyAccount(userId, accountId) {
 export async function uploadMedia(agent, media) {
     const { readFile } = await import('fs/promises');
     const path = await import('path');
+    const { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } = await import("@/lib/media/videoProcessor");
 
     let fileBuffer;
     let mimeType = media.type;
@@ -71,7 +72,35 @@ export async function uploadMedia(agent, media) {
         // Handle local files - read from public directory
         const relativePath = media.url.startsWith('/') ? media.url.slice(1) : media.url;
         const filePath = path.join(process.cwd(), 'public', relativePath);
-        fileBuffer = await readFile(filePath);
+
+        let finalPath = filePath;
+
+        // --- Video Validation ---
+        // Simple check if it seems to be video based on extension or passed type
+        const isLikelyVideo = media.type?.startsWith('video') || filePath.endsWith('.mp4') || filePath.endsWith('.mov');
+
+        if (isLikelyVideo) {
+            try {
+                console.log(`Checking BlueSky video compliance: ${filePath}`);
+                const metadata = await checkVideoMetadata(filePath);
+                const compliance = validatePlatformCompliance('bluesky', metadata);
+
+                if (!compliance.compliant) {
+                    console.log("BlueSky video not compliant:", compliance.reasons);
+                    const dir = path.dirname(filePath);
+                    const ext = path.extname(filePath);
+                    const basename = path.basename(filePath, ext);
+                    const outputPath = path.join(dir, `${basename}_bsky.mp4`);
+
+                    await convertVideoForPlatform(filePath, outputPath);
+                    finalPath = outputPath;
+                }
+            } catch (err) {
+                console.warn("BlueSky validation skipped:", err);
+            }
+        }
+
+        fileBuffer = await readFile(finalPath);
 
         // Detect or normalize MIME type
         if (!mimeType || mimeType === 'image' || mimeType === 'video') {

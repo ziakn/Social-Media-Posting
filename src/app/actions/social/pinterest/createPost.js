@@ -7,6 +7,8 @@ import { verifyToken } from "@/lib/auth";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import { getValidPinterestAccessToken } from "./connectAccount";
 import { uploadPinterestVideo } from "./videoUtils";
+import path from "path";
+import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 
 /**
  * Get authenticated user
@@ -118,6 +120,35 @@ export async function createPinterestPost({
             };
         } else if (postType === "video") {
             const item = media[0] || { url: "", type: "video" };
+
+            // --- Video Validation ---
+            if (!needsTestUrl(item.url) && item.url.startsWith('/')) {
+                try {
+                    const relativePath = item.url.substring(1);
+                    const absolutePath = path.join(process.cwd(), 'public', relativePath);
+                    console.log(`Checking Pinterest video compliance: ${absolutePath}`);
+                    const metadata = await checkVideoMetadata(absolutePath);
+                    const compliance = validatePlatformCompliance('pinterest', metadata);
+
+                    if (!compliance.compliant) {
+                        console.log("Pinterest video not compliant:", compliance.reasons);
+                        const dir = path.dirname(absolutePath);
+                        const ext = path.extname(absolutePath);
+                        const basename = path.basename(absolutePath, ext);
+                        const outputPath = path.join(dir, `${basename}_pin.mp4`);
+
+                        await convertVideoForPlatform(absolutePath, outputPath);
+
+                        // Update URL to point to converted file
+                        const newRelativePath = '/' + path.relative(path.join(process.cwd(), 'public'), outputPath);
+                        item.url = getAbsoluteUrl(newRelativePath);
+                        console.log("Converted Pinterest video URL:", item.url);
+                    }
+                } catch (err) {
+                    console.warn("Pinterest video validation skipped:", err);
+                }
+            }
+            // ------------------------
 
             // Upload Video to Pinterest
             // This process registers, uploads, and waits for processing

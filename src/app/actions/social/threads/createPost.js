@@ -8,6 +8,8 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs } from "fire
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
+import path from "path";
+import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 
 /**
  * Make request to Threads Graph API
@@ -151,7 +153,35 @@ export async function createThreadsPost({
                     media_type: item.type?.toUpperCase() || "IMAGE",
                 };
                 if (childParams.media_type === "IMAGE") childParams.image_url = mediaUrl;
-                if (childParams.media_type === "VIDEO") childParams.video_url = mediaUrl;
+                if (childParams.media_type === "VIDEO") {
+                    // --- Video Validation ---
+                    let finalVideoUrl = mediaUrl;
+                    if (!needsTestUrl(item.url) && item.url.startsWith('/')) {
+                        try {
+                            const relativePath = item.url.substring(1);
+                            const absolutePath = path.join(process.cwd(), 'public', relativePath);
+                            const metadata = await checkVideoMetadata(absolutePath);
+                            const compliance = validatePlatformCompliance('threads', metadata);
+
+                            if (!compliance.compliant) {
+                                console.log(`Threads video validation failed for item ${i}:`, compliance.reasons);
+                                const dir = path.dirname(absolutePath);
+                                const ext = path.extname(absolutePath);
+                                const basename = path.basename(absolutePath, ext);
+                                const outputPath = path.join(dir, `${basename}_threads_${i}.mp4`);
+
+                                await convertVideoForPlatform(absolutePath, outputPath);
+
+                                const newRelativePath = '/' + path.relative(path.join(process.cwd(), 'public'), outputPath);
+                                finalVideoUrl = getAbsoluteUrl(newRelativePath);
+                                console.log("Converted Threads video URL:", finalVideoUrl);
+                            }
+                        } catch (err) {
+                            console.warn("Threads video validation skipped:", err);
+                        }
+                    }
+                    childParams.video_url = finalVideoUrl;
+                }
 
                 const childContainer = await makeThreadsRequest(`/${accountId}/threads`, childParams, accessToken);
                 childIds.push(childContainer.id);
@@ -179,7 +209,35 @@ export async function createThreadsPost({
 
                 params.media_type = item.type?.toUpperCase() || "IMAGE";
                 if (params.media_type === "IMAGE") params.image_url = mediaUrl;
-                if (params.media_type === "VIDEO") params.video_url = mediaUrl;
+                if (params.media_type === "VIDEO") {
+                    // --- Video Validation ---
+                    let finalVideoUrl = mediaUrl;
+                    if (!needsTestUrl(item.url) && item.url.startsWith('/')) {
+                        try {
+                            const relativePath = item.url.substring(1);
+                            const absolutePath = path.join(process.cwd(), 'public', relativePath);
+                            const metadata = await checkVideoMetadata(absolutePath);
+                            const compliance = validatePlatformCompliance('threads', metadata);
+
+                            if (!compliance.compliant) {
+                                console.log("Threads single video validation failed:", compliance.reasons);
+                                const dir = path.dirname(absolutePath);
+                                const ext = path.extname(absolutePath);
+                                const basename = path.basename(absolutePath, ext);
+                                const outputPath = path.join(dir, `${basename}_threads_single.mp4`);
+
+                                await convertVideoForPlatform(absolutePath, outputPath);
+
+                                const newRelativePath = '/' + path.relative(path.join(process.cwd(), 'public'), outputPath);
+                                finalVideoUrl = getAbsoluteUrl(newRelativePath);
+                                console.log("Converted Threads video URL:", finalVideoUrl);
+                            }
+                        } catch (err) {
+                            console.warn("Threads video validation skipped:", err);
+                        }
+                    }
+                    params.video_url = finalVideoUrl;
+                }
             } else {
                 params.media_type = "TEXT";
             }

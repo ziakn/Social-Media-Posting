@@ -8,6 +8,7 @@ import { fetchFacebookPages } from "./getPages";
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { verifyToken } from "@/lib/auth";
+import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 
 // ... existing imports
 
@@ -209,8 +210,32 @@ export async function handleVideoPost(pageId, message, video, accessToken, baseB
   } else {
     // Assume local file in public directory
     const relativePath = video.url.startsWith('/') ? video.url.slice(1) : video.url;
-    const filePath = path.join(process.cwd(), 'public', relativePath);
-    fileBuffer = await readFile(filePath);
+
+    try {
+      const absolutePath = path.join(process.cwd(), 'public', relativePath);
+
+      // --- Video Processing ---
+      const metadata = await checkVideoMetadata(absolutePath);
+      const compliance = validatePlatformCompliance('facebook', metadata);
+
+      let uploadPath = absolutePath;
+      if (!compliance.compliant) {
+        console.log("Facebook video validation failed:", compliance.reasons);
+        const dir = path.dirname(absolutePath);
+        const ext = path.extname(absolutePath);
+        const basename = path.basename(absolutePath, ext);
+        const outputPath = path.join(dir, `${basename}_fb.mp4`);
+
+        await convertVideoForPlatform(absolutePath, outputPath);
+        uploadPath = outputPath;
+      }
+
+      fileBuffer = await readFile(uploadPath);
+    } catch (err) {
+      console.warn("Video processing failed, falling back:", err);
+      const filePath = path.join(process.cwd(), 'public', relativePath);
+      fileBuffer = await readFile(filePath);
+    }
   }
 
   const blob = new Blob([fileBuffer], { type: video.type || 'video/mp4' });

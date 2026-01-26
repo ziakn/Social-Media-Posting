@@ -10,6 +10,8 @@ import { cookies, headers } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { getDateTime } from "@/lib/utils";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
+import path from "path";
+import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 
 
 /**
@@ -296,7 +298,43 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public
-    const videoUrl = needsTestUrl(video.url) ? getTestUrl('video') : getAbsoluteUrl(video.url);
+    let videoUrl = needsTestUrl(video.url) ? getTestUrl('video') : getAbsoluteUrl(video.url);
+
+    // --- Video Validation & Conversion ---
+    if (!needsTestUrl(video.url)) {
+      try {
+        // Derive local path (assuming public directory structure)
+        // The video.url usually comes from our upload system e.g. /uploads/...
+        if (video.url.startsWith('/')) {
+          const relativePath = video.url.substring(1); // remove leading slash
+          const absolutePath = path.join(process.cwd(), 'public', relativePath);
+
+          console.log(`Checking Instagram video compliance: ${absolutePath}`);
+          const metadata = await checkVideoMetadata(absolutePath);
+          const compliance = validatePlatformCompliance('instagram', metadata);
+
+          if (!compliance.compliant) {
+            console.log("Instagram video not compliant:", compliance.reasons);
+            const dir = path.dirname(absolutePath);
+            const ext = path.extname(absolutePath);
+            const basename = path.basename(absolutePath, ext);
+            const outputPath = path.join(dir, `${basename}_ig.mp4`); // Force .mp4
+
+            await convertVideoForPlatform(absolutePath, outputPath);
+
+            // Update videoUrl to point to new file
+            // relative path again
+            const newRelativePath = '/' + path.relative(path.join(process.cwd(), 'public'), outputPath);
+            videoUrl = getAbsoluteUrl(newRelativePath); // Should wrap with domain
+            console.log("Converted video URL:", videoUrl);
+          }
+        }
+      } catch (err) {
+        console.warn("Instagram validation skipped:", err);
+      }
+    }
+    // -------------------------------------
+
     console.log("Creating Instagram Video Post with URL:", videoUrl);
 
     let containerId = null;

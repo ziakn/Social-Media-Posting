@@ -7,6 +7,8 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+
 /**
  * Handle LinkedIn API response
  */
@@ -73,8 +75,48 @@ async function uploadMedia(accessToken, ownerUrn, mediaUrl, mediaType) {
         buffer = Buffer.from(arrayBuffer);
     } else {
         const relativePath = mediaUrl.startsWith('/') ? mediaUrl.slice(1) : mediaUrl;
-        const filePath = path.join(process.cwd(), 'public', relativePath);
-        buffer = await readFile(filePath);
+
+        // --- Video Processing Integration ---
+        // Basic check based on path (ignoring if http for now unless we download)
+        if (mediaType === 'video') {
+            try {
+                const absolutePath = path.join(process.cwd(), 'public', relativePath);
+
+                // Check & Convert
+                const metadata = await checkVideoMetadata(absolutePath);
+                const compliance = validatePlatformCompliance('linkedin', metadata);
+
+                let uploadPath = absolutePath;
+
+                if (!compliance.compliant) {
+                    console.log("LinkedIn video validation failed:", compliance.reasons);
+                    const dir = path.dirname(absolutePath);
+                    const ext = path.extname(absolutePath);
+                    const basename = path.basename(absolutePath, ext);
+                    const outputPath = path.join(dir, `${basename}_linkedin.mp4`); // Force .mp4
+
+                    await convertVideoForPlatform(absolutePath, outputPath);
+                    uploadPath = outputPath;
+                }
+
+                buffer = await readFile(uploadPath);
+            } catch (err) {
+                console.warn("Media processing skipped/failed, falling back to original:", err);
+                // Fallback to original logic
+                const filePath = path.join(process.cwd(), 'public', relativePath);
+                buffer = await readFile(filePath);
+            }
+        } else {
+            // Image logic remains simple
+            const filePath = path.join(process.cwd(), 'public', relativePath);
+            buffer = await readFile(filePath);
+        }
+    }
+
+    // Safety check if buffer wasn't set by processing block
+    if (!buffer) {
+        // Should have been set above, but if logic flow falls through (e.g. video processing skipped but buffer not set)
+        // This block usually won't be reached if logic is sound, but good for safety
     }
 
     const uploadRes = await fetch(uploadUrl, {

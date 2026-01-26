@@ -64,7 +64,8 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
             url: item.fileUrl,
             name: item.fileName,
             type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image'),
-            mimeType: item.fileType
+            mimeType: item.fileType,
+            storagePath: item.storagePath // Pass storagePath for server-side processing
         })).filter(item => item.type === 'video');
 
         if (newMedia.length === 0) {

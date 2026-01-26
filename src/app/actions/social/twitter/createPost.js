@@ -7,6 +7,7 @@ import { verifyToken } from "@/lib/auth";
 import { refreshTwitterToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 
 /**
  * Enhanced Twitter API response handler
@@ -231,8 +232,35 @@ export async function handleTwitterMediaUpload(media, accessToken) {
         } else {
             // Local file handling
             const relativePath = url.startsWith('/') ? url.slice(1) : url;
-            const filePath = path.join(process.cwd(), 'public', relativePath);
-            buffer = await readFile(filePath);
+            const absolutePath = path.join(process.cwd(), 'public', relativePath);
+            let finalPath = absolutePath;
+
+            // --- Video Validation ---
+            if (isVideo) {
+                try {
+                    console.log(`Checking Twitter video compliance: ${absolutePath}`);
+                    const metadata = await checkVideoMetadata(absolutePath);
+                    const compliance = validatePlatformCompliance('twitter', metadata);
+
+                    if (!compliance.compliant) {
+                        console.log("Twitter video not compliant:", compliance.reasons);
+                        const dir = path.dirname(absolutePath);
+                        const ext = path.extname(absolutePath);
+                        const basename = path.basename(absolutePath, ext);
+                        const outputPath = path.join(dir, `${basename}_tw.mp4`);
+
+                        await convertVideoForPlatform(absolutePath, outputPath);
+                        finalPath = outputPath;
+
+                        // Update mimeType to match converted output
+                        mimeType = 'video/mp4';
+                    }
+                } catch (err) {
+                    console.warn("Twitter validation skipped:", err);
+                }
+            }
+
+            buffer = await readFile(finalPath);
         }
 
         console.log(`[Twitter] Preparing v2 upload for ${mimeType} (${buffer.length} bytes)`);
