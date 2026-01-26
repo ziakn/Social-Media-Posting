@@ -9,6 +9,10 @@ import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
  */
 export async function triggerTiktokPublish(accessToken, postRef, text, mediaUrl) {
     try {
+        const isLocal = process.env.NEXT_PUBLIC_BASE_URL?.includes('localhost');
+        const baseUrl = isLocal ? process.env.NEXT_PUBLIC_BASE_URL : "https://socialhub.ziamuhammad.com";
+        const proxyUrl = `${baseUrl}/api/tiktok/proxy?url=${encodeURIComponent(mediaUrl)}`;
+
         const tiktokRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
             method: "POST",
             headers: {
@@ -25,7 +29,7 @@ export async function triggerTiktokPublish(accessToken, postRef, text, mediaUrl)
                 },
                 source_info: {
                     source: "PULL_FROM_URL",
-                    video_url: mediaUrl
+                    video_url: proxyUrl
                 }
             })
         });
