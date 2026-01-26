@@ -176,7 +176,10 @@ export async function handleImagePost(pageId, message, mediaUrls, accessToken, b
     );
 
     const uploadData = await uploadRes.json();
-    if (uploadData.error) throw new Error(uploadData.error.message);
+    if (uploadData.error) {
+      console.error("Facebook Image Upload Error Full:", JSON.stringify(uploadData.error, null, 2));
+      throw new Error(uploadData.error.message);
+    }
     attachedMedia.push({ media_fbid: uploadData.id });
   }
 
