@@ -458,6 +458,18 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
   const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
+  const [pages, setPages] = useState([]);
+  const [selectedPageId, setSelectedPageId] = useState(initialPageId || "all");
+
+  useEffect(() => {
+    async function loadPages() {
+      const res = await getUserFacebookPages();
+      if (res.success) {
+        setPages(res.pages || []);
+      }
+    }
+    loadPages();
+  }, []);
 
   const handleDelete = async (postId) => {
     try {
@@ -523,13 +535,47 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm">
-                  <img src={`https://i.pravatar.cc/150?u=${i + 15}`} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
+            {pages.length > 0 && (
+              <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
+                {pages.slice(0, 3).map((page, i) => (
+                  <div
+                    key={page.pageId}
+                    onClick={() => setSelectedPageId(prev => prev === page.pageId ? "all" : page.pageId)}
+                    className={cn(
+                      "w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm cursor-pointer transition-all hover:scale-110 relative",
+                      selectedPageId === page.pageId ? "z-30 ring-2 ring-blue-600 ring-offset-2" : `z-${10 - i}`
+                    )}
+                    title={page.pageName}
+                  >
+                    {page.profilePicture ? (
+                      <img src={page.profilePicture} alt={page.pageName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200 text-[10px] font-bold text-gray-500">
+                        {page.pageName?.charAt(0).toUpperCase() || "F"}
+                      </div>
+                    )}
+                    {selectedPageId === page.pageId && (
+                      <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center">
+                        <div className="bg-white rounded-full p-0.5 shadow-sm">
+                          <Check className="h-2 w-2 text-blue-600 stroke-[4]" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {pages.length > 3 && (
+                  <div
+                    onClick={() => setSelectedPageId("all")}
+                    className={cn(
+                      "w-8 h-8 rounded-full border-2 border-white bg-black flex items-center justify-center shadow-sm z-10 cursor-pointer hover:scale-110",
+                      selectedPageId === "all" && "ring-2 ring-blue-600 ring-offset-2"
+                    )}
+                  >
+                    <span className="text-[10px] font-black text-white">+{pages.length - 3}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <Button
               onClick={() => {
@@ -571,7 +617,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
 
         <TabsContent value="facebook" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <FacebookViewComponent
-            pageId={initialPageId}
+            pageId={selectedPageId === "all" ? null : selectedPageId}
             initialStatus="all"
             refreshTrigger={refreshTrigger}
             onEdit={handlePostClick}
@@ -581,7 +627,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
 
         <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <FacebookListingViewComponent
-            pageId={initialPageId}
+            pageId={selectedPageId === "all" ? null : selectedPageId}
             initialStatus="all"
             refreshTrigger={refreshTrigger}
             onEdit={handlePostClick}

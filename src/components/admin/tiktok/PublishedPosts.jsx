@@ -123,31 +123,37 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-10">
-            {/* Header */}
-            <header className="relative p-8 rounded-2xl bg-white border border-gray-100 shadow-[0_20px_50px_rgba(0,0,0,0.02)] overflow-hidden">
-                <div className="absolute top-0 right-0 p-12 opacity-[0.03]">
-                    <TiktokLogo className="h-40 w-40" />
-                </div>
+            {/* Premium Compact Header - Matching Threads' Studio Style */}
+            <header className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg shadow-gray-50/20 p-5 lg:p-6">
+                {/* Background Decorative Elements */}
+                <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-gradient-to-br from-gray-200/10 to-gray-400/10 rounded-full blur-2xl pointer-events-none" />
 
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div className="space-y-3 text-center md:text-left">
-                        <div className="inline-flex items-center gap-2.5 px-3 py-1 bg-black text-white rounded-full">
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left space-y-2">
+                        <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-black border border-gray-800 text-white">
                             <TiktokLogo className="h-3 w-3" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">TikTok Studio</span>
+                            <span className="text-[9px] font-black uppercase tracking-wider">TikTok Business Academy</span>
                         </div>
-                        <h1 className="text-3xl lg:text-4xl font-black text-gray-900 tracking-tight">Post Manager</h1>
-                        <p className="text-sm font-medium text-gray-400 max-w-md">Create, schedule and analyze your TikTok video performance in one place.</p>
+
+                        <div className="space-y-0.5">
+                            <h1 className="text-2xl lg:text-3xl font-black tracking-tight text-gray-900">
+                                Content Studio
+                            </h1>
+                            <p className="text-gray-500 max-w-md text-xs font-medium leading-relaxed">
+                                Elevate your TikTok presence with precision scheduling and performance intelligence.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                         {accounts.length > 0 && (
-                            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-4">
+                            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
                                 {accounts.slice(0, 3).map((account, i) => (
                                     <div
                                         key={account.id}
                                         onClick={() => setSelectedAccountId(prev => prev === account.accountId ? "all" : account.accountId)}
                                         className={cn(
-                                            "w-8 h-8 rounded-full border-2 border-white overflow-hidden shadow-sm cursor-pointer transition-all hover:scale-110 relative",
+                                            "w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm cursor-pointer transition-all hover:scale-110 relative",
                                             selectedAccountId === account.accountId ? "z-30 ring-2 ring-black ring-offset-2" : `z-${10 - i}`
                                         )}
                                         title={account.username}
@@ -175,7 +181,6 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
                                             "w-8 h-8 rounded-full border-2 border-white bg-black flex items-center justify-center shadow-sm z-10 cursor-pointer hover:scale-110",
                                             selectedAccountId === "all" && "ring-2 ring-black ring-offset-2"
                                         )}
-                                        title="View All"
                                     >
                                         <span className="text-[10px] font-black text-white">+{accounts.length - 3}</span>
                                     </div>
@@ -187,9 +192,12 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
                                 setSelectedPost(null);
                                 setIsCreating(true);
                             }}
-                            className="group h-14 px-8 rounded-2xl bg-black hover:bg-gray-800 text-white font-black uppercase tracking-[0.2em] shadow-2xl shadow-black/10 active:scale-95 transition-all flex gap-3"
+                            className="group relative px-6 h-11 bg-black hover:bg-gray-800 text-white font-black rounded-xl shadow-xl shadow-gray-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
                         >
-                            <Plus className="h-5 w-5 group-hover:rotate-90 transition-transform" /> Compose Masterpiece
+                            <div className="relative flex items-center gap-2">
+                                <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                <span className="text-sm">Compose Masterpiece</span>
+                            </div>
                         </Button>
                     </div>
                 </div>
