@@ -104,9 +104,18 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
 
   const [creatorOpen, setCreatorOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryMediaType, setGalleryMediaType] = useState("image");
+  const [galleryMediaType, setGalleryMediaType] = useState(["image"]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const selectionScrollRef = useRef(null);
+
+  // Sync gallery media type with post type tab
+  useEffect(() => {
+    if (postType === 'feed') {
+      setGalleryMediaType(["image", "video"]);
+    } else if (postType === 'reels' || postType === 'story') {
+      setGalleryMediaType(["video"]);
+    }
+  }, [postType]);
 
   useEffect(() => {
     async function loadPages() {
@@ -118,8 +127,12 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     loadPages();
   }, []);
 
-  const openGallery = (types) => {
-    setGalleryMediaType(types);
+  const openGallery = (type) => {
+    if (type) {
+      setGalleryMediaType(Array.isArray(type) ? type : [type]);
+    } else {
+      setGalleryMediaType((postType === 'reels' || postType === 'story') ? ["video"] : ["image", "video"]);
+    }
     setGalleryOpen(true);
   };
 
@@ -127,13 +140,11 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
     const newMedia = items.map(item => ({
       url: item.fileUrl, name: item.fileName, size: item.fileSize,
-      type: item.mediaType, mimeType: item.fileType, file: null
+      type: item.mediaType || (item.fileType?.startsWith('video') ? 'video' : 'image'),
+      mimeType: item.fileType, file: null
     }));
 
-    const maxMedia = postType === "feed" ? 10 : 1;
-
-    // If it's a single-media post type (reel/story), replace automatically
-    if (maxMedia === 1) {
+    if (galleryMediaType.includes("video") || postType === "reels" || postType === "story") {
       setPostContent(prev => ({
         ...prev,
         media: [newMedia[0]]
@@ -328,9 +339,23 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
                 <Separator className="bg-gray-50" />
                 <div className="space-y-4">
                   <Label className="text-sm font-bold text-gray-900">Media</Label>
-                  <Button disabled={isReadOnly} variant="outline" onClick={() => openGallery(["image", "video"])} className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2">
-                    <div className="flex items-center gap-3"><ImageIcon className="h-5 w-5 text-pink-600" /></div>
-                    <span className="text-xs font-black uppercase text-gray-600">Select Media</span>
+                  <Button
+                    disabled={isReadOnly}
+                    variant="outline"
+                    onClick={() => openGallery()}
+                    className="h-24 w-full rounded-2xl border-2 border-dashed border-gray-100 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
+                  >
+                    {postType === 'feed' ? (
+                      <div className="flex items-center gap-3">
+                        <ImageIcon className="h-5 w-5 text-pink-600" />
+                        <Video className="h-5 w-5 text-purple-600" />
+                      </div>
+                    ) : (
+                      <Video className="h-5 w-5 text-pink-600" />
+                    )}
+                    <span className="text-xs font-black uppercase text-gray-600">
+                      {postType === 'feed' ? "Select Media" : "Select Video"}
+                    </span>
                   </Button>
                 </div>
               </div>

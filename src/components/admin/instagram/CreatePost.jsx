@@ -63,7 +63,7 @@ export default function CreatePost() {
 
   // Gallery state
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [galleryMediaType, setGalleryMediaType] = useState("image"); // 'image' or 'video'
+  const [galleryMediaType, setGalleryMediaType] = useState(["image", "video"]); // Default to mixture
 
   useEffect(() => {
     async function loadData() {
@@ -226,7 +226,7 @@ export default function CreatePost() {
   const handleGallerySelect = (selectedItems) => {
     const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
 
-    if (galleryMediaType === "image") {
+    if (galleryMediaType.includes("image") && !galleryMediaType.includes("video")) {
       const newImages = items.map(item => ({
         url: item.fileUrl,
         name: item.fileName,
@@ -253,7 +253,7 @@ export default function CreatePost() {
         images: [...prev.images, ...newImages].slice(0, maxImages)
       }));
       toast.success(`Added ${newImages.length} image(s) from gallery`);
-    } else if (galleryMediaType === "video") {
+    } else if (galleryMediaType.includes("video") && !galleryMediaType.includes("image")) {
       if (items.length > 0) {
         const item = items[0];
         setPostContent(prev => ({
@@ -269,12 +269,36 @@ export default function CreatePost() {
         }));
         toast.success("Video added from gallery");
       }
+    } else {
+      // Mixture or unknown (Handle both for Feed/Story if they allow mixture)
+      const newImages = items.filter(i => i.mediaType !== 'video').map(item => ({
+        url: item.fileUrl, name: item.fileName, size: item.fileSize, type: item.fileType, file: null
+      }));
+      const videoItems = items.filter(i => i.mediaType === 'video');
+
+      if (videoItems.length > 0 && postType !== "carousel") {
+        const item = videoItems[0];
+        setPostContent(prev => ({
+          ...prev,
+          images: [],
+          video: { url: item.fileUrl, name: item.fileName, size: item.fileSize, type: item.fileType, file: null }
+        }));
+        toast.success("Video added from gallery");
+      } else if (newImages.length > 0) {
+        const maxImages = postType === "carousel" ? 10 : 1;
+        setPostContent(prev => ({
+          ...prev,
+          video: null,
+          images: [...prev.images, ...newImages].slice(0, maxImages)
+        }));
+        toast.success(`Added ${newImages.length} images from gallery`);
+      }
     }
     setGalleryOpen(false);
   };
 
   const openGallery = (type) => {
-    setGalleryMediaType(type);
+    setGalleryMediaType(Array.isArray(type) ? type : [type]);
     setGalleryOpen(true);
   };
 
@@ -493,23 +517,17 @@ export default function CreatePost() {
                   <div className="space-y-4">
                     <Label className="text-base">Upload Media</Label>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <Button
                         variant="outline"
-                        onClick={() => openGallery("image")}
+                        onClick={() => openGallery(["image", "video"])}
                         className="h-24 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
                       >
-                        <ImageIcon className="h-6 w-6 text-pink-500" />
-                        <span>Select Image from Gallery</span>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        onClick={() => openGallery("video")}
-                        className="h-24 border-dashed border-2 hover:border-purple-500 hover:bg-purple-50 flex flex-col gap-2"
-                      >
-                        <Video className="h-6 w-6 text-purple-500" />
-                        <span>Select Video from Gallery</span>
+                        <div className="flex items-center gap-3">
+                          <ImageIcon className="h-6 w-6 text-pink-500" />
+                          <Video className="h-6 w-6 text-purple-500" />
+                        </div>
+                        <span className="font-bold">Select Media from Gallery</span>
                       </Button>
                     </div>
 
@@ -821,22 +839,13 @@ export default function CreatePost() {
                   <div className="space-y-4">
                     <Label className="text-base">Upload Story Media</Label>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <Button
-                        variant="outline"
-                        onClick={() => openGallery("image")}
-                        className="h-24 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
-                      >
-                        <ImageIcon className="h-6 w-6 text-pink-500" />
-                        <span>Select Image from Gallery</span>
-                      </Button>
-
+                    <div className="grid grid-cols-1 gap-4">
                       <Button
                         variant="outline"
                         onClick={() => openGallery("video")}
-                        className="h-24 border-dashed border-2 hover:border-rose-500 hover:bg-rose-50 flex flex-col gap-2"
+                        className="h-24 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
                       >
-                        <Video className="h-6 w-6 text-rose-500" />
+                        <Video className="h-6 w-6 text-pink-500" />
                         <span>Select Video from Gallery</span>
                       </Button>
                     </div>
