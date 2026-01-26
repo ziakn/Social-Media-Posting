@@ -257,14 +257,14 @@ export default function TiktokListingViewComponent({
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={() => onEdit?.(post)} className="flex items-center gap-3 p-3 cursor-pointer rounded-[18px] hover:bg-gray-50 transition-colors group">
                                                         <Eye className="h-5 w-5 text-gray-900" />
-                                                        <span className="font-bold text-[13px] text-gray-900">Video Details</span>
+                                                        <span className="font-bold text-[13px] text-gray-900">Masterpiece Details</span>
                                                     </DropdownMenuItem>
                                                 </>
                                             ) : (
                                                 <>
                                                     <DropdownMenuItem onClick={() => onEdit?.(post)} className="flex items-center gap-3 p-3 cursor-pointer rounded-[18px] hover:bg-gray-50 transition-colors group">
                                                         <Edit className="h-5 w-5 text-gray-900" />
-                                                        <span className="font-bold text-[13px] text-gray-900">Edit Video</span>
+                                                        <span className="font-bold text-[13px] text-gray-900">Edit Masterpiece</span>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem onClick={(e) => handlePublishNow(e, post)} className="flex items-center gap-3 p-3 cursor-pointer rounded-[18px] hover:bg-purple-50 transition-colors group">
                                                         <Send className="h-5 w-5 text-purple-600" />
@@ -272,7 +272,7 @@ export default function TiktokListingViewComponent({
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-red-600 flex items-center gap-3 p-3 cursor-pointer rounded-[18px] hover:bg-red-50 transition-colors group" onClick={() => deleteTiktokPost(post.id).then(() => loadPosts(true))}>
                                                         <Trash2 className="h-5 w-5 text-red-600" />
-                                                        <span className="font-bold text-[13px] text-red-600">Delete Video</span>
+                                                        <span className="font-bold text-[13px] text-red-600">Delete Masterpiece</span>
                                                     </DropdownMenuItem>
                                                 </>
                                             )}
@@ -294,14 +294,16 @@ export default function TiktokListingViewComponent({
                 )}
             </Card>
 
-            {pagination.hasMore && (
-                <div className="flex justify-center pt-8">
-                    <Button onClick={() => loadPosts(false, pagination.lastPostId)} variant="outline" size="lg" className="h-12 px-8 rounded-2xl border-gray-200 font-black uppercase tracking-widest text-[10px] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 active:scale-95 gap-3">
-                        {loading ? "Loading Content..." : "Load More Activity"}
-                        {!loading && <History className="ml-2 h-4 w-4" />}
-                    </Button>
-                </div>
-            )}
+            {
+                pagination.hasMore && (
+                    <div className="flex justify-center pt-8">
+                        <Button onClick={() => loadPosts(false, pagination.lastPostId)} variant="outline" size="lg" className="h-12 px-8 rounded-2xl border-gray-200 font-black uppercase tracking-widest text-[10px] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 active:scale-95 gap-3">
+                            {loading ? "Loading Content..." : "Load More Activity"}
+                            {!loading && <History className="ml-2 h-4 w-4" />}
+                        </Button>
+                    </div>
+                )
+            }
 
             {/* Analytics Modal */}
             <TiktokAnalyticsModal
@@ -309,6 +311,6 @@ export default function TiktokListingViewComponent({
                 onOpenChange={setAnalyticsModalOpen}
                 post={selectedPostForAnalytics}
             />
-        </div>
+        </div >
     );
 }

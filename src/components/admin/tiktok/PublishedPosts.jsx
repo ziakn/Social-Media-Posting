@@ -265,7 +265,7 @@ export default function TikTokPublishedPosts({ accountId: initialAccountId }) {
                                     </div>
                                     <div className="flex flex-col">
                                         <DialogTitle className="text-sm font-black text-gray-900 leading-none">
-                                            {selectedPost?.status === 'published' ? "View Video" : (selectedPost ? "Edit Video" : "Create Video")}
+                                            {selectedPost?.status === 'published' ? "View Masterpiece" : (selectedPost?.id ? "Edit Masterpiece" : "Compose Masterpiece")}
                                         </DialogTitle>
                                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">TikTok Studio v2.0</span>
                                     </div>
