@@ -763,7 +763,7 @@ export async function publishFacebookPostNow(postId) {
       facebookPostId: facebookPostId,
       publishedAt: new Date(),
       updatedAt: new Date(),
-      scheduledAt: null // It's no longer scheduled
+      scheduledAt: new Date() // Sync with current publish time
     });
 
     revalidatePath("/admin/social/facebook/posts");

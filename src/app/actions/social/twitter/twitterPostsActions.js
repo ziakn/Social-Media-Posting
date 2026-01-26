@@ -778,6 +778,7 @@ export async function publishTwitterPostNow(postId) {
             twitterPostId: data.data.id,
             mediaIds: mediaIds,
             publishedAt: serverTimestamp(),
+            scheduledAt: serverTimestamp(),
             updatedAt: serverTimestamp()
         });
 

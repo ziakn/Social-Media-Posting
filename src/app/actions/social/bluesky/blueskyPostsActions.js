@@ -259,7 +259,7 @@ export async function publishBlueSkyPostNow(postId) {
             blueskyCid: res.cid,
             publishedAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            scheduledAt: null, // Reset schedule for immediate publish
+            scheduledAt: serverTimestamp(), // Sync with current publish time
             delete: 0
         });
 

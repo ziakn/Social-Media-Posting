@@ -411,3 +411,58 @@ export async function updateYoutubePostSchedule(postId, scheduledAt) {
         return { success: false, message: err.message };
     }
 }
+import { createYoutubePost } from "./createPost";
+
+/**
+ * Publishes a scheduled YouTube video immediately
+ */
+export async function publishYoutubePostNow(postId) {
+    try {
+        const user = await verifyToken();
+
+        if (!user) {
+            return { success: false, message: "Invalid or expired token" };
+        }
+
+        const postRef = doc(db, "youtube_posts", postId);
+        const postSnap = await getDoc(postRef);
+
+        if (!postSnap.exists()) {
+            return { success: false, message: "Post not found" };
+        }
+
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) {
+            return { success: false, message: "Unauthorized" };
+        }
+
+        // Trigger immediate upload using existing characterized logic
+        const result = await createYoutubePost({
+            title: postData.title,
+            description: postData.description,
+            videoUrl: postData.videoUrl,
+            privacyStatus: postData.privacyStatus || "public",
+            // Note: intentionally NOT passing scheduledTime here to trigger real upload
+        });
+
+        if (result.success) {
+            // Update the existing document with the new video details
+            await updateDoc(postRef, {
+                status: "posted",
+                youtubeVideoId: result.videoId,
+                publishedAt: serverTimestamp(),
+                scheduledAt: serverTimestamp(), // Sync with current publish time
+                updatedAt: serverTimestamp(),
+            });
+
+            revalidatePath("/admin/social/youtube/posts");
+            return { success: true, message: "Video published successfully", videoId: result.videoId };
+        } else {
+            return { success: false, message: result.message };
+        }
+
+    } catch (error) {
+        console.error("Error publishing YouTube video now:", error);
+        return { success: false, message: error.message };
+    }
+}

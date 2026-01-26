@@ -203,6 +203,12 @@ export async function publishTiktokPostNow(postId) {
 
         await triggerTiktokPublish(accessToken, postRef, text, mediaUrl);
 
+        // Ensure scheduledAt is also updated to reflect the manual 'now' publish
+        await updateDoc(postRef, {
+            scheduledAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        });
+
         revalidatePath("/admin/social/tiktok/posts");
         return { success: true, message: "Post published successfully" };
     } catch (error) {

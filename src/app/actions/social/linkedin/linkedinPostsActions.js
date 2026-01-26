@@ -272,14 +272,14 @@ export async function publishLinkedinPostNow(postId) {
         });
 
         if (result.success) {
-            // Delete the scheduled record if createLinkedinPost creates a NEW one
-            // Wait, createLinkedinPost in existing implementation ALWAYS creates a new record.
-            // We should probably update the existing one instead of creating a new one.
-            // Let's modify creation logic or handle it here.
-
-            // For now, if createLinkedinPost succeeded, it already saved a new "posted" entry.
-            // We should delete the old "scheduled" one.
-            await deleteDoc(postRef);
+            // Update the existing document with publication details
+            await updateDoc(postRef, {
+                status: "posted",
+                publishedAt: serverTimestamp(),
+                scheduledAt: serverTimestamp(), // Sync with current publish time
+                updatedAt: serverTimestamp(),
+                linkedinPostId: result.postId || null // Ensure postId is captured if returned
+            });
 
             revalidatePath("/admin/social/linkedin/posts");
             return { success: true, message: "Post published successfully" };
