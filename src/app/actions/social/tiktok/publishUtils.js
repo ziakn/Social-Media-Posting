@@ -9,6 +9,11 @@ import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
  */
 export async function triggerTiktokPublish(accessToken, postRef, text, mediaUrl) {
     try {
+        // Use a high-quality dummy video if testing
+        if (mediaUrl === 'test-video') {
+            mediaUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4";
+        }
+
         const isLocal = process.env.NEXT_PUBLIC_BASE_URL?.includes('localhost');
         const baseUrl = isLocal ? process.env.NEXT_PUBLIC_BASE_URL : "https://socialhub.ziamuhammad.com";
         const proxyUrl = `${baseUrl}/api/tiktok/proxy?url=${encodeURIComponent(mediaUrl)}`;
@@ -43,8 +48,8 @@ export async function triggerTiktokPublish(accessToken, postRef, text, mediaUrl)
             // Helpful guidance for domain verification
             if (errorMsg.includes("URL ownership verification")) {
                 errorMsg = "TikTok Error: You must verify your video domain (e.g. firebasestorage.googleapis.com) in the TikTok Developer Portal under 'URL ownership verification'.";
-            } else if (errorMsg.toLowerCase().includes("guideline")) {
-                errorMsg = `TikTok Integration Error: ${errorMsg}. This often means your app is in 'Staging' mode and cannot post public videos yet. Try asking TikTok for 'Production' access or check if your account is a 'Business Account' in the console. (Status Code: ${errorCode})`;
+            } else if (errorMsg.toLowerCase().includes("guideline") || errorCode === "unaudited_client_can_only_post_to_private_accounts") {
+                errorMsg = `TikTok Strategy Error: ${errorMsg}. Since your app is 'Unaudited' (Sandbox), TikTok requires your actual TikTok Account to be set to 'Private' in the phone app settings (Privacy -> Private Account) to allow API posts. Alternatively, you must submit your app for a Web Audit to go live. (Error: ${errorCode})`;
             }
 
             console.error("TikTok API Detailed Error:", JSON.stringify(tiktokData.error, null, 2));
