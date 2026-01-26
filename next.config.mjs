@@ -17,8 +17,13 @@ const nextConfig = {
     ],
   },
 
-  // Allow Stripe on the server
-  serverExternalPackages: ['stripe'],
+  // Allow Stripe and ffmpeg on the server
+  serverExternalPackages: [
+    'stripe',
+    'fluent-ffmpeg',
+    '@ffmpeg-installer/ffmpeg',
+    '@ffprobe-installer/ffprobe'
+  ],
 };
 
 export default nextConfig;
