@@ -457,6 +457,18 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
   const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
+  const [accounts, setAccounts] = useState([]);
+  const [selectedPageId, setSelectedPageId] = useState(initialPageId || "all");
+
+  useEffect(() => {
+    async function loadAccounts() {
+      const res = await fetchInstagramAccounts();
+      if (res.success) {
+        setAccounts(res.accounts || []);
+      }
+    }
+    loadAccounts();
+  }, []);
 
   const handleDelete = async (postId) => {
     try {
@@ -533,13 +545,47 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm">
-                  <img src={`https://i.pravatar.cc/150?u=${i + 15}`} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
+            {accounts.length > 0 && (
+              <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
+                {accounts.slice(0, 3).map((account, i) => (
+                  <div
+                    key={account.igUserId}
+                    onClick={() => setSelectedPageId(prev => prev === account.igUserId ? "all" : account.igUserId)}
+                    className={cn(
+                      "w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm cursor-pointer transition-all hover:scale-110 relative",
+                      selectedPageId === account.igUserId ? "z-30 ring-2 ring-pink-600 ring-offset-2" : `z-${10 - i}`
+                    )}
+                    title={account.username || account.displayName}
+                  >
+                    {account.picture?.data?.url ? (
+                      <img src={account.picture.data.url} alt={account.username} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200 text-[10px] font-bold text-gray-500">
+                        {(account.username || account.displayName)?.charAt(0).toUpperCase() || "I"}
+                      </div>
+                    )}
+                    {selectedPageId === account.igUserId && (
+                      <div className="absolute inset-0 bg-pink-600/10 flex items-center justify-center">
+                        <div className="bg-white rounded-full p-0.5 shadow-sm">
+                          <Check className="h-2 w-2 text-pink-600 stroke-[4]" />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {accounts.length > 3 && (
+                  <div
+                    onClick={() => setSelectedPageId("all")}
+                    className={cn(
+                      "w-8 h-8 rounded-full border-2 border-white bg-black flex items-center justify-center shadow-sm z-10 cursor-pointer hover:scale-110",
+                      selectedPageId === "all" && "ring-2 ring-pink-600 ring-offset-2"
+                    )}
+                  >
+                    <span className="text-[10px] font-black text-white">+{accounts.length - 3}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <Button
               onClick={() => {
@@ -581,7 +627,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
 
         <TabsContent value="instagram" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <InstagramViewComponent
-            pageId={initialPageId}
+            accountId={selectedPageId === "all" ? null : selectedPageId}
             initialStatus="all"
             refreshTrigger={refreshTrigger}
             onEdit={handlePostClick}
@@ -591,7 +637,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
 
         <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           <ListingViewComponent
-            pageId={initialPageId}
+            pageId={selectedPageId === "all" ? null : selectedPageId}
             initialStatus="all"
             refreshTrigger={refreshTrigger}
             onEdit={handlePostClick}

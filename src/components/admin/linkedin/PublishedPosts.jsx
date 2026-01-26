@@ -363,6 +363,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
     const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
     const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
     const [accounts, setAccounts] = useState([]);
+    const [selectedAccountId, setSelectedAccountId] = useState(initialAccountId || "all");
 
     useEffect(() => {
         const loadAccounts = async () => {
@@ -422,7 +423,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8">
-            {/* Premium Header - LinkedIn Style */}
+            {/* Premium Header - Professional Content Studio style */}
             <div className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 shadow-lg shadow-blue-50/10 p-5 lg:p-6">
                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-64 h-64 bg-gradient-to-br from-blue-50/20 to-blue-100/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -447,7 +448,15 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                         {accounts.length > 0 && (
                             <div className="hidden lg:flex flex-row items-center -space-x-2 mr-2">
                                 {accounts.slice(0, 3).map((account, i) => (
-                                    <div key={account.id} className="w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm" title={account.displayName}>
+                                    <div
+                                        key={account.id}
+                                        onClick={() => setSelectedAccountId(prev => prev === account.accountId ? "all" : account.accountId)}
+                                        className={cn(
+                                            "w-8 h-8 rounded-full border-2 border-white bg-gray-100 overflow-hidden shadow-sm cursor-pointer transition-all hover:scale-110 relative",
+                                            String(selectedAccountId) === String(account.accountId) ? "z-30 ring-2 ring-[#0077b5] ring-offset-2" : `z-${10 - i}`
+                                        )}
+                                        title={account.displayName}
+                                    >
                                         {account.profilePicture ? (
                                             <img src={account.profilePicture} alt={account.displayName} className="w-full h-full object-cover" />
                                         ) : (
@@ -455,10 +464,23 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                                                 {account.displayName?.charAt(0).toUpperCase() || "L"}
                                             </div>
                                         )}
+                                        {String(selectedAccountId) === String(account.accountId) && (
+                                            <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center">
+                                                <div className="bg-white rounded-full p-0.5 shadow-sm">
+                                                    <Check className="h-2 w-2 text-[#0077b5] stroke-[4]" />
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ))}
                                 {accounts.length > 3 && (
-                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-[#0077b5] flex items-center justify-center shadow-sm z-10">
+                                    <div
+                                        onClick={() => setSelectedAccountId("all")}
+                                        className={cn(
+                                            "w-8 h-8 rounded-full border-2 border-white bg-black flex items-center justify-center shadow-sm z-10 cursor-pointer hover:scale-110",
+                                            selectedAccountId === "all" && "ring-2 ring-[#0077b5] ring-offset-2"
+                                        )}
+                                    >
                                         <span className="text-[10px] font-black text-white">+{accounts.length - 3}</span>
                                     </div>
                                 )}
@@ -505,7 +527,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
 
                 <TabsContent value="linkedin" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <LinkedinViewComponent
-                        accountId={initialAccountId}
+                        accountId={selectedAccountId}
                         refreshTrigger={refreshTrigger}
                         onEdit={handleEdit}
                         onRefresh={handleRefresh}
@@ -514,7 +536,7 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
 
                 <TabsContent value="listing" className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <LinkedinListingViewComponent
-                        accountId={initialAccountId}
+                        accountId={selectedAccountId}
                         refreshTrigger={refreshTrigger}
                         onEdit={handleEdit}
                         onRefresh={handleRefresh}
