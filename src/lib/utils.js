@@ -33,3 +33,30 @@ export function getDateTime(date, time) {
 
   return new Date(`${dateStr}T${time}:00`);
 }
+
+/**
+ * Robustly serialize Firestore timestamps or their plain object equivalents
+ */
+export function serializeTimestamp(ts) {
+  if (!ts) return null;
+
+  // Handle Firestore Timestamp class
+  if (typeof ts.toDate === 'function') {
+    try {
+      return ts.toDate().toISOString();
+    } catch (e) {
+      console.error("Error converting timestamp to Date:", e);
+    }
+  }
+
+  // Handle plain object { seconds, nanoseconds }
+  if (typeof ts === 'object' && ts.seconds !== undefined) {
+    return new Date(ts.seconds * 1000).toISOString();
+  }
+
+  // Already a string or Date
+  if (ts instanceof Date) return ts.toISOString();
+  if (typeof ts === 'string') return ts;
+
+  return null;
+}

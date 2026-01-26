@@ -18,6 +18,7 @@ import {
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { serializeTimestamp } from "@/lib/utils";
 
 /**
  * Get all Threads posts with status filtering, pagination, and enhanced filtering
@@ -100,11 +101,11 @@ export async function getThreadsPosts({
                 posts.push({
                     id: docSnap.id,
                     ...data,
-                    createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
-                    updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
-                    scheduledAt: data.scheduledAt?.toDate?.().toISOString() || data.scheduledAt || null,
-                    publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
-                    lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate || null,
+                    createdAt: serializeTimestamp(data.createdAt),
+                    updatedAt: serializeTimestamp(data.updatedAt),
+                    scheduledAt: serializeTimestamp(data.scheduledAt),
+                    publishedAt: serializeTimestamp(data.publishedAt),
+                    lastAnalyticsUpdate: serializeTimestamp(data.lastAnalyticsUpdate),
                 });
             }
         });
@@ -430,15 +431,14 @@ export async function getAllThreadsCalendarPosts({ startDate, endDate } = {}) {
         const posts = snapshot.docs.map(doc => {
             const data = doc.data();
 
-            const displayDate = data.scheduledAt || data.publishedAt || data.createdAt;
             return {
                 id: doc.id,
                 ...data,
-                scheduledAt: displayDate?.toDate?.().toISOString() || displayDate || null,
-                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
-                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
-                publishedAt: data.publishedAt?.toDate?.().toISOString() || data.publishedAt || null,
-                lastAnalyticsUpdate: data.lastAnalyticsUpdate?.toDate?.().toISOString() || data.lastAnalyticsUpdate || null,
+                scheduledAt: serializeTimestamp(data.scheduledAt || data.publishedAt || data.createdAt),
+                createdAt: serializeTimestamp(data.createdAt),
+                updatedAt: serializeTimestamp(data.updatedAt),
+                publishedAt: serializeTimestamp(data.publishedAt),
+                lastAnalyticsUpdate: serializeTimestamp(data.lastAnalyticsUpdate),
                 status: data.status || "published"
             };
         }).filter(Boolean);

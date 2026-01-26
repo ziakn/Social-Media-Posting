@@ -5,6 +5,8 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 
+import { serializeTimestamp } from "@/lib/utils";
+
 export async function checkThreadsConnection() {
     try {
         const user = await verifyToken();
@@ -31,9 +33,9 @@ export async function checkThreadsConnection() {
             return {
                 id: doc.id,
                 ...data,
-                tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt || null,
-                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
-                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                tokenExpiresAt: serializeTimestamp(data.tokenExpiresAt),
+                createdAt: serializeTimestamp(data.createdAt),
+                updatedAt: serializeTimestamp(data.updatedAt),
             };
         });
 

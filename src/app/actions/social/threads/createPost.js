@@ -10,6 +10,17 @@ import { verifyToken } from "@/lib/auth";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { serializeTimestamp } from "@/lib/utils";
+
+/**
+ * Check Threads Media Container Status
+ */
+async function checkThreadStatus(containerId, accessToken, accountId) {
+    const data = await makeThreadsRequest(`/${containerId}`, {
+        fields: "status,error_message"
+    }, accessToken, "GET");
+    return data;
+}
 
 /**
  * Make request to Threads Graph API
@@ -96,9 +107,9 @@ export async function getUserThreadsAccounts() {
             return {
                 id: doc.id,
                 ...data,
-                tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || data.tokenExpiresAt || null,
-                createdAt: data.createdAt?.toDate?.().toISOString() || data.createdAt || null,
-                updatedAt: data.updatedAt?.toDate?.().toISOString() || data.updatedAt || null,
+                tokenExpiresAt: serializeTimestamp(data.tokenExpiresAt),
+                createdAt: serializeTimestamp(data.createdAt),
+                updatedAt: serializeTimestamp(data.updatedAt),
             };
         });
         return { success: true, accounts };
@@ -187,8 +198,20 @@ export async function createThreadsPost({
                 childIds.push(childContainer.id);
             }
 
-            // Carousel processing wait
-            await new Promise(r => setTimeout(r, 15000));
+            // Poll for all children to be ready (much more reliable than static timeout)
+            for (const childId of childIds) {
+                let attempts = 0;
+                while (attempts < 20) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    const status = await checkThreadStatus(childId, accessToken, accountId);
+
+                    if (status.status === 'FINISHED') break;
+                    if (status.status === 'ERROR') {
+                        throw new Error(`Thread child media error: ${status.error_message || 'Unknown Error'}`);
+                    }
+                    attempts++;
+                }
+            }
 
             // 2. Create carousel container
             const carouselParams = {
@@ -249,10 +272,22 @@ export async function createThreadsPost({
             creationId = container.id;
         }
 
-        // Wait for media processing (Threads recommends ~30s, we'll wait 20s)
+        // Wait for media processing (Threads recommends polling)
         if (media.length > 0) {
-            console.log("Waiting for Threads media processing...");
-            await new Promise(r => setTimeout(r, 20000));
+            console.log(`Waiting for Threads container ${creationId} processing...`);
+            let attempts = 0;
+            const maxAttempts = 30; // Wait up to 90s
+            while (attempts < maxAttempts) {
+                await new Promise(r => setTimeout(r, 3000));
+                const status = await checkThreadStatus(creationId, accessToken, accountId);
+                console.log(`Container ${creationId} status: ${status.status}`);
+
+                if (status.status === 'FINISHED') break;
+                if (status.status === 'ERROR') {
+                    throw new Error(`Threads media error: ${status.error_message || 'Unknown Error'}`);
+                }
+                attempts++;
+            }
         }
 
         // 3. Publish container
