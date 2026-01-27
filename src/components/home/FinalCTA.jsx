@@ -15,10 +15,10 @@ export default function FinalCTA() {
                         <Zap className="h-8 w-8 text-[#F9C80E] fill-current" />
                     </div>
                     <h2 className="text-4xl md:text-7xl font-extrabold font-plus-jakarta tracking-tighter max-w-4xl mx-auto leading-[0.9] uppercase">
-                        Ready to <span className="text-[#3B82F6]">Scale</span> Without the Stress?
+                        Ready to <span className="text-[#3B82F6]">Grow Your Audience</span> Effortlessly?
                     </h2>
                     <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto font-inter">
-                        Join 12,500+ creators and professional agencies leveraging the SocialHub command center for high-velocity distribution.
+                        Join 12,000+ creators and professional agencies who use SocialHub to manage and share their content with the world.
                     </p>
                 </div>
 
@@ -36,7 +36,7 @@ export default function FinalCTA() {
                 </div>
 
                 <div className="pt-12 text-slate-500 font-black text-[10px] uppercase tracking-[0.3em] font-plus-jakarta relative z-10">
-                    No Credit Card Required | Zero Latency Setup | 2026 AI Lab Ready
+                    No Credit Card Required | Set Up in Seconds | AI Optimization Ready
                 </div>
             </div>
         </section>

@@ -13,10 +13,10 @@ export default function HeroSection() {
                         <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33] font-plus-jakarta">New: 2026 AI Lab v4.0 live</span>
                     </div>
                     <h1 className="text-5xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-[0.9] font-plus-jakarta uppercase">
-                        The Ultimate <span className="text-[#3B82F6]">Multi-Platform</span> Social Media Scheduler
+                        Manage and Scale <span className="text-[#3B82F6]">Your Social Media</span> Presence with Ease
                     </h1>
                     <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-[520px] mx-auto lg:mx-0 font-inter">
-                        Post, schedule, and analyze content across TikTok, Pinterest, Instagram, and more — all in one AI-powered platform.
+                        Create, schedule, and analyze your content across TikTok, Pinterest, Instagram, and more — all from one powerful platform.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 font-plus-jakarta">
                         <Link href="/auth/register">

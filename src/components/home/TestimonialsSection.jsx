@@ -9,7 +9,7 @@ export default function TestimonialsSection() {
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                        The Professional <br /> <span className="text-[#3B82F6]">Standard for 12k+</span> Teams
+                        The Trusted <span className="text-[#3B82F6]">Choice for Over 12,000</span> Teams
                     </h2>
                     <div className="flex justify-center gap-4 pt-4">
                         <div className="flex items-center gap-2 px-6 py-2 bg-slate-50 border border-slate-100 rounded-full">

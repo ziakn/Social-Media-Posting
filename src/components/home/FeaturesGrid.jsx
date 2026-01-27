@@ -5,27 +5,27 @@ import { Layers, Sparkles, Clock, BarChart3, CheckCircle2 } from "lucide-react";
 const coreFeatures = [
     {
         icon: <Layers className="h-6 w-6" />,
-        title: "Unified Media Gallery",
-        description: "A professional library for all your high-res assets, synced across every department for rapid distribution.",
-        outcome: "Save 5+ hours/week"
+        title: "Unified Media Library",
+        description: "Organize all your high-resolution assets in one central location for quick and easy sharing.",
+        outcome: "Save 5+ hours weekly"
     },
     {
         icon: <Sparkles className="h-6 w-6" />,
-        title: "AI Media Lab v4.0",
-        description: "Automated vertical resizing and 2026-grade resonance captioning for native platform scaling.",
-        outcome: "3x wider reach"
+        title: "AI Optimization Tools",
+        description: "Automatically resize your videos and generate engaging captions tailored for each platform.",
+        outcome: "Reach a wider audience"
     },
     {
         icon: <Clock className="h-6 w-6" />,
-        title: "Smart Scheduler",
-        description: "Algorithm-aware posting that hits the true peak resonance window for your specific audience nodes.",
-        outcome: "99.9% publish success"
+        title: "Smart Scheduling",
+        description: "Post your content at the perfect time when your audience is most active and engaged.",
+        outcome: "Reliable automated posting"
     },
     {
         icon: <BarChart3 className="h-6 w-6" />,
-        title: "Creator Analytics",
-        description: "Consolidated growth metrics across all platforms in one normalized dashboard for cross-network ROI.",
-        outcome: "Real-time growth signals"
+        title: "Actionable Analytics",
+        description: "View your performance metrics across all networks in one simple, clear dashboard.",
+        outcome: "Track your growth easily"
     },
 ];
 

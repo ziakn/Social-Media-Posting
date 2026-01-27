@@ -24,20 +24,20 @@ export default function CalendarPreviewSection() {
                     <div className="flex-1 space-y-8">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3B82F6]/5 border border-[#3B82F6]/10">
                             <Zap className="h-4 w-4 text-[#3B82F6]" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33] font-plus-jakarta">Visual Scheduling Protocol</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33] font-plus-jakarta">Visual Workspace</span>
                         </div>
                         <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                            Your Entire Social <br /> <span className="text-[#3B82F6]">Network on One Grid</span>
+                            Your Entire Social <br /> <span className="text-[#3B82F6]">Strategy on One Grid</span>
                         </h2>
                         <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-[500px]">
-                            Drag, drop, and distribute. Our Unified Calendar gives you a bird's-eye view of your content ecosystem across every node.
+                            Drag, drop, and organize. Our Unified Calendar gives you a clear overview of your social media content across every platform.
                         </p>
                         <ul className="space-y-4">
                             {[
-                                "Multi-platform post stacking",
-                                "One-click 'Publish Now' from cell",
-                                "Visual draft orchestration",
-                                "Peak resonance time-slot indicators"
+                                "Manage multiple platforms in one view",
+                                "Publish instantly with one click",
+                                "Plan and draft your content easily",
+                                "Identify the best times to post"
                             ].map((item, i) => (
                                 <li key={i} className="flex items-center gap-3 text-slate-600 font-bold">
                                     <div className="w-5 h-5 rounded-full bg-[#27C93F]/10 flex items-center justify-center text-[#27C93F]">
@@ -125,7 +125,7 @@ export default function CalendarPreviewSection() {
                                     <div className="w-2 h-2 rounded-full bg-[#3B82F6]" />
                                     <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33]">Protocol Active</span>
                                 </div>
-                                <span className="text-[9px] font-bold text-slate-400 font-plus-jakarta uppercase tracking-widest">Global Node Sync v4.0</span>
+                                <span className="text-[9px] font-bold text-slate-400 font-plus-jakarta uppercase tracking-widest">Global Platform Sync v4.0</span>
                             </div>
                         </div>
                     </div>

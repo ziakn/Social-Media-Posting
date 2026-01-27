@@ -10,10 +10,10 @@ export default function ReliabilitySection() {
                 <div className="grid lg:grid-cols-2 gap-24 items-center">
                     <div className="space-y-10">
                         <h2 className="text-4xl md:text-6xl font-extrabold font-plus-jakarta tracking-tight leading-[0.9] uppercase">
-                            Engineered for <br /> <span className="text-[#3B82F6]">Enterprise Scale</span>
+                            Built for <br /> <span className="text-[#3B82F6]">Reliability and Scale</span>
                         </h2>
                         <p className="text-xl text-slate-400 font-medium leading-relaxed font-inter">
-                            We don't just post content; we secure it. Our infrastructure is built for 100% reliability, global scale, and strict compliance protocols.
+                            We don't just share content; we keep it secure and personal. Our platform is built for 100% reliability and global scale.
                         </p>
 
                         <div className="grid grid-cols-2 gap-10">
@@ -21,20 +21,20 @@ export default function ReliabilitySection() {
                                 <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#F9C80E]">
                                     <ShieldCheck className="h-6 w-6" />
                                 </div>
-                                <h4 className="text-sm font-black uppercase tracking-widest text-white font-plus-jakarta">Token Protection</h4>
-                                <p className="text-xs text-slate-500 font-bold font-inter leading-relaxed">AES-256 GCM encryption at rest for every platform node and credential.</p>
+                                <h4 className="text-sm font-black uppercase tracking-widest text-white font-plus-jakarta">Secure Protection</h4>
+                                <p className="text-xs text-slate-500 font-bold font-inter leading-relaxed">Advanced encryption keeps all your platform credentials and content safe.</p>
                             </div>
                             <div className="space-y-4">
                                 <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-[#3B82F6]">
                                     <Cpu className="h-6 w-6" />
                                 </div>
-                                <h4 className="text-sm font-black uppercase tracking-widest text-white font-plus-jakarta">Microservice Sync</h4>
-                                <p className="text-xs text-slate-500 font-bold font-inter leading-relaxed">Async event-driven architecture handles 100k+ concurrent posting triggers.</p>
+                                <h4 className="text-sm font-black uppercase tracking-widest text-white font-plus-jakarta">Powerful Infrastructure</h4>
+                                <p className="text-xs text-slate-500 font-bold font-inter leading-relaxed">Our robust architecture handles hundreds of thousands of posts simultaneously.</p>
                             </div>
                         </div>
 
-                        <Link href="/about#trust" className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#3B82F6] hover:text-white transition-colors pt-6 font-plus-jakarta">
-                            Visit Technical Trust Center <ArrowRight className="h-4 w-4" />
+                        <Link href="/about" className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-[#3B82F6] hover:text-white transition-colors pt-6 font-plus-jakarta">
+                            Learn More About Our Technology <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
 
@@ -43,8 +43,8 @@ export default function ReliabilitySection() {
                         {[
                             { label: "Global Uptime", value: "99.99%", desc: "Cloud-Edge Infrastructure" },
                             { label: "API Latency", value: "&lt; 180ms", desc: "Native Platform Sync" },
-                            { label: "Daily Backups", value: "Every 2h", desc: "Redundant Storage Nodes" },
-                            { label: "Compliance", value: "DPA/DMARC", desc: "Authorized Protocol" }
+                            { label: "Daily Backups", value: "Every 2h", desc: "Redundant Storage Systems" },
+                            { label: "Compliance", value: "DPA/DMARC", desc: "Secure Standards" }
                         ].map((stat, i) => (
                             <div key={i} className="p-8 bg-white/5 border border-white/10 rounded-xl space-y-3 backdrop-blur-sm group hover:border-white/20 transition-all">
                                 <Globe className="h-5 w-5 text-[#27C93F] transition-transform group-hover:rotate-12" />

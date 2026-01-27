@@ -11,20 +11,20 @@ export default function AIToolsSection() {
                     <div className="space-y-10 order-2 lg:order-1">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3B82F6]/5 border border-[#3B82F6]/10">
                             <Sparkles className="h-4 w-4 text-[#3B82F6]" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] font-plus-jakarta">Proprietary AI Resonance</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] font-plus-jakarta">AI-Powered Optimization</span>
                         </div>
                         <h2 className="text-4xl md:text-6xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-[0.9] uppercase">
-                            AI-Driven <br /> Content <span className="text-[#3B82F6]">Optimization</span>
+                            AI-Driven <br /> Content <span className="text-[#3B82F6]">Enhancement</span>
                         </h2>
                         <p className="text-xl text-[#3E4652] font-medium leading-relaxed font-inter">
-                            Stop guessing and start scaling. AI Lab v4.0 automates the tedious parts of distribution so you can focus on strategy.
+                            Take the guesswork out of sharing content. Our AI tools automate the complex parts of posting so you can focus on your brand.
                         </p>
 
                         <div className="space-y-8">
                             {[
-                                { icon: <Zap className="h-6 w-6" />, title: "Auto-Resonance Captions", desc: "Native captions generated for TikTok, Pinterest, and Instagram with 2026-grade linguistic triggers." },
-                                { icon: <Maximize2 className="h-6 w-6" />, title: "Dynamic Ratio Resizing", desc: "One-click asset adaptation. Move from 16:9 to vertical 9:16 or 1:1 square instantly." },
-                                { icon: <LayoutGrid className="h-6 w-6" />, title: "Smart Timing Engine", desc: "Data-driven posting triggers that react to real-time platform social entropy." }
+                                { icon: <Zap className="h-6 w-6" />, title: "Automatic Captions", desc: "Generate engaging captions for TikTok, Pinterest, and Instagram that speak directly to your audience." },
+                                { icon: <Maximize2 className="h-6 w-6" />, title: "Smart Aspect Ratios", desc: "Easily adapt your videos and images for different platform requirements in just one click." },
+                                { icon: <LayoutGrid className="h-6 w-6" />, title: "Intelligent Timing", desc: "Know exactly when to post to maximize your visibility and engagement with followers." }
                             ].map((tool, i) => (
                                 <div key={i} className="flex gap-6 group">
                                     <div className="w-12 h-12 shrink-0 rounded-lg bg-slate-50 flex items-center justify-center text-[#0C1B33] group-hover:bg-[#0C1B33] group-hover:text-[#F9C80E] transition-all">
@@ -54,7 +54,7 @@ export default function AIToolsSection() {
                                 </div>
                                 <div className="space-y-4">
                                     <h3 className="text-2xl font-black uppercase tracking-tight font-plus-jakarta italic underline decoration-[#F9C80E]">LAB V4.0 LIVE</h3>
-                                    <p className="text-slate-400 font-medium text-lg font-inter">Running multi-platform sentiment analysis... Captions optimized for 94.2% resonance.</p>
+                                    <p className="text-slate-400 font-medium text-lg font-inter">Running multi-platform metrics analysis... Captions optimized for 94.2% engagement.</p>
                                 </div>
                                 <div className="bg-white/5 border border-white/10 rounded-lg p-6 text-left space-y-4 font-mono text-xs text-[#3B82F6]">
                                     <p>&gt; scan platform metrics...</p>

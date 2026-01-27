@@ -18,7 +18,7 @@ export default function PlatformStrip() {
     return (
         <section className="py-12 bg-slate-50 border-y border-slate-100 overflow-hidden">
             <div className="container mx-auto px-6 mb-12">
-                <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-400 font-plus-jakarta">Integrated with every 2026 growth node</p>
+                <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-400 font-plus-jakarta">Integrate with all your favorite social networks</p>
             </div>
             <div className="relative flex">
                 <div className="flex animate-marquee whitespace-nowrap">

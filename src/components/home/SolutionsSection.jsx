@@ -7,25 +7,25 @@ const solutions = [
     {
         icon: <Briefcase className="h-8 w-8" />,
         title: "For Agencies",
-        desc: "Multi-client management, white-label reporting, and hierarchical team permissions for high-volume units.",
-        cta: "Agency Protocol"
+        desc: "Manage multiple clients with ease, generate professional reports, and handle team permissions in one place.",
+        cta: "Agency Solutions"
     },
     {
         icon: <ShoppingBag className="h-8 w-8" />,
         title: "Small Business",
-        desc: "Zero-budget growth automation. Set your content nodes once and let AI handle the distribution consistency.",
-        cta: "Growth Starter"
+        desc: "Automate your social media growth without the high costs. Set your schedule and let our AI handle the rest.",
+        cta: "Business Growth"
     },
     {
         icon: <Palette className="h-8 w-8" />,
         title: "Content Creators",
-        desc: "Native optimization for TikTok and Pinterest viral windows. Scale your influence across 9+ networks instantly.",
-        cta: "Creator Mode"
+        desc: "Optimize your posts for TikTok and Pinterest viral trends. Expand your influence across all networks instantly.",
+        cta: "Creator Tools"
     },
     {
         icon: <Building2 className="h-8 w-8" />,
         title: "Enterprise",
-        desc: "Direct API access, custom SLA protocols, and dedicated account engineering for global social infrastructure.",
+        desc: "Direct API access, custom support, and dedicated resources for managing your global social media presence.",
         cta: "Enterprise Access"
     }
 ];
@@ -36,10 +36,10 @@ export default function SolutionsSection() {
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight uppercase">
-                        Tailored <span className="text-[#3B82F6]">Resonance</span> Solutions
+                        Tailored <span className="text-[#3B82F6]">Solutions</span> for You
                     </h2>
                     <p className="text-lg text-slate-500 font-medium max-w-2xl mx-auto font-inter">
-                        Whether you're a solo creator or a global agency, we have the protocol for your scale.
+                        Whether you're a solo creator or a growing agency, we have the right tools to help you succeed.
                     </p>
                 </div>
 

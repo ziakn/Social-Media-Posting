@@ -49,7 +49,7 @@ export default function PricingPreview({ packages = [] }) {
             name: "Agency",
             price: "199",
             desc: "For growing agencies",
-            features: ["50 Social Profiles", "Bulk Scheduling", "Multi-User Access", "White-Label Reports"]
+            features: ["50 Social Profiles", "Bulk Scheduling", "Multi-User Access", "Client Approval Systems"]
         },
         {
             name: "Enterprise",
@@ -64,10 +64,10 @@ export default function PricingPreview({ packages = [] }) {
             <div className="container mx-auto px-6 max-w-[1400px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                        Simple, <span className="text-[#3B82F6]">Transparent</span> Protocol
+                        Simple, <span className="text-[#3B82F6]">Transparent</span> Plans
                     </h2>
                     <p className="text-lg text-slate-500 font-medium max-w-2xl mx-auto font-inter">
-                        Scale your social graph with zero hidden latency.
+                        Choose the right plan to grow your social media presence.
                     </p>
                 </div>
 
@@ -101,7 +101,7 @@ export default function PricingPreview({ packages = [] }) {
 
                             <Link href="/pricing" className="block">
                                 <button className={`w-full py-5 rounded-[6px] font-black text-sm uppercase tracking-widest transition-all font-plus-jakarta active:scale-95 ${plan.popular ? 'bg-[#F9C80E] text-[#0C1B33] hover:bg-[#eac00d]' : 'bg-[#0C1B33] text-white hover:bg-slate-800'}`}>
-                                    Deploy Protocol
+                                    Start Your Growth
                                 </button>
                             </Link>
                         </div>

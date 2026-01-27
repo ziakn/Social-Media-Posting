@@ -10,13 +10,13 @@ export default function AnalyticsDashboard() {
                     <div className="space-y-10">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#F9C80E]/5 border border-[#F9C80E]/10">
                             <TrendingUp className="h-4 w-4 text-[#F9C80E]" />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33] font-plus-jakarta">Enterprise ROI Tracking</span>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[#0C1B33] font-plus-jakarta">Track Your Growth</span>
                         </div>
                         <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                            Consolidated <br /> <span className="text-[#3B82F6]">Network Analytics</span>
+                            Simple <br /> <span className="text-[#3B82F6]">Performance Analytics</span>
                         </h2>
                         <p className="text-xl text-[#3E4652] font-medium leading-relaxed font-inter">
-                            Stop jumping between tabs. SocialHub normalizes engagement data across every platform, giving you a clear view of your true ROI.
+                            Stop jumping between different apps. SocialHub brings all your engagement data together, giving you a clear view of your growth and progress.
                         </p>
                         <div className="grid grid-cols-2 gap-8 pt-4">
                             <div className="space-y-2">
@@ -29,7 +29,7 @@ export default function AnalyticsDashboard() {
                             </div>
                         </div>
                         <button className="bg-[#0C1B33] text-white font-black text-sm px-10 h-16 rounded-[6px] hover:bg-slate-800 transition-all font-plus-jakarta uppercase tracking-widest">
-                            Explore Analytics Hub
+                            Explore Your Analytics
                         </button>
                     </div>
 

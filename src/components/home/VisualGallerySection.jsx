@@ -43,15 +43,15 @@ export default function VisualGallerySection() {
                         <div className="space-y-4">
                             <span className="text-[10px] font-black text-[#3B82F6] uppercase tracking-[0.3em] font-plus-jakarta flex items-center gap-2">
                                 <Zap className="h-3 w-3 fill-[#F9C80E] text-[#F9C80E]" />
-                                Resonance Protocol
+                                Stunning Visuals
                             </span>
                             <h2 className="text-4xl md:text-6xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tighter leading-[0.9] uppercase">
-                                Visual <br /> <span className="text-[#3B82F6]">Resonance</span> Gallery
+                                Your <br /> <span className="text-[#3B82F6]">Engagement</span> Gallery
                             </h2>
                         </div>
 
                         <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-xl">
-                            Transform your linear feed into a high-impact visual ecosystem. SocialHub optimizes your assets for maximum engagement across every network.
+                            Turn your social media feed into a high-impact visual experience. Our platform helps you optimize your content for maximum engagement.
                         </p>
 
                         <div className="grid grid-cols-2 gap-8 pt-4">
@@ -66,7 +66,7 @@ export default function VisualGallerySection() {
                         </div>
 
                         <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-sm px-10 py-5 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle uppercase tracking-widest font-plus-jakarta">
-                            Explore Engagement Hub
+                            Explore Engagement Platform
                         </button>
                     </div>
 

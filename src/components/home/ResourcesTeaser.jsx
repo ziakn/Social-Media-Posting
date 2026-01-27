@@ -31,9 +31,9 @@ export default function ResourcesTeaser() {
                 <div className="flex flex-col md:flex-row justify-between items-center mb-24 gap-8">
                     <div className="space-y-4 text-center md:text-left">
                         <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">
-                            Protocol <span className="text-[#3B82F6]">Intelligence</span>
+                            Helpful <span className="text-[#3B82F6]">Insights</span>
                         </h2>
-                        <p className="text-sm text-slate-500 font-medium uppercase tracking-widest font-plus-jakarta">The latest signals from the SocialHub engineering blog</p>
+                        <p className="text-sm text-slate-500 font-medium uppercase tracking-widest font-plus-jakarta">The latest tips and strategies from the SocialHub blog</p>
                     </div>
                     <Link href="/blog">
                         <button className="bg-white border-2 border-[#0C1B33] text-[#0C1B33] font-black text-[10px] px-10 h-14 rounded-[6px] hover:bg-slate-50 uppercase tracking-widest transition-all font-plus-jakarta">

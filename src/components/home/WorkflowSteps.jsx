@@ -5,23 +5,23 @@ import { UserCheck, UploadCloud, Rocket, BarChart2 } from "lucide-react";
 const steps = [
     {
         icon: <UserCheck className="h-6 w-6" />,
-        title: "Connect Accounts",
-        desc: "Authorize your TikTok, Pinterest, and Instagram nodes via secure OAuth."
+        title: "Connect Your Accounts",
+        desc: "Securely link your TikTok, Pinterest, and Instagram accounts in just a few clicks."
     },
     {
         icon: <UploadCloud className="h-6 w-6" />,
-        title: "Upload & AI Lab",
-        desc: "Sync media and let AI Lab v4.0 generate platform-optimized resonance."
+        title: "Upload & Optimize",
+        desc: "Upload your media and use our AI tools to tailor it for every social network."
     },
     {
         icon: <Rocket className="h-6 w-6" />,
-        title: "Instant Publish",
-        desc: "Execute multi-platform distribution or schedule for peak window triggers."
+        title: "Publish & Schedule",
+        desc: "Share your content instantly or schedule it for the best times to reach your followers."
     },
     {
         icon: <BarChart2 className="h-6 w-6" />,
-        title: "Track Entropy",
-        desc: "Monitor engagement data and ROI signals across your entire social graph."
+        title: "Track Your Success",
+        desc: "Monitor your engagement and see how your audience is growing across your social profiles."
     }
 ];
 
