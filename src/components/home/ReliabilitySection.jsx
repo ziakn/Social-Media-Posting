@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function ReliabilitySection() {
     return (
-        <section id="reliability" className="py-32 bg-[#0C1B33] text-white relative overflow-hidden font-inter">
+        <section id="reliability" className="py-20 bg-[#0C1B33] text-white relative overflow-hidden font-inter">
             <div className="container mx-auto px-6 max-w-[1280px] relative z-10">
                 <div className="grid lg:grid-cols-2 gap-24 items-center">
                     <div className="space-y-10">

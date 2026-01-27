@@ -31,7 +31,7 @@ const coreFeatures = [
 
 export default function FeaturesGrid() {
     return (
-        <section id="features" className="py-32 bg-white">
+        <section id="features" className="py-20 bg-white">
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight uppercase">

@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function AIToolsSection() {
     return (
-        <section className="py-32 bg-white relative overflow-hidden">
+        <section className="py-20 bg-white relative overflow-hidden">
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="grid lg:grid-cols-2 gap-24 items-center">
                     <div className="space-y-10 order-2 lg:order-1">

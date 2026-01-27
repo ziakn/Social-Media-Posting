@@ -18,7 +18,7 @@ export default function CalendarPreviewSection() {
     };
 
     return (
-        <section className="py-32 bg-white overflow-hidden font-inter">
+        <section className="py-20 bg-white overflow-hidden font-inter">
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="flex flex-col lg:flex-row items-center gap-20">
                     <div className="flex-1 space-y-8">

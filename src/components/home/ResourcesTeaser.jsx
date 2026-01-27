@@ -26,7 +26,7 @@ const posts = [
 
 export default function ResourcesTeaser() {
     return (
-        <section className="py-32 bg-slate-50 border-y border-slate-100 font-inter">
+        <section className="py-20 bg-slate-50 border-y border-slate-100 font-inter">
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="flex flex-col md:flex-row justify-between items-center mb-24 gap-8">
                     <div className="space-y-4 text-center md:text-left">

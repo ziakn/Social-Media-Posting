@@ -60,7 +60,7 @@ export default function PricingPreview({ packages = [] }) {
     ];
 
     return (
-        <section className="py-32 bg-white font-inter">
+        <section className="py-20 bg-white font-inter">
             <div className="container mx-auto px-6 max-w-[1400px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight leading-tight uppercase">

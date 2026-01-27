@@ -32,7 +32,7 @@ const solutions = [
 
 export default function SolutionsSection() {
     return (
-        <section id="solutions" className="py-32 bg-slate-50 border-y border-slate-100">
+        <section id="solutions" className="py-20 bg-slate-50 border-y border-slate-100">
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="text-center mb-24 space-y-6">
                     <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tight uppercase">

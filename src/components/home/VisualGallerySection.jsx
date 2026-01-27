@@ -35,7 +35,7 @@ export default function VisualGallerySection() {
     ];
 
     return (
-        <section className="py-32 bg-white overflow-hidden font-inter">
+        <section className="py-20 bg-white overflow-hidden font-inter">
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="flex flex-col lg:flex-row gap-20 items-center">
                     {/* Left: Content */}

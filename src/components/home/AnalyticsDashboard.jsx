@@ -4,7 +4,7 @@ import { BarChart3, TrendingUp, PieChart, ArrowUpRight } from "lucide-react";
 
 export default function AnalyticsDashboard() {
     return (
-        <section className="py-32 bg-white font-inter">
+        <section className="py-20 bg-white font-inter">
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="grid lg:grid-cols-2 gap-24 items-center">
                     <div className="space-y-10">

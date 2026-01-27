@@ -5,7 +5,7 @@ import { Zap } from "lucide-react";
 
 export default function HeroSection() {
     return (
-        <section className="relative pt-32 pb-24 md:pt-48 md:pb-40 bg-white overflow-hidden">
+        <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 bg-white overflow-hidden">
             <div className="container mx-auto px-6 max-w-[1280px] flex flex-col lg:flex-row items-center gap-20 relative z-10">
                 <div className="flex-1 space-y-8 text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-50 border border-slate-100">

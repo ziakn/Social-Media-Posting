@@ -5,7 +5,7 @@ import { ArrowRight, Zap } from "lucide-react";
 
 export default function FinalCTA() {
     return (
-        <section className="py-24 bg-white container mx-auto px-6 max-w-[1280px]">
+        <section className="py-16 bg-white container mx-auto px-6 max-w-[1280px]">
             <div className="bg-[#0C1B33] rounded-[10px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[120px] pointer-events-none" />
                 <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-[#F9C80E]/5 blur-[120px] rounded-full pointer-events-none" />

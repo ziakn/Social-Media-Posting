@@ -4,7 +4,7 @@ import { CheckCircle } from "lucide-react";
 
 export default function TestimonialsSection() {
     return (
-        <section className="py-32 bg-white relative overflow-hidden font-inter">
+        <section className="py-20 bg-white relative overflow-hidden font-inter">
             {/* Background Noise/Texture Effect would be nice here, keeping it clean for now */}
             <div className="container mx-auto px-6 max-w-[1280px]">
                 <div className="text-center mb-24 space-y-6">
