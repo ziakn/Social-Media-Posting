@@ -17,35 +17,35 @@ import { Badge } from "@/components/ui/badge";
 export default function CareersPage() {
     const roles = [
         {
-            title: "Protocol Engineer",
+            title: "Full Stack Engineer",
             dept: "Engineering",
             location: "Remote / Hybrid",
-            tag: "High Velocity"
+            tag: "Impact"
         },
         {
             title: "Social Growth Lead",
             dept: "Marketing",
             location: "New York, NY",
-            tag: "Resonance"
+            tag: "Culture"
         },
         {
-            title: "AI Lab Researcher",
+            title: "AI Researcher",
             dept: "Intelligence",
             location: "Remote",
-            tag: "2026 AI Lab"
+            tag: "Innovation"
         },
         {
-            title: "Security Node Architect",
+            title: "Security Architect",
             dept: "Security",
             location: "London, UK",
-            tag: "AES-256"
+            tag: "Safety"
         }
     ];
 
     const benefits = [
-        { title: "Protocol Ownership", desc: "Equity packages for every engineering and distribution node leader.", icon: <Cpu className="h-6 w-6" /> },
-        { title: "Global Mobility", desc: "Work from any resonance point across the globe with our remote-first architecture.", icon: <Globe className="h-6 w-6" /> },
-        { title: "Health & Synergy", desc: "Enterprise-grade health and wellness protocols for performance maintenance.", icon: <Heart className="h-6 w-6" /> }
+        { title: "Team Ownership", desc: "Generous equity packages for every team member and project leader.", icon: <Cpu className="h-6 w-6" /> },
+        { title: "Global Flexibility", desc: "Work from anywhere in the world with our remote-first culture.", icon: <Globe className="h-6 w-6" /> },
+        { title: "Health & Wellbeing", desc: "Comprehensive health and wellness programs to support your best work.", icon: <Heart className="h-6 w-6" /> }
     ];
 
     return (
@@ -60,15 +60,15 @@ export default function CareersPage() {
                     </div>
                     <h1 className="text-5xl md:text-7xl font-extrabold font-plus-jakarta uppercase tracking-tighter leading-none mx-auto max-w-4xl">
                         Build the Future of <br />
-                        <span className="text-[#3B82F6]">Social Intelligence.</span>
+                        <span className="text-[#3B82F6]">Social Connection.</span>
                     </h1>
                     <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
-                        Join the high-velocity team behind SocialHub. We're engineering the next generation of social graphs and distribution protocols.
+                        Join the passionate team behind SocialHub. We're building the next generation of social engagement and content sharing.
                     </p>
                     <div className="pt-8">
                         <a href="#open-roles">
                             <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-lg px-12 h-20 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle hover:-translate-y-0.5 font-inter">
-                                View Open Protocol
+                                View Open Roles
                             </button>
                         </a>
                     </div>
@@ -82,13 +82,13 @@ export default function CareersPage() {
                         <div className="space-y-8">
                             <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black font-inter">Our Mandate</Badge>
                             <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-inter tracking-tight uppercase leading-none">
-                                Engineering <br /> Resonance.
+                                Building <br /> Connection.
                             </h2>
                             <p className="text-lg text-slate-500 font-medium leading-relaxed">
-                                At SocialHub, we don't just ship code; we architecturalize influence. Our team operates at the intersection of data science, network theory, and high-production social distribution.
+                                At SocialHub, we don't just ship code; we create meaningful experiences. Our team operates at the heart of community, creativity, and high-impact social sharing.
                             </p>
                             <div className="grid sm:grid-cols-2 gap-6 pt-4">
-                                {["Distributed First", "Node Autonomy", "Radical Transparency", "Continuous Scale"].map((item, i) => (
+                                {["Remote First", "Team Ownership", "Open Communication", "Consistent Growth"].map((item, i) => (
                                     <div key={i} className="flex items-center gap-3">
                                         <CheckCircle2 className="h-5 w-5 text-[#3B82F6]" />
                                         <span className="text-sm font-black text-[#0C1B33] uppercase tracking-widest font-inter">{item}</span>
@@ -116,8 +116,8 @@ export default function CareersPage() {
             <section id="open-roles" className="py-32 bg-slate-50 border-y border-slate-100">
                 <div className="container mx-auto px-6 max-w-[1280px]">
                     <div className="text-center mb-24 space-y-4">
-                        <h2 className="text-4xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight">Open Protocol Positions</h2>
-                        <p className="text-lg text-slate-400 font-medium max-w-2xl mx-auto">Select a node to begin the onboarding sequence.</p>
+                        <h2 className="text-4xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight">Open Roles</h2>
+                        <p className="text-lg text-slate-400 font-medium max-w-2xl mx-auto">Find your place in our growing team and start your journey with us.</p>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
@@ -131,7 +131,7 @@ export default function CareersPage() {
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-inter">{role.dept} • {role.location}</p>
                                 </div>
                                 <button className="w-full md:w-auto bg-[#0C1B33] text-white font-black text-[10px] uppercase tracking-[0.2em] h-12 px-8 rounded-[6px] hover:bg-[#3B82F6] transition-all font-inter">
-                                    Apply Protocol
+                                    Join the Team
                                 </button>
                             </div>
                         ))}
@@ -162,10 +162,10 @@ export default function CareersPage() {
                     <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
                     <Briefcase className="h-16 w-16 text-[#F9C80E] mx-auto group-hover:scale-110 transition-transform duration-500" />
                     <h2 className="text-4xl md:text-6xl font-extrabold font-inter tracking-tighter max-w-2xl mx-auto leading-tight uppercase">
-                        Don't see your <span className="text-[#3B82F6]">Protocol Node?</span>
+                        Don't see your <span className="text-[#3B82F6]">ideal role?</span>
                     </h2>
                     <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto">
-                        We are always looking for high-velocity talent to join our growth intelligence laboratory.
+                        We are always looking for passionate talent to join our growing team.
                     </p>
                     <div className="pt-4">
                         <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-lg px-12 h-20 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle hover:-translate-y-1 font-inter uppercase tracking-widest">

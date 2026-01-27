@@ -24,12 +24,12 @@ export default function ContactPage() {
 
                 {/* --- Header --- */}
                 <div className="max-w-4xl mx-auto text-center mb-20 space-y-6">
-                    <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Authorized Support</Badge>
+                    <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Get in Touch</Badge>
                     <h1 className="text-5xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-none font-plus-jakarta uppercase">
                         Let's <span className="text-[#3B82F6]">Connect.</span>
                     </h1>
                     <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-2xl mx-auto">
-                        Whether you're looking for an enterprise-level DPA or technical API support, our engineering and sales teams are standing by.
+                        Whether you're looking for enterprise-level Data Privacy Agreements or priority support, our team is here to help you succeed.
                     </p>
                 </div>
 
@@ -39,8 +39,8 @@ export default function ContactPage() {
                     <div className="bg-white border border-[#E1E7EF] p-10 md:p-12 rounded-[10px] space-y-10 shadow-2xl shadow-slate-200/50 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-1/4 h-full bg-[#3B82F6]/5 blur-[100px] pointer-events-none" />
                         <div className="space-y-3 relative z-10 border-l-4 border-[#F9C80E] pl-6">
-                            <h3 className="text-2xl font-extrabold text-[#0C1B33] font-plus-jakarta uppercase tracking-tight">Post an inquiry</h3>
-                            <p className="text-[10px] font-black text-[#0C1B33] uppercase tracking-widest opacity-40 font-plus-jakarta">Typical response latency: 42m</p>
+                            <h3 className="text-2xl font-extrabold text-[#0C1B33] font-plus-jakarta uppercase tracking-tight">Send a Message</h3>
+                            <p className="text-[10px] font-black text-[#0C1B33] uppercase tracking-widest opacity-40 font-plus-jakarta">Typical response time: 42m</p>
                         </div>
 
                         <form className="space-y-6 relative z-10" onSubmit={(e) => e.preventDefault()}>
@@ -56,11 +56,11 @@ export default function ContactPage() {
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Subject</label>
-                                <input placeholder="Inquiry about Enterprise API Access" className="w-full h-14 rounded-[8px] border border-[#E1E7EF] bg-[#F5F8FB] px-6 font-bold text-[#0C1B33] focus:bg-white focus:ring-1 focus:ring-[#3B82F6] outline-none" />
+                                <input placeholder="How can we help your business?" className="w-full h-14 rounded-[8px] border border-[#E1E7EF] bg-[#F5F8FB] px-6 font-bold text-[#0C1B33] focus:bg-white focus:ring-1 focus:ring-[#3B82F6] outline-none" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Message</label>
-                                <textarea placeholder="Outline your requirements..." className="w-full min-h-[160px] rounded-[8px] border border-[#E1E7EF] bg-[#F5F8FB] p-6 font-bold text-[#0C1B33] focus:bg-white focus:ring-1 focus:ring-[#3B82F6] outline-none resize-none" />
+                                <textarea placeholder="Tell us more about how we can help..." className="w-full min-h-[160px] rounded-[8px] border border-[#E1E7EF] bg-[#F5F8FB] p-6 font-bold text-[#0C1B33] focus:bg-white focus:ring-1 focus:ring-[#3B82F6] outline-none resize-none" />
                             </div>
                             <button className="w-full h-16 rounded-[8px] bg-[#0C1B33] text-white font-extrabold text-lg uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-navy-500/20 active:scale-95 flex items-center justify-center gap-3">
                                 Send Message <Send className="h-5 w-5" />
@@ -87,10 +87,10 @@ export default function ContactPage() {
                                 <div className="w-12 h-12 bg-[#F5F8FB] rounded-lg flex items-center justify-center text-[#0C1B33] group-hover:bg-[#0C1B33] group-hover:text-[#F9C80E] transition-colors">
                                     <LifeBuoy className="h-6 w-6" />
                                 </div>
-                                <h4 className="font-extrabold text-[#0C1B33] font-plus-jakarta uppercase">Dev Support</h4>
-                                <p className="text-xs text-slate-500 font-bold leading-relaxed px-1">Rapid-response debugging for enterprise API users.</p>
+                                <h4 className="font-extrabold text-[#0C1B33] font-plus-jakarta uppercase">Developer Support</h4>
+                                <p className="text-xs text-slate-500 font-bold leading-relaxed px-1">Quick troubleshooting for our technical integration partners.</p>
                                 <Link href="#" className="inline-flex items-center gap-2 text-[#3B82F6] font-black text-[10px] uppercase tracking-widest pt-4 group-hover:translate-x-1 transition-transform">
-                                    Open Ticket <ArrowRight className="h-3 w-3" />
+                                    Get Technical Help <ArrowRight className="h-3 w-3" />
                                 </Link>
                             </div>
                         </div>
@@ -102,14 +102,14 @@ export default function ContactPage() {
                                 <div className="flex gap-6 items-start">
                                     <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-[#F9C80E] border border-white/10 flex-shrink-0"><MapPin className="h-5 w-5" /></div>
                                     <div className="space-y-1">
-                                        <h5 className="font-black text-[#5e6a7c] uppercase tracking-widest text-[9px]">SF Engineering Hub</h5>
+                                        <h5 className="font-black text-[#5e6a7c] uppercase tracking-widest text-[9px]">San Francisco Office</h5>
                                         <p className="font-bold text-slate-200">123 Media Ave, Suite 400<br />San Francisco, CA 94103</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-6 items-start">
                                     <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-[#3B82F6] border border-white/10 flex-shrink-0"><Mail className="h-5 w-5" /></div>
                                     <div className="space-y-1">
-                                        <h5 className="font-black text-[#5e6a7c] uppercase tracking-widest text-[9px]">Global Correspondence</h5>
+                                        <h5 className="font-black text-[#5e6a7c] uppercase tracking-widest text-[9px]">Email Us</h5>
                                         <p className="font-bold text-slate-200">hello@socialhub.com</p>
                                     </div>
                                 </div>
@@ -130,7 +130,7 @@ export default function ContactPage() {
                         {/* Status Indicator */}
                         <div className="flex items-center gap-3 justify-center text-[10px] font-black uppercase text-slate-300 tracking-[0.2em]">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            All Systems Operable • Response Active
+                            All Systems Online • We're here to help
                         </div>
                     </div>
                 </div>
