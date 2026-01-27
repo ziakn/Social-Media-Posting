@@ -41,12 +41,15 @@ export async function GET() {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+
+
     return NextResponse.json({
       user: {
         id: userDoc.id || userDocId,
         name: userDoc.name,
         email: userDoc.email,
         role_id: userDoc.role_id,
+        role: userDoc.role,
         subscription: userDoc.subscription || null,
       }
     });
