@@ -4,11 +4,19 @@ import { Calendar, Clock, User } from "lucide-react";
 export default function BlogPostCard({ post }) {
     return (
         <div className="group flex flex-col md:flex-row gap-8 items-start mb-8 pb-8 border-b border-gray-100 last:border-0">
-            {/* Image Placeholder */}
+            {/* Image Container */}
             <div className="w-full md:w-[320px] aspect-[16/9] md:aspect-[4/3] rounded-xl bg-gray-100 shrink-0 overflow-hidden relative border border-gray-100">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-medium">
-                    Placeholder Image
-                </div>
+                {post.image ? (
+                    <img
+                        src={post.image}
+                        alt={post.title}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-medium">
+                        No Image Available
+                    </div>
+                )}
             </div>
 
             <div className="flex-1 space-y-4">

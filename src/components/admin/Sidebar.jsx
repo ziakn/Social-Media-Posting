@@ -110,6 +110,12 @@ export function AppSidebar({ user, ...props }) {
       icon: BarChart3,
       permission: "view_analytics",
     },
+    {
+      title: "Blog",
+      url: "/admin/blog",
+      icon: FileText,
+      permission: "view_blog",
+    },
   ]
 
   // Group B: Business (Monetization)
