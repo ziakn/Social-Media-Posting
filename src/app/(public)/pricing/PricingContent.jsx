@@ -18,6 +18,38 @@ import { planFeatures, pricingFaqs } from "@/lib/constants/pricing-data";
 export default function PricingContent({ packages = [] }) {
   const [isAnnual, setIsAnnual] = useState(true);
 
+  // Helper to sanitize feature names to match brand tone
+  const sanitizeFeature = (feature) => {
+    const mappings = {
+      "User Seat": "Team Member",
+      "User Seats": "Team Members",
+      "White-label Reports": "Custom Branded Reports",
+      "SLA Support": "Priority Support",
+      "ROI Tracking": "Performance Insights",
+      "Engagement Metrics": "Performance Insights",
+      "PDF Exports": "Downloadable Reports",
+      "720p Image Uploads": "Standard-Quality Media",
+      "1080p Image & Video": "High-Quality Media",
+      "Competitor Analysis": "Compare Your Progress",
+      "Client Approval Portals": "Client Approval Systems",
+      "Client Portal": "Client Systems"
+    };
+
+    // Try to match or replace parts of the string
+    let sanitized = feature;
+    Object.entries(mappings).forEach(([key, value]) => {
+      const regex = new RegExp(`\\b${key}\\b`, 'gi');
+      sanitized = sanitized.replace(regex, value);
+    });
+
+    // Special case for "1 User Seats" -> "1 Team Member"
+    if (sanitized.includes("1 Team Members")) {
+      sanitized = sanitized.replace("1 Team Members", "1 Team Member");
+    }
+
+    return sanitized;
+  };
+
   // Transform database packages into the format expected by PricingCards
   const plans = useMemo(() => {
     if (!packages || packages.length === 0) return [];
@@ -47,8 +79,8 @@ export default function PricingContent({ packages = [] }) {
         description: pkg.description,
         price: pkg.price,
         interval: isAnnual ? "month" : "month",
-        features: pkg.features || [],
-        cta: pkg.ctaText || "Get Started",
+        features: (pkg.features || []).map(sanitizeFeature),
+        cta: "Start Now",
         ctaLink: registrationLink,
         popular: pkg.isPopular || false,
         gradient: pkg.isPopular || false,
@@ -122,10 +154,10 @@ export default function PricingContent({ packages = [] }) {
         <div className="relative overflow-hidden bg-gradient-to-br from-primary to-secondary -mx-6 px-6 py-24 sm:-mx-12 sm:px-12 md:mx-0 md:rounded-3xl mb-12">
           <div className="relative z-10 max-w-3xl mx-auto text-center space-y-10">
             <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-white font-display">
-              Start Scheduling Your Content Today
+              Elevate Your Social Media Today
             </h2>
             <p className="text-indigo-100 text-lg max-w-xl mx-auto font-medium font-inter">
-              Join thousands of creators and businesses who use us to automate their social presence.
+              Join 12,000+ creators and businesses who use our platform to grow their social presence.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link href="/auth/register">

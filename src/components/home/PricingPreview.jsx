@@ -4,6 +4,38 @@ import Link from "next/link";
 import { Check, ArrowRight } from "lucide-react";
 
 export default function PricingPreview({ packages = [] }) {
+    // Helper to sanitize feature names to match brand tone
+    const sanitizeFeature = (feature) => {
+        const mappings = {
+            "User Seat": "Team Member",
+            "User Seats": "Team Members",
+            "White-label Reports": "Custom Branded Reports",
+            "SLA Support": "Priority Support",
+            "SLA Protocol": "Priority Support",
+            "ROI Tracking": "Performance Insights",
+            "Engagement Metrics": "Performance Insights",
+            "PDF Exports": "Downloadable Reports",
+            "720p Image Uploads": "Standard-Quality Media",
+            "1080p Image & Video": "High-Quality Media",
+            "Competitor Analysis": "Compare Your Progress",
+            "Client Approval Portals": "Client Approval Systems",
+            "Client Portal": "Client Systems",
+            "Nodes": "Systems"
+        };
+
+        let sanitized = feature;
+        Object.entries(mappings).forEach(([key, value]) => {
+            const regex = new RegExp(`\\b${key}\\b`, 'gi');
+            sanitized = sanitized.replace(regex, value);
+        });
+
+        if (sanitized.includes("1 Team Members")) {
+            sanitized = sanitized.replace("1 Team Members", "1 Team Member");
+        }
+
+        return sanitized;
+    };
+
     // Transform database packages into the format expected by the UI
     const plans = (packages || []).reduce((acc, pkg) => {
         // Find existing plan or create new one
@@ -15,7 +47,7 @@ export default function PricingPreview({ packages = [] }) {
                 name: pkg.name,
                 price: pkg.price === 0 ? "0" : pkg.price || "Custom",
                 desc: pkg.description,
-                features: pkg.features || [],
+                features: (pkg.features || []).map(sanitizeFeature),
                 popular: pkg.isPopular || false,
                 order: pkg.order || 0
             };
@@ -36,26 +68,26 @@ export default function PricingPreview({ packages = [] }) {
             name: "Starter",
             price: "0",
             desc: "Perfect for solo creators",
-            features: ["3 Social Profiles", "15 Posts / Month", "AI Basic Lab", "Standard Analytics"]
+            features: ["3 Social Accounts", "30 Monthly Posts", "AI Tools Ready", "Standard Analytics"]
         },
         {
             name: "Professional",
             price: "49",
             popular: true,
             desc: "For high-velocity teams",
-            features: ["15 Social Profiles", "Unlimited Posts", "AI Lab v4.0 Full", "Advanced ROI Tracking"]
+            features: ["15 Social Profiles", "Unlimited Posts", "AI Tools Pro", "Advanced Analytics"]
         },
         {
             name: "Agency",
             price: "199",
             desc: "For growing agencies",
-            features: ["50 Social Profiles", "Bulk Scheduling", "Multi-User Access", "Client Approval Systems"]
+            features: ["50 Social Profiles", "Bulk Scheduling", "Multi-User Access", "Custom Branded Reports"]
         },
         {
             name: "Enterprise",
             price: "Custom",
-            desc: "Global infrastructure",
-            features: ["Unlimited Nodes", "Custom API Access", "99.9% SLA Protocol", "Dedicated Support"]
+            desc: "Global systems",
+            features: ["Unlimited Systems", "Custom API Access", "99.9% Priority Support", "Dedicated Support"]
         }
     ];
 
@@ -76,7 +108,7 @@ export default function PricingPreview({ packages = [] }) {
                         <div key={i} className={`p-8 rounded-[10px] border flex flex-col transition-all duration-500 relative group ${plan.popular ? 'bg-[#0C1B33] border-[#0C1B33] text-white shadow-2xl -translate-y-4' : 'bg-white border-slate-200 text-[#0C1B33] shadow-sm hover:shadow-subtle hover:border-[#3B82F6]/30'}`}>
 
                             {plan.popular && (
-                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#F9C80E] text-[#0C1B33] font-black text-[10px] uppercase px-4 py-1.5 rounded-full tracking-widest z-10 animate-pulse">Most Popular Protocol</div>
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#F9C80E] text-[#0C1B33] font-black text-[10px] uppercase px-4 py-1.5 rounded-full tracking-widest z-10 animate-pulse">Most Popular</div>
                             )}
 
                             <div className="mb-10 space-y-3">
@@ -101,7 +133,7 @@ export default function PricingPreview({ packages = [] }) {
 
                             <Link href="/pricing" className="block">
                                 <button className={`w-full py-5 rounded-[6px] font-black text-sm uppercase tracking-widest transition-all font-plus-jakarta active:scale-95 ${plan.popular ? 'bg-[#F9C80E] text-[#0C1B33] hover:bg-[#eac00d]' : 'bg-[#0C1B33] text-white hover:bg-slate-800'}`}>
-                                    Start Your Growth
+                                    Start Now
                                 </button>
                             </Link>
                         </div>

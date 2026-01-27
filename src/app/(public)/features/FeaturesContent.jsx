@@ -12,13 +12,13 @@ export default function FeaturesContent() {
             <FeatureHero />
 
             <FeatureShowcase
-                title="Multi-Platform Scheduler"
-                description="Stop jumping between tabs. Schedule content for Instagram, TikTok, Pinterest, YouTube, and LinkedIn from a single calendar."
+                title="Unified Social Media Scheduler"
+                description="Manage all your social media accounts from one clear view. Schedule content for Instagram, TikTok, Pinterest, YouTube, and LinkedIn in seconds."
                 benefits={[
                     "Drag-and-drop calendar interface",
-                    "Auto-resize images for each platform",
-                    "Bulk upload via CSV",
-                    "Preview posts before publishing"
+                    "Automatic image resizing for every network",
+                    "Bulk upload from your spreadsheets",
+                    "Preview posts before they go live"
                 ]}
                 imageSrc="/images/features/scheduler.png"
             />
@@ -26,24 +26,24 @@ export default function FeaturesContent() {
             <FeatureShowcase
                 reversed
                 title="AI Content Assistant"
-                description="Never stare at a blank screen again. Our AI generates engaging captions, relevant hashtags, and even video scripts in seconds."
+                description="Create engaging content instantly. Our AI generates personalized captions, popular discovery tags, and video scripts in seconds."
                 benefits={[
-                    "Tone of voice customization",
-                    "Keyword-optimized hashtags",
-                    "Idea generator for viral content",
-                    "Multi-language support"
+                    "Your unique tone of voice",
+                    "Optimized tags for better reach",
+                    "Ideas for high-engagement content",
+                    "Support for multiple languages"
                 ]}
                 imageSrc="/images/features/ai.png"
             />
 
             <FeatureShowcase
-                title="Unified Analytics"
-                description="Prove your ROI with beautiful, easy-to-understand reports. Track growth across all channels in one dashboard."
+                title="Clear Performance Analytics"
+                description="Visualize your growth with beautiful, easy-to-understand reports. Track your progress across all channels in one simple dashboard."
                 benefits={[
-                    "Cross-platform performance metrics",
-                    "Exportable PDF & CSV reports",
-                    "Competitor benchmarking",
-                    "Audience demographics"
+                    "Performance metrics for every network",
+                    "Simple, downloadable reports",
+                    "Compare your progress with others",
+                    "Detailed audience insights"
                 ]}
                 imageSrc="/images/features/analytics.png"
             />
@@ -53,9 +53,9 @@ export default function FeaturesContent() {
             {/* Final CTA */}
             <div className="py-24 bg-primary text-white text-center">
                 <div className="container mx-auto px-6 max-w-4xl">
-                    <h2 className="text-4xl font-bold font-display mb-6">Ready to upgrade your workflow?</h2>
+                    <h2 className="text-4xl font-bold font-display mb-6">Ready to elevate your social media strategy?</h2>
                     <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-                        Join 50,000+ creators and brands using SocialHub to save time and grow faster.
+                        Join 12,000+ creators and brands using SocialHub to save time and grow faster.
                     </p>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <Link href="/auth/register">

@@ -33,10 +33,10 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto text-center mb-32 space-y-6">
           <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black">Our Narrative</Badge>
           <h1 className="text-5xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-none font-plus-jakarta uppercase">
-            The Mission Behind <span className="text-[#3B82F6]">SocialHub</span> Social Media Tool
+            The Mission Behind <span className="text-[#3B82F6]">SocialHub</span>
           </h1>
           <p className="text-xl text-[#3E4652] font-medium leading-relaxed max-w-2xl mx-auto">
-            In an era of platform fragmentation, SocialHub provides the stability and intelligence teams need to maintain a coherent digital presence. We're building the infrastructure for the next generation of digital creators.
+            SocialHub provides the stability and clear insights you need to maintain a strong digital presence. We're building the tools for the next generation of digital creators.
           </p>
         </div>
 
@@ -58,9 +58,9 @@ export default function AboutPage() {
             <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-plus-jakarta tracking-tighter leading-tight uppercase">Our Foundation is <br /> Built on Trust.</h2>
             <div className="space-y-8">
               {[
-                { icon: <ShieldCheck className="h-6 w-6" />, title: "Full DPA Compliance", desc: "Every byte of data we process is handled according to strict global privacy standards and platform-authorized protocols." },
-                { icon: <Globe className="h-6 w-6" />, title: "Distributed Infrastructure", desc: "Our publishing engine is geographically distributed to ensure low-latency posting across every time zone." },
-                { icon: <Handshake className="h-6 w-6" />, title: "Official Partnerships", desc: "SocialHub is a verified developer partner for TikTok, Meta, and Pinterest, ensuring 100% API stability." }
+                { icon: <ShieldCheck className="h-6 w-6" />, title: "Privacy Compliance", desc: "Every piece of data we handle is processed according to strict privacy standards and secure practices." },
+                { icon: <Globe className="h-6 w-6" />, title: "Widespread Systems", desc: "Our engine is distributed across multiple locations to ensure fast posting in every time zone." },
+                { icon: <Handshake className="h-6 w-6" />, title: "Official Partnerships", desc: "SocialHub is a verified partner for TikTok, Meta, and Pinterest, ensuring stable and reliable connections." }
               ].map((item, i) => (
                 <div key={i} className="flex gap-6 items-start">
                   <div className="w-12 h-12 bg-[#F5F8FB] rounded-lg flex items-center justify-center text-[#0C1B33] flex-shrink-0">
@@ -92,9 +92,9 @@ export default function AboutPage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { title: "Human-Centric AI", desc: "We build AI tools that empower creators, not replace them. We focus on removing repetitive tasks so you can focus on strategy." },
-              { title: "Absolute Transparency", desc: "From our status page to our pricing, we believe in radical honesty. No hidden limits, no dark patterns." },
-              { title: "Velocity & Stability", desc: "We ship fast, but we never compromise on the reliability of our publishing engine. Your posts are too important to fail." }
+              { title: "Personalized AI", desc: "We build AI tools that empower you, not replace you. We focus on handling repetitive tasks so you can focus on your strategy." },
+              { title: "Complete Transparency", desc: "From our status updates to our pricing, we believe in being open and honest. No hidden limits or complex terms." },
+              { title: "Stability & Speed", desc: "We improve our platform quickly, but we never compromise on the reliability of your content. Your posts are our priority." }
             ].map((v, i) => (
               <div key={i} className="p-10 bg-white border border-[#E1E7EF] rounded-[10px] hover:border-[#3B82F6] transition-all">
                 <h4 className="text-xl font-extrabold text-[#0C1B33] font-plus-jakarta uppercase mb-4">{v.title}</h4>

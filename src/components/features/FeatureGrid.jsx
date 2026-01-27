@@ -8,8 +8,8 @@ const features = [
     },
     {
         icon: <BarChart3 className="h-6 w-6 text-primary" />,
-        title: "Deep Analytics",
-        description: "Track performance with granular data for every post."
+        title: "Detailed Reports",
+        description: "Track your performance with comprehensive insights for every post."
     },
     {
         icon: <Users className="h-6 w-6 text-secondary" />,
@@ -18,8 +18,8 @@ const features = [
     },
     {
         icon: <Lock className="h-6 w-6 text-success" />,
-        title: "Enterprise Security",
-        description: "SSO, 2FA, and audit logs to keep your brand safe."
+        title: "Secure and Reliable",
+        description: "Secure login and activity tracking to keep your brand safe."
     },
     {
         icon: <Globe className="h-6 w-6 text-info" />,
@@ -39,7 +39,7 @@ export default function FeatureGrid() {
             <div className="container mx-auto px-6 max-w-7xl">
                 <div className="text-center max-w-3xl mx-auto mb-16">
                     <h2 className="text-3xl font-bold text-gray-900 font-display mb-4">
-                        And so much more...
+                        Everything you need to grow
                     </h2>
                     <p className="text-gray-600">
                         We built every feature requested by top social media managers.
