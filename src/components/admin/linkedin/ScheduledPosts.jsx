@@ -250,7 +250,7 @@ export default function ScheduledPosts() {
                                 <div className="absolute top-3 left-3">
                                     <Badge className="bg-white/90 backdrop-blur-sm text-indigo-600 border-indigo-100 flex items-center gap-1.5 shadow-sm">
                                         <Timer className="h-3 w-3" />
-                                        <span className="text-[10px] font-bold">
+                                        <span className="text-[10px] font-bold" suppressHydrationWarning>
                                             {formatDistanceToNow(new Date(post.scheduledAt), { addSuffix: false })}
                                         </span>
                                     </Badge>
@@ -291,7 +291,7 @@ export default function ScheduledPosts() {
                             <CardContent className="p-4 flex-1">
                                 <p className="text-sm line-clamp-3 mb-4 font-medium">{post.text}</p>
                                 <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-auto">
-                                    <div className="flex items-center gap-1">
+                                    <div className="flex items-center gap-1" suppressHydrationWarning>
                                         <Clock className="h-3 w-3" />
                                         {format(new Date(post.scheduledAt), "MMM d, h:mm a")}
                                     </div>

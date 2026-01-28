@@ -407,7 +407,7 @@ export default function PublishedPosts() {
                                     <p className="text-xs font-bold line-clamp-1 leading-snug text-gray-100 drop-shadow-md">
                                         {post.title || "Untitled Video"}
                                     </p>
-                                    <div className="flex items-center gap-1 text-[10px] text-gray-300 font-medium pt-0.5">
+                                    <div className="flex items-center gap-1 text-[10px] text-gray-300 font-medium pt-0.5" suppressHydrationWarning>
                                         <CalendarIcon className="h-3 w-3" />
                                         <span>{format(post.createdAt ? new Date(post.createdAt) : new Date(), "MMM d, yyyy")}</span>
                                     </div>

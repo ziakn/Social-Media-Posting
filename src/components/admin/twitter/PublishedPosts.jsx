@@ -84,6 +84,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         schedule: !!initialData?.scheduledAt,
         date: initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date(),
         time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00",
+        timezone: "UTC"
     });
 
     const [accounts, setAccounts] = useState([]);
@@ -95,6 +96,13 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     const selectionScrollRef = useRef(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined' && !initialData?.scheduledAt) {
+            setScheduling(prev => ({
+                ...prev,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            }));
+        }
+
         async function loadAccounts() {
             const res = await getUserTwitterAccounts();
             if (res.success) {

@@ -70,8 +70,17 @@ function CreateLinkedinPostForm({ initialData = null, onSuccess = null }) {
         schedule: !!initialData?.scheduling?.schedule || !!initialData?.scheduledAt,
         date: initialData?.scheduling?.date || (initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date()),
         time: initialData?.scheduling?.time || (initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00"),
-        timezone: initialData?.scheduling?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: initialData?.scheduling?.timezone || "UTC"
     });
+
+    useEffect(() => {
+        if (!initialData?.scheduling?.timezone && !initialData?.scheduledAt) {
+            setScheduling(prev => ({
+                ...prev,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            }));
+        }
+    }, [initialData]);
 
     const [accounts, setAccounts] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState(initialData?.accountId || null);

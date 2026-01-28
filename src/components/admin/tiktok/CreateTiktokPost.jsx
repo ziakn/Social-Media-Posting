@@ -40,13 +40,21 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
     const [scheduling, setScheduling] = useState({
         schedule: !!initialData?.scheduledAt || false,
         date: initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date(),
-        time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00"
+        time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00",
+        timezone: "UTC"
     });
 
     const [galleryOpen, setGalleryOpen] = useState(false);
     const selectionScrollRef = useRef(null);
 
     useEffect(() => {
+        if (typeof window !== 'undefined' && !initialData?.scheduledAt) {
+            setScheduling(prev => ({
+                ...prev,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            }));
+        }
+
         async function loadData() {
             const accRes = await getUserTikTokAccounts();
 
@@ -55,7 +63,7 @@ export default function CreateTiktokPost({ initialData = null, onSuccess = null 
             }
         }
         loadData();
-    }, [selectedAccount]);
+    }, [selectedAccount, initialData]);
 
     const handleGallerySelect = (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];

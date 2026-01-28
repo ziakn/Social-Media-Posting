@@ -54,8 +54,17 @@ export default function CreatePinterestPost({ initialData = null, onSuccess = nu
         schedule: !!initialData?.scheduledAt,
         date: initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date(),
         time: initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: "UTC"
     });
+
+    useEffect(() => {
+        if (!initialData?.scheduledAt) {
+            setScheduling(prev => ({
+                ...prev,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+            }));
+        }
+    }, [initialData]);
 
     const [accounts, setAccounts] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState(initialData?.accountId || null);

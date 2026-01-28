@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
     Zap,
@@ -13,7 +14,11 @@ import {
 } from "lucide-react";
 
 const Footer = () => {
-    const currentYear = new Date().getFullYear();
+    const [currentYear, setCurrentYear] = useState(2026); // Default to current year in metadata
+
+    useEffect(() => {
+        setCurrentYear(new Date().getFullYear());
+    }, []);
 
     const footerLinks = {
         Company: [

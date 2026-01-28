@@ -107,6 +107,13 @@ export default function CreateFacebookPost() {
   const { uploadFiles, uploading, progress } = useFileUpload();
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setScheduling(prev => ({
+        ...prev,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      }));
+    }
+
     async function loadData() {
       const fbRes = await fetchFacebookPages();
 

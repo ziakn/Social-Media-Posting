@@ -94,8 +94,17 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     schedule: initialData?.scheduling?.schedule || (initialData?.status === 'scheduled'),
     date: initialData?.scheduling?.date || (initialData?.scheduledAt ? new Date(initialData.scheduledAt) : new Date()),
     time: initialData?.scheduling?.time || (initialData?.scheduledAt ? format(new Date(initialData.scheduledAt), "HH:mm") : "12:00"),
-    timezone: initialData?.scheduling?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+    timezone: initialData?.scheduling?.timezone || "UTC"
   });
+
+  useEffect(() => {
+    if (!initialData?.scheduling?.timezone && !initialData?.scheduledAt) {
+      setScheduling(prev => ({
+        ...prev,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      }));
+    }
+  }, [initialData]);
 
   const [posts, setPosts] = useState([]); // unused but part of original
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -491,7 +500,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
         schedule: true,
         date: date,
         time: "12:00",
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        timezone: typeof window !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : "UTC"
       }
     });
     setIsCreating(true);

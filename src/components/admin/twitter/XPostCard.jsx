@@ -80,7 +80,7 @@ export default function XPostCard({
                             <div className="flex items-center gap-1 text-[13px] text-gray-500">
                                 <span className="truncate">{handle}</span>
                                 <span>·</span>
-                                <span className="hover:underline cursor-pointer">
+                                <span className="hover:underline cursor-pointer" suppressHydrationWarning>
                                     {timestamp ? formatDistanceToNow(new Date(timestamp), { addSuffix: false }).replace('about ', '') : 'Now'}
                                 </span>
                             </div>
