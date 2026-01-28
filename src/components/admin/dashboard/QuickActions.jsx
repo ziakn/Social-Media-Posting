@@ -1,25 +1,38 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Link, RefreshCw, Upload, FileText, Shield } from "lucide-react";
+import { UserPlus, Link, RefreshCw, Upload, FileText, Shield, PlusCircle, Calendar, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export function QuickActions() {
+export function QuickActions({ isAdmin = false }) {
     const router = useRouter();
 
-    const actions = [
-        { label: "Create User", icon: UserPlus, onClick: () => router.push("/admin/users?action=create") },
-        { label: "Link Platform", icon: Link, onClick: () => router.push("/admin/platforms") },
-        { label: "Refresh Tokens", icon: RefreshCw, onClick: () => console.log("Refreshing tokens...") },
+    const adminActions = [
+        { label: "Create User", icon: UserPlus, onClick: () => router.push("/admin/users/create") },
+        { label: "View All Posts", icon: FileText, onClick: () => router.push("/admin/scheduled") },
+        { label: "Manage Roles", icon: Shield, onClick: () => router.push("/admin/roles") },
+        { label: "System Settings", icon: RefreshCw, onClick: () => router.push("/admin/settings") },
+        { label: "Subscriptions", icon: CreditCard, onClick: () => router.push("/admin/subscription") },
         { label: "Upload Media", icon: Upload, onClick: () => router.push("/admin/gallery") },
-        { label: "View Logs", icon: FileText, onClick: () => router.push("/admin/audit") },
-        { label: "Assign Role", icon: Shield, onClick: () => router.push("/admin/roles") },
     ];
+
+    const userActions = [
+        { label: "Create Post", icon: PlusCircle, onClick: () => router.push("/admin/composer") },
+        { label: "View Scheduled", icon: Calendar, onClick: () => router.push("/admin/scheduled") },
+        { label: "Upload Media", icon: Upload, onClick: () => router.push("/admin/gallery") },
+        { label: "Connect Platform", icon: Link, onClick: () => router.push("/admin/social") },
+        { label: "My Subscription", icon: CreditCard, onClick: () => router.push("/admin/subscription") },
+        { label: "View Posts", icon: FileText, onClick: () => router.push("/admin/scheduled") },
+    ];
+
+    const actions = isAdmin ? adminActions : userActions;
 
     return (
         <Card className="shadow-sm">
             <CardHeader>
                 <CardTitle className="text-base font-semibold">Quick Actions</CardTitle>
-                <CardDescription>Frequent tasks and shortcuts.</CardDescription>
+                <CardDescription>
+                    {isAdmin ? "Frequent admin tasks and shortcuts." : "Quick access to common tasks."}
+                </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2">
                 {actions.map((action) => (
