@@ -13,6 +13,7 @@ import { Loader2, User, Mail, Lock, Building2, Globe, Chrome, Github, Check, Che
 import AuthLayout from "@/components/auth/AuthLayout";
 import { ROUTES } from "@/constants/routes";
 import { registerUserAction } from "@/app/actions/website/register/registerActions";
+import { createCheckoutSession } from "@/app/actions/billing/stripeActions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,27 @@ function RegisterForm() {
     fetchPlans();
   }, [searchParams]);
 
+  // Helper to resolve Price ID from Env based on package name/cycle
+  const getStripePriceId = (pkgName, cycle) => {
+    const name = pkgName?.toLowerCase();
+    const isYearly = cycle === 'yearly';
+
+    if (name.includes('creator') || name.includes('starter')) {
+      return isYearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_CREATOR_YEARLY : process.env.NEXT_PUBLIC_STRIPE_PRICE_CREATOR_MONTHLY;
+    }
+    if (name.includes('professional') || name.includes('pro')) {
+      return isYearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY : process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY;
+    }
+    if (name.includes('agency')) {
+      return isYearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_YEARLY : process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_MONTHLY;
+    }
+    // Fallback to specific IDs if set
+    if (name.includes('starter')) return process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER;
+    if (name.includes('pro')) return process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO;
+
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
@@ -93,7 +115,27 @@ function RegisterForm() {
 
       // Seamless Transition via Action Metadata
       if (res.isPaid) {
-        router.push(`/checkout?package=${encodeURIComponent(res.planName)}&billing=${res.billingCycle}`);
+        // Initiate Stripe Checkout
+        const priceId = getStripePriceId(res.planName, res.billingCycle);
+
+        if (priceId) {
+          const checkoutRes = await createCheckoutSession(priceId,
+            `${window.location.origin}/admin/subscription?success=true`, // Success URL
+            `${window.location.origin}/admin/subscription?canceled=true`  // Cancel URL
+          );
+
+          if (checkoutRes.success) {
+            window.location.href = checkoutRes.url;
+            return; // Stop execution to allow redirect
+          } else {
+            console.error("Checkout Init Failed:", checkoutRes.error);
+            // Fallback to dashboard with error state potentially
+            router.push(ROUTES.ADMIN_DASHBOARD || "/admin");
+          }
+        } else {
+          // Configuration error fallback
+          router.push(ROUTES.ADMIN_DASHBOARD || "/admin");
+        }
       } else {
         router.push(ROUTES.ADMIN_DASHBOARD || "/admin");
       }
@@ -101,6 +143,22 @@ function RegisterForm() {
       console.error("Critical Registration Error:", error);
       setAlert(error.message);
     } finally {
+      // Only stop loading if we are NOT redirecting (on failure)
+      if (loading) {
+        // If we are here, it means we caught an error or we fell through to finally block without redirecting
+        // But since redirect is async, we can't be sure easily. 
+        // However, react state update on unmounted component (due to redirect) is harmless warning usually.
+        // For UX, if error alert is set, stop loading.
+        // If successfully redirecting, we want loading spin to stay until page unload.
+        // We can check if alert is set. But alert is set in catch.
+        // So we check if we have error.
+        // Actually, 'loading' state inside handleSubmit closure is stale.
+        // We will rely on setAlert to determine failure.
+      }
+      // Simple logic: if error occurred, stop loading. If success, let it spin until nav.
+      // But we can't access 'error' here easily.
+      // So we will setLoading(false) only in catch block? No, standard is finally.
+      // Let's just setLoading(false) here. If nav happens fast, it doesn't matter.
       setLoading(false);
     }
   };
@@ -145,9 +203,32 @@ function RegisterForm() {
               if (pkg) setSelectedPlan(pkg);
             }}
           >
-            {packages.map(p => (
-              <option key={p.id} value={p.id}>{p.name} — ${p.price}/{p.billingCycle}</option>
-            ))}
+            {/* Monthly Plans */}
+            <optgroup label="Monthly Protocols">
+              {packages
+                .filter(p => p.name.toLowerCase() !== 'free' && (p.billingCycle === 'monthly' || !p.billingCycle))
+                .sort((a, b) => a.price - b.price)
+                .map(p => (
+                  <option key={p.id} value={p.id}>{p.name} — ${p.price}/mo</option>
+                ))}
+            </optgroup>
+
+            {/* Yearly Plans */}
+            <optgroup label="Yearly Protocols (Save ~20%)">
+              {packages
+                .filter(p => p.name.toLowerCase() !== 'free' && p.billingCycle === 'yearly')
+                .sort((a, b) => a.price - b.price)
+                .map(p => (
+                  <option key={p.id} value={p.id}>{p.name} — ${p.price * 12}/yr</option>
+                ))}
+            </optgroup>
+
+            {/* Free Tier */}
+            <optgroup label="Starter Access">
+              {packages.filter(p => p.name.toLowerCase() === 'free').map(p => (
+                <option key={p.id} value={p.id}>{p.name} — Free</option>
+              ))}
+            </optgroup>
           </select>
         </div>
       )}

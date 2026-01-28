@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CreditCard, Download, FileText, AlertCircle, CheckCircle2, Clock, ChevronDown, Search } from "lucide-react";
+import { CreditCard, Download, FileText, AlertCircle, CheckCircle2, Clock, ChevronDown, Search, ExternalLink } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
 import { toast } from "sonner";

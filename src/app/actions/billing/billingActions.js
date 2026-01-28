@@ -239,9 +239,9 @@ export async function getBillingProfile(userId = null) {
             success: true,
             profile: {
                 ...data,
-                nextBillingDate: data.nextBillingDate?.toDate ? data.nextBillingDate.toDate().toISOString() : data.nextBillingDate,
-                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
-                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+                nextBillingDate: data.nextBillingDate?.toDate ? data.nextBillingDate.toDate().toISOString() : (data.nextBillingDate instanceof Date ? data.nextBillingDate.toISOString() : data.nextBillingDate),
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt),
             }
         };
     } catch (error) {
@@ -264,17 +264,17 @@ export async function getAllInvoices(userId = null) {
         const invoicesRef = collection(db, "invoices");
         let q;
 
-        // If not admin, force filter by user.id even if userId parameter was provided
+        // Strict role check: Only 'Administrator'
         const isAdmin = user.role === 'Administrator';
         const finalUserId = isAdmin ? userId : user.id;
 
         if (finalUserId) {
             q = query(invoicesRef, where("userId", "==", finalUserId), orderBy("createdAt", "asc"));
         } else if (!isAdmin) {
-            // Standard users MUST have a userId filter
+            // Standard users (including simple 'Admin') MUST have a userId filter
             q = query(invoicesRef, where("userId", "==", user.id), orderBy("createdAt", "asc"));
         } else {
-            // Only admins get here without a userId
+            // Only 'Administrator' get here without a userId
             q = query(invoicesRef, orderBy("createdAt", "asc"));
         }
 
@@ -282,12 +282,17 @@ export async function getAllInvoices(userId = null) {
 
         return {
             success: true,
-            invoices: snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
-                updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate().toISOString() : doc.data().updatedAt,
-            }))
+            invoices: snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt),
+                    updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt),
+                    periodStart: data.periodStart?.toDate ? data.periodStart.toDate().toISOString() : (data.periodStart instanceof Date ? data.periodStart.toISOString() : data.periodStart),
+                    periodEnd: data.periodEnd?.toDate ? data.periodEnd.toDate().toISOString() : (data.periodEnd instanceof Date ? data.periodEnd.toISOString() : data.periodEnd),
+                };
+            })
         };
     } catch (error) {
         console.error("Error fetching all invoices:", error);
@@ -297,7 +302,7 @@ export async function getAllInvoices(userId = null) {
 
 /**
  * Get paginated invoices with role-based access control and search
- * Admins see all invoices, Users see only their own
+ * Administrators see all invoices, Users see only their own
  */
 export async function getPaginatedInvoices(pageSize = 10, cursor = null, searchQuery = "") {
     try {
@@ -333,27 +338,30 @@ export async function getPaginatedInvoices(pageSize = 10, cursor = null, searchQ
         constraints.push(limit(pageSize));
 
         let q;
-        if (user.role === 'Administrator') {
+        if (user.role === 'Administrator') { // Strict check
             q = query(invoicesRef, ...constraints);
         } else {
             // Standard users must filter by userId
-            // Note: Firestore requires composite index for 'userId' + 'invoiceId' or 'userId' + 'createdAt'
-            // And if searching by range on 'invoiceId', we generally can't simultaneously filter by 'userId' inequality.
-            // But 'userId' == '...' is an equality filter, so it should be fine with a composite index.
             q = query(invoicesRef, where("userId", "==", user.id), ...constraints);
         }
 
         const snapshot = await getDocs(q);
 
-        const invoices = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate ? doc.data().createdAt.toDate().toISOString() : doc.data().createdAt,
-            updatedAt: doc.data().updatedAt?.toDate ? doc.data().updatedAt.toDate().toISOString() : doc.data().updatedAt,
-            dueDate: doc.data().dueDate?.toDate ? doc.data().dueDate.toDate().toISOString() : doc.data().dueDate,
-            billingPeriodStart: doc.data().billingPeriodStart?.toDate ? doc.data().billingPeriodStart.toDate().toISOString() : doc.data().billingPeriodStart,
-            billingPeriodEnd: doc.data().billingPeriodEnd?.toDate ? doc.data().billingPeriodEnd.toDate().toISOString() : doc.data().billingPeriodEnd,
-        }));
+        const invoices = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt),
+                updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt),
+                dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : (data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate),
+                billingPeriodStart: data.billingPeriodStart?.toDate ? data.billingPeriodStart.toDate().toISOString() : (data.billingPeriodStart instanceof Date ? data.billingPeriodStart.toISOString() : data.billingPeriodStart),
+                billingPeriodEnd: data.billingPeriodEnd?.toDate ? data.billingPeriodEnd.toDate().toISOString() : (data.billingPeriodEnd instanceof Date ? data.billingPeriodEnd.toISOString() : data.billingPeriodEnd),
+                // Handle nested timestamps if any
+                periodStart: data.periodStart?.toDate ? data.periodStart.toDate().toISOString() : (data.periodStart instanceof Date ? data.periodStart.toISOString() : data.periodStart),
+                periodEnd: data.periodEnd?.toDate ? data.periodEnd.toDate().toISOString() : (data.periodEnd instanceof Date ? data.periodEnd.toISOString() : data.periodEnd),
+            };
+        });
 
         const hasMore = invoices.length === pageSize;
 
@@ -504,11 +512,17 @@ export async function getLatestInvoice(userId = null) {
         if (snapshot.empty) return { success: true, invoice: null };
 
         const docSnap = snapshot.docs[0];
+        const data = docSnap.data();
         const invoice = {
             id: docSnap.id,
-            ...docSnap.data(),
-            createdAt: docSnap.data().createdAt?.toDate ? docSnap.data().createdAt.toDate().toISOString() : docSnap.data().createdAt,
-            dueDate: docSnap.data().dueDate?.toDate ? docSnap.data().dueDate.toDate().toISOString() : docSnap.data().dueDate,
+            ...data,
+            createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt),
+            dueDate: data.dueDate?.toDate ? data.dueDate.toDate().toISOString() : (data.dueDate instanceof Date ? data.dueDate.toISOString() : data.dueDate),
+            // Handle potential nested fields that caused the error
+            periodStart: data.periodStart?.toDate ? data.periodStart.toDate().toISOString() : (data.periodStart instanceof Date ? data.periodStart.toISOString() : data.periodStart),
+            periodEnd: data.periodEnd?.toDate ? data.periodEnd.toDate().toISOString() : (data.periodEnd instanceof Date ? data.periodEnd.toISOString() : data.periodEnd),
+            billingPeriodStart: data.billingPeriodStart?.toDate ? data.billingPeriodStart.toDate().toISOString() : (data.billingPeriodStart instanceof Date ? data.billingPeriodStart.toISOString() : data.billingPeriodStart),
+            billingPeriodEnd: data.billingPeriodEnd?.toDate ? data.billingPeriodEnd.toDate().toISOString() : (data.billingPeriodEnd instanceof Date ? data.billingPeriodEnd.toISOString() : data.billingPeriodEnd),
         };
 
         return { success: true, invoice };

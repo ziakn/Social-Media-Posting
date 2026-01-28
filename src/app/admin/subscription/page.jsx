@@ -322,8 +322,8 @@ export default function SubscriptionPage() {
                                                     {isCurrent && <span className="ml-2 text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">CURRENT</span>}
                                                 </h4>
                                                 <div className="text-right">
-                                                    <p className="text-sm font-black text-gray-900">${pkg.price}<span className="text-[10px] text-gray-400 font-normal">/yr</span></p>
-                                                    <p className="text-[9px] text-emerald-600 font-bold">{(pkg.price / 12).toFixed(0)}/mo</p>
+                                                    <p className="text-sm font-black text-gray-900">${pkg.price * 12}<span className="text-[10px] text-gray-400 font-normal">/yr</span></p>
+                                                    <p className="text-[9px] text-emerald-600 font-bold">${pkg.price}/mo</p>
                                                 </div>
                                             </div>
                                             <p className="text-[11px] text-gray-500 font-medium mb-4 line-clamp-1">{pkg.description || 'Pro features'}</p>
