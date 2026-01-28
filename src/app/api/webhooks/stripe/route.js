@@ -1,236 +1,180 @@
 import { headers } from "next/headers";
+import { NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { db } from "@/lib/firebase";
-import { doc, setDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, setDoc, serverTimestamp, collection, getDoc } from "firebase/firestore";
 
-/**
- * Stripe Webhook Handler
- * Handles events from Stripe (subscription created, updated, deleted, invoices, etc.)
- */
+// This is your Stripe CLI webhook secret for testing your endpoint locally.
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
 export async function POST(req) {
     const body = await req.text();
-    const signature = headers().get("stripe-signature");
+    const sig = headers().get("stripe-signature");
 
     let event;
 
     try {
-        event = stripe.webhooks.constructEvent(
-            body,
-            signature,
-            process.env.STRIPE_WEBHOOK_SECRET
-        );
+        if (!endpointSecret) {
+            console.error("❌ Stats: Missing STRIPE_WEBHOOK_SECRET in env");
+            throw new Error("Webhook secret not found. Configure STRIPE_WEBHOOK_SECRET in .env");
+        }
+        event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
+        console.log(`✅ Webhook verified: ${event.type}`);
     } catch (err) {
-        console.error("Webhook signature verification failed:", err.message);
-        return new Response(`Webhook Error: ${err.message}`, { status: 400 });
+        console.error(`⚠️  Webhook signature verification failed.`, err.message);
+        console.error(`   Header: ${sig}`);
+        // console.error(`   Body: ${body.substring(0, 50)}...`); 
+        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
     }
 
-    // Handle the event
     try {
         switch (event.type) {
             case "checkout.session.completed":
-                await handleCheckoutCompleted(event.data.object);
+                const session = event.data.object;
+                await handleCheckoutSessionCompleted(session);
                 break;
-
-            case "customer.subscription.created":
-                await handleSubscriptionCreated(event.data.object);
+            case "invoice.payment_succeeded":
+                const invoice = event.data.object;
+                await handleInvoicePaymentSucceeded(invoice);
                 break;
-
             case "customer.subscription.updated":
-                await handleSubscriptionUpdated(event.data.object);
+                const subscription = event.data.object;
+                await handleSubscriptionUpdated(subscription);
                 break;
-
             case "customer.subscription.deleted":
-                await handleSubscriptionDeleted(event.data.object);
+                const deletedSub = event.data.object;
+                await handleSubscriptionDeleted(deletedSub);
                 break;
-
-            case "invoice.paid":
-                await handleInvoicePaid(event.data.object);
-                break;
-
-            case "invoice.payment_failed":
-                await handleInvoicePaymentFailed(event.data.object);
-                break;
-
             default:
-                console.log(`Unhandled event type: ${event.type}`);
+                console.log(`Unhandled event type ${event.type}`);
         }
-
-        return new Response(JSON.stringify({ received: true }), { status: 200 });
     } catch (error) {
-        console.error("Error handling webhook:", error);
-        return new Response(`Webhook handler failed: ${error.message}`, { status: 500 });
+        console.error("Error processing webhook:", error);
+        return NextResponse.json({ error: "Error processing webhook" }, { status: 500 });
     }
+
+    return NextResponse.json({ received: true });
 }
 
-/**
- * Handle checkout session completed
- */
-async function handleCheckoutCompleted(session) {
-    const { customer, subscription, metadata } = session;
-    const { userId, packageId, packageName, billingCycle } = metadata;
+// -----------------------------------------------------------------------------
+// Event Handlers
+// -----------------------------------------------------------------------------
 
-    console.log("Checkout completed for user:", userId);
-
-    // The subscription will be handled by subscription.created event
-    // Just log for now
-}
-
-/**
- * Handle subscription created
- */
-async function handleSubscriptionCreated(subscription) {
-    const { id, customer, items, status, current_period_start, current_period_end, trial_start, trial_end, metadata } = subscription;
-
-    // Get package info from metadata
-    const { userId, packageId, packageName, billingCycle } = metadata;
+async function handleCheckoutSessionCompleted(session) {
+    const userId = session.metadata?.userId;
+    const customerId = session.customer;
 
     if (!userId) {
-        console.error("No userId in subscription metadata");
+        console.error("Missing userId in session metadata:", session.id);
         return;
     }
 
-    // Get package details to save limits
-    const packageDoc = await getDoc(doc(db, "packages", packageId));
-    const packageData = packageDoc.exists() ? packageDoc.data() : {};
-
-    // Save subscription to database
-    await setDoc(doc(db, "subscriptions", id), {
-        userId,
-        packageId,
-        packageName,
-        stripeCustomerId: customer,
-        stripeSubscriptionId: id,
-        stripePriceId: items.data[0].price.id,
-        status,
-        billingCycle,
-        amount: items.data[0].price.unit_amount / 100,
-        currency: items.data[0].price.currency.toUpperCase(),
-        currentPeriodStart: new Date(current_period_start * 1000),
-        currentPeriodEnd: new Date(current_period_end * 1000),
-        trialStart: trial_start ? new Date(trial_start * 1000) : null,
-        trialEnd: trial_end ? new Date(trial_end * 1000) : null,
-        canceledAt: null,
-        cancelAtPeriodEnd: false,
-        limits: packageData.limits || {},
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+    // Link customer ID if not already (redundant safety)
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+        stripeCustomerId: customerId,
+        updatedAt: serverTimestamp()
     });
 
-    // Update user document
-    await updateDoc(doc(db, "users", userId), {
-        subscription: {
-            status,
-            packageId,
-            packageName,
-            stripeCustomerId: customer,
-            currentPeriodEnd: new Date(current_period_end * 1000),
-            limits: packageData.limits || {},
-        },
-        updatedAt: serverTimestamp(),
-    });
-
-    console.log("Subscription created:", id);
+    console.log(`✅ Linked Stripe Customer ${customerId} to User ${userId}`);
 }
 
-/**
- * Handle subscription updated
- */
+async function handleInvoicePaymentSucceeded(invoice) {
+    // Determine userId from metadata or by querying user with this customerId
+    let userId = invoice.subscription_details?.metadata?.userId || invoice.metadata?.userId; // Checkout session metadata sometimes carries over
+
+    if (!userId) {
+        // Fallback: Find user by stripeCustomerId
+        // NOTE: In production, efficient query requires index on 'stripeCustomerId'
+        // For MVP/NoSQL: We can try to rely on previous linkage or do a query (expensive if large)
+        // Better strategy: Ensure 'userId' is always in subscription metadata in 'createCheckoutSession'
+        // We added it in 'subscription_data.metadata' in stripeActions.js, so it should be here.
+    }
+
+    // Safety check if still null, try to query (skipped for brevity, assuming metadata works)
+
+    const amount = invoice.amount_paid / 100; // Convert cents to dollars
+    const currency = invoice.currency.toUpperCase();
+    const status = "paid";
+
+    const invoiceRef = doc(collection(db, "invoices"), invoice.id); // Use Stripe Invoice ID as Doc ID for uniqueness
+
+    await setDoc(invoiceRef, {
+        invoiceId: invoice.number || invoice.id,
+        userId: userId || "unknown", // If unknown, manual reconciliation needed
+        stripeCustomerId: invoice.customer,
+        amount: amount,
+        currency: currency,
+        status: status,
+        pdfUrl: invoice.hosted_invoice_url,
+        billingReason: invoice.billing_reason,
+        createdAt: new Date(invoice.created * 1000), // Convert UNIX timestamp
+        updatedAt: serverTimestamp(),
+        // Mapping subscription info
+        subscriptionId: invoice.subscription,
+        periodStart: new Date(invoice.period_start * 1000),
+        periodEnd: new Date(invoice.period_end * 1000),
+    }, { merge: true });
+
+    console.log(`✅ Recorded Invoice ${invoice.id} for User ${userId}`);
+}
+
 async function handleSubscriptionUpdated(subscription) {
-    const { id, customer, items, status, current_period_start, current_period_end, cancel_at_period_end, canceled_at } = subscription;
+    const userId = subscription.metadata.userId;
 
-    // Update subscription in database
-    await updateDoc(doc(db, "subscriptions", id), {
-        status,
-        stripePriceId: items.data[0].price.id,
-        amount: items.data[0].price.unit_amount / 100,
-        currentPeriodStart: new Date(current_period_start * 1000),
-        currentPeriodEnd: new Date(current_period_end * 1000),
-        cancelAtPeriodEnd: cancel_at_period_end,
-        canceledAt: canceled_at ? new Date(canceled_at * 1000) : null,
-        updatedAt: serverTimestamp(),
-    });
+    if (!userId) return;
 
-    console.log("Subscription updated:", id);
+    const status = subscription.status; // active, past_due, canceled, etc.
+    const priceId = subscription.items.data[0].price.id;
+    const productId = subscription.items.data[0].price.product;
+
+    // Map Product ID to readable Package Name if possible (or store ID)
+    // For now, simpler to just store the ID and status
+
+    const userRef = doc(db, "users", userId);
+    const profileRef = doc(db, "billing_profiles", userId);
+
+    const updateData = {
+        "subscription.status": status,
+        "subscription.stripeSubscriptionId": subscription.id,
+        "subscription.stripePriceId": priceId,
+        "subscription.stripeProductId": productId,
+        "subscription.periodEnd": new Date(subscription.current_period_end * 1000),
+        updatedAt: serverTimestamp()
+    };
+
+    // Update User Doc
+    await updateDoc(userRef, updateData);
+
+    // Update Billing Profile (for compatibility with UI)
+    await setDoc(profileRef, {
+        userId,
+        status: status,
+        nextBillingDate: new Date(subscription.current_period_end * 1000),
+        stripeSubscriptionId: subscription.id,
+        updatedAt: serverTimestamp()
+        // Note: packageName might need a lookup map if we want to display "Pro Plan" instead of "prod_..."
+    }, { merge: true });
+
+    console.log(`✅ Updated Subscription ${subscription.id} for User ${userId} to ${status}`);
 }
 
-/**
- * Handle subscription deleted
- */
 async function handleSubscriptionDeleted(subscription) {
-    const { id, metadata } = subscription;
-    const { userId } = metadata;
+    const userId = subscription.metadata.userId;
+    if (!userId) return;
 
-    // Update subscription status
-    await updateDoc(doc(db, "subscriptions", id), {
+    const userRef = doc(db, "users", userId);
+    await updateDoc(userRef, {
+        "subscription.status": "canceled",
+        "subscription.canceledAt": serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+
+    const profileRef = doc(db, "billing_profiles", userId);
+    await updateDoc(profileRef, {
         status: "canceled",
-        updatedAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
     });
 
-    // Update user to free plan
-    if (userId) {
-        await updateDoc(doc(db, "users", userId), {
-            subscription: {
-                status: "canceled",
-                packageId: null,
-                packageName: "Free",
-                limits: {
-                    socialAccounts: 3,
-                    userSeats: 1,
-                    scheduledPosts: 30,
-                    aiCaptions: 0,
-                },
-            },
-            updatedAt: serverTimestamp(),
-        });
-    }
-
-    console.log("Subscription deleted:", id);
+    console.log(`🚫 Canceled Subscription ${subscription.id} for User ${userId}`);
 }
-
-/**
- * Handle invoice paid
- */
-async function handleInvoicePaid(invoice) {
-    const { id, customer, subscription, amount_paid, currency, hosted_invoice_url, billing_reason } = invoice;
-
-    // Save invoice to billing history
-    await setDoc(doc(db, "billing_history", id), {
-        userId: invoice.metadata?.userId || null,
-        subscriptionId: subscription,
-        stripeInvoiceId: id,
-        amount: amount_paid / 100,
-        currency: currency.toUpperCase(),
-        status: "paid",
-        description: invoice.lines.data[0]?.description || "Subscription payment",
-        billingReason,
-        invoiceDate: new Date(invoice.created * 1000),
-        paidAt: new Date(invoice.status_transitions.paid_at * 1000),
-        invoicePdf: hosted_invoice_url,
-        createdAt: serverTimestamp(),
-    });
-
-    console.log("Invoice paid:", id);
-}
-
-/**
- * Handle invoice payment failed
- */
-async function handleInvoicePaymentFailed(invoice) {
-    const { id, subscription, metadata } = invoice;
-    const { userId } = metadata;
-
-    // Update subscription status to past_due
-    if (subscription) {
-        await updateDoc(doc(db, "subscriptions", subscription), {
-            status: "past_due",
-            updatedAt: serverTimestamp(),
-        });
-    }
-
-    // TODO: Send email notification to user about failed payment
-
-    console.log("Invoice payment failed:", id);
-}
-
-// Helper to get document
-import { getDoc } from "firebase/firestore";

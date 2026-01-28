@@ -267,9 +267,15 @@ export default function InvoicesPage() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="ghost" size="sm" asChild className="h-8 text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600">
-                                                    <Link href={`/admin/invoices/${invoice.id}`}>
-                                                        View Invoice
-                                                    </Link>
+                                                    {invoice.pdfUrl ? (
+                                                        <a href={invoice.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                                            View Invoice <ExternalLink className="h-3 w-3" />
+                                                        </a>
+                                                    ) : (
+                                                        <Link href={`/admin/invoices/${invoice.id}`}>
+                                                            View Statement
+                                                        </Link>
+                                                    )}
                                                 </Button>
                                             </TableCell>
                                         </TableRow>

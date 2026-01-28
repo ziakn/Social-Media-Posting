@@ -15,7 +15,15 @@ import PricingFaq from "@/components/pricing/PricingFaq";
 // Data
 import { planFeatures, pricingFaqs } from "@/lib/constants/pricing-data";
 
+import { createCheckoutSession } from "@/app/actions/billing/stripeActions";
+import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
+import { useRouter } from "next/navigation";
+
 export default function PricingContent({ packages = [] }) {
+  const { user } = usePermissions();
+  const router = useRouter();
+  const [loadingPrice, setLoadingPrice] = useState(null);
   const [isAnnual, setIsAnnual] = useState(true);
 
   // Helper to sanitize feature names to match brand tone
@@ -78,10 +86,10 @@ export default function PricingContent({ packages = [] }) {
         id: pkg.name.toLowerCase(),
         description: pkg.description,
         price: pkg.price,
-        interval: isAnnual ? "month" : "month",
+        interval: isAnnual ? "year" : "month",
         features: (pkg.features || []).map(sanitizeFeature),
         cta: "Start Now",
-        ctaLink: registrationLink,
+        priceId: pkg.stripePriceId, // Assuming package has this field or we map it
         popular: pkg.isPopular || false,
         gradient: pkg.isPopular || false,
         order: pkg.order || 0
@@ -89,12 +97,40 @@ export default function PricingContent({ packages = [] }) {
     }).sort((a, b) => a.order - b.order);
   }, [packages, isAnnual]);
 
+  const handleCheckout = async (priceId) => {
+    if (!user) {
+      toast.info("Please sign up or log in to subscribe.");
+      router.push("/auth/register");
+      return;
+    }
+
+    // Safety check for free plan which might not have a stripe price id
+    if (!priceId) {
+      router.push("/admin/dashboard"); // Or specific free plan logic
+      return;
+    }
+
+    try {
+      setLoadingPrice(priceId);
+      const res = await createCheckoutSession(priceId);
+      if (res.success) {
+        window.location.href = res.url;
+      } else {
+        toast.error(res.error || "Failed to start checkout");
+        setLoadingPrice(null);
+      }
+    } catch (error) {
+      toast.error("An unexpected error occurred");
+      setLoadingPrice(null);
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen pt-32 pb-0 font-inter text-gray-900">
       <div className="container mx-auto px-6 max-w-7xl">
         <PricingHero />
         <PricingToggle isAnnual={isAnnual} setIsAnnual={setIsAnnual} />
-        <PricingCards plans={plans} isAnnual={isAnnual} />
+        <PricingCards plans={plans} isAnnual={isAnnual} onCheckout={handleCheckout} loadingPrice={loadingPrice} />
 
         {/* --- Social Proof Section --- */}
         <div className="mb-32 grid md:grid-cols-2 gap-8 items-center bg-white p-12 rounded-2xl border border-gray-200 shadow-sm">

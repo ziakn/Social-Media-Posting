@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getBillingProfile, updateBillingSubscription, cancelBillingSubscription, getLatestInvoice } from "@/app/actions/billing/billingActions";
+import { getBillingProfile, getLatestInvoice } from "@/app/actions/billing/billingActions";
+import { createCheckoutSession, createPortalSession } from "@/app/actions/billing/stripeActions";
+import { syncSubscription } from "@/app/actions/billing/syncActions";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -10,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     Check,
     ArrowRight,
@@ -33,6 +36,9 @@ import {
 
 export default function SubscriptionPage() {
     const { user } = usePermissions();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
     const [profile, setProfile] = useState(null);
     const [latestInvoice, setLatestInvoice] = useState(null);
     const [allPackages, setAllPackages] = useState([]);
@@ -46,9 +52,27 @@ export default function SubscriptionPage() {
 
     useEffect(() => {
         if (user?.id) {
+            checkSuccess();
             fetchData();
         }
-    }, [user]);
+    }, [user, searchParams]);
+
+    const checkSuccess = async () => {
+        if (searchParams.get('success') === 'true') {
+            setLoading(true); // Don't block whole UI, maybe just a toast
+            toast.info("Verifying payment with Stripe...");
+            const res = await syncSubscription();
+            if (res.success) {
+                toast.success("Subscription activated successfully!");
+                // Clear URL param
+                router.replace('/admin/subscription');
+                fetchData(); // Reload data
+            } else {
+                toast.warning("Payment successful, but syncing is delayed. Refresh shortly.");
+            }
+            setLoading(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -71,38 +95,78 @@ export default function SubscriptionPage() {
         }
     };
 
+    // Helper to resolve Price ID from Env based on package name/cycle
+    const getStripePriceId = (pkgName, cycle) => {
+        const name = pkgName?.toLowerCase();
+        const isYearly = cycle === 'yearly';
+
+        if (name.includes('creator') || name.includes('starter')) {
+            return isYearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_CREATOR_YEARLY : process.env.NEXT_PUBLIC_STRIPE_PRICE_CREATOR_MONTHLY;
+        }
+        if (name.includes('professional') || name.includes('pro')) {
+            return isYearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY : process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY;
+        }
+        if (name.includes('agency')) {
+            return isYearly ? process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_YEARLY : process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY_MONTHLY;
+        }
+        // Fallback to specific IDs if set
+        if (name.includes('starter')) return process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_STARTER;
+        if (name.includes('pro')) return process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PRO;
+
+        return null;
+    };
+
     const handleUpdateSubscription = async () => {
-        if (!targetPlan) return;
+        setManagementLoading(true);
         try {
-            setManagementLoading(true);
-            const res = await updateBillingSubscription(user.id, targetPlan, targetPlan.billingCycle || 'monthly');
-            if (res.success) {
-                toast.success(`Subscription updated to ${targetPlan.name}.`);
-                await fetchData();
-                setIsManageModalOpen(false);
+            // Case 1: Switching to Free -> Just cancel in Portal (Redirect)
+            // Case 2: Changing Paid Plan -> Check if we already have a subscription
+            const isSubscribed = profile?.status === 'active' || profile?.status === 'past_due';
+
+            if (isSubscribed) {
+                // Redirect to Portal for upgrades/downgrades/cancellation
+                const res = await createPortalSession();
+                if (res.success) {
+                    window.location.href = res.url;
+                } else {
+                    toast.error(res.error || "Failed to load management portal");
+                }
             } else {
-                throw new Error(res.error);
+                // New Subscription via Checkout
+                const priceId = getStripePriceId(targetPlan.name, targetPlan.billingCycle);
+                if (!priceId) {
+                    toast.error("Configuration Error: Price ID not found for this plan.");
+                    return;
+                }
+
+                const res = await createCheckoutSession(priceId);
+                if (res.success) {
+                    window.location.href = res.url;
+                } else {
+                    toast.error(res.error || "Failed to start checkout");
+                }
             }
         } catch (error) {
-            toast.error("Error: " + error.message);
+            console.error(error);
+            toast.error("An unexpected error occurred");
         } finally {
             setManagementLoading(false);
+            setIsManageModalOpen(false);
         }
     };
 
     const handleCancelSubscription = async () => {
+        // Redirect to Portal
+        setManagementLoading(true);
         try {
-            setManagementLoading(true);
-            const res = await cancelBillingSubscription(user.id);
+            const res = await createPortalSession();
             if (res.success) {
-                toast.success("Subscription cancelled successfully.");
-                await fetchData();
-                setIsManageModalOpen(false);
+                window.location.href = res.url;
             } else {
-                throw new Error(res.error);
+                toast.error(res.error || "Failed to access cancellation portal");
             }
         } catch (error) {
-            toast.error("Cancellation failed: " + error.message);
+            toast.error("Error: " + error.message);
         } finally {
             setManagementLoading(false);
         }

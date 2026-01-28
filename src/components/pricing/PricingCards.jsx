@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default function PricingCards({ plans, isAnnual }) {
+export default function PricingCards({ plans, isAnnual, onCheckout, loadingPrice }) {
     return (
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-8 mb-32">
             {plans.map((plan) => (
@@ -46,21 +46,40 @@ export default function PricingCards({ plans, isAnnual }) {
                         ))}
                     </ul>
 
-                    <Link href="/auth/register" className="mt-auto">
-                        <Button
-                            className={cn(
-                                "w-full font-bold",
-                                plan.popular
-                                    ? "bg-primary hover:bg-primary/90 text-white"
-                                    : "bg-gray-50 hover:bg-gray-100 text-gray-900 border-gray-200"
-                            )}
-                            variant={plan.popular ? "default" : "outline"}
-                        >
-                            {plan.cta}
-                        </Button>
-                    </Link>
+                    {
+                        plan.priceId ? (
+                            <Button
+                                className={cn(
+                                    "w-full font-bold",
+                                    plan.popular
+                                        ? "bg-primary hover:bg-primary/90 text-white"
+                                        : "bg-gray-50 hover:bg-gray-100 text-gray-900 border-gray-200"
+                                )}
+                                variant={plan.popular ? "default" : "outline"}
+                                onClick={() => onCheckout && onCheckout(plan.priceId)}
+                                disabled={loadingPrice === plan.priceId}
+                            >
+                                {loadingPrice === plan.priceId ? "Redirecting..." : plan.cta}
+                            </Button>
+                        ) : (
+                            <Link href="/auth/register" className="mt-auto">
+                                <Button
+                                    className={cn(
+                                        "w-full font-bold",
+                                        plan.popular
+                                            ? "bg-primary hover:bg-primary/90 text-white"
+                                            : "bg-gray-50 hover:bg-gray-100 text-gray-900 border-gray-200"
+                                    )}
+                                    variant={plan.popular ? "default" : "outline"}
+                                >
+                                    {plan.cta}
+                                </Button>
+                            </Link>
+                        )
+                    }
                 </div>
-            ))}
-        </div>
+            ))
+            }
+        </div >
     );
 }
