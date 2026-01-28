@@ -1,278 +1,529 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, Filter, Layers, LayoutList, LayoutGrid, Clock, AlertCircle } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { format, formatDistanceToNow } from "date-fns";
+import { useRouter } from "next/navigation";
+import {
+    Calendar as CalendarIcon, Layers, Clock, Search, Trash2, Edit3, CalendarClock, Loader2, X,
+    Image as ImageIcon, Video, FileText, Eye, Facebook, Instagram
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Spinner } from "@/components/ui/spinner";
+import {
+    Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow
+} from "@/components/ui/table";
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
+import debounce from "lodash/debounce";
 
 // Server Actions
-import { getUnifiedScheduledPosts, getCurrentUser } from "@/app/actions/scheduled/scheduledActions";
+import {
+    getUnifiedScheduledPosts, getCurrentUser, getAllConnectedAccounts,
+    deleteScheduledPost, updateScheduledPostContent, reschedulePost
+} from "@/app/actions/scheduled/scheduledActions";
 
-// Icons for platforms
-import { Facebook, Instagram, Twitter, Linkedin, Video, Pin, MessageCircle, Cloud } from "lucide-react";
+// Custom Brand Icons
+import { TiktokLogo } from "@/components/icons/TiktokLogo";
+import PinterestLogo from "@/components/icons/PinterestLogo";
+import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
+import { BlueSkyLogo } from "@/components/icons/BlueSkyLogo";
+import { XLogo } from "@/components/icons/XLogo";
+import { LinkedinLogo } from "@/components/icons/LinkedinLogo";
 
 export default function ScheduledPage() {
+    const router = useRouter();
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState("list"); // 'list' or 'calendar'
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+    const [accounts, setAccounts] = useState([]);
+
+    // Pagination
+    const [hasMore, setHasMore] = useState(false);
+    const [nextCursor, setNextCursor] = useState(null);
 
     // Filters
     const [date, setDate] = useState();
     const [platform, setPlatform] = useState("all");
-    const [currentUser, setCurrentUser] = useState(null);
+    const [postType, setPostType] = useState("all");
+    const [accountId, setAccountId] = useState("all");
+    const [searchQuery, setSearchQuery] = useState("");
+
+    // Dialogs
+    const [editDialog, setEditDialog] = useState({ open: false, post: null, content: "" });
+    const [rescheduleDialog, setRescheduleDialog] = useState({ open: false, post: null, date: new Date(), time: "12:00" });
+    const [previewDialog, setPreviewDialog] = useState({ open: false, post: null });
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
-        // Fetch current user details to check role
-        async function fetchUser() {
-            try {
-                const user = await getCurrentUser();
-                setCurrentUser(user);
-            } catch (e) {
-                console.error(e);
+        async function init() {
+            const user = await getCurrentUser();
+            setCurrentUser(user);
+            const accountsRes = await getAllConnectedAccounts();
+            if (accountsRes.success) {
+                setAccounts(accountsRes.accounts);
             }
         }
-        fetchUser();
-        fetchPosts();
-    }, [date, platform]);
+        init();
+    }, []);
 
-    async function fetchPosts() {
-        setLoading(true);
+    useEffect(() => {
+        fetchPosts(true);
+    }, [date, platform, postType, accountId]);
+
+    const debouncedSearch = useCallback(
+        debounce(() => {
+            fetchPosts(true);
+        }, 500),
+        [date, platform, postType, accountId]
+    );
+
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value);
+        debouncedSearch();
+    };
+
+    async function fetchPosts(reset = false) {
+        if (reset) {
+            setLoading(true);
+            setPosts([]);
+            setNextCursor(null);
+        } else {
+            setLoadingMore(true);
+        }
+
         try {
             const res = await getUnifiedScheduledPosts({
                 platform,
+                postType,
+                accountId,
+                searchQuery,
                 startDate: date?.from ? date.from.toISOString() : null,
-                endDate: date?.to ? date.to.toISOString() : null
+                endDate: date?.to ? date.to.toISOString() : null,
+                pageSize: 20,
+                cursor: reset ? null : nextCursor
             });
+
             if (res.success) {
-                setPosts(res.posts);
+                if (reset) {
+                    setPosts(res.posts);
+                } else {
+                    setPosts(prev => [...prev, ...res.posts]);
+                }
+                setHasMore(res.hasMore);
+                setNextCursor(res.nextCursor);
             } else {
-                toast.error(res.message);
+                toast.error(res.message || "Failed to load posts");
             }
         } catch (error) {
             toast.error("Failed to load scheduled posts");
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     }
+
+    const handleDelete = async (post) => {
+        toast("Are you sure you want to delete this scheduled post?", {
+            action: {
+                label: "Delete",
+                onClick: async () => {
+                    try {
+                        const res = await deleteScheduledPost(post.id, post.platform);
+                        if (res.success) {
+                            toast.success("Post deleted successfully");
+                            setPosts(posts.filter(p => p.id !== post.id));
+                        } else {
+                            toast.error(res.message);
+                        }
+                    } catch (error) {
+                        toast.error("Failed to delete post");
+                    }
+                },
+            },
+        });
+    };
+
+    const handleEdit = async () => {
+        if (!editDialog.post || !editDialog.content.trim()) return;
+        setActionLoading(true);
+        try {
+            const res = await updateScheduledPostContent(editDialog.post.id, editDialog.post.platform, editDialog.content);
+            if (res.success) {
+                toast.success("Post updated successfully");
+                setPosts(posts.map(p => p.id === editDialog.post.id ? { ...p, caption: editDialog.content } : p));
+                setEditDialog({ open: false, post: null, content: "" });
+            } else {
+                toast.error(res.message);
+            }
+        } catch (error) {
+            toast.error("Failed to update post");
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
+    const handleReschedule = async () => {
+        if (!rescheduleDialog.post) return;
+        setActionLoading(true);
+        try {
+            const newDateTime = new Date(`${format(rescheduleDialog.date, "yyyy-MM-dd")}T${rescheduleDialog.time}`);
+            const res = await reschedulePost(rescheduleDialog.post.id, rescheduleDialog.post.platform, newDateTime.toISOString());
+            if (res.success) {
+                toast.success("Post rescheduled successfully");
+                setPosts(posts.map(p => p.id === rescheduleDialog.post.id ? { ...p, scheduledAt: newDateTime.toISOString() } : p));
+                setRescheduleDialog({ open: false, post: null, date: new Date(), time: "12:00" });
+            } else {
+                toast.error(res.message);
+            }
+        } catch (error) {
+            toast.error("Failed to reschedule post");
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     const PlatformIcon = ({ platform, className }) => {
         switch (platform) {
             case 'facebook': return <Facebook className={className} />;
             case 'instagram': return <Instagram className={className} />;
-            case 'twitter': return <Twitter className={className} />;
-            case 'linkedin': return <Linkedin className={className} />;
-            case 'tiktok': return <Video className={className} />;
-            case 'pinterest': return <Pin className={className} />;
-            case 'threads': return <MessageCircle className={className} />; // Placeholder
-            case 'bluesky': return <Cloud className={className} />; // Placeholder
+            case 'twitter': return <XLogo className={className} />;
+            case 'linkedin': return <LinkedinLogo className={className} />;
+            case 'tiktok': return <TiktokLogo className={className} />;
+            case 'pinterest': return <PinterestLogo className={className} />;
+            case 'threads': return <ThreadsLogo className={className} />;
+            case 'bluesky': return <BlueSkyLogo className={className} />;
             default: return <Layers className={className} />;
         }
     };
 
-    const getPlatformColor = (platform) => {
-        switch (platform) {
-            case 'facebook': return "text-blue-600 bg-blue-50 border-blue-100";
-            case 'instagram': return "text-pink-600 bg-pink-50 border-pink-100";
-            case 'twitter': return "text-sky-500 bg-sky-50 border-sky-100";
-            case 'linkedin': return "text-blue-700 bg-blue-50 border-blue-100";
-            case 'tiktok': return "text-black bg-gray-100 border-gray-200";
-            case 'pinterest': return "text-red-600 bg-red-50 border-red-100";
-            case 'threads': return "text-black bg-gray-100 border-gray-200";
-            case 'bluesky': return "text-blue-500 bg-blue-50 border-blue-100";
-            default: return "text-gray-600 bg-gray-50 border-gray-100";
-        }
+    const getPlatformBadge = (platform) => {
+        const colorMap = {
+            'facebook': "bg-blue-100 text-blue-700 border-blue-200",
+            'instagram': "bg-pink-100 text-pink-700 border-pink-200",
+            'twitter': "bg-sky-100 text-sky-700 border-sky-200",
+            'linkedin': "bg-blue-100 text-blue-800 border-blue-200",
+            'tiktok': "bg-slate-100 text-slate-700 border-slate-200",
+            'pinterest': "bg-red-100 text-red-700 border-red-200",
+            'threads': "bg-slate-100 text-slate-700 border-slate-200",
+            'bluesky': "bg-sky-100 text-sky-600 border-sky-200",
+        };
+        const color = colorMap[platform] || "bg-slate-100 text-slate-700 border-slate-200";
+
+        return (
+            <span className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-black uppercase tracking-wider w-fit flex items-center gap-1 ${color}`}>
+                <PlatformIcon platform={platform} className="h-3 w-3" />
+                {platform}
+            </span>
+        );
     };
 
+    const getPostTypeBadge = (type) => {
+        const colorMap = {
+            'video': "bg-purple-100 text-purple-700 border-purple-200",
+            'image': "bg-green-100 text-green-700 border-green-200",
+            'text': "bg-slate-100 text-slate-700 border-slate-200",
+        };
+        const color = colorMap[type] || colorMap['text'];
+        const icons = {
+            'video': <Video className="h-3 w-3" />,
+            'image': <ImageIcon className="h-3 w-3" />,
+            'text': <FileText className="h-3 w-3" />,
+        };
+
+        return (
+            <span className={`px-2 py-0.5 rounded-[4px] border text-[10px] font-black uppercase tracking-wider w-fit flex items-center gap-1 ${color}`}>
+                {icons[type] || icons['text']}
+                {type}
+            </span>
+        );
+    };
+
+    if (loading) return <Spinner />;
+
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h1 className="text-3xl font-black tracking-tight text-gray-900">Scheduled Posts</h1>
-                    <p className="text-gray-500 font-medium mt-1">Manage upcoming content across all channels.</p>
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                    <Select value={platform} onValueChange={setPlatform}>
-                        <SelectTrigger className="w-[180px] h-11 bg-white border-gray-200 rounded-xl font-medium">
-                            <SelectValue placeholder="All Platforms" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Platforms</SelectItem>
-                            <SelectItem value="facebook">Facebook</SelectItem>
-                            <SelectItem value="instagram">Instagram</SelectItem>
-                            <SelectItem value="twitter">X (Twitter)</SelectItem>
-                            <SelectItem value="linkedin">LinkedIn</SelectItem>
-                            <SelectItem value="tiktok">TikTok</SelectItem>
-                            <SelectItem value="pinterest">Pinterest</SelectItem>
-                            <SelectItem value="threads">Threads</SelectItem>
-                            <SelectItem value="bluesky">Bluesky</SelectItem>
-                        </SelectContent>
-                    </Select>
-
-                    <Popover>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("h-11 px-4 justify-start text-left font-normal rounded-xl border-gray-200 bg-white", !date && "text-muted-foreground")}>
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {date?.from ? (
-                                    date.to ? (
-                                        <>
-                                            {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
-                                        </>
-                                    ) : (
-                                        format(date.from, "LLL dd, y")
-                                    )
-                                ) : (
-                                    <span>Date Range</span>
-                                )}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 rounded-2xl" align="end">
-                            <Calendar
-                                initialFocus
-                                mode="range"
-                                defaultMonth={date?.from}
-                                selected={date}
-                                onSelect={setDate}
-                                numberOfMonths={2}
-                                className="p-4"
+        <div className="p-6">
+            <Card className="shadow-sm">
+                <CardHeader className="flex flex-row justify-between items-center">
+                    <CardTitle className="text-xl font-semibold">Scheduled Posts</CardTitle>
+                    <div className="flex items-center gap-3">
+                        {/* Search */}
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                            <Input
+                                placeholder="Search..."
+                                value={searchQuery}
+                                onChange={handleSearchChange}
+                                className="pl-9 h-9 w-48"
                             />
-                        </PopoverContent>
-                    </Popover>
+                        </div>
 
-                    <div className="bg-white border border-gray-200 rounded-xl p-1 flex">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setViewMode("list")}
-                            className={cn("h-9 rounded-lg px-3 transition-all", viewMode === "list" ? "bg-gray-100 text-black shadow-sm" : "text-gray-500 hover:text-black")}
-                        >
-                            <LayoutList className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setViewMode("calendar")}
-                            className={cn("h-9 rounded-lg px-3 transition-all", viewMode === "calendar" ? "bg-gray-100 text-black shadow-sm" : "text-gray-500 hover:text-black")}
-                        >
-                            <LayoutGrid className="h-4 w-4" />
-                        </Button>
+                        {/* Platform Filter */}
+                        <Select value={platform} onValueChange={setPlatform}>
+                            <SelectTrigger className="w-[130px] h-9">
+                                <SelectValue placeholder="Platform" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Platforms</SelectItem>
+                                <SelectItem value="facebook">Facebook</SelectItem>
+                                <SelectItem value="instagram">Instagram</SelectItem>
+                                <SelectItem value="twitter">Twitter</SelectItem>
+                                <SelectItem value="linkedin">LinkedIn</SelectItem>
+                                <SelectItem value="tiktok">TikTok</SelectItem>
+                                <SelectItem value="pinterest">Pinterest</SelectItem>
+                                <SelectItem value="threads">Threads</SelectItem>
+                                <SelectItem value="bluesky">Bluesky</SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        {/* Post Type Filter */}
+                        <Select value={postType} onValueChange={setPostType}>
+                            <SelectTrigger className="w-[100px] h-9">
+                                <SelectValue placeholder="Type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Types</SelectItem>
+                                <SelectItem value="text">Text</SelectItem>
+                                <SelectItem value="image">Image</SelectItem>
+                                <SelectItem value="video">Video</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
-                </div>
-            </div>
-
-            {/* Content */}
-            <div className="min-h-[400px]">
-                {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <Skeleton key={i} className="h-64 rounded-2xl" />
-                        ))}
-                    </div>
-                ) : posts.length === 0 ? (
-                    <Card className="border-dashed border-2 bg-gray-50/50">
-                        <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-                                <Layers className="h-8 w-8 text-gray-300" />
-                            </div>
-                            <h3 className="text-lg font-bold text-gray-900">No scheduled posts found</h3>
-                            <p className="text-gray-500 mt-1 max-w-sm">
-                                There are no content scheduled for the selected filters. Change your filters or schedule new posts.
-                            </p>
-                        </CardContent>
-                    </Card>
-                ) : viewMode === "list" ? (
-                    <div className="space-y-4">
-                        {posts.map((post) => (
-                            <Card key={`${post.platform}-${post.id}`} className="group hover:shadow-md transition-all duration-300 border-gray-100 overflow-hidden">
-                                <div className="flex flex-col md:flex-row gap-6 p-6">
-                                    {/* Media Preview */}
-                                    <div className="w-full md:w-48 aspect-video md:aspect-square shrink-0 rounded-xl bg-gray-100 overflow-hidden relative">
-                                        {post.media && post.media.length > 0 ? (
-                                            post.media[0].type?.startsWith('video') ? (
-                                                <div className="w-full h-full flex items-center justify-center bg-black/5">
-                                                    <Video className="h-8 w-8 text-gray-400" />
-                                                </div>
-                                            ) : (
-                                                <img
-                                                    src={post.media[0].url}
-                                                    alt="Preview"
-                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                                    onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-50 text-gray-400"><ImageIcon class="h-6 w-6" /></div>'; }}
-                                                />
-                                            )
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-400 font-medium text-xs p-4 text-center">
-                                                No Media
-                                            </div>
-                                        )}
-                                        <div className={cn("absolute top-3 left-3 p-2 rounded-lg shadow-sm border backdrop-blur-md", getPlatformColor(post.platform))}>
-                                            <PlatformIcon platform={post.platform} className="h-4 w-4" />
-                                        </div>
-                                    </div>
-
-                                    {/* Content Info */}
-                                    <div className="flex-1 min-w-0 flex flex-col">
-                                        <div className="flex items-start justify-between gap-4 mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <Badge variant="secondary" className="bg-orange-50 text-orange-600 hover:bg-orange-100 border-orange-100">
-                                                    <Clock className="h-3 w-3 mr-1.5" />
-                                                    {format(new Date(post.scheduledAt), "MMM d, yyyy • h:mm a")}
-                                                </Badge>
-                                                {/* Author for Admins */}
-                                                {post.author && (
-                                                    <div className="flex items-center gap-2 text-xs font-medium text-gray-500 bg-gray-50 px-2 py-1 rounded-full border border-gray-100">
-                                                        <Avatar className="h-4 w-4">
-                                                            <AvatarImage src={post.author.avatar} />
-                                                            <AvatarFallback className="text-[9px]">{post.author.name?.charAt(0)}</AvatarFallback>
+                </CardHeader>
+                <CardContent>
+                    {posts.length === 0 ? (
+                        <div className="text-center py-16 text-gray-500">
+                            <p className="mb-4">No scheduled posts found.</p>
+                        </div>
+                    ) : (
+                        <>
+                            <Table>
+                                <TableCaption>A list of all scheduled posts across platforms.</TableCaption>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Platform</TableHead>
+                                        <TableHead>Account</TableHead>
+                                        <TableHead>Content</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Scheduled</TableHead>
+                                        {currentUser?.role === 'Administrator' && <TableHead>Author</TableHead>}
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {posts.map((post) => (
+                                        <TableRow key={`${post.platform}-${post.id}`} className="hover:bg-gray-50">
+                                            <TableCell>
+                                                {getPlatformBadge(post.platform)}
+                                            </TableCell>
+                                            <TableCell>
+                                                {post.account ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="h-6 w-6">
+                                                            <AvatarImage src={post.account.profilePicture} />
+                                                            <AvatarFallback className="text-[9px]">{post.account.name?.[0]}</AvatarFallback>
                                                         </Avatar>
-                                                        <span className="truncate max-w-[150px]">{post.author.name}</span>
+                                                        <span className="text-sm font-medium truncate max-w-[120px]">{post.account.name}</span>
                                                     </div>
+                                                ) : (
+                                                    <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">—</span>
                                                 )}
-                                            </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <p className="text-sm text-gray-700 line-clamp-1 max-w-[200px]">
+                                                    {post.caption || <span className="text-gray-400 italic">No caption</span>}
+                                                </p>
+                                            </TableCell>
+                                            <TableCell>
+                                                {getPostTypeBadge(post.postType)}
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-medium">{format(new Date(post.scheduledAt), "MMM d, h:mm a")}</span>
+                                                    <span className="text-[10px] text-gray-400">{formatDistanceToNow(new Date(post.scheduledAt), { addSuffix: true })}</span>
+                                                </div>
+                                            </TableCell>
+                                            {currentUser?.role === 'Administrator' && (
+                                                <TableCell>
+                                                    {post.author ? (
+                                                        <span className="text-sm">{post.author.name}</span>
+                                                    ) : (
+                                                        <span className="text-gray-400">—</span>
+                                                    )}
+                                                </TableCell>
+                                            )}
+                                            <TableCell className="text-right space-x-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => {
+                                                        const postDate = new Date(post.scheduledAt);
+                                                        setRescheduleDialog({
+                                                            open: true,
+                                                            post,
+                                                            date: postDate,
+                                                            time: format(postDate, "HH:mm")
+                                                        });
+                                                    }}
+                                                >
+                                                    Reschedule
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="destructive"
+                                                    onClick={() => handleDelete(post)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
 
-                                        </div>
+                            {/* Load More */}
+                            {hasMore && (
+                                <div className="flex justify-center pt-6">
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => fetchPosts(false)}
+                                        disabled={loadingMore}
+                                    >
+                                        {loadingMore ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                                        Load More
+                                    </Button>
+                                </div>
+                            )}
+                        </>
+                    )}
+                </CardContent>
+            </Card>
 
-                                        <p className="text-gray-900 font-medium text-sm leading-relaxed line-clamp-2 md:line-clamp-3 mb-4 flex-1">
-                                            {post.caption || <span className="text-gray-400 italic">No caption text...</span>}
-                                        </p>
+            {/* Edit Dialog */}
+            <Dialog open={editDialog.open} onOpenChange={(open) => setEditDialog({ open, post: null, content: "" })}>
+                <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Edit Post Content</DialogTitle>
+                        <DialogDescription>Update the caption or message for this scheduled post.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 block">Content</Label>
+                        <Textarea
+                            value={editDialog.content}
+                            onChange={(e) => setEditDialog(prev => ({ ...prev, content: e.target.value }))}
+                            placeholder="Enter your content..."
+                            className="min-h-[120px]"
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditDialog({ open: false, post: null, content: "" })}>Cancel</Button>
+                        <Button onClick={handleEdit} disabled={actionLoading || !editDialog.content.trim()}>
+                            {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                                                <span className="capitalize font-semibold">{post.platform}</span>
-                                                <span>•</span>
-                                                <span>ID: {post.id?.substring(0, 8)}...</span>
-                                            </div>
+            {/* Reschedule Dialog */}
+            <Dialog open={rescheduleDialog.open} onOpenChange={(open) => setRescheduleDialog({ open, post: null, date: new Date(), time: "12:00" })}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Reschedule Post</DialogTitle>
+                        <DialogDescription>Choose a new date and time for this post.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div>
+                            <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 block">Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {format(rescheduleDialog.date, "PPP")}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={rescheduleDialog.date}
+                                        onSelect={(date) => setRescheduleDialog(prev => ({ ...prev, date: date || new Date() }))}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                        <div>
+                            <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 block">Time</Label>
+                            <Input
+                                type="time"
+                                value={rescheduleDialog.time}
+                                onChange={(e) => setRescheduleDialog(prev => ({ ...prev, time: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRescheduleDialog({ open: false, post: null, date: new Date(), time: "12:00" })}>Cancel</Button>
+                        <Button onClick={handleReschedule} disabled={actionLoading}>
+                            {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reschedule"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Preview Dialog */}
+            <Dialog open={previewDialog.open} onOpenChange={(open) => setPreviewDialog({ open, post: null })}>
+                <DialogContent className="max-w-2xl">
+                    {previewDialog.post && (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle className="capitalize flex items-center gap-2">
+                                    <PlatformIcon platform={previewDialog.post.platform} className="h-5 w-5" />
+                                    {previewDialog.post.platform} Post
+                                </DialogTitle>
+                                <DialogDescription>
+                                    Scheduled for {format(new Date(previewDialog.post.scheduledAt), "MMMM d, yyyy 'at' h:mm a")}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="py-4 space-y-4">
+                                {previewDialog.post.account && (
+                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarImage src={previewDialog.post.account.profilePicture} />
+                                            <AvatarFallback>{previewDialog.post.account.name?.[0]}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <div className="font-semibold">{previewDialog.post.account.name}</div>
+                                            {previewDialog.post.account.username && (
+                                                <div className="text-sm text-gray-500">@{previewDialog.post.account.username}</div>
+                                            )}
                                         </div>
                                     </div>
+                                )}
+                                {previewDialog.post.media && previewDialog.post.media.length > 0 && (
+                                    <div className="rounded-lg overflow-hidden bg-gray-100">
+                                        <img src={previewDialog.post.media[0].url} alt="" className="w-full max-h-[300px] object-contain" />
+                                    </div>
+                                )}
+                                <div className="p-4 bg-gray-50 rounded-lg">
+                                    <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 block">Content</Label>
+                                    <p className="text-gray-700 whitespace-pre-wrap">{previewDialog.post.caption || "No caption"}</p>
                                 </div>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
-                        <AlertCircle className="h-10 w-10 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-gray-900">Calendar view coming soon</h3>
-                        <p className="text-gray-500 mt-2">We are currently implementing the unified calendar view. Please use the list view for now.</p>
-                        <Button
-                            variant="outline"
-                            className="mt-6"
-                            onClick={() => setViewMode("list")}
-                        >
-                            Switch to List View
-                        </Button>
-                    </div>
-                )}
-            </div>
+                            </div>
+                        </>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
