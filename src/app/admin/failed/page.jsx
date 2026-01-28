@@ -3,25 +3,31 @@
 import { useState, useEffect, useCallback } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import {
-    Search, Trash2, RefreshCw, Loader2, AlertTriangle, Layers,
-    Image as ImageIcon, Video, FileText, Facebook, Instagram
+    Search, Trash2, RefreshCw, Loader2, AlertTriangle, Layers, CalendarClock,
+    Image as ImageIcon, Video, FileText, Facebook, Instagram, Calendar as CalendarIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import {
     Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow
 } from "@/components/ui/table";
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import debounce from "lodash/debounce";
 
 // Server Actions
 import { getCurrentUser } from "@/app/actions/scheduled/scheduledActions";
-import { getFailedPosts, retryFailedPost, deleteFailedPost } from "@/app/actions/failed/failedActions";
+import { getFailedPosts, rescheduleFailedPost, deleteFailedPost } from "@/app/actions/failed/failedActions";
 
 // Custom Brand Icons
 import { TiktokLogo } from "@/components/icons/TiktokLogo";
@@ -38,6 +44,7 @@ export default function FailedPage() {
     const [platform, setPlatform] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [actionLoading, setActionLoading] = useState({});
+    const [rescheduleDialog, setRescheduleDialog] = useState({ open: false, post: null, date: new Date(), time: "12:00" });
 
     useEffect(() => {
         async function init() {
@@ -83,20 +90,23 @@ export default function FailedPage() {
         }
     }
 
-    const handleRetry = async (post) => {
-        setActionLoading(prev => ({ ...prev, [post.id]: 'retry' }));
+    const handleReschedule = async () => {
+        if (!rescheduleDialog.post) return;
+        setActionLoading(prev => ({ ...prev, [rescheduleDialog.post.id]: 'reschedule' }));
         try {
-            const res = await retryFailedPost(post.id, post.platform);
+            const newDateTime = new Date(`${format(rescheduleDialog.date, "yyyy-MM-dd")}T${rescheduleDialog.time}`);
+            const res = await rescheduleFailedPost(rescheduleDialog.post.id, rescheduleDialog.post.platform, newDateTime.toISOString());
             if (res.success) {
-                toast.success("Post scheduled for retry in 5 minutes");
-                setPosts(posts.filter(p => p.id !== post.id));
+                toast.success("Post rescheduled successfully");
+                setPosts(posts.filter(p => p.id !== rescheduleDialog.post.id));
+                setRescheduleDialog({ open: false, post: null, date: new Date(), time: "12:00" });
             } else {
                 toast.error(res.message);
             }
         } catch (error) {
-            toast.error("Failed to retry post");
+            toast.error("Failed to reschedule post");
         } finally {
-            setActionLoading(prev => ({ ...prev, [post.id]: null }));
+            setActionLoading(prev => ({ ...prev, [rescheduleDialog.post.id]: null }));
         }
     };
 
@@ -303,16 +313,24 @@ export default function FailedPage() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                onClick={() => handleRetry(post)}
-                                                disabled={actionLoading[post.id] === 'retry'}
+                                                onClick={() => {
+                                                    const postDate = post.failedAt ? new Date(post.failedAt) : new Date();
+                                                    setRescheduleDialog({
+                                                        open: true,
+                                                        post,
+                                                        date: postDate,
+                                                        time: "12:00"
+                                                    });
+                                                }}
+                                                disabled={actionLoading[post.id] === 'reschedule'}
                                                 className="gap-1"
                                             >
-                                                {actionLoading[post.id] === 'retry' ? (
+                                                {actionLoading[post.id] === 'reschedule' ? (
                                                     <Loader2 className="h-3 w-3 animate-spin" />
                                                 ) : (
-                                                    <RefreshCw className="h-3 w-3" />
+                                                    <CalendarClock className="h-3 w-3" />
                                                 )}
-                                                Retry
+                                                Reschedule
                                             </Button>
                                             <Button
                                                 size="sm"
@@ -334,6 +352,51 @@ export default function FailedPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Reschedule Dialog */}
+            <Dialog open={rescheduleDialog.open} onOpenChange={(open) => setRescheduleDialog({ open, post: null, date: new Date(), time: "12:00" })}>
+                <DialogContent className="max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Reschedule Failed Post</DialogTitle>
+                        <DialogDescription>Choose a new date and time to retry publishing this post.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div>
+                            <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 block">Date</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {format(rescheduleDialog.date, "PPP")}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                        mode="single"
+                                        selected={rescheduleDialog.date}
+                                        onSelect={(date) => setRescheduleDialog(prev => ({ ...prev, date: date || new Date() }))}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                        <div>
+                            <Label className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2 block">Time</Label>
+                            <Input
+                                type="time"
+                                value={rescheduleDialog.time}
+                                onChange={(e) => setRescheduleDialog(prev => ({ ...prev, time: e.target.value }))}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setRescheduleDialog({ open: false, post: null, date: new Date(), time: "12:00" })}>Cancel</Button>
+                        <Button onClick={handleReschedule} disabled={actionLoading[rescheduleDialog.post?.id] === 'reschedule'}>
+                            {actionLoading[rescheduleDialog.post?.id] === 'reschedule' ? <Loader2 className="h-4 w-4 animate-spin" /> : "Reschedule"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -140,13 +140,20 @@ export async function getFailedPosts({
 }
 
 /**
- * Retry a failed post - resets status to scheduled
+ * Reschedule a failed post - resets status to scheduled with a specific time
  */
-export async function retryFailedPost(postId, platform, newScheduledAt = null) {
+export async function rescheduleFailedPost(postId, platform, newScheduledAt) {
     try {
         const user = await verifyToken();
         if (!user) {
             return { success: false, message: "Unauthorized" };
+        }
+
+        // Validate that the new date is in the future
+        const newDate = new Date(newScheduledAt);
+        const now = new Date();
+        if (newDate <= now) {
+            return { success: false, message: "Scheduled time must be in the future" };
         }
 
         const collectionName = `${platform}_posts`;
@@ -163,21 +170,18 @@ export async function retryFailedPost(postId, platform, newScheduledAt = null) {
             return { success: false, message: "Access denied" };
         }
 
-        // Set scheduled time to provided time or 5 minutes from now
-        const scheduledAt = newScheduledAt ? new Date(newScheduledAt) : new Date(Date.now() + 5 * 60 * 1000);
-
         await updateDoc(postRef, {
             status: "scheduled",
-            scheduledAt,
+            scheduledAt: newDate,
             errorMessage: null,
             failedAt: null,
             retryCount: (postData.retryCount || 0) + 1,
             updatedAt: serverTimestamp()
         });
 
-        return { success: true, message: "Post scheduled for retry" };
+        return { success: true, message: "Post rescheduled successfully" };
     } catch (error) {
-        console.error("Error retrying failed post:", error);
+        console.error("Error rescheduling failed post:", error);
         return { success: false, message: error.message };
     }
 }
