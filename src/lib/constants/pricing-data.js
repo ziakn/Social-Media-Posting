@@ -25,10 +25,10 @@ export const getPlans = (isAnnual) => [
         features: [
             "10 Social Accounts",
             "1 Team Member",
-            "Unlimited Monthly Posts",
+            "100 Monthly Posts",
             "Advanced Analytics",
             "High-Quality Media",
-            "AI Caption Tools (50/mo)",
+            "Priority Support",
         ],
         cta: "Start Now",
         popular: true,
@@ -43,10 +43,9 @@ export const getPlans = (isAnnual) => [
         features: [
             "25 Social Accounts",
             "3 Team Members",
-            "Unlimited Monthly Posts",
+            "300 Monthly Posts",
             "Team Approval Workflow",
             "Compare Your Progress",
-            "AI Caption Tools (Unlimited)",
             "Priority Support",
         ],
         cta: "Start Now",
@@ -62,7 +61,7 @@ export const getPlans = (isAnnual) => [
         features: [
             "50 Social Accounts",
             "10 Team Members",
-            "Unlimited Monthly Posts",
+            "1000 Monthly Posts",
             "Client Approval Systems",
             "Custom Branded Reports",
             "Dedicated Account Manager",
@@ -79,7 +78,7 @@ export const planFeatures = [
         category: "Scheduling & Publishing",
         features: [
             { name: "Social Profiles", free: "3", creator: "10", pro: "25", agency: "50+" },
-            { name: "Monthly Posts", free: "30", creator: "Unlimited", pro: "Unlimited", agency: "Unlimited" },
+            { name: "Monthly Posts", free: "30", creator: "100", pro: "300", agency: "1000" },
             { name: "Post Tailoring", free: true, creator: true, pro: true, agency: true },
             { name: "First Comment", free: false, creator: true, pro: true, agency: true },
             { name: "Best Time to Post", free: false, creator: true, pro: true, agency: true },
