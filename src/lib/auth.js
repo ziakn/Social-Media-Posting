@@ -5,10 +5,10 @@ import { cookies } from "next/headers";
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 // Create JWT token
-export async function createToken(payload) {
+export async function createToken(payload, expiresIn = '24h') {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('24h')
+    .setExpirationTime(expiresIn)
     .setIssuedAt()
     .sign(JWT_SECRET);
 }
