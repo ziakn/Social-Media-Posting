@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Mail, Lock, Eye, EyeOff, Github, Chrome } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { API_ROUTES } from "@/constants/api";
 import { ROUTES } from "@/constants/routes";
 import AuthLayout from "@/components/auth/AuthLayout";
@@ -127,23 +127,7 @@ function LoginForm() {
         </Button>
       </form>
 
-      <div className="relative py-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-100" />
-        </div>
-        <div className="relative flex justify-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
-          <span className="bg-white px-4 font-plus-jakarta">Native Integration</span>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33] transition-all">
-          <Chrome className="h-4 w-4 text-[#3B82F6]" /> Google
-        </Button>
-        <Button variant="outline" className="h-12 rounded-[6px] border-slate-200 font-black text-[10px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33] transition-all">
-          <Github className="h-4 w-4" /> GitHub
-        </Button>
-      </div>
 
       <div className="pt-6 text-center">
         <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, User, Mail, Lock, Building2, Globe, Chrome, Github, Check, ChevronDown } from "lucide-react";
+import { Loader2, User, Mail, Lock, Building2, Globe, Check, ChevronDown } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { ROUTES } from "@/constants/routes";
 import { registerUserAction } from "@/app/actions/website/register/registerActions";
@@ -428,23 +428,7 @@ function RegisterForm() {
         </Button>
       </form>
 
-      <div className="relative py-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-100" />
-        </div>
-        <div className="relative flex justify-center text-[9px] font-black uppercase tracking-[0.2em] text-slate-300">
-          <span className="bg-white px-4 font-plus-jakarta">Native Integration</span>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Button variant="outline" className="h-11 rounded-[6px] border-slate-200 font-black text-[9px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
-          <Chrome className="h-3 w-3 text-[#3B82F6]" /> Google
-        </Button>
-        <Button variant="outline" className="h-11 rounded-[6px] border-slate-200 font-black text-[9px] uppercase tracking-widest gap-2 hover:bg-slate-50 text-[#0C1B33]">
-          <Github className="h-3 w-3" /> GitHub
-        </Button>
-      </div>
 
       <div className="pt-6 text-center">
         <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
