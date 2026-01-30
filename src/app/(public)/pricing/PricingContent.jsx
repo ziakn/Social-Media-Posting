@@ -26,38 +26,6 @@ export default function PricingContent({ packages = [] }) {
   const [loadingPrice, setLoadingPrice] = useState(null);
   const [isAnnual, setIsAnnual] = useState(true);
 
-  // Helper to sanitize feature names to match brand tone
-  const sanitizeFeature = (feature) => {
-    const mappings = {
-      "User Seat": "Team Member",
-      "User Seats": "Team Members",
-      "White-label Reports": "Custom Branded Reports",
-      "SLA Support": "Priority Support",
-      "ROI Tracking": "Performance Insights",
-      "Engagement Metrics": "Performance Insights",
-      "PDF Exports": "Downloadable Reports",
-      "720p Image Uploads": "Standard-Quality Media",
-      "1080p Image & Video": "High-Quality Media",
-      "Competitor Analysis": "Compare Your Progress",
-      "Client Approval Portals": "Client Approval Systems",
-      "Client Portal": "Client Systems"
-    };
-
-    // Try to match or replace parts of the string
-    let sanitized = feature;
-    Object.entries(mappings).forEach(([key, value]) => {
-      const regex = new RegExp(`\\b${key}\\b`, 'gi');
-      sanitized = sanitized.replace(regex, value);
-    });
-
-    // Special case for "1 User Seats" -> "1 Team Member"
-    if (sanitized.includes("1 Team Members")) {
-      sanitized = sanitized.replace("1 Team Members", "1 Team Member");
-    }
-
-    return sanitized;
-  };
-
   // Transform database packages into the format expected by PricingCards
   const plans = useMemo(() => {
     if (!packages || packages.length === 0) return [];
@@ -87,7 +55,7 @@ export default function PricingContent({ packages = [] }) {
         description: pkg.description,
         price: pkg.price,
         interval: isAnnual ? "year" : "month",
-        features: (pkg.features || []).map(sanitizeFeature),
+        features: (pkg.features || []),
         cta: "Start Now",
         priceId: pkg.stripePriceId, // Assuming package has this field or we map it
         popular: pkg.isPopular || false,

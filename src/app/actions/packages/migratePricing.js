@@ -22,10 +22,10 @@ export async function migratePricingData() {
             isPopular: false,
             features: [
                 "3 Social Accounts",
-                "1 User Seat",
+                "1 Team Member",
                 "30 Scheduled Posts / mo",
                 "Basic Analytics",
-                "720p Image Uploads"
+                "Centralize Gallery (Video, images)"
             ],
             limits: {
                 socialAccounts: 3,
@@ -49,10 +49,13 @@ export async function migratePricingData() {
             isPopular: true,
             features: [
                 "10 Social Accounts",
-                "1 User Seat",
+                "1 Team Member",
                 "Unlimited Scheduled Posts",
-                "Advanced Analytics",
-                "1080p Image & Video",
+                "Basic Analytics",
+                "Centralize Gallery (Video, images)",
+                "Advanced Scheduling Calendar",
+                "Automatic Failed Post Recovery & Rescheduling",
+                "Invoices & Billing History",
                 "AI Caption Generator (50/mo)"
             ],
             limits: {
@@ -77,10 +80,13 @@ export async function migratePricingData() {
             isPopular: true,
             features: [
                 "10 Social Accounts",
-                "1 User Seat",
+                "1 Team Member",
                 "Unlimited Scheduled Posts",
-                "Advanced Analytics",
-                "1080p Image & Video",
+                "Basic Analytics",
+                "Centralize Gallery (Video, images)",
+                "Advanced Scheduling Calendar",
+                "Automatic Failed Post Recovery & Rescheduling",
+                "Invoices & Billing History",
                 "AI Caption Generator (50/mo)"
             ],
             limits: {
@@ -105,10 +111,13 @@ export async function migratePricingData() {
             isPopular: false,
             features: [
                 "25 Social Accounts",
-                "3 User Seats",
+                "3 Team Members",
                 "Unlimited Scheduled Posts",
-                "Team Approval Workflow",
-                "Competitor Analysis",
+                "Advanced Analytics",
+                "Centralize Gallery (Video, images)",
+                "Advanced Scheduling Calendar",
+                "Automatic Failed Post Recovery & Rescheduling",
+                "Invoices & Billing History",
                 "AI Caption Generator (Unlimited)",
                 "Priority Email Support"
             ],
@@ -134,10 +143,13 @@ export async function migratePricingData() {
             isPopular: false,
             features: [
                 "25 Social Accounts",
-                "3 User Seats",
+                "3 Team Members",
                 "Unlimited Scheduled Posts",
-                "Team Approval Workflow",
-                "Competitor Analysis",
+                "Advanced Analytics",
+                "Centralize Gallery (Video, images)",
+                "Advanced Scheduling Calendar",
+                "Automatic Failed Post Recovery & Rescheduling",
+                "Invoices & Billing History",
                 "AI Caption Generator (Unlimited)",
                 "Priority Email Support"
             ],
@@ -163,11 +175,13 @@ export async function migratePricingData() {
             isPopular: false,
             features: [
                 "50 Social Accounts",
-                "10 User Seats",
+                "10 Team Members",
                 "Unlimited Scheduled Posts",
-                "Client Approval Portals",
-                "White-label Reports",
-                "Dedicated Account Manager",
+                "Advanced Analytics",
+                "Centralize Gallery (Video, images)",
+                "Advanced Scheduling Calendar",
+                "Automatic Failed Post Recovery & Rescheduling",
+                "Invoices & Billing History",
                 "SLA Support"
             ],
             limits: {
@@ -192,11 +206,13 @@ export async function migratePricingData() {
             isPopular: false,
             features: [
                 "50 Social Accounts",
-                "10 User Seats",
+                "10 Team Members",
                 "Unlimited Scheduled Posts",
-                "Client Approval Portals",
-                "White-label Reports",
-                "Dedicated Account Manager",
+                "Advanced Analytics",
+                "Centralize Gallery (Video, images)",
+                "Advanced Scheduling Calendar",
+                "Automatic Failed Post Recovery & Rescheduling",
+                "Invoices & Billing History",
                 "SLA Support"
             ],
             limits: {

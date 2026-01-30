@@ -19,6 +19,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 import { toast } from "sonner";
 import { getPackages, deletePackage } from "@/app/actions/packages/packagesActions";
+import { cleanupPackageFeatures } from "@/app/actions/packages/cleanupPackages";
 import { Badge } from "@/components/ui/badge";
 
 export default function PackagesList() {
@@ -75,12 +76,35 @@ export default function PackagesList() {
                 <CardHeader className="flex justify-between items-center">
                     <CardTitle className="text-xl font-semibold">Pricing Packages</CardTitle>
                     {hasPermission('create_packages') &&
-                        <Button
-                            variant="secondary"
-                            onClick={() => router.push("/admin/packages/create")}
-                        >
-                            + Add Package
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={async () => {
+                                    const confirm = window.confirm("This will remove all unwanted features from existing packages in the database. Proceed?");
+                                    if (confirm) {
+                                        try {
+                                            const res = await cleanupPackageFeatures();
+                                            if (res.success) {
+                                                toast.success(res.message);
+                                                fetchPackages();
+                                            } else {
+                                                toast.error(res.error);
+                                            }
+                                        } catch (error) {
+                                            toast.error("Cleanup failed");
+                                        }
+                                    }
+                                }}
+                            >
+                                Cleanup Features
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                onClick={() => router.push("/admin/packages/create")}
+                            >
+                                + Add Package
+                            </Button>
+                        </div>
                     }
                 </CardHeader>
                 <CardContent>
