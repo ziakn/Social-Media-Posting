@@ -86,12 +86,14 @@ export function AppSidebar({ user, ...props }) {
       url: "/admin/scheduled",
       icon: Calendar,
       permission: "view_scheduled",
+      hideForFree: true,
     },
     {
       title: "Failed",
       url: "/admin/failed",
       icon: AlertTriangle,
       permission: "view_failed",
+      hideForFree: true,
     },
     {
       title: "Media Library",
@@ -224,6 +226,14 @@ export function AppSidebar({ user, ...props }) {
             <SidebarMenu>
               {coreNavItems.map((item) => {
                 if (item.permission && !hasPermission(item.permission)) return null
+
+                // Package-based restriction with Administrator override
+                const isFreeUser = user?.subscription?.packageName?.toLowerCase() === "free"
+                const isAdminRole = user?.role?.toLowerCase() === "administrator" ||
+                  user?.role_name?.toLowerCase() === "administrator";
+
+                if (item.hideForFree && isFreeUser && !isAdminRole) return null
+
                 const isActive = pathname === item.url
                 return (
                   <SidebarMenuItem key={item.title}>
