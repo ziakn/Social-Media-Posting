@@ -5,7 +5,7 @@ export const API_ROUTES = {
   // Auth
   LOGIN: `${API_PREFIX}/auth/login`,
   LOGOUT: `${API_PREFIX}/auth/logout`,
-  VERIFY_AUTH: API_PREFIX+'/auth/verify',
+  VERIFY_AUTH: API_PREFIX + '/auth/verify',
 
   // Users
   USERS: `${API_PREFIX}/users`,
@@ -21,4 +21,7 @@ export const API_ROUTES = {
   ROLES: `${API_PREFIX}/roles`,
   ROLES_CREATE: `${API_PREFIX}/roles`,
   ROLES_EDIT: `${API_PREFIX}/roles`,
+
+  // Contact
+  CONTACT: `${API_PREFIX}/contact`,
 };

@@ -61,4 +61,5 @@ export const ROUTES = {
   ADMIN_TIKTOK_POSTS: prefix + "social/tiktok/posts",
   ADMIN_PINTEREST: prefix + "social/pinterest",
   ADMIN_PINTEREST_POSTS: prefix + "social/pinterest/posts",
+  ADMIN_CONTACT: prefix + "contact",
 };

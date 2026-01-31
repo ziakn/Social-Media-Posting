@@ -19,6 +19,7 @@ import {
   Settings,
   Building2,
   LogOut,
+  MessageSquare,
 } from "lucide-react"
 
 import {
@@ -115,6 +116,12 @@ export function AppSidebar({ user, ...props }) {
       url: "/admin/blog",
       icon: FileText,
       permission: "view_blog",
+    },
+    {
+      title: "Inquiries",
+      url: ROUTES.ADMIN_CONTACT,
+      icon: MessageSquare,
+      permission: "view_contact",
     },
   ]
 

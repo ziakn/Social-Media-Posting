@@ -7,7 +7,10 @@ export async function GET() {
         // 1. Get all blog-related permission IDs
         const permissionsQuery = query(
             collection(db, "permissions"),
-            where("name", "in", ["view_blog", "create_blog", "edit_blog", "delete_blog"])
+            where("name", "in", [
+                "view_blog", "create_blog", "edit_blog", "delete_blog",
+                "view_contact", "create_contact", "edit_contact", "delete_contact"
+            ])
         );
         const permissionDocs = await getDocs(permissionsQuery);
 
@@ -43,7 +46,7 @@ export async function GET() {
 
         return NextResponse.json({
             success: true,
-            message: `Successfully assigned ${permissionIds.length} blog permissions to ${updatedRoles} admin role(s).`,
+            message: `Successfully assigned ${permissionIds.length} permissions to ${updatedRoles} admin role(s).`,
             details: {
                 permissions: permissionDocs.docs.map(d => d.data().name),
                 rolesUpdated: updatedRoles
