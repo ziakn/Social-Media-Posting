@@ -25,6 +25,14 @@ export async function createTiktokPost({
 }) {
     try {
         const user = await getAuthenticatedUser();
+
+        // Check Usage Limit
+        const { checkUsageLimitAction } = await import("@/app/actions/usage/usageActions");
+        const usageCheck = await checkUsageLimitAction('post');
+        if (!usageCheck.success) {
+            return { success: false, message: usageCheck.error };
+        }
+
         const { accountId, accessToken } = await getTiktokAccount(user.id, pageId);
 
         if (media.length === 0) throw new Error("No video provided for TikTok post");

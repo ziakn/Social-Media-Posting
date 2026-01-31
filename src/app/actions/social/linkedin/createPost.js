@@ -151,6 +151,13 @@ export async function createLinkedinPost({
             return { success: false, message: "Invalid or expired token" };
         }
 
+        // Check Usage Limit
+        const { checkUsageLimitAction } = await import("@/app/actions/usage/usageActions");
+        const usageCheck = await checkUsageLimitAction('post');
+        if (!usageCheck.success) {
+            return { success: false, message: usageCheck.error };
+        }
+
         const userId = user.id;
 
         // 1. Get LinkedIn Access Token from Firestore

@@ -77,6 +77,8 @@ import { disconnectTiktokAccount } from "../../../actions/social/tiktok/disconne
 import { checkBlueSkyConnection } from "../../../actions/social/bluesky/connectAccount";
 import { disconnectBlueSkyAccount } from "../../../actions/social/bluesky/disconnectAccount";
 import { TiktokLogo } from "@/components/icons/TiktokLogo";
+import { getUserUsageAction } from "../../../actions/usage/usageActions";
+import { Progress } from "@/components/ui/progress";
 
 const CONNECTION_FUNCTIONS = {
   facebook: checkFacebookConnection,
@@ -109,6 +111,8 @@ export default function SocialConnectPage() {
   const [callbackStatus, setCallbackStatus] = useState(null);
   const [callbackPlatform, setCallbackPlatform] = useState(null);
   const [callbackName, setCallbackName] = useState(null);
+  const [usage, setUsage] = useState(null);
+  const [usageLoading, setUsageLoading] = useState(true);
 
   // Multi-account management state
   const [selectedPlatform, setSelectedPlatform] = useState(null);
@@ -191,10 +195,24 @@ export default function SocialConnectPage() {
     });
   };
 
+  const fetchUsage = async () => {
+    setUsageLoading(true);
+    try {
+      const result = await getUserUsageAction();
+      if (result.success) {
+        setUsage(result.usage);
+      }
+    } catch (error) {
+      console.error("Error fetching usage:", error);
+    } finally {
+      setUsageLoading(false);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await fetchPlatforms();
+      await Promise.all([fetchPlatforms(), fetchUsage()]);
       setLoading(false);
     };
     init();
@@ -256,9 +274,47 @@ export default function SocialConnectPage() {
   return (
     <div className="p-6 min-h-screen bg-slate-50/50">
       <div className="max-w-[1600px] mx-auto">
-        <div className="mb-10">
-          <h1 className="text-3xl font-bold text-slate-900">Social Connections</h1>
-          <p className="mt-2 text-slate-600">Securely connect and manage your professional social profiles.</p>
+        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Social Connections</h1>
+            <p className="mt-2 text-slate-600">Securely connect and manage your professional social profiles.</p>
+          </div>
+
+          {usage && (
+            <div className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm min-w-[300px] md:min-w-[450px]">
+              <div className="flex-1 space-y-2">
+                <div className="flex justify-between text-[11px] font-bold uppercase tracking-wider">
+                  <span className="text-slate-500">Accounts</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">
+                      {usage.accounts.used} / {usage.accounts.limit === -1 ? '∞' : usage.accounts.limit}
+                    </span>
+                    <span className="bg-slate-100 text-slate-900 px-1.5 py-0.5 rounded text-[10px]">
+                      {usage.accounts.limit === -1 ? '∞' : Math.max(0, usage.accounts.limit - usage.accounts.used)} Left
+                    </span>
+                  </div>
+                </div>
+                <Progress value={usage.accounts.percent} className="h-1.5 bg-slate-100" />
+              </div>
+
+              <div className="hidden sm:block w-px bg-slate-100 mx-2" />
+
+              <div className="flex-1 space-y-2">
+                <div className="flex justify-between text-[11px] font-bold uppercase tracking-wider">
+                  <span className="text-slate-500">Monthly Posts</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">
+                      {usage.posts.used} / {usage.posts.limit === -1 ? '∞' : usage.posts.limit}
+                    </span>
+                    <span className="bg-slate-100 text-slate-900 px-1.5 py-0.5 rounded text-[10px]">
+                      {usage.posts.limit === -1 ? '∞' : Math.max(0, usage.posts.limit - usage.posts.used)} Left
+                    </span>
+                  </div>
+                </div>
+                <Progress value={usage.posts.percent} className="h-1.5 bg-slate-100" />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -329,13 +385,29 @@ export default function SocialConnectPage() {
                       Manage Accounts
                     </Button>
                   ) : (
-                    <Button
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-xs font-semibold"
-                      onClick={() => handleConnect(item.key)}
-                    >
-                      <Link className="w-3.5 h-3.5 mr-2" />
-                      Connect {item.name}
-                    </Button>
+                    <div className="flex flex-col gap-2 w-full">
+                      <Button
+                        className="w-full bg-slate-900 hover:bg-slate-800 text-xs font-semibold"
+                        onClick={() => handleConnect(item.key)}
+                        disabled={usage && usage.accounts.used >= usage.accounts.limit && usage.accounts.limit !== -1}
+                      >
+                        <Link className="w-3.5 h-3.5 mr-2" />
+                        {usage && usage.accounts.used >= usage.accounts.limit && usage.accounts.limit !== -1
+                          ? "Limit Reached"
+                          : `Connect ${item.name}`}
+                      </Button>
+
+                      {usage && usage.accounts.used >= usage.accounts.limit && usage.accounts.limit !== -1 && (
+                        <Button
+                          variant="ghost"
+                          className="w-full text-[10px] h-7 text-rose-600 hover:text-rose-700 hover:bg-rose-50 font-bold uppercase tracking-tight"
+                          onClick={() => window.location.href = '/admin/subscription'}
+                        >
+                          <ExternalLink className="w-3 h-3 mr-1" />
+                          Upgrade Plan
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </CardFooter>
               </Card>
@@ -394,9 +466,12 @@ export default function SocialConnectPage() {
                 <Button
                   className="w-full bg-slate-900"
                   onClick={() => handleConnect(selectedPlatform.key)}
+                  disabled={usage && usage.accounts.used >= usage.accounts.limit && usage.accounts.limit !== -1}
                 >
                   <Link className="w-3.5 h-3.5 mr-2" />
-                  Connect Another Account
+                  {usage && usage.accounts.used >= usage.accounts.limit && usage.accounts.limit !== -1
+                    ? "Account Limit Reached"
+                    : "Connect Another Account"}
                 </Button>
                 <Button
                   variant="outline"
