@@ -3,6 +3,7 @@ import { db } from "@/lib/firebase";
 import { createToken } from "@/lib/auth";
 import { collection, query, where, getDocs, getDoc, doc, documentId } from "firebase/firestore";
 import bcrypt from "bcryptjs";
+import { getPackageConfig } from "@/lib/package-configs";
 
 export async function POST(req) {
   try {
@@ -84,6 +85,7 @@ export async function POST(req) {
       role: roleData?.name || "Admin",
       permissions: permissionData.map(item => item.name) || [],
       subscription: userDoc.subscription || null,
+      packageDetails: getPackageConfig(userDoc.subscription?.packageId || userDoc.subscription?.planId),
     };
 
     // Create JWT token
@@ -97,9 +99,8 @@ export async function POST(req) {
       role: roleData?.name || null,
       permissions: permissionData.map(item => item.name) || [],
       subscription: userDoc.subscription || null,
-
+      packageDetails: getPackageConfig(userDoc.subscription?.packageId || userDoc.subscription?.planId),
     };
-
 
     const response = NextResponse.json({
       success: true,
@@ -113,15 +114,12 @@ export async function POST(req) {
       secure: true,
       path: "/",
       maxAge: 60 * 60 * 24, // 24 hours
-      sameSite: "none",  //strict
+      sameSite: "none", //strict
     });
 
     return response;
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json(
-      { error: "Internal server error." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error." }, { status: 500 });
   }
 }

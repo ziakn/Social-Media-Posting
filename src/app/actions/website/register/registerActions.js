@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { createToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { initializeBillingProfile } from "@/app/actions/billing/billingActions";
+import { getPackageConfig } from "@/lib/package-configs";
 
 /**
  * Server action to register a user via the website frontend.
@@ -38,17 +39,18 @@ export async function registerUserAction(formData, selectedPlan, receiveUpdates)
 
         // 4️⃣ Determine Subscription Status and Limits
         const isPaid = selectedPlan && selectedPlan.name.toLowerCase() !== "free";
+        const packageConfig = getPackageConfig(selectedPlan?.id);
         const subscription = isPaid ? {
             status: "pending_payment",
             packageId: selectedPlan.id,
             packageName: selectedPlan.name,
             currentPeriodEnd: null,
-            limits: selectedPlan.limits || {}
+            limits: packageConfig // Use hardcoded config
         } : {
             status: "active",
             packageId: selectedPlan.id,
             packageName: selectedPlan.name,
-            limits: selectedPlan.limits || {},
+            limits: packageConfig, // Use hardcoded config
             currentPeriodEnd: new Date(new Date().setFullYear(new Date().getFullYear() + 1)), // 1 year for free
         };
 
@@ -116,7 +118,8 @@ export async function registerUserAction(formData, selectedPlan, receiveUpdates)
             name: userData.name,
             role: roleName,
             permissions,
-            subscription
+            subscription,
+            packageDetails: packageConfig
         };
 
         const token = await createToken(tokenPayload);
