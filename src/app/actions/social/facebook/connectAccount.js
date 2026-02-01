@@ -25,11 +25,18 @@ export async function checkFacebookConnection() {
     let accountData = null;
     if (!snapshot.empty) {
       const data = snapshot.docs[0].data();
+
+      let totalPages = 0;
+      snapshot.docs.forEach(doc => {
+        const d = doc.data();
+        totalPages += (Array.isArray(d.pages) && d.pages.length > 0) ? d.pages.length : 1;
+      });
+
       accountData = {
         connected: true,
         displayName: data.displayName || "Facebook Account",
         tokenExpiresAt: data.tokenExpiresAt?.toDate?.().toISOString() || null,
-        count: snapshot.size,
+        count: totalPages,
         accounts: snapshot.docs.map(d => {
           const accData = d.data();
           return {

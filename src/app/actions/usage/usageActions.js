@@ -52,7 +52,16 @@ export async function getUserUsageAction() {
             where("status", "==", "active")
         );
         const accountsSnap = await getDocs(accountsQuery);
-        const connectedAccounts = accountsSnap.size;
+
+        let connectedAccounts = 0;
+        accountsSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data.platform === 'facebook' && Array.isArray(data.pages) && data.pages.length > 0) {
+                connectedAccounts += data.pages.length;
+            } else {
+                connectedAccounts += 1;
+            }
+        });
 
         // 3. Count Monthly Posts
         // We need to determine the start of the current billing cycle
