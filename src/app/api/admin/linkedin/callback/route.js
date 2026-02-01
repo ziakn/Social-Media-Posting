@@ -32,54 +32,35 @@ export async function GET(request) {
 
         const portalUserId = user.id;
 
-        // Deactivate existing active records for this user and platform
-        const socialAccountsRef = collection(db, "socialAccounts");
-        const q = query(socialAccountsRef, where("userId", "==", portalUserId), where("platform", "==", "linkedin"), where("status", "==", "active"));
-        const existingAccountsSnap = await getDocs(q);
-        for (const docSnap of existingAccountsSnap.docs) {
-            await updateDoc(docSnap.ref, { status: "inactive", updatedAt: serverTimestamp() });
-        }
+        // Collect all potential profiles (Person + Organizations)
+        const potentialProfiles = [];
 
-        // 1. Save Personal Profile
-        await addDoc(collection(db, "socialAccounts"), {
-            userId: portalUserId,
-            platform: "linkedin",
-            accountType: "person", // Explicit type
+        // 1. Personal Profile
+        potentialProfiles.push({
+            pageId: linkedinProfile.sub, // Using 'sub' as ID
+            pageName: linkedinProfile.name, // Personal Name
+            type: 'person',
             platformUserId: linkedinProfile.sub,
-            displayName: linkedinProfile.name,
             username: linkedinProfile.email || linkedinProfile.preferred_username || linkedinProfile.name,
             profilePicture: linkedinProfile.picture,
-            accessToken: access_token,
-            refreshToken: refresh_token || null,
-            tokenExpiresAt: new Date(Date.now() + expires_in * 1000),
-            status: "active",
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+            platformUrn: `urn:li:person:${linkedinProfile.sub}` // Approximate URN
         });
 
-        // 2. Fetch and Save Company Pages
+        // 2. Organization Pages
         try {
             const acls = await fetchOrganizationAcls(access_token);
             for (const acl of acls) {
-                const orgUrn = acl.organizationalTarget; // urn:li:organization:123456
+                const orgUrn = acl.organizationalTarget;
                 try {
                     const orgDetails = await fetchOrganizationDetails(access_token, orgUrn);
-
-                    await addDoc(collection(db, "socialAccounts"), {
-                        userId: portalUserId,
-                        platform: "linkedin",
-                        accountType: "organization",
-                        platformUserId: orgDetails.id, // ID only
-                        platformUrn: orgDetails.urn, // Full URN
-                        displayName: orgDetails.name,
-                        username: orgDetails.name, // Display name as username fallback
-                        profilePicture: orgDetails.logo,
-                        accessToken: access_token, // Same user token manages the page
-                        refreshToken: refresh_token || null,
-                        tokenExpiresAt: new Date(Date.now() + expires_in * 1000),
-                        status: "active",
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp()
+                    potentialProfiles.push({
+                        pageId: orgDetails.id,
+                        pageName: orgDetails.name,
+                        type: 'organization',
+                        platformUserId: orgDetails.id,
+                        platformUrn: orgDetails.urn,
+                        username: orgDetails.name,
+                        profilePicture: orgDetails.logo
                     });
                 } catch (orgErr) {
                     console.error("Failed to fetch/save organization details:", orgUrn, orgErr);
@@ -87,12 +68,24 @@ export async function GET(request) {
             }
         } catch (aclErr) {
             console.error("Failed to fetch organization ACLs:", aclErr);
-            // Don't fail the whole connection if companies fail, just log it
         }
+
+        // Store in pending_connections
+        const pendingDoc = await addDoc(collection(db, "pending_connections"), {
+            userId: portalUserId,
+            platform: "linkedin",
+            displayName: linkedinProfile.name, // Context name
+            accessToken: access_token,
+            refreshToken: refresh_token || null,
+            tokenExpiresAt: new Date(Date.now() + expires_in * 1000),
+            pages: potentialProfiles, // Stores both person and orgs
+            status: "pending",
+            createdAt: serverTimestamp()
+        });
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
         return NextResponse.redirect(
-            `${baseUrl}/admin/social/connect?status=success&platform=linkedin&name=${encodeURIComponent(linkedinProfile.name)}`
+            `${baseUrl}/admin/social/connect?status=pending&platform=linkedin&pendingId=${pendingDoc.id}`
         );
 
     } catch (error) {

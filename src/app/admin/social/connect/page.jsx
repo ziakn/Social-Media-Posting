@@ -38,6 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ROUTES } from "@/constants/routes";
@@ -78,6 +79,7 @@ import { checkBlueSkyConnection } from "../../../actions/social/bluesky/connectA
 import { disconnectBlueSkyAccount } from "../../../actions/social/bluesky/disconnectAccount";
 import { TiktokLogo } from "@/components/icons/TiktokLogo";
 import { getUserUsageAction } from "../../../actions/usage/usageActions";
+import { getPendingConnection, confirmFacebookConnection, confirmLinkedinConnection, confirmYoutubeConnection } from "../../../actions/social/connectionActions";
 import { Progress } from "@/components/ui/progress";
 
 const CONNECTION_FUNCTIONS = {
@@ -117,6 +119,12 @@ export default function SocialConnectPage() {
   // Multi-account management state
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
+
+  // Pending Selection State
+  const [pendingConnection, setPendingConnection] = useState(null);
+  const [selectedPages, setSelectedPages] = useState([]);
+  const [isSelectionModalOpen, setIsSelectionModalOpen] = useState(false);
+  const [selectionLoading, setSelectionLoading] = useState(false);
 
   const socials = useMemo(() => {
     return platforms
@@ -227,8 +235,23 @@ export default function SocialConnectPage() {
     const status = params.get("status");
     const platform = params.get("platform");
     const name = params.get("name");
+    const pendingId = params.get("pendingId");
 
-    if (status && platform) {
+    // Check for pending connection (Selection Flow)
+    if (status === "pending" && pendingId) {
+      const loadPending = async () => {
+        const res = await getPendingConnection(pendingId);
+        if (res.success) {
+          setPendingConnection(res.data);
+          setIsSelectionModalOpen(true);
+        } else {
+          toast.error(res.error || "Failed to load pending connection");
+        }
+      };
+      loadPending();
+      // Remove params to clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (status && platform) {
       setCallbackStatus(status);
       setCallbackPlatform(platform);
       setCallbackName(name ? decodeURIComponent(name) : null);
@@ -240,6 +263,53 @@ export default function SocialConnectPage() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  const handleConfirmSelection = async () => {
+    if (!pendingConnection) return;
+    setSelectionLoading(true);
+    try {
+      // Add other platforms here if they support selection in future
+      if (pendingConnection.platform === 'facebook') {
+        const res = await confirmFacebookConnection(pendingConnection.id, selectedPages);
+        if (res.success) {
+          toast.success("Accounts connected successfully!");
+          setIsSelectionModalOpen(false);
+          setPendingConnection(null);
+          fetchConnections();
+          fetchUsage();
+        } else {
+          toast.error(res.error || "Failed to confirm connection");
+        }
+      } else if (pendingConnection.platform === 'linkedin') {
+        const res = await confirmLinkedinConnection(pendingConnection.id, selectedPages);
+        if (res.success) {
+          toast.success("Accounts connected successfully!");
+          setIsSelectionModalOpen(false);
+          setPendingConnection(null);
+          fetchConnections();
+          fetchUsage();
+        } else {
+          toast.error(res.error || "Failed to confirm connection");
+        }
+      } else if (pendingConnection.platform === 'youtube') {
+        const res = await confirmYoutubeConnection(pendingConnection.id, selectedPages);
+        if (res.success) {
+          toast.success("Accounts connected successfully!");
+          setIsSelectionModalOpen(false);
+          setPendingConnection(null);
+          fetchConnections();
+          fetchUsage();
+        } else {
+          toast.error(res.error || "Failed to confirm connection");
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("An error occurred");
+    } finally {
+      setSelectionLoading(false);
+    }
+  };
 
   const handleConnect = (platformKey) => {
     // Both BlueSky and others now use the same API route pattern
@@ -484,6 +554,81 @@ export default function SocialConnectPage() {
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending Account Selection Modal */}
+      <Dialog open={isSelectionModalOpen} onOpenChange={setIsSelectionModalOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Select Pages to Connect</DialogTitle>
+            <DialogDescription>
+              You have {pendingConnection?.pages?.length} available pages.
+              Your plan allows for <strong>{usage?.accounts.limit === -1 ? 'Unlimited' : (usage?.accounts.limit - usage?.accounts.used)} additional accounts</strong>.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingConnection && (
+            <div className="space-y-4 my-4">
+              <div className="p-3 bg-blue-50 text-blue-800 rounded-lg text-sm border border-blue-100 flex items-start gap-2">
+                {pendingConnection.platform === 'facebook' && <Facebook className="w-5 h-5 shrink-0" />}
+                {pendingConnection.platform === 'linkedin' && <Linkedin className="w-5 h-5 shrink-0" />}
+                {pendingConnection.platform === 'youtube' && <Youtube className="w-5 h-5 shrink-0" />}
+                <div>
+                  <span className="font-bold block">Connected as {pendingConnection.displayName}</span>
+                  <span className="text-xs opacity-80">Select which {pendingConnection.platform} pages/profiles you want to import.</span>
+                </div>
+              </div>
+
+              <div className="max-h-[300px] overflow-y-auto space-y-2 pr-2">
+                {pendingConnection.pages.map(page => {
+                  const isSelected = selectedPages.includes(page.pageId);
+                  return (
+                    <div
+                      key={page.pageId}
+                      className={`
+                            flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all
+                            ${isSelected ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-slate-300'}
+                          `}
+                      onClick={() => {
+                        const remainingQuota = usage?.accounts.limit === -1 ? 999 : (usage?.accounts.limit - usage?.accounts.used);
+                        if (isSelected) {
+                          setSelectedPages(prev => prev.filter(id => id !== page.pageId));
+                        } else {
+                          if (selectedPages.length < remainingQuota) {
+                            setSelectedPages(prev => [...prev, page.pageId]);
+                          } else {
+                            toast.error("Account limit reached. Upgrade to connect more.");
+                          }
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${isSelected ? 'bg-primary border-primary' : 'border-slate-300 bg-white'}`}>
+                          {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                        </div>
+                        <span className="font-medium text-slate-700">{page.pageName}</span>
+                      </div>
+                      <span className="text-xs text-slate-400">ID: {page.pageId}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex justify-between items-center sm:justify-between w-full">
+            <div className="text-xs text-slate-500 font-medium">
+              {selectedPages.length} selected
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => setIsSelectionModalOpen(false)}>Cancel</Button>
+              <Button onClick={handleConfirmSelection} disabled={selectionLoading || selectedPages.length === 0}>
+                {selectionLoading && <Spinner className="w-4 h-4 mr-2" />}
+                Confirm Connection
+              </Button>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

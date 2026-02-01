@@ -23,7 +23,7 @@ export async function GET(request) {
         const { access_token, refresh_token, expires_in } = tokenResponse;
 
         // Get user profile/channel info
-        const youtubeData = await fetchYoutubeProfile(access_token);
+        // const youtubeData = await fetchYoutubeProfile(access_token);
 
         if (!user) {
             return NextResponse.json({ valid: false, message: "Invalid token" }, { status: 403 });
@@ -31,33 +31,31 @@ export async function GET(request) {
 
         const portalUserId = user.id;
 
-        // Deactivate existing active records for this user and platform
-        const socialAccountsRef = collection(db, "socialAccounts");
-        const q = query(socialAccountsRef, where("userId", "==", portalUserId), where("platform", "==", "youtube"), where("status", "==", "active"));
-        const existingAccountsSnap = await getDocs(q);
-        for (const docSnap of existingAccountsSnap.docs) {
-            await updateDoc(docSnap.ref, { status: "inactive", updatedAt: serverTimestamp() });
-        }
+        // Get all user channels
+        const youtubeChannels = await fetchYoutubeChannels(access_token);
 
-        // Save to socialAccounts collection
-        await addDoc(collection(db, "socialAccounts"), {
+        // Store in pending_connections
+        const pendingDoc = await addDoc(collection(db, "pending_connections"), {
             userId: portalUserId,
             platform: "youtube",
-            platformUserId: youtubeData.id,
-            displayName: youtubeData.snippet.title,
-            username: youtubeData.snippet.customUrl || youtubeData.snippet.title,
-            profilePicture: youtubeData.snippet.thumbnails.default.url,
+            displayName: "YouTube User", // Or use first channel name?
             accessToken: access_token,
             refreshToken: refresh_token,
             tokenExpiresAt: new Date(Date.now() + expires_in * 1000),
-            status: "active",
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
+            pages: youtubeChannels.map(ch => ({
+                pageId: ch.id,
+                pageName: ch.snippet.title,
+                username: ch.snippet.customUrl || ch.snippet.title,
+                profilePicture: ch.snippet.thumbnails.default.url,
+                platformUserId: ch.id
+            })),
+            status: "pending",
+            createdAt: serverTimestamp()
         });
 
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
         return NextResponse.redirect(
-            `${baseUrl}/admin/social/connect?status=success&platform=youtube&name=${encodeURIComponent(youtubeData.snippet.title)}`
+            `${baseUrl}/admin/social/connect?status=pending&platform=youtube&pendingId=${pendingDoc.id}`
         );
 
     } catch (error) {
@@ -89,7 +87,7 @@ async function exchangeCodeForToken(code) {
     return data;
 }
 
-async function fetchYoutubeProfile(accessToken) {
+async function fetchYoutubeChannels(accessToken) {
     // Fetch channel list (mine)
     const res = await fetch("https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true", {
         headers: {
@@ -101,5 +99,5 @@ async function fetchYoutubeProfile(accessToken) {
     if (data.error) throw new Error(data.error.message);
     if (!data.items || data.items.length === 0) throw new Error("No YouTube channel found for this account.");
 
-    return data.items[0];
+    return data.items;
 }

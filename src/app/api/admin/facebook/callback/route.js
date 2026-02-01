@@ -46,15 +46,8 @@ export async function GET(request) {
     }
 
     // Before insertion: deactivate existing active records for this user and platform
-    const socialAccountsRef = collection(db, "socialAccounts");
-    const q = query(socialAccountsRef, where("userId", "==", portalUserId), where("platform", "==", "facebook"), where("status", "==", "active"));
-    const existingAccountsSnap = await getDocs(q);
-    for (const docSnap of existingAccountsSnap.docs) {
-      await updateDoc(docSnap.ref, { status: "inactive", updatedAt: serverTimestamp() });
-    }
-
-    // Save to socialAccounts collection using Long-Lived Token
-    await addDoc(collection(db, "socialAccounts"), {
+    // Store in pending_connections collection instead of socialAccounts
+    const pendingDoc = await addDoc(collection(db, "pending_connections"), {
       userId: portalUserId,
       platform: "facebook",
       platformUserId: fbUser.id,
@@ -67,14 +60,13 @@ export async function GET(request) {
         pageName: p.name,
         pageAccessToken: p.access_token
       })) || [],
-      status: "active",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      status: "pending",
+      createdAt: serverTimestamp()
     });
 
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     return NextResponse.redirect(
-      `${baseUrl}/admin/social/connect?status=success&platform=facebook&name=${encodeURIComponent(fbUser.name)}`
+      `${baseUrl}/admin/social/connect?status=pending&platform=facebook&pendingId=${pendingDoc.id}`
     );
 
   } catch (error) {
