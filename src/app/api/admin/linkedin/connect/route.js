@@ -20,10 +20,8 @@ export async function GET() {
         "profile",
         "email",
         "w_member_social",
-        "w_organization_social",
-        "r_organization_social",
-        "rw_organization_admin",
     ];
+
     const params = new URLSearchParams({
         response_type: 'code',
         client_id: client_id,
