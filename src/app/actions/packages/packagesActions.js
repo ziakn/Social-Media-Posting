@@ -89,7 +89,7 @@ export async function createPackage(data) {
             updatedAt: serverTimestamp(),
         });
 
-        revalidatePath("/admin/packages");
+        revalidatePath("/portal/packages");
         revalidateTag("public-packages"); // Clear public cache
         return { success: true, id: docRef.id, message: "Package created successfully" };
     } catch (error) {
@@ -112,7 +112,7 @@ export async function updatePackage(id, data) {
             updatedAt: serverTimestamp(),
         });
 
-        revalidatePath("/admin/packages");
+        revalidatePath("/portal/packages");
         revalidateTag("public-packages"); // Clear public cache
         return { success: true, message: "Package updated successfully" };
     } catch (error) {
@@ -129,7 +129,7 @@ export async function updatePackage(id, data) {
 export async function deletePackage(id) {
     try {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
-        revalidatePath("/admin/packages");
+        revalidatePath("/portal/packages");
         revalidateTag("public-packages"); // Clear public cache
         return { success: true, message: "Package deleted successfully" };
     } catch (error) {

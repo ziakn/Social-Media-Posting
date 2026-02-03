@@ -74,7 +74,7 @@ export default function PricingContent({ packages = [] }) {
 
     // Safety check for free plan which might not have a stripe price id
     if (!priceId) {
-      router.push("/admin/dashboard"); // Or specific free plan logic
+      router.push("/portal/dashboard"); // Or specific free plan logic
       return;
     }
 

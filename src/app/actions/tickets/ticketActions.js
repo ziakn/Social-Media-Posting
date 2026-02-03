@@ -134,7 +134,7 @@ export async function createTicket(formData) {
             createdAt: serverTimestamp(),
         });
 
-        revalidatePath("/admin/help");
+        revalidatePath("/portal/help");
         return { success: true, ticketId: ticketRef.id };
     } catch (error) {
         console.error("Error creating ticket action:", error);
@@ -175,7 +175,7 @@ export async function updateTicketStatus(id, status) {
             isSystem: true
         });
 
-        revalidatePath("/admin/help");
+        revalidatePath("/portal/help");
         return { success: true };
     } catch (error) {
         console.error("Error updating ticket status action:", error);
@@ -233,7 +233,7 @@ export async function sendTicketMessage(ticketId, message) {
 
         await updateDoc(ticketRef, updates);
 
-        revalidatePath("/admin/help");
+        revalidatePath("/portal/help");
         return { success: true };
     } catch (error) {
         console.error("Error sending ticket message action:", error);

@@ -89,7 +89,7 @@ export async function updateContactStatusAction(id, status) {
             updated_at: serverTimestamp(),
         });
 
-        revalidatePath("/admin/contact");
+        revalidatePath("/portal/contact");
         return {
             success: true,
             message: "Inquiry status updated successfully.",
@@ -108,7 +108,7 @@ export async function deleteContactAction(id) {
         const contactRef = doc(db, COLLECTION_NAME, id);
         await deleteDoc(contactRef);
 
-        revalidatePath("/admin/contact");
+        revalidatePath("/portal/contact");
         return {
             success: true,
             message: "Inquiry deleted successfully.",

@@ -348,7 +348,7 @@ export async function deleteFacebookPost(postId) {
       updatedAt: new Date()
     });
 
-    revalidatePath("/admin/social/facebook/posts");
+    revalidatePath("/portal/social/facebook/posts");
 
     return { success: true, message: "Post deleted successfully" };
   } catch (error) {
@@ -418,7 +418,7 @@ export async function updateFacebookPost(postId, message, mediaUrls = null, addi
 
     await updateDoc(postRef, updateData);
 
-    revalidatePath("/admin/social/facebook/posts");
+    revalidatePath("/portal/social/facebook/posts");
 
     return { success: true, message: "Post updated successfully" };
   } catch (error) {
@@ -452,7 +452,7 @@ export async function updatePostSchedule(postId, scheduledAt) {
       status: scheduledAt ? 'scheduled' : 'published' // If no schedule, assume it should be published (or handle as draft)
     });
 
-    revalidatePath("/admin/social/facebook/posts");
+    revalidatePath("/portal/social/facebook/posts");
 
     return { success: true, message: "Post schedule updated successfully" };
   } catch (error) {
@@ -503,7 +503,7 @@ export async function duplicateFacebookPost(postId) {
       }
     });
 
-    revalidatePath("/admin/social/facebook/posts");
+    revalidatePath("/portal/social/facebook/posts");
 
     return {
       success: true,
@@ -766,8 +766,8 @@ export async function publishFacebookPostNow(postId) {
       scheduledAt: new Date() // Sync with current publish time
     });
 
-    revalidatePath("/admin/social/facebook/posts");
-    revalidatePath("/admin/social/facebook/calendar");
+    revalidatePath("/portal/social/facebook/posts");
+    revalidatePath("/portal/social/facebook/calendar");
 
     return { success: true, message: "Post published successfully!", facebookPostId };
 

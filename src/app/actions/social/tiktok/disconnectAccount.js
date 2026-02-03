@@ -19,7 +19,7 @@ export async function disconnectTiktokAccount(accountId) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/connect");
+        revalidatePath("/portal/social/connect");
         return { success: true };
     } catch (error) {
         console.error("Error disconnecting TikTok account:", error);

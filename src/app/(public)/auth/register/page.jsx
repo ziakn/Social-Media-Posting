@@ -120,8 +120,8 @@ function RegisterForm() {
 
         if (priceId) {
           const checkoutRes = await createCheckoutSession(priceId,
-            `${window.location.origin}/admin/subscription?success=true`, // Success URL
-            `${window.location.origin}/admin/subscription?canceled=true`  // Cancel URL
+            `${window.location.origin}/portal/subscription?success=true`, // Success URL
+            `${window.location.origin}/portal/subscription?canceled=true`  // Cancel URL
           );
 
           if (checkoutRes.success) {
@@ -130,14 +130,14 @@ function RegisterForm() {
           } else {
             console.error("Checkout Init Failed:", checkoutRes.error);
             // Fallback to dashboard with error state potentially
-            router.push(ROUTES.ADMIN_DASHBOARD || "/admin");
+            router.push(ROUTES.PORTAL_DASHBOARD || "/portal");
           }
         } else {
           // Configuration error fallback
-          router.push(ROUTES.ADMIN_DASHBOARD || "/admin");
+          router.push(ROUTES.PORTAL_DASHBOARD || "/portal");
         }
       } else {
-        router.push(ROUTES.ADMIN_DASHBOARD || "/admin");
+        router.push(ROUTES.PORTAL_DASHBOARD || "/portal");
       }
     } catch (error) {
       console.error("Critical Registration Error:", error);

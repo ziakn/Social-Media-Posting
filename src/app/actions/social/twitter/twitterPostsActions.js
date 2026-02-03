@@ -405,8 +405,8 @@ export async function deleteTwitterPost(postId) {
             updatedAt: new Date()
         });
 
-        revalidatePath("/admin/twitter/published");
-        revalidatePath("/admin/twitter/scheduled");
+        revalidatePath("/portal/twitter/published");
+        revalidatePath("/portal/twitter/scheduled");
 
         return { success: true, message: "Post deleted successfully" };
     } catch (err) {
@@ -447,7 +447,7 @@ export async function updateTwitterPost(postId, message) {
                 updatedAt: new Date()
             });
 
-            revalidatePath("/admin/twitter/scheduled");
+            revalidatePath("/portal/twitter/scheduled");
             return { success: true, message: "Scheduled post updated successfully" };
         }
 
@@ -559,7 +559,7 @@ export async function updateTwitterPost(postId, message) {
                     updatedAt: new Date()
                 });
 
-                revalidatePath("/admin/twitter/published");
+                revalidatePath("/portal/twitter/published");
                 return {
                     success: true,
                     message: "Tweet updated successfully (deleted and reposted with new content)"
@@ -580,8 +580,8 @@ export async function updateTwitterPost(postId, message) {
             updatedAt: new Date()
         });
 
-        revalidatePath("/admin/twitter/published");
-        revalidatePath("/admin/twitter/scheduled");
+        revalidatePath("/portal/twitter/published");
+        revalidatePath("/portal/twitter/scheduled");
 
         return { success: true, message: "Post updated successfully" };
     } catch (err) {
@@ -618,7 +618,7 @@ export async function updateTwitterPostSchedule(postId, scheduledAt) {
             status: 'scheduled'
         });
 
-        revalidatePath("/admin/twitter/scheduled");
+        revalidatePath("/portal/twitter/scheduled");
 
         return { success: true, message: "Post schedule updated successfully" };
     } catch (err) {
@@ -782,8 +782,8 @@ export async function publishTwitterPostNow(postId) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/twitter/published");
-        revalidatePath("/admin/twitter/scheduled");
+        revalidatePath("/portal/twitter/published");
+        revalidatePath("/portal/twitter/scheduled");
 
         return { success: true, message: "Tweet published successfully" };
 

@@ -122,7 +122,7 @@ export async function deleteTiktokPost(postId) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/tiktok/posts");
+        revalidatePath("/portal/social/tiktok/posts");
 
         return { success: true, message: "Post deleted successfully" };
     } catch (error) {
@@ -209,7 +209,7 @@ export async function publishTiktokPostNow(postId) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/tiktok/posts");
+        revalidatePath("/portal/social/tiktok/posts");
         return { success: true, message: "Post published successfully" };
     } catch (error) {
         console.error("Error publishing TikTok post:", error);
@@ -253,7 +253,7 @@ export async function updateTiktokPost({ postId, text, media, scheduling, accoun
         }
 
         await updateDoc(postRef, updates);
-        revalidatePath("/admin/social/tiktok/posts");
+        revalidatePath("/portal/social/tiktok/posts");
 
         return { success: true, message: "Post updated successfully" };
     } catch (error) {

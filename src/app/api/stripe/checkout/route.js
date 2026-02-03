@@ -53,7 +53,7 @@ export async function POST(req) {
       }
 
       return NextResponse.json({
-        url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/dashboard?success=true&bypass=true`
+        url: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/dashboard?success=true&bypass=true`
       });
     }
 
@@ -66,7 +66,7 @@ export async function POST(req) {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/admin/dashboard?success=true`,
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/portal/dashboard?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=true`,
       metadata: {
         userId: user.id || user.uid,

@@ -308,7 +308,7 @@ export async function publishPinterestPostNow(postId) {
             delete: 0
         });
 
-        revalidatePath("/admin/social/pinterest/posts");
+        revalidatePath("/portal/social/pinterest/posts");
         return { success: true, message: "Pin published successfully", pinId: result.id };
     } catch (error) {
         console.error("Error publishing Pinterest Pin now:", error);
@@ -419,7 +419,7 @@ export async function deletePinterestPost(postId) {
             apiDeleteError: apiError
         });
 
-        revalidatePath("/admin/social/pinterest/posts");
+        revalidatePath("/portal/social/pinterest/posts");
         return {
             success: true,
             message: apiDeleteSuccess || !postData.pinterestPinId
@@ -474,7 +474,7 @@ export async function updatePinterestPost({
         }
 
         await updateDoc(postRef, updates);
-        revalidatePath("/admin/social/pinterest/posts");
+        revalidatePath("/portal/social/pinterest/posts");
 
         return { success: true, message: "Post updated successfully" };
     } catch (error) {

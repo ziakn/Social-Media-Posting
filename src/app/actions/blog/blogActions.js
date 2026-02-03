@@ -105,7 +105,7 @@ export async function createBlog(data, userId) {
             updatedAt: serverTimestamp(),
         });
 
-        revalidatePath("/admin/blog");
+        revalidatePath("/portal/blog");
         revalidatePath("/blog");
         revalidateTag("public-blogs");
         return { success: true, id: docRef.id, message: "Blog post created successfully" };
@@ -129,7 +129,7 @@ export async function updateBlog(id, data) {
             updatedAt: serverTimestamp(),
         });
 
-        revalidatePath("/admin/blog");
+        revalidatePath("/portal/blog");
         revalidatePath("/blog");
         revalidatePath(`/blog/${data.slug || ''}`);
         revalidateTag("public-blogs");
@@ -148,7 +148,7 @@ export async function updateBlog(id, data) {
 export async function deleteBlog(id) {
     try {
         await deleteDoc(doc(db, COLLECTION_NAME, id));
-        revalidatePath("/admin/blog");
+        revalidatePath("/portal/blog");
         revalidatePath("/blog");
         revalidateTag("public-blogs");
         return { success: true, message: "Blog post deleted successfully" };

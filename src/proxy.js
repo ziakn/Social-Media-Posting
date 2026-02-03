@@ -18,7 +18,7 @@ export async function proxy(req) {
   }
 
   // Protected routes - require authentication
-  const protectedRoutes = ["/admin", "/dashboard"];
+  const protectedRoutes = ["/portal", "/dashboard"];
   const requiresAuth = protectedRoutes.some(route => pathname.startsWith(route));
 
   if (!requiresAuth) {
@@ -39,7 +39,7 @@ export async function proxy(req) {
     }
 
     // Optional: Role-based access control
-    if (pathname.startsWith("/admin") && payload.role !== "Admin" && payload.role !== "Administrator") {
+    if (pathname.startsWith("/portal") && payload.role !== "Admin" && payload.role !== "Administrator") {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
@@ -88,9 +88,9 @@ function redirectToLogin(req, pathname) {
 
 export const config = {
   matcher: [
-    "/admin/:path*",
+    "/portal/:path*",
     "/dashboard/:path*",
-    "/api/admin/:path*",
+    "/api/portal/:path*",
     "/api/dashboard/:path*"
   ],
 };

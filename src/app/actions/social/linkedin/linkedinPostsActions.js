@@ -281,7 +281,7 @@ export async function publishLinkedinPostNow(postId) {
                 linkedinPostId: result.postId || null // Ensure postId is captured if returned
             });
 
-            revalidatePath("/admin/social/linkedin/posts");
+            revalidatePath("/portal/social/linkedin/posts");
             return { success: true, message: "Post published successfully" };
         } else {
             return { success: false, message: result.message };
@@ -349,7 +349,7 @@ export async function deleteLinkedinPost(postId) {
             deletedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/linkedin/posts");
+        revalidatePath("/portal/social/linkedin/posts");
         return { success: true, message: "Post deleted successfully" };
     } catch (error) {
         console.error("Error deleting LinkedIn post:", error);
@@ -399,7 +399,7 @@ export async function updateLinkedinPostAction({
         }
 
         await updateDoc(postRef, updates);
-        revalidatePath("/admin/social/linkedin/posts");
+        revalidatePath("/portal/social/linkedin/posts");
 
         return { success: true, message: "Post updated successfully" };
     } catch (error) {

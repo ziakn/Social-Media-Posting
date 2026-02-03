@@ -389,7 +389,7 @@ export async function publishThreadsPostNow(postId) {
             delete: 0
         });
 
-        revalidatePath("/admin/social/threads/posts");
+        revalidatePath("/portal/social/threads/posts");
 
         return { success: true, message: "Thread published successfully", threadsPostId };
 
@@ -477,7 +477,7 @@ export async function deleteThreadsPost(postId) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/threads/posts");
+        revalidatePath("/portal/social/threads/posts");
 
         return { success: true, message: "Post deleted successfully" };
     } catch (error) {
@@ -531,7 +531,7 @@ export async function updateThreadsPost({
         }
 
         await updateDoc(postRef, updates);
-        revalidatePath("/admin/social/threads/posts");
+        revalidatePath("/portal/social/threads/posts");
 
         return { success: true, message: "Post updated successfully" };
     } catch (error) {

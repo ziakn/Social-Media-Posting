@@ -1,5 +1,5 @@
 // For API endpoints
-const API_PREFIX = "/api/admin";
+const API_PREFIX = "/api/portal";
 
 export const API_ROUTES = {
   // Auth

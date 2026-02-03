@@ -289,7 +289,7 @@ export async function deleteYoutubePost(postId) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/youtube/posts");
+        revalidatePath("/portal/social/youtube/posts");
 
         return { success: true, message: "Post deleted successfully" };
     } catch (err) {
@@ -367,7 +367,7 @@ export async function updateYoutubePost(postId, updates) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/youtube/posts");
+        revalidatePath("/portal/social/youtube/posts");
         return { success: true, message: "Post updated successfully" };
     } catch (err) {
         console.error("Error updating YouTube post:", err);
@@ -403,7 +403,7 @@ export async function updateYoutubePostSchedule(postId, scheduledAt) {
             status: 'scheduled'
         });
 
-        revalidatePath("/admin/social/youtube/posts");
+        revalidatePath("/portal/social/youtube/posts");
 
         return { success: true, message: "Post schedule updated successfully" };
     } catch (err) {
@@ -455,7 +455,7 @@ export async function publishYoutubePostNow(postId) {
                 updatedAt: serverTimestamp(),
             });
 
-            revalidatePath("/admin/social/youtube/posts");
+            revalidatePath("/portal/social/youtube/posts");
             return { success: true, message: "Video published successfully", videoId: result.videoId };
         } else {
             return { success: false, message: result.message };

@@ -263,8 +263,8 @@ export async function publishBlueSkyPostNow(postId) {
             delete: 0
         });
 
-        revalidatePath("/admin/social/bluesky/posts");
-        revalidatePath("/admin/social/bluesky/calendar");
+        revalidatePath("/portal/social/bluesky/posts");
+        revalidatePath("/portal/social/bluesky/calendar");
 
         return { success: true, message: "Post published successfully", blueskyUri: res.uri };
 
@@ -291,7 +291,7 @@ export async function deleteBlueSkyPost(postId) {
             updatedAt: serverTimestamp()
         });
 
-        revalidatePath("/admin/social/bluesky/posts");
+        revalidatePath("/portal/social/bluesky/posts");
         return { success: true, message: "Post deleted successfully" };
     } catch (error) {
         return { success: false, message: error.message };
@@ -325,7 +325,7 @@ export async function updateBlueSkyPost({ postId, text, media, link, scheduling,
         }
 
         await updateDoc(postRef, updates);
-        revalidatePath("/admin/social/bluesky/posts");
+        revalidatePath("/portal/social/bluesky/posts");
 
         return { success: true, message: "Post updated successfully" };
     } catch (error) {

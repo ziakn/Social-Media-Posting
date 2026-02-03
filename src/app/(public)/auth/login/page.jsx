@@ -43,7 +43,7 @@ function LoginForm() {
       }
 
       setSuccess(true);
-      const redirectPath = searchParams.get("redirect") || ROUTES.ADMIN_DASHBOARD;
+      const redirectPath = searchParams.get("redirect") || ROUTES.PORTAL_DASHBOARD;
       setTimeout(() => router.push(redirectPath), 800);
     } catch (error) {
       console.error(error);

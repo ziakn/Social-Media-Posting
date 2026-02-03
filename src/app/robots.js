@@ -4,7 +4,7 @@ export default function robots() {
             {
                 userAgent: "*",
                 allow: "/",
-                disallow: ["/admin/", "/api/"],
+                disallow: ["/portal/", "/api/"],
             },
         ],
         sitemap: "https://social-hub-demo.vercel.app/sitemap.xml",

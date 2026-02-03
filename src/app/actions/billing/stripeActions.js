@@ -60,8 +60,8 @@ export async function createCheckoutSession(priceId, successUrl, cancelUrl) {
                 },
             ],
             mode: 'subscription',
-            success_url: successUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/admin/subscription?success=true`,
-            cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/admin/subscription?canceled=true`,
+            success_url: successUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/portal/subscription?success=true`,
+            cancel_url: cancelUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/portal/subscription?canceled=true`,
             metadata: {
                 userId: user.id,
             },
@@ -99,7 +99,7 @@ export async function createPortalSession(returnUrl) {
 
         const session = await stripe.billingPortal.sessions.create({
             customer: customerId,
-            return_url: returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/admin/subscription`,
+            return_url: returnUrl || `${process.env.NEXT_PUBLIC_BASE_URL}/portal/subscription`,
         });
 
         return { success: true, url: session.url };
