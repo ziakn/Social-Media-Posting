@@ -36,7 +36,6 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
 import GalleryModal from "@/components/gallery/GalleryModal";
-import { useUsage } from "@/hooks/useUsage";
 
 // Icons
 import {
@@ -428,7 +427,6 @@ export default function PublishedPosts({ accountId: initialAccountId, viewMode =
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
     const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
-    const { canPost } = useUsage();
 
     const handleDelete = async (postId) => {
         try {
@@ -495,21 +493,15 @@ export default function PublishedPosts({ accountId: initialAccountId, viewMode =
 
                     <div className="flex items-center gap-4">
                         <Button
-                            disabled={!canPost}
                             onClick={() => {
                                 setCreateInitialData(null);
                                 setIsCreating(true);
                             }}
-                            className={cn(
-                                "group relative px-6 h-11 transition-all duration-300 hover:scale-[1.02] active:scale-95 border-0 rounded-xl shadow-lg font-black",
-                                !canPost
-                                    ? "bg-gray-400 cursor-not-allowed opacity-70"
-                                    : "bg-black hover:bg-gray-900 text-white shadow-gray-200"
-                            )}
+                            className="group relative px-6 h-11 bg-black hover:bg-gray-900 text-white font-black rounded-xl shadow-lg shadow-gray-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 border-0"
                         >
                             <div className="relative flex items-center gap-2">
-                                <Plus className={cn("h-4 w-4 transition-transform", canPost && "group-hover:rotate-90")} />
-                                <span className="text-sm">{canPost ? "Compose Post" : "Quota Reached"}</span>
+                                <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
+                                <span className="text-sm">Compose Post</span>
                             </div>
                         </Button>
                     </div>

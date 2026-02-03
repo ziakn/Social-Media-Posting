@@ -62,7 +62,6 @@ import InstagramViewComponent from "@/components/admin/instagram/InstagramViewCo
 import ListingViewComponent from "@/components/admin/instagram/ListingViewComponent";
 import InstagramPreview from "@/components/admin/instagram/InstagramPreview";
 import InstagramAnalyticsModal from "@/components/admin/instagram/InstagramAnalyticsModal";
-import { useUsage } from "@/hooks/useUsage";
 // Note: Keeping InstagramPreview import assuming it's complex enough to stay separate, or should it be merged too? 
 // User said "CreatePost module in this file". InstagramPreview is a child of CreatePost. I will import it for now.
 
@@ -468,7 +467,7 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
   const [analyticsModal, setAnalyticsModal] = useState({ open: false, post: null });
   const [accounts, setAccounts] = useState([]);
-  const { canPost, loading: usageLoading } = useUsage();
+  const [selectedPageId, setSelectedPageId] = useState(initialPageId || "all");
 
   useEffect(() => {
     async function loadAccounts() {
@@ -598,18 +597,15 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
             )}
 
             <Button
-              disabled={!canPost && !usageLoading}
               onClick={() => {
                 setCreateInitialData(null);
                 setIsCreating(true);
               }}
-              className="group relative px-6 h-11 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-black rounded-xl shadow-xl shadow-pink-100 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
+              className="group relative px-6 h-11 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white font-black rounded-xl shadow-xl shadow-pink-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
             >
               <div className="relative flex items-center gap-2">
                 <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                <span className="text-sm">
-                  {!canPost && !usageLoading ? "Quota Reached" : "Compose Masterpiece"}
-                </span>
+                <span className="text-sm">Compose Masterpiece</span>
               </div>
             </Button>
           </div>

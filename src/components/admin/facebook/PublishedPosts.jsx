@@ -65,7 +65,6 @@ import FacebookViewComponent from "@/components/admin/facebook/FacebookViewCompo
 import FacebookListingViewComponent from "@/components/admin/facebook/FacebookListingViewComponent";
 import FacebookPreview from "@/components/admin/facebook/FacebookPreview";
 import FacebookAnalyticsModal from "@/components/admin/facebook/FacebookAnalyticsModal";
-import { useUsage } from "@/hooks/useUsage";
 
 // -----------------------------------------------------------------------------
 // CREATE POST FORM
@@ -462,8 +461,6 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
   const [pages, setPages] = useState([]);
   const [selectedPageId, setSelectedPageId] = useState(initialPageId || "all");
 
-  const { canPost, loading: usageLoading } = useUsage();
-
   useEffect(() => {
     async function loadPages() {
       const res = await getUserFacebookPages();
@@ -581,18 +578,15 @@ export default function PublishedPosts({ pageId: initialPageId, viewMode = "grid
             )}
 
             <Button
-              disabled={!canPost && !usageLoading}
               onClick={() => {
                 setCreateInitialData(null);
                 setIsCreating(true);
               }}
-              className="group relative px-6 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-xl shadow-xl shadow-blue-100 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
+              className="group relative px-6 h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black rounded-xl shadow-xl shadow-blue-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
             >
               <div className="relative flex items-center gap-2">
                 <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                <span className="text-sm">
-                  {!canPost && !usageLoading ? "Quota Reached" : "Compose Masterpiece"}
-                </span>
+                <span className="text-sm">Compose Masterpiece</span>
               </div>
             </Button>
           </div>

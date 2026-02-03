@@ -8,7 +8,6 @@ import { verifyToken } from "@/lib/auth";
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
-import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 
 /**
  * Handle LinkedIn API response
@@ -144,10 +143,20 @@ export async function createLinkedinPost({
     videoUrl,
     scheduledTime,
     accountId: customAccountId,
-    skipQuotaCheck = false
 }) {
     try {
-        const user = await enforceUsageLimit('post', skipQuotaCheck);
+        const user = await verifyToken();
+
+        if (!user) {
+            return { success: false, message: "Invalid or expired token" };
+        }
+
+        // Check Usage Limit
+        const { checkUsageLimitAction } = await import("@/app/actions/usage/usageActions");
+        const usageCheck = await checkUsageLimitAction('post');
+        if (!usageCheck.success) {
+            return { success: false, message: usageCheck.error };
+        }
 
         const userId = user.id;
 
@@ -414,7 +423,6 @@ export async function replaceLinkedinPost(postDocId, {
             imageUrl: imageUrl || existingData.imageUrl,
             videoUrl: videoUrl || existingData.videoUrl,
             accountId: accountId || accountDoc.id, // Pass the account ID
-            skipQuotaCheck: true // Bypass quota check for edits
         });
 
         if (!createResult.success) throw new Error(createResult.message);

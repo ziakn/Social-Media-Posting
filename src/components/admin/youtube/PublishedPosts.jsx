@@ -38,7 +38,6 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { useUsage } from "@/hooks/useUsage";
 
 export default function PublishedPosts() {
     const [posts, setPosts] = useState([]);
@@ -47,8 +46,6 @@ export default function PublishedPosts() {
     const [selectedPost, setSelectedPost] = useState(null);
     const [editDialog, setEditDialog] = useState({ open: false, postId: null, title: "", description: "" });
     const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
-
-    const { canPost, loading: usageLoading } = useUsage();
 
     // Filter State
     const [filters, setFilters] = useState({

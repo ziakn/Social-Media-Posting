@@ -4,7 +4,6 @@ import { db } from "@/lib/firebase";
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 import { refreshYoutubeToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
@@ -35,10 +34,13 @@ export async function createYoutubePost({
     videoUrl,
     scheduledTime,
     privacyStatus = "public", // public, private, unlisted
-    skipQuotaCheck = false,
 }) {
     try {
-        const user = await enforceUsageLimit('post', skipQuotaCheck);
+        const user = await verifyToken();
+
+        if (!user) {
+            return { success: false, message: "Invalid or expired token" };
+        }
 
         const userId = user.id;
 
