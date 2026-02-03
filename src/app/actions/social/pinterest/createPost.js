@@ -4,6 +4,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import { getValidPinterestAccessToken } from "./connectAccount";
 import { uploadPinterestVideo } from "./videoUtils";
@@ -75,10 +76,11 @@ export async function createPinterestPost({
     boardId,
     media = [],
     postType = "image", // Default to image
-    scheduling = null
+    scheduling = null,
+    skipQuotaCheck = false
 }) {
     try {
-        const user = await getAuthenticatedUser();
+        const user = await enforceUsageLimit('post', skipQuotaCheck);
         const { accountId, accessToken } = await getValidPinterestAccessToken(user.id, pageId);
 
         // If scheduling, save to Firestore and exit

@@ -12,6 +12,7 @@ import { getDateTime } from "@/lib/utils";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 
 
 /**
@@ -151,9 +152,9 @@ async function getAuthenticatedUser() {
 /**
  * Create single image post
  */
-export async function createInstagramImagePost({ pageId, image, caption, scheduling }) {
+export async function createInstagramImagePost({ pageId, image, caption, scheduling, skipQuotaCheck = false }) {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await enforceUsageLimit('post', skipQuotaCheck);
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public
@@ -201,9 +202,9 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
 /**
  * Create carousel post (TEST MODE)
  */
-export async function createInstagramCarouselPost({ pageId, media, caption, scheduling }) {
+export async function createInstagramCarouselPost({ pageId, media, caption, scheduling, skipQuotaCheck = false }) {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await enforceUsageLimit('post', skipQuotaCheck);
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // TEST MODE: In production, you would upload media[i].file to get a real URL
@@ -292,9 +293,9 @@ export async function createInstagramCarouselPost({ pageId, media, caption, sche
 /**
  * Create video post (TEST MODE)
  */
-export async function createInstagramVideoPost({ pageId, video, caption, scheduling }) {
+export async function createInstagramVideoPost({ pageId, video, caption, scheduling, skipQuotaCheck = false }) {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await enforceUsageLimit('post', skipQuotaCheck);
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public
@@ -379,9 +380,9 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
 /**
  * Create story post (TEST MODE)
  */
-export async function createInstagramStory({ pageId, media, caption, scheduling }) {
+export async function createInstagramStory({ pageId, media, caption, scheduling, skipQuotaCheck = false }) {
   try {
-    const user = await getAuthenticatedUser();
+    const user = await enforceUsageLimit('post', skipQuotaCheck);
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public

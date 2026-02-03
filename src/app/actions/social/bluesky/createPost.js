@@ -4,6 +4,7 @@ import { BskyAgent, RichText } from "@atproto/api";
 import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
+import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 
 /**
  * Get authenticated user (Helper)
@@ -273,10 +274,12 @@ export async function createBlueSkyPost({
     text = "",
     media = [],
     link = null,
-    scheduling = null
+    scheduling = null,
+    skipQuotaCheck = false
 }) {
     try {
-        const user = await getAuthenticatedUser();
+        const user = await enforceUsageLimit('post', skipQuotaCheck);
+
         const account = await getBlueSkyAccount(user.id, pageId);
 
         // If scheduling, save to Firestore and exit

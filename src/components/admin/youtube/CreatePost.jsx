@@ -25,6 +25,7 @@ import {
 import { checkYoutubeConnection } from "@/app/actions/social/youtube/connectAccount";
 import GalleryModal from "@/components/gallery/GalleryModal";
 import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
+import { useUsage } from "@/hooks/useUsage";
 
 export default function CreateYoutubePost() {
     const [isPending, startTransition] = useTransition();
@@ -42,6 +43,7 @@ export default function CreateYoutubePost() {
     const [privacyStatus, setPrivacyStatus] = useState("public");
     const [accounts, setAccounts] = useState([]);
     const [galleryOpen, setGalleryOpen] = useState(false);
+    const { canPost } = useUsage();
 
     useEffect(() => {
         async function loadData() {
@@ -362,9 +364,14 @@ export default function CreateYoutubePost() {
                     {/* Publish Button */}
                     <Button
                         size="lg"
-                        className="w-full h-14 text-base font-semibold bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-lg"
+                        className={cn(
+                            "w-full h-14 text-base font-semibold shadow-lg",
+                            !canPost && !scheduling.schedule
+                                ? "bg-gray-400 cursor-not-allowed"
+                                : "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+                        )}
                         onClick={handleSubmit}
-                        disabled={isPending || !selectedAccount}
+                        disabled={isPending || !selectedAccount || (!canPost && !scheduling.schedule)}
                     >
                         {isPending ? (
                             <div className="flex items-center gap-2">
@@ -374,7 +381,7 @@ export default function CreateYoutubePost() {
                         ) : (
                             <div className="flex items-center gap-2">
                                 {scheduling.schedule ? <CalendarDays className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                                {scheduling.schedule ? "Schedule Upload" : "Upload Now"}
+                                {scheduling.schedule ? "Schedule Upload" : (canPost ? "Upload Now" : "Quota Reached")}
                             </div>
                         )}
                     </Button>

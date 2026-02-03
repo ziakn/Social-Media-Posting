@@ -11,6 +11,7 @@ import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 import { serializeTimestamp } from "@/lib/utils";
+import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 
 /**
  * Check Threads Media Container Status
@@ -126,10 +127,12 @@ export async function createThreadsPost({
     text = "",
     media = [],
     linkAttachment = null,
-    scheduling = null
+    scheduling = null,
+    skipQuotaCheck = false
 }) {
     try {
-        const user = await getAuthenticatedUser();
+        const user = await enforceUsageLimit('post', skipQuotaCheck);
+
         const { accountId, accessToken } = await getThreadsAccount(user.id, pageId);
 
         // If scheduling, save to Firestore and exit

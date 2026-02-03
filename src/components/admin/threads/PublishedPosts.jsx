@@ -4,6 +4,7 @@ import { useState, useRef, useTransition, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useUsage } from "@/hooks/useUsage";
 import {
     Tabs, TabsList, TabsTrigger, TabsContent
 } from "@/components/ui/tabs";
@@ -428,6 +429,8 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
     const [deleteDialog, setDeleteDialog] = useState({ open: false, postId: null });
     const [accounts, setAccounts] = useState([]);
 
+    const { canPost, loading: usageLoading } = useUsage();
+
     useEffect(() => {
         const loadAccounts = async () => {
             const res = await getUserThreadsAccounts();
@@ -533,15 +536,18 @@ export default function PublishedPosts({ accountId: initialAccountId }) {
                         )}
 
                         <Button
+                            disabled={!canPost && !usageLoading}
                             onClick={() => {
                                 setCreateInitialData(null);
                                 setIsCreating(true);
                             }}
-                            className="group relative px-6 h-11 bg-black hover:bg-gray-800 text-white font-black rounded-xl shadow-xl shadow-gray-100 transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                            className="group relative px-6 h-11 bg-black hover:bg-gray-800 text-white font-black rounded-xl shadow-xl shadow-gray-100 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
                         >
                             <div className="relative flex items-center gap-2">
                                 <Plus className="h-4 w-4 group-hover:rotate-90 transition-transform" />
-                                <span className="text-sm">Compose Masterpiece</span>
+                                <span className="text-sm">
+                                    {!canPost && !usageLoading ? "Quota Reached" : "Compose Masterpiece"}
+                                </span>
                             </div>
                         </Button>
                     </div>

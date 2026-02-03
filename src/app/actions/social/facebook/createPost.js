@@ -9,6 +9,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { verifyToken } from "@/lib/auth";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 
 // ... existing imports
 
@@ -22,20 +23,10 @@ export async function createFacebookPostBase({
   scheduledTime,
   postType,
   additionalData = {},
+  skipQuotaCheck = false,
 }) {
   try {
-    const user = await verifyToken();
-
-    if (!user) {
-      return { success: false, message: "Invalid or expired token" };
-    }
-
-    // Check Usage Limit
-    const { checkUsageLimitAction } = await import("@/app/actions/usage/usageActions");
-    const usageCheck = await checkUsageLimitAction('post');
-    if (!usageCheck.success) {
-      return { success: false, message: usageCheck.error };
-    }
+    const user = await enforceUsageLimit('post', skipQuotaCheck);
 
     const userId = user.id || user.uid;
 

@@ -134,8 +134,8 @@ export async function getUserUsageAction() {
                 },
                 posts: {
                     used: totalMonthlyPosts,
-                    limit: limits.monthlyPosts || 0,
-                    percent: Math.min(100, Math.round((totalMonthlyPosts / (limits.monthlyPosts || 1)) * 100))
+                    limit: limits.monthlyPosts || limits.scheduledPosts || 0,
+                    percent: Math.min(100, Math.round((totalMonthlyPosts / (limits.monthlyPosts || limits.scheduledPosts || 1)) * 100))
                 },
                 package: limits.name,
                 cycleStart: usageStart.toISOString()
@@ -168,4 +168,26 @@ export async function checkUsageLimitAction(type) {
     }
 
     return { success: true };
+}
+/**
+ * Professionals only: Centralized enforcement of usage limits and authentication
+ * @param {string} type - 'post' or 'account'
+ * @param {boolean} skipQuotaCheck - Whether to skip the quota check (e.g. for edits)
+ * @returns {Promise<Object>} - The authenticated user object
+ * @throws {Error} - If unauthorized or quota exceeded
+ */
+export async function enforceUsageLimit(type, skipQuotaCheck = false) {
+    const user = await verifyToken();
+    if (!user) {
+        throw new Error("Invalid or expired token. Please log in again.");
+    }
+
+    if (!skipQuotaCheck) {
+        const usageCheck = await checkUsageLimitAction(type);
+        if (!usageCheck.success) {
+            throw new Error(usageCheck.error);
+        }
+    }
+
+    return user;
 }

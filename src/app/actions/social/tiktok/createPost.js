@@ -13,6 +13,7 @@ import { getAuthenticatedUser, getTiktokAccount } from "./accountUtils";
  */
 import path from 'path';
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { enforceUsageLimit } from "@/app/actions/usage/usageActions";
 
 /**
  * Create TikTok Post (Direct Publish)
@@ -21,17 +22,11 @@ export async function createTiktokPost({
     pageId,
     text = "",
     media = [],
-    scheduling = null
+    scheduling = null,
+    skipQuotaCheck = false
 }) {
     try {
-        const user = await getAuthenticatedUser();
-
-        // Check Usage Limit
-        const { checkUsageLimitAction } = await import("@/app/actions/usage/usageActions");
-        const usageCheck = await checkUsageLimitAction('post');
-        if (!usageCheck.success) {
-            return { success: false, message: usageCheck.error };
-        }
+        const user = await enforceUsageLimit('post', skipQuotaCheck);
 
         const { accountId, accessToken } = await getTiktokAccount(user.id, pageId);
 
