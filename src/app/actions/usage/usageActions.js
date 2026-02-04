@@ -39,11 +39,19 @@ export async function getUserUsageAction() {
         }
 
         // 1. Get Package Limits
-        // We prefer the limits stored in the user document, fallback to hardcoded configs
+        // We fetch the default config for the packageID, then merge any custom limits from the user doc on top.
+        // This ensures if user.subscription.limits is partial, we still have defaults.
         const userDoc = await getDoc(doc(db, "users", userId));
         const userData = userDoc.exists() ? userDoc.data() : {};
-        const packageId = userData.subscription?.packageId || 'free';
-        const limits = userData.subscription?.limits || getPackageConfig(packageId);
+        const packageId = userData.subscription?.packageId || userData.packageId || 'free'; // Support both paths
+
+        const defaultLimits = getPackageConfig(packageId);
+        const userCustomLimits = userData.subscription?.limits || {};
+
+        const limits = {
+            ...defaultLimits,
+            ...userCustomLimits
+        };
 
         // 2. Count Connected Accounts
         const accountsQuery = query(
