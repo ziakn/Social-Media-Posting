@@ -132,7 +132,7 @@ export default function SocialConnectPage() {
       .map((p) => {
         const platformKey = p.platform_name.toLowerCase();
         const IconComponent = ICONS[platformKey] || null;
-        const url = ROUTES[`ADMIN_${p.platform_name.toUpperCase()}`];
+        const url = ROUTES[`PORTAL_${p.platform_name.toUpperCase()}`];
         const checkConnection = CONNECTION_FUNCTIONS[platformKey] || null;
         const disconnect = DISCONNECT_FUNCTIONS[platformKey] || null;
 
