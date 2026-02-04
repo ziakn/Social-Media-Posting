@@ -29,7 +29,7 @@ export const PACKAGE_CONFIGS = {
         failedPostRecovery: true,
         socialAccounts: 10,
         teamMembers: 1,
-        advancedAnalytics: false,
+        advancedAnalytics: true,
         aiCaptions: 50,
         support: "Priority"
     },
