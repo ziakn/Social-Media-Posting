@@ -38,7 +38,8 @@ export async function getUserFacebookPages() {
     const socialAccountsQuery = query(
       collection(db, "socialAccounts"),
       where("userId", "==", user.id),
-      where("platform", "==", "facebook")
+      where("platform", "==", "facebook"),
+      where("status", "==", "active")
     );
 
     const socialAccountsSnapshot = await getDocs(socialAccountsQuery);
