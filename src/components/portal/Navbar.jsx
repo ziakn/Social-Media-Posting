@@ -2,17 +2,68 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, User, CreditCard, LogOut, Lock } from 'lucide-react';
+import { ChevronDown, User, CreditCard, LogOut, Lock, LayoutGrid, Facebook, Instagram, Linkedin, MessageCircle, Twitter, Send, MessageSquare, Youtube } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 import { API_ROUTES } from '@/constants/api';
 import { cn } from '@/lib/utils';
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { getConnectedAccounts } from '@/app/actions/social/getConnectedAccounts';
+import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
+import PinterestLogo from "@/components/icons/PinterestLogo";
+import { BlueSkyLogo } from "@/components/icons/BlueSkyLogo";
+import { TiktokLogo } from "@/components/icons/TiktokLogo";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const ICONS = {
+  facebook: Facebook,
+  instagram: Instagram,
+  linkedin: Linkedin,
+  whatsapp: MessageCircle,
+  twitter: Twitter,
+  telegram: Send,
+  bluesky: BlueSkyLogo,
+  reddit: MessageSquare,
+  threads: ThreadsLogo,
+  tiktok: TiktokLogo,
+  youtube: Youtube,
+  pinterest: PinterestLogo,
+};
+
+const ICON_COLORS = {
+  facebook: "text-[#1877F2]",
+  instagram: "text-[#E4405F]",
+  twitter: "text-[#000000]",
+  linkedin: "text-[#0A66C2]",
+  whatsapp: "text-[#25D366]",
+  threads: "text-black",
+  telegram: "text-[#0088cc]",
+  bluesky: "text-[#0085ff]",
+  reddit: "text-[#FF4500]",
+  tiktok: "text-[#000000]",
+  youtube: "text-[#FF0000]",
+  pinterest: "text-[#E60023]",
+};
 
 export default function Navbar({ user: initialUser }) {
   const router = useRouter();
   const [showMenu, setShowMenu] = useState(false);
+  const [connectedPlatforms, setConnectedPlatforms] = useState([]);
 
-
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      const result = await getConnectedAccounts();
+      if (result.success) {
+        setConnectedPlatforms(result.data);
+      }
+    };
+    fetchAccounts();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -33,13 +84,74 @@ export default function Navbar({ user: initialUser }) {
     );
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 shadow-sm">
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 shadow-sm justify-between">
       <div className="flex items-center space-x-4">
         <SidebarTrigger />
-        <h1 className="text-xl font-semibold tracking-tight text-gray-900">SocialHub</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-gray-900 hidden sm:block">SocialHub</h1>
       </div>
 
+      {/* Spacer if needed, or remove completely */}
+      <div className="flex-1" />
+
+
       <div className="ml-auto flex items-center gap-4 relative">
+        {/* App Launcher - Right Aligned */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              title="Connected Apps"
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-[320px] p-3 shadow-xl border-gray-100">
+            <div className="px-2 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-gray-50 flex justify-between items-center">
+              <span>Connected Platforms</span>
+              <span className="text-xs font-normal text-primary hover:underline cursor-pointer" onClick={() => router.push(ROUTES.PORTAL_SOCIAL_CONNECT)}>Manage</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {connectedPlatforms.length > 0 ? (
+                connectedPlatforms.map(platform => {
+                  const Icon = ICONS[platform];
+                  // Same route logic as desktop
+                  let targetRoute = ROUTES[`PORTAL_${platform.toUpperCase()}_POSTS`];
+                  if (!targetRoute) targetRoute = ROUTES[`PORTAL_${platform.toUpperCase()}`];
+                  if (!targetRoute) targetRoute = `/portal/social/${platform}`;
+
+                  return (
+                    <DropdownMenuItem
+                      key={platform}
+                      className="flex flex-col items-center justify-center p-3 cursor-pointer rounded-xl hover:bg-gray-50 transition-colors focus:bg-gray-50 outline-none h-24 border border-transparent hover:border-gray-100"
+                      onClick={() => router.push(targetRoute)}
+                    >
+                      {Icon ? (
+                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-2 group-hover:bg-white group-hover:shadow-sm transition-all">
+                          <Icon className={cn("w-5 h-5", ICON_COLORS[platform])} />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-100 mb-2" />
+                      )}
+                      <span className="text-[11px] font-medium capitalize text-center leading-tight text-gray-700">{platform}</span>
+                    </DropdownMenuItem>
+                  )
+                })
+              ) : (
+                <div className="col-span-3 text-center py-10 text-sm text-muted-foreground bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <p className="font-medium text-gray-900 mb-1">No apps connected</p>
+                  <p className="text-xs mb-3">Connect your social accounts to get started.</p>
+                  <button
+                    className="text-xs bg-primary text-white px-3 py-1.5 rounded-md hover:bg-primary/90 transition-colors"
+                    onClick={() => router.push(ROUTES.PORTAL_SOCIAL_CONNECT)}
+                  >
+                    Connect Accounts
+                  </button>
+                </div>
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         {/* User Profile Section */}
         <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm hover:shadow transition-all gap-2">
 

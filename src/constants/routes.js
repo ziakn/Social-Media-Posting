@@ -54,6 +54,7 @@ export const ROUTES = {
   PORTAL_FACEBOOK_POSTS_CREATE: prefix + "social/facebook/posts/create",
   PORTAL_INSTAGRAM_POSTS: prefix + "social/instagram/posts",
   PORTAL_THREADS_POSTS: prefix + "social/threads/posts",
+  PORTAL_BLUESKY_POSTS: prefix + "social/bluesky/posts",
   PORTAL_THREADS_POSTS_CREATE: prefix + "social/threads/posts/new",
   PORTAL_YOUTUBE: prefix + "social/youtube/posts",
   PORTAL_YOUTUBE_POSTS: prefix + "social/youtube/posts",
