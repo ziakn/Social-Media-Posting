@@ -13,7 +13,7 @@ import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 
-
+import { checkUsageLimitAction } from "../../usage/usageActions";
 /**
  * Upload local file or File object to Firebase and return public URL
  */
@@ -154,6 +154,10 @@ async function getAuthenticatedUser() {
 export async function createInstagramImagePost({ pageId, image, caption, scheduling }) {
   try {
     const user = await getAuthenticatedUser();
+
+    // Check usage limits
+    const usageCheck = await checkUsageLimitAction('post');
+    if (!usageCheck.success) return { success: false, message: usageCheck.error };
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public
@@ -204,6 +208,10 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
 export async function createInstagramCarouselPost({ pageId, media, caption, scheduling }) {
   try {
     const user = await getAuthenticatedUser();
+
+    // Check usage limits
+    const usageCheck = await checkUsageLimitAction('post');
+    if (!usageCheck.success) return { success: false, message: usageCheck.error };
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // TEST MODE: In production, you would upload media[i].file to get a real URL
@@ -295,6 +303,10 @@ export async function createInstagramCarouselPost({ pageId, media, caption, sche
 export async function createInstagramVideoPost({ pageId, video, caption, scheduling }) {
   try {
     const user = await getAuthenticatedUser();
+
+    // Check usage limits
+    const usageCheck = await checkUsageLimitAction('post');
+    if (!usageCheck.success) return { success: false, message: usageCheck.error };
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public
@@ -382,6 +394,10 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
 export async function createInstagramStory({ pageId, media, caption, scheduling }) {
   try {
     const user = await getAuthenticatedUser();
+
+    // Check usage limits
+    const usageCheck = await checkUsageLimitAction('post');
+    if (!usageCheck.success) return { success: false, message: usageCheck.error };
     const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public

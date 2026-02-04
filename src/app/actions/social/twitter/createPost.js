@@ -8,6 +8,7 @@ import { refreshTwitterToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { checkUsageLimitAction } from "../../usage/usageActions";
 
 /**
  * Enhanced Twitter API response handler
@@ -53,6 +54,12 @@ export async function createTwitterPost({
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
+        }
+
+        // Check Usage Limit
+        const usageCheck = await checkUsageLimitAction('post');
+        if (!usageCheck.success) {
+            return { success: false, message: usageCheck.error };
         }
 
         const userId = user.id;

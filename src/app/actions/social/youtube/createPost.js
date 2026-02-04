@@ -7,6 +7,7 @@ import { verifyToken } from "@/lib/auth";
 import { refreshYoutubeToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
+import { checkUsageLimitAction } from "../../usage/usageActions";
 
 /**
  * Handle YouTube API response
@@ -40,6 +41,12 @@ export async function createYoutubePost({
 
         if (!user) {
             return { success: false, message: "Invalid or expired token" };
+        }
+
+        // Check Usage Limit
+        const usageCheck = await checkUsageLimitAction('post');
+        if (!usageCheck.success) {
+            return { success: false, message: usageCheck.error };
         }
 
         const userId = user.id;

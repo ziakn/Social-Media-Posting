@@ -9,6 +9,7 @@ import { getValidPinterestAccessToken } from "./connectAccount";
 import { uploadPinterestVideo } from "./videoUtils";
 import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { checkUsageLimitAction } from "../../usage/usageActions";
 
 /**
  * Get authenticated user
@@ -79,6 +80,13 @@ export async function createPinterestPost({
 }) {
     try {
         const user = await getAuthenticatedUser();
+
+        // Check Usage Limit
+        const usageCheck = await checkUsageLimitAction('post');
+        if (!usageCheck.success) {
+            return { success: false, message: usageCheck.error };
+        }
+
         const { accountId, accessToken } = await getValidPinterestAccessToken(user.id, pageId);
 
         // If scheduling, save to Firestore and exit
