@@ -6,6 +6,7 @@ import { ChevronDown, User, CreditCard, LogOut, Lock } from 'lucide-react';
 import { ROUTES } from '@/constants/routes';
 import { API_ROUTES } from '@/constants/api';
 import { cn } from '@/lib/utils';
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export default function Navbar({ user: initialUser }) {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function Navbar({ user: initialUser }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 shadow-sm">
       <div className="flex items-center space-x-4">
+        <SidebarTrigger />
         <h1 className="text-xl font-semibold tracking-tight text-gray-900">SocialHub</h1>
       </div>
 
