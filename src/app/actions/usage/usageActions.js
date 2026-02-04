@@ -103,20 +103,84 @@ export async function getUserUsageAction() {
         const postQueries = platforms.map(async (platform) => {
             try {
                 const collectionName = `${platform}_posts`;
-                // We count all posts created in this cycle, regardless of status (published or scheduled)
-                // because they consume the allocation.
-                const q = query(
+
+                // Scalable Approach: Run 3 targeted queries to fetch ONLY potential candidates
+                // This ensures we only read O(MonthlyUsage) docs instead of O(TotalHistory)
+                // REQUIRED INDEXES:
+                // 1. userId (ASC) + createdAt (ASC/DESC)
+                // 2. userId (ASC) + scheduledAt (ASC/DESC)
+                // 3. userId (ASC) + publishedAt (ASC/DESC)
+
+                const qCreated = query(
                     collection(db, collectionName),
                     where("userId", "==", userId),
                     where("createdAt", ">=", usageStartTimestamp)
                 );
 
-                // Filtering out deleted posts
-                // Note: Not all collections might have the 'delete' field yet, but we'll try
-                const snap = await getDocs(q);
-                return snap.docs.filter(doc => doc.data().delete !== 1).length;
+                const qScheduled = query(
+                    collection(db, collectionName),
+                    where("userId", "==", userId),
+                    where("scheduledAt", ">=", usageStartTimestamp)
+                );
+
+                const qPublished = query(
+                    collection(db, collectionName),
+                    where("userId", "==", userId),
+                    where("publishedAt", ">=", usageStartTimestamp)
+                );
+
+                try {
+                    // Run in parallel
+                    const [snapCreated, snapScheduled, snapPublished] = await Promise.all([
+                        getDocs(qCreated),
+                        getDocs(qScheduled),
+                        getDocs(qPublished)
+                    ]);
+
+                    // Deduplicate using a Map
+                    const uniqueDocs = new Map();
+
+                    const processSnap = (snap) => {
+                        snap.forEach(doc => {
+                            uniqueDocs.set(doc.id, doc);
+                        });
+                    };
+
+                    processSnap(snapCreated);
+                    processSnap(snapScheduled);
+                    processSnap(snapPublished);
+
+                    // Filter valid usage in memory (double check date & strict delete)
+                    return Array.from(uniqueDocs.values()).filter(doc => {
+                        const data = doc.data();
+
+                        if (data.delete === 1) return false;
+
+                        let effectiveDate = null;
+                        if (data.publishedAt) {
+                            effectiveDate = data.publishedAt.toDate ? data.publishedAt.toDate() : new Date(data.publishedAt);
+                        } else if (data.scheduledAt) {
+                            effectiveDate = data.scheduledAt.toDate ? data.scheduledAt.toDate() : new Date(data.scheduledAt);
+                        } else if (data.createdAt) {
+                            effectiveDate = data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                        }
+
+                        if (!effectiveDate) return false;
+
+                        return effectiveDate >= usageStart;
+                    }).length;
+
+                } catch (idxError) {
+                    // If index is missing, Firestore usually returns a link to create it.
+                    // We log this clearly for the developer/user.
+                    if (idxError.code === 'failed-precondition') {
+                        console.error(`MISSING INDEX for ${collectionName}. Create it here:`, idxError.message);
+                    }
+                    throw idxError; // Re-throw to be caught by outer catch and potentially fail gracefully or return 0
+                }
             } catch (e) {
                 // If collection doesn't exist, ignore
+                console.warn(`Error counting posts for ${platform}:`, e);
                 return 0;
             }
         });
