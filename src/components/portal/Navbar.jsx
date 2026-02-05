@@ -1,5 +1,7 @@
 'use client';
 
+// 1. IMPORTING TOOLS
+// We need these to build the user interface and handle navigation
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, User, CreditCard, LogOut, Lock, LayoutGrid, Facebook, Instagram, Linkedin, MessageCircle, Twitter, Send, MessageSquare, Youtube } from 'lucide-react';
@@ -20,6 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+// 2. CONFIGURATION
+// This list matches the platform names to their specific icons
 const ICONS = {
   facebook: Facebook,
   instagram: Instagram,
@@ -35,6 +39,7 @@ const ICONS = {
   pinterest: PinterestLogo,
 };
 
+// This list matches platforms to their brand colors
 const ICON_COLORS = {
   facebook: "text-[#1877F2]",
   instagram: "text-[#E4405F]",
@@ -50,31 +55,50 @@ const ICON_COLORS = {
   pinterest: "text-[#E60023]",
 };
 
+// 3. THE MAIN COMPONENT
 export default function Navbar({ user: initialUser }) {
-  const router = useRouter();
-  const [showMenu, setShowMenu] = useState(false);
+  const router = useRouter(); // Helps us move to different pages
+  const [showMenu, setShowMenu] = useState(false); // Controls the user profile menu
+
+  // State to hold the list of connected social apps
   const [connectedPlatforms, setConnectedPlatforms] = useState([]);
 
+  // State to hold the total count (e.g., 5 connected accounts)
+  const [totalConnected, setTotalConnected] = useState(0);
+
+  // 4. LOAD DATA ON STARTUP
+  // When the requested page loads, we go get the list of accounts
   useEffect(() => {
     const fetchAccounts = async () => {
+      // Call our helpful server action
       const result = await getConnectedAccounts();
+
       if (result.success) {
+        // Save the list so we can show it
         setConnectedPlatforms(result.data);
+
+        // Count accurately: If you have 2 Facebook pages, that counts as 2, not 1.
+        const total = result.data.reduce((acc, curr) => acc + (curr.count || 1), 0);
+        setTotalConnected(total);
       }
     };
     fetchAccounts();
   }, []);
 
+  // 5. HANDLE LOGOUT
   const handleLogout = async () => {
     try {
       await fetch(API_ROUTES.LOGOUT, { method: 'POST' });
+      // Clear the security cookie
       document.cookie = 'token=; path=/; max-age=0';
+      // Send user back to login screen
       router.push(ROUTES.PORTAL_LOGIN);
     } catch (error) {
       console.error('Logout failed', error);
     }
   };
 
+  // Helper to make menu items look consistent
   const menuItemClass = (isDanger = false) =>
     cn(
       "block w-full text-left px-4 py-2 text-sm rounded-md transition-colors",
@@ -83,60 +107,92 @@ export default function Navbar({ user: initialUser }) {
         : "text-gray-700 hover:bg-gray-100"
     );
 
+  // 6. RENDER THE INTERFACE
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center px-6 shadow-sm justify-between">
+
+      {/* LEFT SIDE: Hamburger Menu & Logo */}
       <div className="flex items-center space-x-4">
         <SidebarTrigger />
         <h1 className="text-xl font-semibold tracking-tight text-gray-900 hidden sm:block">SocialHub</h1>
       </div>
 
-      {/* Spacer if needed, or remove completely */}
+      {/* SPACER: Pushes everything else to the right */}
       <div className="flex-1" />
 
 
+      {/* RIGHT SIDE: Apps & Profile */}
       <div className="ml-auto flex items-center gap-4 relative">
-        {/* App Launcher - Right Aligned */}
+
+        {/* A. APP LAUNCHER (The Grid Icon) */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2 text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/20 relative"
               title="Connected Apps"
             >
               <LayoutGrid className="w-5 h-5" />
+
+              {/* The Red Badge (Global Count) */}
+              {/* {totalConnected > 0 && (
+                <span className="absolute top-1 right-1 flex items-center justify-center w-3.5 h-3.5 bg-primary text-white text-[9px] font-bold rounded-full ring-2 ring-white">
+                  {totalConnected}
+                </span>
+              )} */}
             </button>
           </DropdownMenuTrigger>
+
+          {/* The Dropdown Content */}
           <DropdownMenuContent align="end" className="w-[320px] p-3 shadow-xl border-gray-100">
             <div className="px-2 py-2 text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 border-b border-gray-50 flex justify-between items-center">
               <span>Connected Platforms</span>
               <span className="text-xs font-normal text-primary hover:underline cursor-pointer" onClick={() => router.push(ROUTES.PORTAL_SOCIAL_CONNECT)}>Manage</span>
             </div>
+
+            {/* The Grid of Icons */}
             <div className="grid grid-cols-3 gap-2">
               {connectedPlatforms.length > 0 ? (
-                connectedPlatforms.map(platform => {
-                  const Icon = ICONS[platform];
-                  // Same route logic as desktop
-                  let targetRoute = ROUTES[`PORTAL_${platform.toUpperCase()}_POSTS`];
-                  if (!targetRoute) targetRoute = ROUTES[`PORTAL_${platform.toUpperCase()}`];
-                  if (!targetRoute) targetRoute = `/portal/social/${platform}`;
+                connectedPlatforms.map(platformObj => {
+                  const platformKey = platformObj.key;
+                  const count = platformObj.count;
+
+                  const Icon = ICONS[platformKey]; // Get the right icon picture
+
+                  // Figure out where to go when clicked
+                  let targetRoute = ROUTES[`PORTAL_${platformKey.toUpperCase()}_POSTS`];
+                  if (!targetRoute) targetRoute = ROUTES[`PORTAL_${platformKey.toUpperCase()}`];
+                  if (!targetRoute) targetRoute = `/portal/social/${platformKey}`;
 
                   return (
                     <DropdownMenuItem
-                      key={platform}
-                      className="flex flex-col items-center justify-center p-3 cursor-pointer rounded-xl hover:bg-gray-50 transition-colors focus:bg-gray-50 outline-none h-24 border border-transparent hover:border-gray-100"
+                      key={platformKey}
+                      className="flex flex-col items-center justify-center p-3 cursor-pointer rounded-xl hover:bg-gray-50 transition-colors focus:bg-gray-50 outline-none h-24 border border-transparent hover:border-gray-100 group"
                       onClick={() => router.push(targetRoute)}
                     >
-                      {Icon ? (
-                        <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-2 group-hover:bg-white group-hover:shadow-sm transition-all">
-                          <Icon className={cn("w-5 h-5", ICON_COLORS[platform])} />
-                        </div>
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-gray-100 mb-2" />
-                      )}
-                      <span className="text-[11px] font-medium capitalize text-center leading-tight text-gray-700">{platform}</span>
+                      <div className="relative">
+
+                        {/* Platform Specific Badge (e.g. "2" for Facebook) */}
+                        {count > 0 && (
+                          <div className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-0.5 bg-rose-500 text-white text-[9px] font-bold rounded-full shadow-sm z-10 border-[1.5px] border-white">
+                            {count}
+                          </div>
+                        )}
+
+                        {/* The Icon Itself */}
+                        {Icon ? (
+                          <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center mb-2 group-hover:bg-white group-hover:shadow-sm transition-all border border-transparent group-hover:border-gray-100">
+                            <Icon className={cn("w-5 h-5", ICON_COLORS[platformKey])} />
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-100 mb-2" />
+                        )}
+                      </div>
+                      <span className="text-[11px] font-medium capitalize text-center leading-tight text-gray-700">{platformKey}</span>
                     </DropdownMenuItem>
                   )
                 })
               ) : (
+                // Empty State: Show this if nothing is connected
                 <div className="col-span-3 text-center py-10 text-sm text-muted-foreground bg-gray-50 rounded-xl border border-dashed border-gray-200">
                   <p className="font-medium text-gray-900 mb-1">No apps connected</p>
                   <p className="text-xs mb-3">Connect your social accounts to get started.</p>
@@ -152,13 +208,14 @@ export default function Navbar({ user: initialUser }) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* User Profile Section */}
+        {/* B. USER PROFILE SECTION */}
         <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 py-1.5 shadow-sm hover:shadow transition-all gap-2">
 
           <div
             className="flex items-center gap-2 cursor-pointer group"
             onClick={() => setShowMenu(!showMenu)}
           >
+            {/* User Initials Circle */}
             <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center text-white shadow-sm hover:shadow transition-all">
               {initialUser?.name ? (
                 <span className="text-sm font-bold">
@@ -169,6 +226,7 @@ export default function Navbar({ user: initialUser }) {
               )}
             </div>
 
+            {/* Name and Role */}
             <div className="hidden sm:flex flex-col">
               <span className="text-sm font-semibold text-gray-900 leading-none group-hover:text-primary transition-colors">
                 {initialUser?.name || 'Loading user...'}
@@ -183,7 +241,7 @@ export default function Navbar({ user: initialUser }) {
           </div>
         </div>
 
-        {/* Dropdown menu */}
+        {/* User Profile Dropdown Menu */}
         {showMenu && (
           <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
             <div className="border-b border-gray-100 p-4 bg-gray-50">
