@@ -29,8 +29,9 @@ export async function fetchFacebookPages() {
           pages.push({
             pageId: p.pageId,
             pageName: p.pageName,
-            accessToken: p.pageAccessToken,
+            accessToken: p.pageAccessToken || p.pageAccessTokean || p.accessToken,
             userId: data.userId,
+            accountId: docSnap.id, // Essential for optimized worker lookup
           });
         });
       }

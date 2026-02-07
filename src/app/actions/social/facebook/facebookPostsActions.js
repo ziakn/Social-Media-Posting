@@ -19,13 +19,7 @@ import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { fetchFacebookPages } from "./getPages";
-import {
-  handleImagePost,
-  handleTextPost,
-  handleVideoPost,
-  handlePollPost,
-  handleLinkPost
-} from "./createPost";
+import { syncPostJob, removePostJob } from "@/lib/queue/queues";
 
 // Get user's Facebook pages for filtering
 export async function getUserFacebookPages() {
@@ -311,37 +305,8 @@ export async function deleteFacebookPost(postId) {
       return { success: false, message: "Unauthorized" };
     }
 
-    // Call Facebook API to delete if it has a Facebook ID
-    if (postData.facebookPostId && postData.pageId) {
-      try {
-        console.log(`Attempting to delete post from Facebook: ${postData.facebookPostId} (Page: ${postData.pageId})`);
-
-        // Get Access Token
-        const { pages } = await fetchFacebookPages();
-        // Use String() for safe comparison
-        const page = pages.find(p => String(p.pageId) === String(postData.pageId));
-
-        if (page && page.accessToken) {
-          const response = await fetch(`https://graph.facebook.com/${postData.facebookPostId}?access_token=${page.accessToken}`, {
-            method: 'DELETE',
-          });
-          const data = await response.json();
-
-          if (data.success) {
-            console.log("Successfully deleted from Facebook API");
-          } else if (data.error) {
-            console.warn("Error deleting from Facebook:", data.error);
-            // We continue to soft delete even if FB delete fails, but log it
-          }
-        } else {
-          console.warn(`Page not found or no access token for pageId: ${postData.pageId}`);
-        }
-      } catch (fbError) {
-        console.error("Failed to delete from Facebook:", fbError);
-      }
-    } else {
-      console.log("Skipping Facebook API delete: Missing facebookPostId or pageId in post data");
-    }
+    // Synchronize with Queue (Remove job if it was scheduled)
+    await removePostJob("facebook", postId);
 
     // Soft delete
     await updateDoc(postRef, {
@@ -447,11 +412,19 @@ export async function updatePostSchedule(postId, scheduledAt) {
       return { success: false, message: "Unauthorized" };
     }
 
+    const delay = scheduledAt ? Math.max(0, new Date(scheduledAt).getTime() - Date.now()) : 0;
+
     await updateDoc(postRef, {
       scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
       updatedAt: new Date(),
-      status: scheduledAt ? 'scheduled' : 'published' // If no schedule, assume it should be published (or handle as draft)
+      status: 'scheduled'
     });
+
+    // Sync with Queue (Replace existing job)
+    await syncPostJob("facebook", postId, {
+      postId,
+      pageId: postSnap.data().pageId
+    }, { delay });
 
     revalidatePath("/portal/social/facebook/posts");
 
@@ -701,76 +674,23 @@ export async function publishFacebookPostNow(postId) {
       return { success: false, message: "Unauthorized" };
     }
 
-    // Call Facebook API if not already published
-    let facebookPostId = postData.facebookPostId;
-
-    if (!facebookPostId) {
-      const { pages } = await fetchFacebookPages();
-      const page = pages.find((p) => String(p.pageId) === String(postData.pageId));
-
-      if (!page || !page.accessToken) {
-        return { success: false, message: "Page access token not found" };
-      }
-
-      const accessToken = page.accessToken;
-      const baseBody = {
-        message: postData.message?.trim() || '',
-        access_token: accessToken,
-        published: true,
-      };
-
-      let fbData;
-      const postType = postData.postType || 'text';
-
-      switch (postType) {
-        case "images":
-          if (postData.mediaUrls?.length > 0) {
-            fbData = await handleImagePost(postData.pageId, postData.message, postData.mediaUrls, accessToken, baseBody);
-          } else {
-            fbData = await handleTextPost(postData.pageId, baseBody);
-          }
-          break;
-
-        case "video":
-          if (postData.mediaUrls?.length > 0) {
-            fbData = await handleVideoPost(postData.pageId, postData.message, postData.mediaUrls[0], accessToken, baseBody);
-          } else {
-            return { success: false, message: "No video provided" };
-          }
-          break;
-
-        case "poll":
-          fbData = await handlePollPost(postData.pageId, postData.message, postData.additionalData, baseBody);
-          break;
-
-        case "link":
-          fbData = await handleLinkPost(postData.pageId, postData.message, postData.additionalData, baseBody);
-          break;
-
-        default:
-          fbData = await handleTextPost(postData.pageId, baseBody);
-          break;
-      }
-
-      if (fbData.error) {
-        throw new Error(fbData.error.message);
-      }
-      facebookPostId = fbData.id;
-    }
-
-    // Update status in Firestore
+    // Update Firestore to 'scheduled' for NOW
     await updateDoc(postRef, {
-      status: 'published',
-      facebookPostId: facebookPostId,
-      publishedAt: new Date(),
-      updatedAt: new Date(),
-      scheduledAt: new Date() // Sync with current publish time
+      status: "scheduled",
+      scheduledAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     });
+
+    // Synchronize with Queue (Immediate Promotion)
+    await syncPostJob("facebook", postId, {
+      postId,
+      pageId: postData.pageId
+    }, { delay: 0 });
 
     revalidatePath("/portal/social/facebook/posts");
     revalidatePath("/portal/social/facebook/calendar");
 
-    return { success: true, message: "Post published successfully!", facebookPostId };
+    return { success: true, message: "Publication queued for immediate processing." };
 
   } catch (error) {
     console.error("Error publishing post now:", error);
