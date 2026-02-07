@@ -3,6 +3,7 @@
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, limit, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
+import { syncPostJob } from "@/lib/queue/queues";
 
 /**
  * Get failed posts from all platforms
@@ -178,6 +179,15 @@ export async function rescheduleFailedPost(postId, platform, newScheduledAt) {
             retryCount: (postData.retryCount || 0) + 1,
             updatedAt: serverTimestamp()
         });
+
+        // Synchronize with Queue
+        const delay = Math.max(0, newDate.getTime() - Date.now());
+        await syncPostJob(platform, postId, {
+            postId,
+            pageId: postData.pageId,
+            userId: postData.userId,
+            userEmail: postData.userEmail || ""
+        }, { delay });
 
         return { success: true, message: "Post rescheduled successfully" };
     } catch (error) {

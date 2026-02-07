@@ -12,6 +12,7 @@ import { getDateTime } from "@/lib/utils";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { syncPostJob } from "@/lib/queue/queues";
 
 import { checkUsageLimitAction } from "../../usage/usageActions";
 /**
@@ -158,44 +159,38 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
     // Check usage limits
     const usageCheck = await checkUsageLimitAction('post');
     if (!usageCheck.success) return { success: false, message: usageCheck.error };
-    const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
     // DEVELOPMENT: Use test URL if the provided URL is not public
     const imageUrl = needsTestUrl(image.url) ? getTestUrl('image') : getAbsoluteUrl(image.url);
-    console.log("Creating Instagram Image Post with URL:", imageUrl);
-
-    let containerId = null;
-    let publishResult = null;
-
-    if (!scheduling?.schedule) {
-      containerId = await createMediaContainer(
-        instagramId,
-        { image_url: imageUrl, caption },
-        accessToken
-      );
-
-      await new Promise(r => setTimeout(r, 2000));
-      const status = await checkMediaStatus(instagramId, containerId, accessToken);
-      if (status.status_code === "FINISHED") {
-        publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
-      } else {
-        throw new Error(`Media not ready for publishing. Status: ${status.status}`);
-      }
-    }
+    console.log("Queueing Instagram Image Post with URL:", imageUrl);
 
     const firestoreId = await saveToFirestore({
       platform: "instagram",
       pageId,
       postType: "image",
       content: { caption, image: { url: imageUrl, name: image.name, type: image.type, size: image.size } },
-      status: scheduling?.schedule ? "scheduled" : "published",
-      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
-      instagramContainerId: containerId,
-      instagramPostId: publishResult?.id || null,
+      status: "scheduled", // Always scheduled initially (even if delay=0)
+      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : serverTimestamp(),
       metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
     }, user.id);
 
-    return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
+    // Synchronize with Queue
+    const scheduledTime = scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : new Date();
+    const delay = Math.max(0, new Date(scheduledTime).getTime() - Date.now());
+
+    await syncPostJob("instagram", firestoreId, {
+      postId: firestoreId,
+      pageId,
+      userId: user.id,
+      userEmail: user.email
+    }, { delay });
+
+    return {
+      success: true,
+      firestoreId,
+      scheduled: !!scheduling?.schedule,
+      message: scheduling?.schedule ? "Post scheduled successfully" : "Post submission queued for publishing"
+    };
   } catch (error) {
     console.error("Instagram Image Post Error:", error);
     return { success: false, message: error.message || "Failed to create Instagram image post" };
@@ -203,7 +198,7 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
 }
 
 /**
- * Create carousel post (TEST MODE)
+ * Create carousel post
  */
 export async function createInstagramCarouselPost({ pageId, media, caption, scheduling }) {
   try {
@@ -212,70 +207,14 @@ export async function createInstagramCarouselPost({ pageId, media, caption, sche
     // Check usage limits
     const usageCheck = await checkUsageLimitAction('post');
     if (!usageCheck.success) return { success: false, message: usageCheck.error };
-    const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-    // TEST MODE: In production, you would upload media[i].file to get a real URL
-    // Here we use the provided URLs (which might be blob URLs in frontend, which won't work server-side)
-    console.log("Creating Instagram Carousel Post with Mixed Media");
+    console.log("Queueing Instagram Carousel Post");
 
-    let carouselContainerId = null;
-    let publishResult = null;
     const processedMedia = [];
-
     for (let i = 0; i < media.length; i++) {
       const item = media[i];
       const mediaUrl = needsTestUrl(item.url) ? getTestUrl(item.type, i) : getAbsoluteUrl(item.url);
       processedMedia.push({ url: mediaUrl, type: item.type });
-    }
-
-    if (!scheduling?.schedule) {
-      const childContainers = [];
-      for (let i = 0; i < processedMedia.length; i++) {
-        const item = processedMedia[i];
-        const mediaData = item.type === 'video' ? { video_url: item.url } : { image_url: item.url };
-
-        console.log(`Creating child container for carousel item ${i + 1} (${item.type}) with URL:`, item.url);
-        const childContainerId = await createMediaContainer(instagramId, { ...mediaData, caption: "", is_carousel_item: true }, accessToken);
-
-        // Polling child container status
-        console.log(`Polling child container ${childContainerId} status...`);
-        let status, attempts = 0;
-        const maxAttempts = item.type === 'video' ? 15 : 6;
-        do {
-          await new Promise(r => setTimeout(r, 5000));
-          status = await checkMediaStatus(instagramId, childContainerId, accessToken);
-          console.log(`Child container ${childContainerId} status:`, status.status_code);
-          if (status.status_code === "FINISHED") break;
-          if (status.status_code === "ERROR") throw new Error(`Carousel child processing failed: ${JSON.stringify(status.error || status)}`);
-          attempts++;
-        } while (attempts < maxAttempts);
-
-        if (status.status_code !== "FINISHED") {
-          throw new Error(`Carousel child ${i + 1} was not ready in time. Last status: ${status.status_code}`);
-        }
-        childContainers.push(childContainerId);
-      }
-
-      console.log("Creating final carousel container with children:", childContainers);
-      carouselContainerId = await createMediaContainer(instagramId, { caption, children: childContainers }, accessToken, true);
-
-      // Wait for carousel container itself to be ready
-      console.log("Polling carousel container status...");
-      let status, attempts = 0;
-      do {
-        await new Promise(r => setTimeout(r, 5000));
-        status = await checkMediaStatus(instagramId, carouselContainerId, accessToken);
-        console.log("Carousel container status:", status.status_code);
-        if (status.status_code === "FINISHED") break;
-        if (status.status_code === "ERROR") throw new Error(`Carousel container processing failed: ${JSON.stringify(status.error || status)}`);
-        attempts++;
-      } while (attempts < 5);
-
-      if (status.status_code === "FINISHED") {
-        publishResult = await publishMediaContainer(instagramId, carouselContainerId, accessToken);
-      } else {
-        throw new Error(`Carousel not ready for publishing. Status: ${status.status_code}`);
-      }
     }
 
     const firestoreId = await saveToFirestore({
@@ -283,14 +222,28 @@ export async function createInstagramCarouselPost({ pageId, media, caption, sche
       pageId,
       postType: "carousel",
       content: { caption, media: processedMedia },
-      status: scheduling?.schedule ? "scheduled" : "published",
-      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
-      instagramContainerId: carouselContainerId,
-      instagramPostId: publishResult?.id || null,
+      status: "scheduled",
+      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : serverTimestamp(),
       metrics: { reach: 0, engagement: 0, likes: 0, comments: 0 },
     }, user.id);
 
-    return { success: true, containerId: carouselContainerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
+    // Synchronize with Queue
+    const scheduledTime = scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : new Date();
+    const delay = Math.max(0, new Date(scheduledTime).getTime() - Date.now());
+
+    await syncPostJob("instagram", firestoreId, {
+      postId: firestoreId,
+      pageId,
+      userId: user.id,
+      userEmail: user.email
+    }, { delay });
+
+    return {
+      success: true,
+      firestoreId,
+      scheduled: !!scheduling?.schedule,
+      message: scheduling?.schedule ? "Carousel scheduled successfully" : "Carousel queued for processing"
+    };
   } catch (error) {
     console.error("Instagram Carousel Post Error:", error);
     return { success: false, message: error.message || "Failed to create Instagram carousel post" };
@@ -298,7 +251,7 @@ export async function createInstagramCarouselPost({ pageId, media, caption, sche
 }
 
 /**
- * Create video post (TEST MODE)
+ * Create video post
  */
 export async function createInstagramVideoPost({ pageId, video, caption, scheduling }) {
   try {
@@ -307,81 +260,62 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
     // Check usage limits
     const usageCheck = await checkUsageLimitAction('post');
     if (!usageCheck.success) return { success: false, message: usageCheck.error };
-    const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-    // DEVELOPMENT: Use test URL if the provided URL is not public
     let videoUrl = needsTestUrl(video.url) ? getTestUrl('video') : getAbsoluteUrl(video.url);
 
     // --- Video Validation & Conversion ---
     if (!needsTestUrl(video.url)) {
       try {
-        // Derive local path (assuming public directory structure)
-        // The video.url usually comes from our upload system e.g. /uploads/...
         if (video.url.startsWith('/')) {
-          const relativePath = video.url.substring(1); // remove leading slash
+          const relativePath = video.url.substring(1);
           const absolutePath = path.join(process.cwd(), 'public', relativePath);
-
-          console.log(`Checking Instagram video compliance: ${absolutePath}`);
           const metadata = await checkVideoMetadata(absolutePath);
           const compliance = validatePlatformCompliance('instagram', metadata);
 
           if (!compliance.compliant) {
-            console.log("Instagram video not compliant:", compliance.reasons);
             const dir = path.dirname(absolutePath);
             const ext = path.extname(absolutePath);
             const basename = path.basename(absolutePath, ext);
-            const outputPath = path.join(dir, `${basename}_ig.mp4`); // Force .mp4
-
+            const outputPath = path.join(dir, `${basename}_ig.mp4`);
             await convertVideoForPlatform(absolutePath, outputPath);
-
-            // Update videoUrl to point to new file
-            // relative path again
             const newRelativePath = '/' + path.relative(path.join(process.cwd(), 'public'), outputPath);
-            videoUrl = getAbsoluteUrl(newRelativePath); // Should wrap with domain
-            console.log("Converted video URL:", videoUrl);
+            videoUrl = getAbsoluteUrl(newRelativePath);
           }
         }
       } catch (err) {
         console.warn("Instagram validation skipped:", err);
       }
     }
-    // -------------------------------------
 
-    console.log("Creating Instagram Video Post with URL:", videoUrl);
-
-    let containerId = null;
-    let publishResult = null;
-
-    if (!scheduling?.schedule) {
-      containerId = await createMediaContainer(instagramId, { video_url: videoUrl, caption, media_type: "REELS" }, accessToken);
-
-      await new Promise(r => setTimeout(r, 10000));
-      let status, attempts = 0;
-      do {
-        status = await checkMediaStatus(instagramId, containerId, accessToken);
-        console.log(`Video processing status (attempt ${attempts + 1}):`, status); // Debug log
-        attempts++;
-        if (status.status_code === "FINISHED") break;
-        else if (status.status_code === "ERROR") throw new Error(`Video processing failed. Status: ${JSON.stringify(status)}`);
-        await new Promise(r => setTimeout(r, 5000));
-      } while (attempts < 12);
-      if (status.status_code === "FINISHED") publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
-      else throw new Error(`Video not ready after 1 minute`);
-    }
+    console.log("Queueing Instagram Video Post");
 
     const firestoreId = await saveToFirestore({
       platform: "instagram",
       pageId,
       postType: "video",
       content: { caption, video: { url: videoUrl, name: video.name || "video.mp4" } },
-      status: scheduling?.schedule ? "scheduled" : "published",
-      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
-      instagramContainerId: containerId,
-      instagramPostId: publishResult?.id || null,
+      status: "scheduled",
+      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : serverTimestamp(),
       metrics: { reach: 0, engagement: 0, likes: 0, comments: 0, views: 0 },
     }, user.id);
 
-    return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
+    // Synchronize with Queue
+    const scheduledTime = scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : new Date();
+    const delay = Math.max(0, new Date(scheduledTime).getTime() - Date.now());
+
+    await syncPostJob("instagram", firestoreId, {
+      postId: firestoreId,
+      pageId,
+      userId: user.id,
+      userEmail: user.email
+    }, { delay });
+
+    return {
+      success: true,
+      firestoreId,
+      scheduled: !!scheduling?.schedule,
+      message: scheduling?.schedule ? "Video scheduled successfully" : "Video submission queued"
+    };
   } catch (error) {
     console.error("Instagram Video Post Error:", error);
     return { success: false, message: error.message || "Failed to create Instagram video post" };
@@ -389,7 +323,7 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
 }
 
 /**
- * Create story post (TEST MODE)
+ * Create story post
  */
 export async function createInstagramStory({ pageId, media, caption, scheduling }) {
   try {
@@ -398,58 +332,37 @@ export async function createInstagramStory({ pageId, media, caption, scheduling 
     // Check usage limits
     const usageCheck = await checkUsageLimitAction('post');
     if (!usageCheck.success) return { success: false, message: usageCheck.error };
-    const { instagramId, accessToken } = await getInstagramAccount(pageId);
 
-    // DEVELOPMENT: Use test URL if the provided URL is not public
     const mediaUrl = needsTestUrl(media.url) ? getTestUrl(media.type) : getAbsoluteUrl(media.url);
-
-    console.log(`Creating Instagram Story with ${media.type} URL:`, mediaUrl);
-
-    let containerId = null;
-    let publishResult = null;
-
-    if (!scheduling?.schedule) {
-      containerId = await createMediaContainer(
-        instagramId,
-        {
-          image_url: media.type === 'video' ? undefined : mediaUrl,
-          video_url: media.type === 'video' ? mediaUrl : undefined,
-          media_type: "STORIES"
-        },
-        accessToken
-      );
-
-      // Wait for processing
-      await new Promise(r => setTimeout(r, media.type === 'video' ? 10000 : 3000));
-
-      let status, attempts = 0;
-      const maxAttempts = media.type === 'video' ? 12 : 3;
-      do {
-        status = await checkMediaStatus(instagramId, containerId, accessToken);
-        if (status.status_code === "FINISHED") break;
-        if (status.status_code === "ERROR") throw new Error(`Story processing failed. Status: ${JSON.stringify(status)}`);
-        attempts++;
-        await new Promise(r => setTimeout(r, 5000));
-      } while (attempts < maxAttempts);
-
-      if (status.status_code !== "FINISHED") throw new Error(`Story not ready after timeout`);
-
-      publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
-    }
+    console.log(`Queueing Instagram Story with ${media.type}`);
 
     const firestoreId = await saveToFirestore({
       platform: "instagram",
       pageId,
       postType: "story",
       content: { caption, media: { url: mediaUrl, name: media.name || "story_media", type: media.type } },
-      status: scheduling?.schedule ? "scheduled" : "published",
-      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : null,
-      instagramContainerId: containerId,
-      instagramPostId: publishResult?.id || null,
+      status: "scheduled",
+      scheduledAt: scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : serverTimestamp(),
       metrics: { reach: 0, impressions: 0, replies: 0, exits: 0 },
     }, user.id);
 
-    return { success: true, containerId, instagramPostId: publishResult?.id || null, firestoreId, scheduled: !!scheduling?.schedule };
+    // Synchronize with Queue
+    const scheduledTime = scheduling?.schedule ? getDateTime(scheduling.date, scheduling.time) : new Date();
+    const delay = Math.max(0, new Date(scheduledTime).getTime() - Date.now());
+
+    await syncPostJob("instagram", firestoreId, {
+      postId: firestoreId,
+      pageId,
+      userId: user.id,
+      userEmail: user.email
+    }, { delay });
+
+    return {
+      success: true,
+      firestoreId,
+      scheduled: !!scheduling?.schedule,
+      message: scheduling?.schedule ? "Story scheduled successfully" : "Story submission queued"
+    };
   } catch (error) {
     console.error("Instagram Story Error:", error);
     return { success: false, message: error.message || "Failed to create Instagram story" };

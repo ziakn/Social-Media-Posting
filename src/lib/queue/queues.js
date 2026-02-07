@@ -53,10 +53,19 @@ async function syncPostJob(platform, postId, data, options = {}) {
     try {
         const job = await queue.getJob(postId);
         if (job) {
+            const state = await job.getState();
+            if (state === 'active') {
+                console.log(`[Queue Sync] Job ${postId} is currently ACTIVE (being processed). Skipping removal/replacement.`);
+                return job; // Return existing job if it's already running
+            }
             await job.remove();
             console.log(`[Queue Sync] Removed existing job ${postId} from ${platform} queue for replacement.`);
         }
     } catch (err) {
+        if (err.message.includes('locked')) {
+            console.warn(`[Queue Sync] Could not remove existing job ${postId} because it is being processed by a worker.`);
+            return; // Don't throw, just allow the one already running to finish
+        }
         console.warn(`[Queue Sync] Could not remove existing job ${postId}:`, err.message);
     }
 
@@ -79,6 +88,11 @@ async function removePostJob(platform, postId) {
     try {
         const job = await queue.getJob(postId);
         if (job) {
+            const state = await job.getState();
+            if (state === 'active') {
+                console.warn(`[Queue Sync] Attempted to remove job ${postId} but it's already ACTIVE. Processing will complete.`);
+                return;
+            }
             await job.remove();
             console.log(`[Queue Sync] Permanently removed job ${postId} from ${platform} queue.`);
         }

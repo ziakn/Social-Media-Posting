@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "worker:facebook": "node src/workers/platforms/facebook-worker.js",
+    "worker:instagram": "node src/workers/platforms/instagram-worker.js",
     "worker:all": "node src/scripts/start-workers.js",
     "test:queues": "node src/scripts/test-queues.js",
     "flush:queues": "node src/scripts/flush-queues.js",

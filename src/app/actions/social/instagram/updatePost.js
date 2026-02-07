@@ -6,6 +6,7 @@ import { fetchInstagramAccounts } from "./getPages";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
+import { syncPostJob } from "@/lib/queue/queues";
 
 /**
  * Update an Instagram post (Caption for published, all fields for scheduled)
@@ -107,6 +108,21 @@ export async function updateInstagramPost(postId, updates) {
         // 4. Sanitize and Update Firestore
         const sanitizedUpdate = sanitizeFirestoreData(firestoreUpdate);
         await updateDoc(postRef, sanitizedUpdate);
+
+        // 5. Synchronize with Queue if scheduled
+        if (isScheduled) {
+            const updatedPostSnap = await getDoc(postRef);
+            const updatedPost = updatedPostSnap.data();
+            const scheduledAt = updatedPost.scheduledAt?.toDate ? updatedPost.scheduledAt.toDate() : updatedPost.scheduledAt;
+            const delay = scheduledAt ? Math.max(0, new Date(scheduledAt).getTime() - Date.now()) : 0;
+
+            await syncPostJob("instagram", postId, {
+                postId,
+                pageId: updatedPost.pageId,
+                userId: user.id,
+                userEmail: user.email
+            }, { delay });
+        }
 
         if (isPublished) {
             return {

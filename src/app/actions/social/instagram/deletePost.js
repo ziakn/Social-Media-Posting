@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { fetchInstagramAccounts } from "./getPages";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
+import { removePostJob } from "@/lib/queue/queues";
 
 /**
  * Delete an Instagram post
@@ -99,7 +100,10 @@ export async function deleteInstagramPost(postId) {
             }
         }
 
-        // 4. Soft Delete in Firestore
+        // 4. Queue Cleanup
+        await removePostJob("instagram", postId);
+
+        // 5. Soft Delete in Firestore
         await updateDoc(postRef, {
             delete: 1,
             deletedAt: serverTimestamp(),

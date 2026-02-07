@@ -13,7 +13,7 @@ import { verifyToken } from "@/lib/auth";
 import { getAbsoluteUrl, needsTestUrl, getTestUrl } from "./mediaUtils";
 
 /**
- * Publish a scheduled Instagram post immediately
+ * Publish a scheduled Instagram post immediately via the background worker
  * @param {string} postId - Firestore document ID
  */
 export async function publishInstagramPostNow(postId) {
@@ -39,124 +39,22 @@ export async function publishInstagramPostNow(postId) {
             return { success: false, message: "Unauthorized to publish this post" };
         }
 
-        if (post.status !== "scheduled") {
-            return { success: false, message: "Post is not in scheduled status" };
-        }
-
-        // 3. Get Instagram credentials
-        const { instagramId, accessToken } = await getInstagramAccount(post.pageId);
-
-        let containerId = null;
-        let publishResult = null;
-
-        // 4. Handle different post types (simplified version of createPost logic)
-        const caption = post.content?.caption || "";
-
-        if (post.postType === "image") {
-            const imageUrl = post.content.image.url;
-            containerId = await createMediaContainer(
-                instagramId,
-                { image_url: imageUrl, caption },
-                accessToken
-            );
-        } else if (post.postType === "video") {
-            const videoUrl = post.content.video.url;
-            containerId = await createMediaContainer(
-                instagramId,
-                { video_url: videoUrl, caption, media_type: "REELS" },
-                accessToken
-            );
-        } else if (post.postType === "carousel") {
-            const processedMedia = post.content.media || [];
-            const childContainers = [];
-
-            for (let i = 0; i < processedMedia.length; i++) {
-                const item = processedMedia[i];
-                const mediaData = item.type === 'video' ? { video_url: item.url } : { image_url: item.url };
-                const childId = await createMediaContainer(
-                    instagramId,
-                    { ...mediaData, caption: "", is_carousel_item: true },
-                    accessToken
-                );
-
-                // Polling for child containers
-                let status, attempts = 0;
-                const maxAttempts = item.type === 'video' ? 15 : 6;
-                do {
-                    await new Promise(r => setTimeout(r, 5000));
-                    status = await checkMediaStatus(instagramId, childId, accessToken);
-                    if (status.status_code === "FINISHED") break;
-                    if (status.status_code === "ERROR") throw new Error(`Carousel child processing failed`);
-                    attempts++;
-                } while (attempts < maxAttempts);
-
-                if (status.status_code !== "FINISHED") throw new Error(`Child not ready`);
-                childContainers.push(childId);
-            }
-
-            containerId = await createMediaContainer(
-                instagramId,
-                { caption, children: childContainers },
-                accessToken,
-                true
-            );
-        } else if (post.postType === "story") {
-            const mediaUrl = post.content.media?.url;
-            const mediaType = post.content.media?.type || (mediaUrl?.match(/\.(mp4|mov|avi|m4v)$/i) ? 'video' : 'image');
-
-            // Ensure URL is absolute/processed
-            const finalMediaUrl = needsTestUrl(mediaUrl) ? getTestUrl(mediaType, 0) : getAbsoluteUrl(mediaUrl);
-            console.log(`Publishing Story with mediaType: ${mediaType}, originalUrl: ${mediaUrl}, finalUrl: ${finalMediaUrl}`);
-
-            containerId = await createMediaContainer(
-                instagramId,
-                {
-                    image_url: mediaType === 'video' ? undefined : finalMediaUrl,
-                    video_url: mediaType === 'video' ? finalMediaUrl : undefined,
-                    media_type: "STORIES"
-                },
-                accessToken
-            );
-        }
-
-        if (!containerId) {
-            throw new Error("Failed to create media container");
-        }
-
-        // 5. Poll for final container status
-        console.log(`Polling final container ${containerId} status...`);
-        let status, attempts = 0;
-        const maxFinalAttempts = (post.postType === 'video' || post.postType === 'carousel') ? 12 : 5;
-        do {
-            await new Promise(r => setTimeout(r, 5000));
-            status = await checkMediaStatus(instagramId, containerId, accessToken);
-            if (status.status_code === "FINISHED") break;
-            if (status.status_code === "ERROR") throw new Error(`Media processing failed`);
-            attempts++;
-        } while (attempts < maxFinalAttempts);
-
-        if (status.status_code === "FINISHED") {
-            publishResult = await publishMediaContainer(instagramId, containerId, accessToken);
-        } else {
-            throw new Error(`Media not ready for publishing. Status: ${status.status_code}`);
-        }
-
-        // 6. Update Firestore
-        const now = new Date();
+        // 3. Update Firestore to 'scheduled' for NOW
         await updateDoc(postRef, {
-            status: "published",
-            publishedAt: serverTimestamp(), // Record when it was actually published
-            scheduledAt: serverTimestamp(), // Update scheduledAt to reflect current time as requested
+            status: "scheduled",
+            scheduledAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            instagramContainerId: containerId,
-            instagramPostId: publishResult?.id || null
         });
 
-        return {
-            success: true,
-            message: "Post published successfully",
-            instagramPostId: publishResult?.id
-        };
+        // 4. Synchronize with Queue (Immediate Promotion)
+        await syncPostJob("instagram", postId, {
+            postId,
+            pageId: post.pageId,
+            userId: user.id,
+            userEmail: user.email
+        }, { delay: 0 });
+
+        return { success: true, message: "Publication queued for immediate processing." };
 
     } catch (error) {
         console.error("Error publishing Instagram post now:", error);
