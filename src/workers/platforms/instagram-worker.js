@@ -219,7 +219,7 @@ async function instagramProcessor(job) {
 const worker = new Worker(QUEUE_NAMES.INSTAGRAM, instagramProcessor, {
     connection,
     concurrency: 20, // Lower concurrency for IG due to heavier polling
-    lockDuration: 120000, // 2 minutes lock for long processing
+    lockDuration: 300000, // 5 minutes lock for long processing (especially videos)
 });
 
 worker.on('failed', (job, err) => {
