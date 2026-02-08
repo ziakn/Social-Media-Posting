@@ -22,6 +22,7 @@ import { verifyToken } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { refreshTwitterToken } from "./tokenRefresh";
 import { handleTwitterMediaUpload } from "./createPost";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 /**
  * Helper to handle Twitter API responses and errors
@@ -336,6 +337,11 @@ export async function deleteTwitterPost(postId) {
         const postData = postSnap.data();
         if (postData.userId !== user.id) {
             return { success: false, message: "Unauthorized" };
+        }
+
+        // Quota Restore (if scheduled)
+        if (postData.status === "scheduled") {
+            await decrementUsage(user.id);
         }
 
         // 1. Delete from Twitter API if published

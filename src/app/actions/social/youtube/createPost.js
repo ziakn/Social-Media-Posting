@@ -8,6 +8,7 @@ import { refreshYoutubeToken } from "./tokenRefresh";
 import { readFile } from 'fs/promises';
 import path from 'path';
 import { checkUsageLimitAction } from "../../usage/usageActions";
+import { incrementUsage } from "../../usage/incrementUsage";
 
 /**
  * Handle YouTube API response
@@ -171,6 +172,8 @@ export async function createYoutubePost({
         }
 
         await setDoc(postRef, postData);
+
+        await incrementUsage(userId);
 
         return {
             success: true,

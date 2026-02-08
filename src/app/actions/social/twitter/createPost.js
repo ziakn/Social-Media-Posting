@@ -9,6 +9,7 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 import { checkUsageLimitAction } from "../../usage/usageActions";
+import { incrementUsage } from "../../usage/incrementUsage";
 
 /**
  * Enhanced Twitter API response handler
@@ -176,6 +177,7 @@ export async function createTwitterPost({
                 delete: 0,
             });
 
+            await incrementUsage(userId);
             return { success: true, message: "Tweet scheduled successfully", postId };
         } else {
             await setDoc(postRef, {
@@ -195,6 +197,7 @@ export async function createTwitterPost({
                 delete: 0,
             });
 
+            await incrementUsage(userId);
             return { success: true, message: "Tweet published successfully", postId };
         }
 

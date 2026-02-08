@@ -15,6 +15,7 @@ import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform
 import { syncPostJob } from "@/lib/queue/queues";
 
 import { checkUsageLimitAction } from "../../usage/usageActions";
+import { incrementUsage } from "../../usage/incrementUsage";
 /**
  * Upload local file or File object to Firebase and return public URL
  */
@@ -185,6 +186,9 @@ export async function createInstagramImagePost({ pageId, image, caption, schedul
       userEmail: user.email
     }, { delay });
 
+    // Increment Usage Counter
+    await incrementUsage(user.id);
+
     return {
       success: true,
       firestoreId,
@@ -237,6 +241,9 @@ export async function createInstagramCarouselPost({ pageId, media, caption, sche
       userId: user.id,
       userEmail: user.email
     }, { delay });
+
+    // Increment Usage Counter
+    await incrementUsage(user.id);
 
     return {
       success: true,
@@ -310,6 +317,9 @@ export async function createInstagramVideoPost({ pageId, video, caption, schedul
       userEmail: user.email
     }, { delay });
 
+    // Increment Usage Counter
+    await incrementUsage(user.id);
+
     return {
       success: true,
       firestoreId,
@@ -356,6 +366,9 @@ export async function createInstagramStory({ pageId, media, caption, scheduling 
       userId: user.id,
       userEmail: user.email
     }, { delay });
+
+    // Increment Usage Counter
+    await incrementUsage(user.id);
 
     return {
       success: true,

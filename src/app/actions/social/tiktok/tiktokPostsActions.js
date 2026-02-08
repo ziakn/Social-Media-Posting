@@ -20,6 +20,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { getAuthenticatedUser, getTiktokAccount } from "./accountUtils";
 import { triggerTiktokPublish } from "./publishUtils";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 /**
  * Get all TikTok posts with filtering and pagination
@@ -113,8 +114,14 @@ export async function deleteTiktokPost(postId) {
             return { success: false, message: "Post not found" };
         }
 
-        if (postSnap.data().userId !== user.id) {
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) {
             return { success: false, message: "Unauthorized" };
+        }
+
+        // Quota Restore (if scheduled)
+        if (postData.status === "scheduled") {
+            await decrementUsage(user.id);
         }
 
         await updateDoc(postRef, {

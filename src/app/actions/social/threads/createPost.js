@@ -12,6 +12,7 @@ import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 import { serializeTimestamp } from "@/lib/utils";
 import { checkUsageLimitAction } from "../../usage/usageActions";
+import { incrementUsage } from "../../usage/incrementUsage";
 
 /**
  * Check Threads Media Container Status
@@ -153,6 +154,7 @@ export async function createThreadsPost({
                 updatedAt: serverTimestamp(),
                 delete: 0
             });
+            await incrementUsage(user.id);
             return { success: true, message: "Thread scheduled successfully", firestoreId: postRef.id };
         }
 
@@ -319,6 +321,7 @@ export async function createThreadsPost({
             delete: 0
         });
 
+        await incrementUsage(user.id);
         return { success: true, threadsPostId: threadsPostId, firestoreId: postRef.id };
     } catch (error) {
         console.error("Create Threads Post Error:", error);

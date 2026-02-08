@@ -20,6 +20,7 @@ import { revalidatePath } from "next/cache";
 import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import { uploadPinterestVideo } from "./videoUtils";
 import { getValidPinterestAccessToken } from "./connectAccount";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 /**
  * Get all Pinterest posts with status filtering, pagination, and enhanced filtering
@@ -408,6 +409,11 @@ export async function deletePinterestPost(postId) {
                     apiDeleteSuccess = true;
                 }
             }
+        }
+
+        // Quota Restore (if scheduled)
+        if (postData.status === "scheduled") {
+            await decrementUsage(user.id);
         }
 
         // 2. Soft delete in Firestore

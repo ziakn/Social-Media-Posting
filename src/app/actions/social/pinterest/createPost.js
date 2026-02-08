@@ -10,6 +10,7 @@ import { uploadPinterestVideo } from "./videoUtils";
 import path from "path";
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 import { checkUsageLimitAction } from "../../usage/usageActions";
+import { incrementUsage } from "../../usage/incrementUsage";
 
 /**
  * Get authenticated user
@@ -108,6 +109,7 @@ export async function createPinterestPost({
                 updatedAt: serverTimestamp(),
                 delete: 0
             });
+            await incrementUsage(user.id);
             return { success: true, message: "Pin scheduled successfully", firestoreId: postRef.id };
         }
 
@@ -225,6 +227,7 @@ export async function createPinterestPost({
             delete: 0
         });
 
+        await incrementUsage(user.id);
         return { success: true, message: "Pin published successfully", pinId: result.id, firestoreId: postRef.id };
 
     } catch (error) {

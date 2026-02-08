@@ -7,6 +7,7 @@ import { verifyToken } from "@/lib/auth";
 // import { cookies } from "next/headers"; // Removed as no longer needed for token extraction
 import { revalidatePath } from "next/cache";
 import { uploadMedia, getLinkMetadata } from "./createPost";
+import { decrementUsage } from "../../usage/decrementUsage";
 import { RichText } from "@atproto/api";
 
 /**
@@ -284,7 +285,13 @@ export async function deleteBlueSkyPost(postId) {
         const postSnap = await getDoc(postRef);
 
         if (!postSnap.exists()) return { success: false, message: "Post not found" };
-        if (postSnap.data().userId !== user.id && user.role !== 'Administrator') return { success: false, message: "Unauthorized" };
+        const postData = postSnap.data();
+        if (postData.userId !== user.id && user.role !== 'Administrator') return { success: false, message: "Unauthorized" };
+
+        // Quota Restore (if scheduled)
+        if (postData.status === "scheduled") {
+            await decrementUsage(user.id);
+        }
 
         await updateDoc(postRef, {
             delete: 1,

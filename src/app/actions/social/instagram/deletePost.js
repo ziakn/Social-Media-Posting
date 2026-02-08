@@ -6,6 +6,7 @@ import { fetchInstagramAccounts } from "./getPages";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { removePostJob } from "@/lib/queue/queues";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 /**
  * Delete an Instagram post
@@ -103,7 +104,12 @@ export async function deleteInstagramPost(postId) {
         // 4. Queue Cleanup
         await removePostJob("instagram", postId);
 
-        // 5. Soft Delete in Firestore
+        // 5. Quota Restore (if scheduled)
+        if (post.status === "scheduled") {
+            await decrementUsage(user.id);
+        }
+
+        // 6. Soft Delete in Firestore
         await updateDoc(postRef, {
             delete: 1,
             deletedAt: serverTimestamp(),

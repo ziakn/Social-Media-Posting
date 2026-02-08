@@ -20,6 +20,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { fetchFacebookPages } from "./getPages";
 import { syncPostJob, removePostJob } from "@/lib/queue/queues";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 // Get user's Facebook pages for filtering
 export async function getUserFacebookPages() {
@@ -307,6 +308,11 @@ export async function deleteFacebookPost(postId) {
 
     // Synchronize with Queue (Remove job if it was scheduled)
     await removePostJob("facebook", postId);
+
+    // Quota Restore (if scheduled)
+    if (postData.status === "scheduled") {
+      await decrementUsage(user.id);
+    }
 
     // Soft delete
     await updateDoc(postRef, {

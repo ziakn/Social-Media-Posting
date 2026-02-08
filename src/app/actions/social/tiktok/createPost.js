@@ -7,6 +7,7 @@ import { triggerTiktokPublish } from "./publishUtils";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { getAuthenticatedUser, getTiktokAccount } from "./accountUtils";
+import { incrementUsage } from "../../usage/incrementUsage";
 
 /**
  * Create TikTok Post (Direct Publish)
@@ -127,6 +128,8 @@ export async function createTiktokPost({
         if (!scheduling) {
             await triggerTiktokPublish(accessToken, postRef, text, finalMedia[0].url);
         }
+
+        await incrementUsage(user.id);
 
         return {
             success: true,

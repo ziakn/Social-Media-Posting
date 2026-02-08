@@ -20,6 +20,7 @@ import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { refreshYoutubeToken } from "./tokenRefresh";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 /**
  * Helper to handle YouTube API responses and errors
@@ -281,6 +282,11 @@ export async function deleteYoutubePost(postId) {
                     }
                 }
             }
+        }
+
+        // Quota Restore (if scheduled)
+        if (postData.status === "scheduled") {
+            await decrementUsage(user.id);
         }
 
         // Soft delete in Firestore

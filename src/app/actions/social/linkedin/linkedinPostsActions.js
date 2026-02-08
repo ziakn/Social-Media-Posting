@@ -19,6 +19,7 @@ import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createLinkedinPost } from "./createPost";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 /**
  * Helper to serialize Firestore document data
@@ -340,7 +341,13 @@ export async function deleteLinkedinPost(postId) {
 
         if (!postSnap.exists()) return { success: false, message: "Post not found" };
 
-        if (postSnap.data().userId !== user.id) return { success: false, message: "Unauthorized" };
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
+
+        // Quota Restore (if scheduled)
+        if (postData.status === "scheduled") {
+            await decrementUsage(user.id);
+        }
 
         // Soft delete: set delete flag instead of actually removing the document
         // This matches the pattern used in Facebook and Instagram modules

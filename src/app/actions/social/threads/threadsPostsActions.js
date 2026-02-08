@@ -19,6 +19,7 @@ import { verifyToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { serializeTimestamp } from "@/lib/utils";
+import { decrementUsage } from "../../usage/decrementUsage";
 
 /**
  * Get all Threads posts with status filtering, pagination, and enhanced filtering
@@ -467,8 +468,14 @@ export async function deleteThreadsPost(postId) {
             return { success: false, message: "Post not found" };
         }
 
-        if (postSnap.data().userId !== user.id) {
+        const postData = postSnap.data();
+        if (postData.userId !== user.id) {
             return { success: false, message: "Unauthorized" };
+        }
+
+        // Quota Restore (if scheduled)
+        if (postData.status === "scheduled") {
+            await decrementUsage(user.id);
         }
 
         // Soft delete

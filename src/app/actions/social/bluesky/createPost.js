@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { checkUsageLimitAction } from "../../usage/usageActions";
+import { incrementUsage } from "../../usage/incrementUsage";
 
 /**
  * Get authenticated user (Helper)
@@ -300,6 +301,7 @@ export async function createBlueSkyPost({
                 updatedAt: serverTimestamp(),
                 delete: 0
             });
+            await incrementUsage(user.id);
             return { success: true, message: "Post scheduled successfully", firestoreId: postRef.id };
         }
 
@@ -362,6 +364,7 @@ export async function createBlueSkyPost({
             delete: 0
         });
 
+        await incrementUsage(user.id);
         return { success: true, message: "Post published successfully", firestoreId: postRef.id };
 
     } catch (error) {

@@ -5,9 +5,9 @@ import { doc, setDoc, serverTimestamp, collection, query, where, getDocs, delete
 
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-import { readFile } from 'fs/promises';
 import path from 'path';
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
+import { incrementUsage } from "../../usage/incrementUsage";
 
 /**
  * Handle LinkedIn API response
@@ -277,6 +277,8 @@ export async function createLinkedinPost({
         }
 
         await setDoc(postRef, postData);
+
+        await incrementUsage(userId);
 
         return {
             success: true,

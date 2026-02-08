@@ -6,6 +6,7 @@ import { doc, setDoc, serverTimestamp, collection } from "firebase/firestore";
 import { fetchFacebookPages } from "./getPages";
 import { verifyToken } from "@/lib/auth";
 import { syncPostJob } from "@/lib/queue/queues";
+import { incrementUsage } from "@/app/actions/usage/incrementUsage";
 
 /**
  * Enhanced base function to create a Facebook post (Queued)
@@ -77,6 +78,9 @@ export async function createFacebookPostBase({
       userId,
       userEmail: payload.email
     }, { delay });
+
+    // 4. Increment Usage Counter (Cost Optimization)
+    await incrementUsage(userId);
 
     return {
       success: true,
