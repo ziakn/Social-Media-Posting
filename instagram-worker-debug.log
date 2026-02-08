@@ -1,0 +1,37 @@
+[2026-02-08T11:41:01.310Z] API POST /17841405814341131/media
+{
+  "image_url": "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80&t=1770550801224",
+  "media_type": "STORIES",
+  "access_token": "REDACTED"
+}
+
+[2026-02-08T11:41:05.199Z] API SUCCESS /17841405814341131/media
+{
+  "id": "18408642727193812"
+}
+
+[2026-02-08T11:41:05.535Z] POLL Container 18408642727193812
+{
+  "status_code": "IN_PROGRESS",
+  "status": "IN_PROGRESS",
+  "id": "18408642727193812"
+}
+
+[2026-02-08T11:41:10.930Z] POLL Container 18408642727193812
+{
+  "status_code": "FINISHED",
+  "status": "FINISHED",
+  "id": "18408642727193812"
+}
+
+[2026-02-08T11:41:10.931Z] API POST /17841405814341131/media_publish
+{
+  "creation_id": "18408642727193812",
+  "access_token": "REDACTED"
+}
+
+[2026-02-08T11:41:14.815Z] API SUCCESS /17841405814341131/media_publish
+{
+  "id": "18139393714493566"
+}
+

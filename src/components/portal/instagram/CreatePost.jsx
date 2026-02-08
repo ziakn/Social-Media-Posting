@@ -103,7 +103,7 @@ export default function CreatePost() {
 
     // Check total images limit
     const totalImages = postContent.images.length + validFiles.length;
-    const maxImages = postType === "carousel" ? 10 : 1;
+    const maxImages = ["carousel", "feed"].includes(postType) ? 10 : 1;
 
     if (totalImages > maxImages) {
       toast.error(`You can upload maximum ${maxImages} image${maxImages !== 1 ? 's' : ''} for ${postType} posts`);
@@ -235,7 +235,7 @@ export default function CreatePost() {
         file: null // No file object for gallery items
       }));
 
-      const maxImages = postType === "carousel" ? 10 : 1;
+      const maxImages = ["carousel", "feed"].includes(postType) ? 10 : 1;
       const totalImages = postContent.images.length + newImages.length;
 
       if (totalImages > maxImages) {
@@ -285,7 +285,7 @@ export default function CreatePost() {
         }));
         toast.success("Video added from gallery");
       } else if (newImages.length > 0) {
-        const maxImages = postType === "carousel" ? 10 : 1;
+        const maxImages = ["carousel", "feed"].includes(postType) ? 10 : 1;
         setPostContent(prev => ({
           ...prev,
           video: null,
@@ -339,15 +339,29 @@ export default function CreatePost() {
         let result;
         switch (postType) {
           case "feed":
-            const { createInstagramImagePost } = await import("@/app/actions/social/instagram/createPost");
-            result = await createInstagramImagePost({
-              ...payload,
-              image: postContent.images[0]
-            });
+            if (postContent.video) {
+              const { createInstagramVideoPost } = await import("@/app/actions/social/instagram/createPost");
+              result = await createInstagramVideoPost(payload);
+            } else if (postContent.images.length > 1) {
+              const { createInstagramCarouselPost } = await import("@/app/actions/social/instagram/createPost");
+              result = await createInstagramCarouselPost({
+                ...payload,
+                media: postContent.images
+              });
+            } else {
+              const { createInstagramImagePost } = await import("@/app/actions/social/instagram/createPost");
+              result = await createInstagramImagePost({
+                ...payload,
+                image: postContent.images[0]
+              });
+            }
             break;
           case "carousel":
             const { createInstagramCarouselPost } = await import("@/app/actions/social/instagram/createPost");
-            result = await createInstagramCarouselPost(payload);
+            result = await createInstagramCarouselPost({
+              ...payload,
+              media: postContent.images
+            });
             break;
           case "story":
             const { createInstagramStory } = await import("@/app/actions/social/instagram/createPost");
@@ -355,7 +369,8 @@ export default function CreatePost() {
             result = await createInstagramStory({
               pageId: selectedPage,
               media,
-              caption: postContent.caption
+              caption: postContent.caption,
+              scheduling: scheduling.schedule ? scheduling : null,
             });
             break;
           case "reels":
@@ -839,14 +854,22 @@ export default function CreatePost() {
                   <div className="space-y-4">
                     <Label className="text-base">Upload Story Media</Label>
 
-                    <div className="grid grid-cols-1 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => openGallery("image")}
+                        className="h-24 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
+                      >
+                        <ImageIcon className="h-6 w-6 text-pink-500" />
+                        <span>Select Image</span>
+                      </Button>
                       <Button
                         variant="outline"
                         onClick={() => openGallery("video")}
                         className="h-24 border-dashed border-2 hover:border-pink-500 hover:bg-pink-50 flex flex-col gap-2"
                       >
                         <Video className="h-6 w-6 text-pink-500" />
-                        <span>Select Video from Gallery</span>
+                        <span>Select Video</span>
                       </Button>
                     </div>
 
@@ -978,9 +1001,9 @@ export default function CreatePost() {
         open={galleryOpen}
         onOpenChange={setGalleryOpen}
         onSelect={handleGallerySelect}
-        allowMultiple={postType === "carousel"}
-        allowedTypes={[galleryMediaType]}
-        title={galleryMediaType === "image" ? "Select Images" : "Select Video"}
+        allowMultiple={["carousel", "feed"].includes(postType)}
+        allowedTypes={galleryMediaType}
+        title={galleryMediaType.includes("image") && galleryMediaType.includes("video") ? "Select Media" : galleryMediaType.includes("image") ? "Select Images" : "Select Video"}
       />
     </div>
   );

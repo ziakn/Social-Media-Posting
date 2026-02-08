@@ -140,10 +140,12 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
     if (type) {
       setGalleryMediaType(Array.isArray(type) ? type : [type]);
     } else {
-      setGalleryMediaType((postType === 'reels' || postType === 'story') ? ["video"] : ["image", "video"]);
+      setGalleryMediaType((postType === 'reels') ? ["video"] : ["image", "video"]);
     }
     setGalleryOpen(true);
   };
+
+  const maxMedia = (postType === 'feed' || postType === 'carousel') ? 10 : 1;
 
   const handleGallerySelect = (selectedItems) => {
     const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
@@ -153,7 +155,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       mimeType: item.fileType, file: null
     }));
 
-    if (galleryMediaType.includes("video") || postType === "reels" || postType === "story") {
+    if (postType === "reels" || postType === "story") {
       setPostContent(prev => ({
         ...prev,
         media: [newMedia[0]]
@@ -163,8 +165,8 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
       return;
     }
 
-    const totalMedia = postContent.media.length + newMedia.length;
-    if (totalMedia > maxMedia) {
+    const totalMediaValue = postContent.media.length + newMedia.length;
+    if (totalMediaValue > maxMedia) {
       toast.error(`You can upload maximum ${maxMedia} item${maxMedia !== 1 ? 's' : ''} for ${postType} posts`);
       return;
     }
@@ -449,7 +451,7 @@ function CreatePostForm({ initialData = null, onSuccess = null }) {
         onSelect={handleGallerySelect}
         allowedTypes={galleryMediaType}
         allowMultiple={postType === 'feed'}
-        maxSelection={postType === 'feed' ? 10 : 1}
+        maxSelection={maxMedia}
       />
     </div>
   );

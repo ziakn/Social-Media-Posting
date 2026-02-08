@@ -2,53 +2,132 @@ const { Worker } = require('bullmq');
 const { connection } = require('../../lib/queue/config');
 const { QUEUE_NAMES } = require('../../lib/queue/queues');
 const { initAdmin } = require('../../lib/queue/firebase-admin');
+const fs = require('fs');
+const path = require('path');
+
+const DEBUG_LOG = path.join(process.cwd(), 'instagram-worker-debug.log');
+
+function logDebug(message, data = null) {
+    const timestamp = new Date().toISOString();
+    let text = `[${timestamp}] ${message}`;
+    if (data) text += `\n${JSON.stringify(data, null, 2)}`;
+    try {
+        fs.appendFileSync(DEBUG_LOG, text + '\n\n');
+    } catch (err) {
+        console.error("Failed to write to debug log:", err.message);
+    }
+}
 
 // 1. Initialize Firebase Admin
 const db = initAdmin();
 
 /**
+ * URL Helpers for Development
+ */
+function needsTestUrl(url) {
+    if (!url) return true;
+    if (url.startsWith('blob:')) return true;
+    if (url.startsWith('/')) return true;
+    if (!url.startsWith('http')) return true;
+    if (url.includes('localhost') || url.includes('127.0.0.1')) return true;
+    return false;
+}
+
+function getTestUrl(type, index = 0) {
+    const seed = Date.now() + index;
+    if (type === 'video') {
+        const videos = [
+            "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            "https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+        ];
+        return `${videos[index % videos.length]}?t=${seed}`;
+    } else {
+        const images = [
+            "https://images.unsplash.com/photo-1554080353-a576cf803bda?auto=format&fit=crop&w=1000&q=80",
+            "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1000&q=80"
+        ];
+        return `${images[index % images.length]}?auto=format&fit=crop&w=1000&q=80&t=${seed}`;
+    }
+}
+
+/**
  * Instagram API Helpers
  */
-async function makeInstagramRequest(endpoint, formData, accessToken) {
-    formData.append("access_token", accessToken);
+async function makeInstagramRequest(endpoint, params, accessToken) {
+    params.append("access_token", accessToken);
+
+    // Create debug version of params
+    const debugParams = new URLSearchParams(params);
+    debugParams.set("access_token", "REDACTED");
+
+    logDebug(`API POST ${endpoint}`, Object.fromEntries(debugParams.entries()));
+
     const response = await fetch(`https://graph.instagram.com/v24.0${endpoint}`, {
         method: "POST",
-        body: formData,
+        body: params // Sending as application/x-www-form-urlencoded
     });
+
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "Instagram API error");
+
+    if (!response.ok) {
+        logDebug(`API ERROR ${endpoint}`, data);
+        console.error(`[Instagram Worker] API ERROR:`, JSON.stringify(data, null, 2));
+        throw new Error(data.error?.message || "Instagram API error");
+    }
+    logDebug(`API SUCCESS ${endpoint}`, data);
     return data;
 }
 
 async function createMediaContainer(instagramId, mediaData, accessToken, isCarouselContainer = false) {
-    const formData = new FormData();
+    const params = new URLSearchParams();
 
-    if (mediaData.image_url) formData.append("image_url", mediaData.image_url);
-    if (mediaData.video_url) formData.append("video_url", mediaData.video_url);
-    if (mediaData.caption && mediaData.media_type !== "STORIES") formData.append("caption", mediaData.caption);
-    if (mediaData.is_carousel_item) formData.append("is_carousel_item", "true");
-    if (mediaData.media_type) formData.append("media_type", mediaData.media_type);
+    if (isCarouselContainer) {
+        params.append("media_type", "CAROUSEL");
+        if (mediaData.children) params.append("children", mediaData.children.join(","));
+        if (mediaData.caption) params.append("caption", mediaData.caption);
+    } else {
+        if (mediaData.is_carousel_item) params.append("is_carousel_item", "true");
 
-    if (isCarouselContainer && mediaData.children) {
-        formData.append("children", mediaData.children.join(","));
-        formData.append("media_type", "CAROUSEL");
+        if (mediaData.video_url) {
+            params.append("video_url", mediaData.video_url);
+            // Standalone video = REELS, Carousel video = VIDEO, Story video = STORIES
+            if (mediaData.media_type) {
+                params.append("media_type", mediaData.media_type);
+            } else {
+                params.append("media_type", mediaData.is_carousel_item ? "VIDEO" : "REELS");
+            }
+        } else if (mediaData.image_url) {
+            params.append("image_url", mediaData.image_url);
+            if (mediaData.media_type) {
+                params.append("media_type", mediaData.media_type);
+            } else {
+                params.append("media_type", "IMAGE");
+            }
+        }
+
+        // Add caption if not a carousel item and not a story
+        if (!mediaData.is_carousel_item && mediaData.media_type !== "STORIES" && mediaData.caption) {
+            params.append("caption", mediaData.caption);
+        }
     }
 
-    const container = await makeInstagramRequest(`/${instagramId}/media`, formData, accessToken);
+    const container = await makeInstagramRequest(`/${instagramId}/media`, params, accessToken);
     return container.id;
 }
 
 async function publishMediaContainer(instagramId, containerId, accessToken) {
-    const formData = new FormData();
-    formData.append("creation_id", containerId);
-    return await makeInstagramRequest(`/${instagramId}/media_publish`, formData, accessToken);
+    const params = new URLSearchParams();
+    params.append("creation_id", containerId);
+    return await makeInstagramRequest(`/${instagramId}/media_publish`, params, accessToken);
 }
 
 async function checkMediaStatus(containerId, accessToken) {
     const response = await fetch(
         `https://graph.instagram.com/v24.0/${containerId}?fields=status_code,status&access_token=${accessToken}`
     );
-    return await response.json();
+    const data = await response.json();
+    logDebug(`POLL Container ${containerId}`, data);
+    return data;
 }
 
 /**
@@ -158,20 +237,31 @@ async function instagramProcessor(job) {
         // 4. Handle Different Post Types
         switch (post.postType) {
             case "image":
-                containerId = await createMediaContainer(instagramId, { image_url: post.content.image.url, caption }, accessToken);
+                const imgUrl = needsTestUrl(post.content.image.url) ? getTestUrl('image') : post.content.image.url;
+                containerId = await createMediaContainer(instagramId, { image_url: imgUrl, caption }, accessToken);
                 await waitForMediaReady(containerId, accessToken, 6);
                 break;
 
             case "video":
-                containerId = await createMediaContainer(instagramId, { video_url: post.content.video.url, caption, media_type: "REELS" }, accessToken);
+                const vidUrl = needsTestUrl(post.content.video.url) ? getTestUrl('video') : post.content.video.url;
+                containerId = await createMediaContainer(instagramId, { video_url: vidUrl, caption, media_type: "REELS" }, accessToken);
                 await waitForMediaReady(containerId, accessToken, 20); // Videos take longer
                 break;
 
             case "carousel":
                 const processedMedia = post.content.media || [];
                 const childIds = [];
-                for (const item of processedMedia) {
-                    const mediaData = item.type === 'video' ? { video_url: item.url } : { image_url: item.url };
+                for (let i = 0; i < processedMedia.length; i++) {
+                    const item = processedMedia[i];
+                    const url = needsTestUrl(item.url) ? getTestUrl(item.type, i) : item.url;
+
+                    // CRITICAL: Ensure media_type is set and correct field is used
+                    const mediaData = item.type === 'video'
+                        ? { video_url: url, media_type: "VIDEO" }
+                        : { image_url: url, media_type: "IMAGE" };
+
+                    console.log(`[Instagram Worker] Creating carousel item ${i + 1}:`, mediaData.media_type);
+
                     const childId = await createMediaContainer(instagramId, { ...mediaData, is_carousel_item: true }, accessToken);
                     await waitForMediaReady(childId, accessToken, item.type === 'video' ? 15 : 6);
                     childIds.push(childId);
@@ -182,8 +272,9 @@ async function instagramProcessor(job) {
 
             case "story":
                 const storyMedia = post.content.media;
-                const mediaData = storyMedia.type === 'video' ? { video_url: storyMedia.url } : { image_url: storyMedia.url };
-                containerId = await createMediaContainer(instagramId, { ...mediaData, media_type: "STORIES" }, accessToken);
+                const sUrl = needsTestUrl(storyMedia.url) ? getTestUrl(storyMedia.type) : storyMedia.url;
+                const sData = storyMedia.type === 'video' ? { video_url: sUrl } : { image_url: sUrl };
+                containerId = await createMediaContainer(instagramId, { ...sData, media_type: "STORIES" }, accessToken);
                 await waitForMediaReady(containerId, accessToken, storyMedia.type === 'video' ? 15 : 6);
                 break;
 
