@@ -21,7 +21,7 @@ import {
     cancelStripeSubscription,
     reactivateStripeSubscription,
     getStripeInvoices,
-} from "@/lib/stripe";
+} from "../../../lib/stripe";
 
 /**
  * Get user's active subscription

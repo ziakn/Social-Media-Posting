@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getBillingProfile, getLatestInvoice } from "@/app/actions/billing/billingActions";
 import { createCheckoutSession, createPortalSession } from "@/app/actions/billing/stripeActions";
@@ -34,7 +34,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function SubscriptionPage() {
+function SubscriptionContent() {
     const { user } = usePermissions();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -403,5 +403,13 @@ export default function SubscriptionPage() {
                 </DialogContent>
             </Dialog>
         </div>
+    );
+}
+
+export default function SubscriptionPage() {
+    return (
+        <Suspense fallback={<Spinner />}>
+            <SubscriptionContent />
+        </Suspense>
     );
 }
