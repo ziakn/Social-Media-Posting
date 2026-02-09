@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { uploadMedia, getLinkMetadata } from "./createPost";
 import { decrementUsage } from "../../usage/decrementUsage";
 import { RichText } from "@atproto/api";
+import { syncPostJob, removePostJob } from "@/lib/queue/queues";
 
 /**
  * Get authenticated user (Helper)
@@ -209,65 +210,26 @@ export async function publishBlueSkyPostNow(postId) {
 
         if (post.userId !== user.id && user.role !== 'Administrator') return { success: false, message: "Unauthorized" };
 
-        const account = await getBlueSkyAccount(post.userId, post.accountId); // Use post.userId to get account owner's credentials
-        const agent = new BskyAgent({ service: "https://bsky.social" });
-        await agent.login({ identifier: account.identifier, password: account.password });
+        // 2. Add to Queue with 0 delay for immediate processing
+        await syncPostJob("bluesky", postId, {
+            postId: postId,
+            userId: user.id,
+            userEmail: user.email,
+            pageId: post.accountId
+        }, { delay: 0 });
 
-        // Process Rich Text (Facets for mentions/links)
-        const rt = new RichText({ text: post.content.text || "" });
-        await rt.detectFacets(agent);
-
-        const record = {
-            text: rt.text,
-            facets: rt.facets,
-            createdAt: new Date().toISOString()
-        };
-
-        const media = post.content.media || [];
-        const link = post.content.link || null;
-
-        // Handle Media
-        if (media.length > 0) {
-            const uploadedMedia = [];
-            for (const item of media) {
-                const result = await uploadMedia(agent, item);
-                uploadedMedia.push(result);
-            }
-
-            const images = uploadedMedia.filter(m => m.$type === "app.bsky.embed.images#image");
-            const video = uploadedMedia.find(m => m.$type === "app.bsky.embed.video");
-
-            if (video) {
-                record.embed = video;
-            } else if (images.length > 0) {
-                record.embed = {
-                    $type: "app.bsky.embed.images",
-                    images: images
-                };
-            }
-        }
-
-        // Handle Link Card (External Embed)
-        if (link && !record.embed) {
-            record.embed = await getLinkMetadata(agent, link);
-        }
-
-        const res = await agent.post(record);
-
+        // Status will be updated to 'processed' or 'failed' by worker, but we can optimistically set to 'queued'
+        // or just leave as scheduled until worker picks it up. 
+        // Better to allow worker to handle logic, but let's update status to avoid UI confusion if it takes a sec
         await updateDoc(postRef, {
-            status: "published",
-            blueskyUri: res.uri,
-            blueskyCid: res.cid,
-            publishedAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            scheduledAt: serverTimestamp(), // Sync with current publish time
-            delete: 0
+            status: "queued",
+            updatedAt: serverTimestamp()
         });
 
         revalidatePath("/portal/social/bluesky/posts");
         revalidatePath("/portal/social/bluesky/calendar");
 
-        return { success: true, message: "Post published successfully", blueskyUri: res.uri };
+        return { success: true, message: "Post queued for immediate publishing" };
 
     } catch (error) {
         console.error("Publish BlueSky Post Now Error:", error);
@@ -297,6 +259,9 @@ export async function deleteBlueSkyPost(postId) {
             delete: 1,
             updatedAt: serverTimestamp()
         });
+
+        // Remove from Queue
+        await removePostJob("bluesky", postId);
 
         revalidatePath("/portal/social/bluesky/posts");
         return { success: true, message: "Post deleted successfully" };
@@ -332,6 +297,18 @@ export async function updateBlueSkyPost({ postId, text, media, link, scheduling,
         }
 
         await updateDoc(postRef, updates);
+
+        // Update Queue
+        const effectiveScheduledAt = scheduling || postData.scheduledAt;
+        const delay = effectiveScheduledAt ? Math.max(0, new Date(effectiveScheduledAt).getTime() - Date.now()) : 0;
+
+        await syncPostJob("bluesky", postId, {
+            postId,
+            userId: user.id,
+            userEmail: user.email,
+            pageId: updates.accountId || postData.accountId
+        }, { delay });
+
         revalidatePath("/portal/social/bluesky/posts");
 
         return { success: true, message: "Post updated successfully" };

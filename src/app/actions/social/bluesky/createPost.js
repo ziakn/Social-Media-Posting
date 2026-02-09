@@ -6,6 +6,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs } from "fire
 import { verifyToken } from "@/lib/auth";
 import { checkUsageLimitAction } from "../../usage/usageActions";
 import { incrementUsage } from "../../usage/incrementUsage";
+import { syncPostJob } from "@/lib/queue/queues";
 
 /**
  * Get authenticated user (Helper)
@@ -286,86 +287,50 @@ export async function createBlueSkyPost({
             return { success: false, message: usageCheck.error };
         }
 
-        const account = await getBlueSkyAccount(user.id, pageId);
+        // Just verify account ownership/existence
+        await getBlueSkyAccount(user.id, pageId);
 
-        // If scheduling, save to Firestore and exit
-        if (scheduling) {
-            const postRef = await addDoc(collection(db, "bluesky_posts"), {
-                userId: user.id,
-                accountId: pageId,
-                platform: "bluesky",
-                content: { text, media, link },
-                status: "scheduled",
-                scheduledAt: scheduling,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                delete: 0
-            });
-            await incrementUsage(user.id);
-            return { success: true, message: "Post scheduled successfully", firestoreId: postRef.id };
-        }
+        // Calculate schedule time
+        const scheduledAt = scheduling ? new Date(scheduling) : null;
+        const status = scheduledAt ? "scheduled" : "queued";
 
-        // Initialize Agent
-        const agent = new BskyAgent({ service: "https://bsky.social" });
-        await agent.login({ identifier: account.identifier, password: account.password });
-
-        // Process Rich Text (Facets for mentions/links)
-        const rt = new RichText({ text });
-        await rt.detectFacets(agent);
-
-        const postRecord = {
-            text: rt.text,
-            facets: rt.facets,
-            createdAt: new Date().toISOString()
-        };
-
-        // Handle Media
-        if (media.length > 0) {
-            const uploadedMedia = [];
-            for (const item of media) {
-                const result = await uploadMedia(agent, item);
-                uploadedMedia.push(result);
-            }
-
-            // BlueSky allows either an array of images OR a single video
-            const images = uploadedMedia.filter(m => m.$type === "app.bsky.embed.images#image");
-            const video = uploadedMedia.find(m => m.$type === "app.bsky.embed.video");
-
-            if (video) {
-                // If there's a video, it takes precedence as BlueSky usually allow 1 video post
-                postRecord.embed = video;
-            } else if (images.length > 0) {
-                postRecord.embed = {
-                    $type: "app.bsky.embed.images",
-                    images: images
-                };
-            }
-        }
-
-        // Handle Link Card (External Embed)
-        if (link && !postRecord.embed) {
-            postRecord.embed = await getLinkMetadata(agent, link);
-        }
-
-        const res = await agent.post(postRecord);
-
-        // Save to Firestore
-        const postRef = await addDoc(collection(db, "bluesky_posts"), {
+        // Create initial Firestore record
+        const postData = {
             userId: user.id,
             accountId: pageId,
             platform: "bluesky",
             content: { text, media, link },
-            blueskyUri: res.uri,
-            blueskyCid: res.cid,
-            status: "published",
-            publishedAt: serverTimestamp(),
+            status: status,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             delete: 0
-        });
+        };
 
-        await incrementUsage(user.id);
-        return { success: true, message: "Post published successfully", firestoreId: postRef.id };
+        if (scheduledAt) {
+            postData.scheduledAt = scheduledAt;
+        }
+
+        const postRef = await addDoc(collection(db, "bluesky_posts"), postData);
+
+        // Add to Queue
+        const delay = scheduledAt ? Math.max(0, scheduledAt.getTime() - Date.now()) : 0;
+
+        await syncPostJob("bluesky", postRef.id, {
+            postId: postRef.id,
+            userId: user.id,
+            userEmail: user.email,
+            pageId: pageId
+        }, { delay });
+
+        if (status === "scheduled") {
+            await incrementUsage(user.id);
+        }
+
+        return {
+            success: true,
+            message: scheduledAt ? "Post scheduled successfully" : "Post queued for publishing",
+            firestoreId: postRef.id
+        };
 
     } catch (error) {
         console.error("Create BlueSky Post Error:", error);
