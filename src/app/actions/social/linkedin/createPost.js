@@ -135,7 +135,7 @@ async function uploadMedia(accessToken, ownerUrn, mediaUrl, mediaType) {
 }
 
 /**
- * Create a LinkedIn Post
+ * Create a LinkedIn Post (Queue-First)
  */
 export async function createLinkedinPost({
     text,
@@ -146,153 +146,84 @@ export async function createLinkedinPost({
 }) {
     try {
         const user = await verifyToken();
+        if (!user) return { success: false, message: "Invalid or expired token" };
 
-        if (!user) {
-            return { success: false, message: "Invalid or expired token" };
-        }
-
-        // Check Usage Limit
         const { checkUsageLimitAction } = await import("@/app/actions/usage/usageActions");
         const usageCheck = await checkUsageLimitAction('post');
-        if (!usageCheck.success) {
-            return { success: false, message: usageCheck.error };
-        }
+        if (!usageCheck.success) return { success: false, message: usageCheck.error };
 
         const userId = user.id;
 
-        // 1. Get LinkedIn Access Token from Firestore
-        let accountDoc;
-        if (customAccountId) {
-            accountDoc = await getDoc(doc(db, "socialAccounts", customAccountId));
-            if (!accountDoc.exists() || accountDoc.data().userId !== userId) {
-                return { success: false, message: "LinkedIn account not found or access denied" };
-            }
-        } else {
+        // 1. Resolve Account
+        let accountId = customAccountId;
+        if (!accountId) {
             const q = query(
                 collection(db, "socialAccounts"),
                 where("userId", "==", userId),
                 where("platform", "==", "linkedin"),
-                where("status", "==", "active")
+                where("status", "==", "active"),
+                limit(1)
             );
             const snapshot = await getDocs(q);
-
-            if (snapshot.empty) {
-                return { success: false, message: "LinkedIn account not connected" };
-            }
-
-            accountDoc = snapshot.docs[0];
+            if (snapshot.empty) return { success: false, message: "LinkedIn account not connected" };
+            accountId = snapshot.docs[0].id;
         }
 
-        const accountData = accountDoc.data();
-        const accessToken = accountData.accessToken;
-        const platformUserId = accountData.platformUserId;
-        const accountType = accountData.accountType || "person"; // Default to person for legacy data
-        const accountId = accountDoc.id;
-
-        let authorUrn;
-        if (accountData.platformUrn) {
-            authorUrn = accountData.platformUrn;
-        } else {
-            // Fallback construction
-            authorUrn = accountType === "organization"
-                ? `urn:li:organization:${platformUserId}`
-                : `urn:li:person:${platformUserId}`;
-        }
-
-        let result;
-        if (scheduledTime) {
-            // Store as scheduled in DB
-            result = { success: true, scheduled: true };
-        } else {
-            // Immediate post
-            let postBody = {
-                author: authorUrn,
-                lifecycleState: "PUBLISHED",
-                specificContent: {
-                    "com.linkedin.ugc.ShareContent": {
-                        shareCommentary: {
-                            text: text || ""
-                        },
-                        shareMediaCategory: "NONE"
-                    }
-                },
-                visibility: {
-                    "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC"
-                }
-            };
-
-            if (imageUrl || videoUrl) {
-                const mediaType = imageUrl ? "image" : "video";
-                const mediaUrl = imageUrl || videoUrl;
-                // Pass full authorUrn to uploadMedia
-                const asset = await uploadMedia(accessToken, authorUrn, mediaUrl, mediaType);
-
-                postBody.specificContent["com.linkedin.ugc.ShareContent"].shareMediaCategory = mediaType.toUpperCase();
-                postBody.specificContent["com.linkedin.ugc.ShareContent"].media = [{
-                    status: "READY",
-                    description: {
-                        text: text || "Post Media"
-                    },
-                    media: asset,
-                    title: {
-                        text: text?.substring(0, 30) || "Post Media"
-                    }
-                }];
-            }
-
-            const postRes = await fetch("https://api.linkedin.com/v2/ugcPosts", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${accessToken}`,
-                    "X-Restli-Protocol-Version": "2.0.0",
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(postBody)
-            });
-
-            const postData = await handleLinkedinResponse(postRes, "create post");
-            result = { success: true, linkedinPostId: postData.id };
-        }
-
-        // Save to Firestore
+        // 2. Prepare Firestore Document
         const postRef = doc(collection(db, "linkedin_posts"));
         const postId = postRef.id;
+
+        const scheduledAt = scheduledTime ? new Date(scheduledTime) : null;
+        const status = scheduledAt ? "scheduled" : "queued";
 
         const postData = {
             platform: "linkedin",
             userId,
             accountId,
-            text,
-            imageUrl: imageUrl || null,
-            videoUrl: videoUrl || null,
-            status: scheduledTime ? "scheduled" : "posted",
+            content: {
+                text: text || "",
+                media: []
+            },
+            status,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
+            delete: 0
         };
 
-        if (scheduledTime) {
-            postData.scheduledAt = new Date(scheduledTime);
-        } else {
-            postData.linkedinPostId = result.linkedinPostId;
-        }
+        if (imageUrl) postData.content.media.push({ type: "image", url: imageUrl });
+        if (videoUrl) postData.content.media.push({ type: "video", url: videoUrl });
+
+        // Backward compatibility for existing UI
+        postData.text = text || "";
+        postData.imageUrl = imageUrl || null;
+        postData.videoUrl = videoUrl || null;
+
+        if (scheduledAt) postData.scheduledAt = scheduledAt;
 
         await setDoc(postRef, postData);
 
+        // 3. Sync to Queue
+        const { syncPostJob } = await import("@/lib/queue/queues");
+        const delay = scheduledAt ? Math.max(0, scheduledAt.getTime() - Date.now()) : 0;
+
+        await syncPostJob("linkedin", postId, {
+            postId,
+            userId,
+            pageId: accountId
+        }, { delay });
+
+        // 4. Usage
         await incrementUsage(userId);
 
         return {
             success: true,
-            message: scheduledTime ? "Post scheduled successfully" : "Post created successfully on LinkedIn",
-            postId,
-            linkedinPostId: result.linkedinPostId
+            message: scheduledAt ? "Post scheduled successfully" : "Post enqueued for publication",
+            postId
         };
 
     } catch (error) {
         console.error("LinkedIn post creation error:", error);
-        return {
-            success: false,
-            message: `Failed to create LinkedIn post: ${error.message}`,
-        };
+        return { success: false, message: `Failed to enqueue LinkedIn post: ${error.message}` };
     }
 }
 

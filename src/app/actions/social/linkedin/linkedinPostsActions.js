@@ -264,29 +264,16 @@ export async function publishLinkedinPostNow(postId) {
 
         const post = postSnap.data();
 
-        // 2. Publish using createLinkedinPost (which handles immediate logic)
-        const result = await createLinkedinPost({
-            text: post.text,
-            imageUrl: post.imageUrl,
-            videoUrl: post.videoUrl,
-            accountId: post.accountId,
-        });
+        // 2. Publish Now = Sync to queue with 0 delay
+        const { syncPostJob } = await import("@/lib/queue/queues");
+        await syncPostJob("linkedin", postId, {
+            postId: postId,
+            userId: user.id,
+            pageId: post.accountId
+        }, { delay: 0 });
 
-        if (result.success) {
-            // Update the existing document with publication details
-            await updateDoc(postRef, {
-                status: "posted",
-                publishedAt: serverTimestamp(),
-                scheduledAt: serverTimestamp(), // Sync with current publish time
-                updatedAt: serverTimestamp(),
-                linkedinPostId: result.postId || null // Ensure postId is captured if returned
-            });
-
-            revalidatePath("/portal/social/linkedin/posts");
-            return { success: true, message: "Post published successfully" };
-        } else {
-            return { success: false, message: result.message };
-        }
+        revalidatePath("/portal/social/linkedin/posts");
+        return { success: true, message: "Post promoted for immediate publication" };
     } catch (error) {
         console.error("Error publishing LinkedIn post now:", error);
         return { success: false, message: error.message };
@@ -344,13 +331,11 @@ export async function deleteLinkedinPost(postId) {
         const postData = postSnap.data();
         if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
 
-        // Quota Restore (if scheduled)
-        if (postData.status === "scheduled") {
-            await decrementUsage(user.id);
-        }
+        // Queue Sync: Remove if scheduled
+        const { removePostJob } = await import("@/lib/queue/queues");
+        await removePostJob("linkedin", postId);
 
-        // Soft delete: set delete flag instead of actually removing the document
-        // This matches the pattern used in Facebook and Instagram modules
+        // Soft delete
         await updateDoc(postRef, {
             delete: 1,
             deletedAt: serverTimestamp()
@@ -394,11 +379,18 @@ export async function updateLinkedinPostAction({
 
         const updates = {
             text,
-            imageUrl,
-            videoUrl,
+            imageUrl: imageUrl || null,
+            videoUrl: videoUrl || null,
             accountId,
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
+            content: {
+                text: text || "",
+                media: []
+            }
         };
+
+        if (imageUrl) updates.content.media.push({ type: "image", url: imageUrl });
+        if (videoUrl) updates.content.media.push({ type: "video", url: videoUrl });
 
         if (scheduledAt) {
             updates.scheduledAt = new Date(scheduledAt);
@@ -406,9 +398,21 @@ export async function updateLinkedinPostAction({
         }
 
         await updateDoc(postRef, updates);
-        revalidatePath("/portal/social/linkedin/posts");
 
-        return { success: true, message: "Post updated successfully" };
+        // 3. Queue Sync: Update job
+        const { syncPostJob } = await import("@/lib/queue/queues");
+        const delay = updates.scheduledAt
+            ? Math.max(0, updates.scheduledAt.getTime() - Date.now())
+            : (postData.scheduledAt ? Math.max(0, postData.scheduledAt.toDate().getTime() - Date.now()) : 0);
+
+        await syncPostJob("linkedin", postId, {
+            postId,
+            userId: user.id,
+            pageId: accountId
+        }, { delay });
+
+        revalidatePath("/portal/social/linkedin/posts");
+        return { success: true, message: "Post updated and rescheduled in queue" };
     } catch (error) {
         console.error("Error updating LinkedIn post:", error);
         return { success: false, message: error.message };

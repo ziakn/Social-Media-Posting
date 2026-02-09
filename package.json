@@ -12,6 +12,8 @@
     "worker:threads": "node src/workers/platforms/threads-worker.js",
     "worker:pinterest": "node src/workers/platforms/pinterest-worker.js",
     "worker:bluesky": "node src/workers/platforms/bluesky-worker.js",
+    "worker:linkedin": "node src/workers/platforms/linkedin-worker.js",
+    "worker:tiktok": "node src/workers/platforms/tiktok-worker.js",
     "worker:all": "node src/scripts/start-workers.js",
     "test:queues": "node src/scripts/test-queues.js",
     "flush:queues": "node src/scripts/flush-queues.js",
