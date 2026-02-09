@@ -21,6 +21,8 @@ import { getAbsoluteUrl, getTestUrl, needsTestUrl } from "./mediaUtils";
 import { uploadPinterestVideo } from "./videoUtils";
 import { getValidPinterestAccessToken } from "./connectAccount";
 import { decrementUsage } from "../../usage/decrementUsage";
+import { syncPostJob, removePostJob } from "@/lib/queue/queues";
+
 
 /**
  * Get all Pinterest posts with status filtering, pagination, and enhanced filtering
@@ -218,99 +220,33 @@ async function getPinterestAccount(userId, platformUserId) {
 export async function publishPinterestPostNow(postId) {
     try {
         const user = await verifyToken();
+        if (!user) return { success: false, message: "Unauthorized" };
 
         const postRef = doc(db, "pinterest_posts", postId);
         const postSnap = await getDoc(postRef);
-
         if (!postSnap.exists()) return { success: false, message: "Post not found" };
-        const post = postSnap.data();
 
+        const post = postSnap.data();
         if (post.userId !== user.id) return { success: false, message: "Unauthorized" };
 
-        const { accessToken } = await getPinterestAccount(user.id, post.accountId);
-
-        // Prepare Pin data
-        let mediaSource = {};
-        const media = post.content?.media || [];
-        const postType = post.postType || (media.length > 1 ? "carousel" : "standard");
-
-        // Sanitize Link for API compatibility (no localhost)
-        let finalLink = post.link || "";
-        if (finalLink && (finalLink.includes("localhost") || finalLink.includes("127.0.0.1"))) {
-            console.warn("Removing localhost link for Pinterest API compatibility (Scheduled Publish)");
-            finalLink = "";
-        }
-
-        if (postType === "carousel" && media.length > 1) {
-            const items = await Promise.all(media.map(async (item, index) => {
-                const mediaUrl = needsTestUrl(item.url) ? getTestUrl("image", index) : await getAbsoluteUrl(item.url);
-                return {
-                    title: post.title || "",
-                    description: post.message || post.description || "",
-                    link: finalLink,
-                    url: mediaUrl
-                };
-            }));
-
-            mediaSource = {
-                source_type: "multiple_image_urls",
-                items: items
-            };
-        } else if (postType === "video") {
-            const item = media[0] || { url: "", type: "video" };
-
-            // Upload Video to Pinterest
-            // This process registers, uploads, and waits for processing
-            const mediaId = await uploadPinterestVideo(accessToken, item.url);
-
-            // Get Cover Image URL if available (optional but recommended)
-            let coverImageUrl = item.coverUrl || null;
-            if (coverImageUrl) {
-                coverImageUrl = needsTestUrl(coverImageUrl) ? getTestUrl("image") : await getAbsoluteUrl(coverImageUrl);
-            }
-
-            mediaSource = {
-                source_type: "video_id",
-                media_id: mediaId,
-                ...(coverImageUrl
-                    ? { cover_image_url: coverImageUrl }
-                    : { cover_image_key_frame_time: 0 } // Fallback to first frame if no cover image
-                )
-            };
-        } else {
-            const item = media[0] || { url: post.imageUrl, type: "image" };
-            const mediaUrl = needsTestUrl(item.url) ? getTestUrl(String(item.type).toLowerCase()) : await getAbsoluteUrl(item.url);
-
-            mediaSource = {
-                source_type: "image_url",
-                url: mediaUrl
-            };
-        }
-
-        const pinData = {
-            board_id: post.boardId,
-            title: post.title || "",
-            description: post.message || post.description || "",
-            // Only include link if it's not empty
-            ...(finalLink ? { link: finalLink } : {}),
-            media_source: mediaSource
-        };
-
-        console.log("Pinterest Scheduled Publish Data:", JSON.stringify(pinData, null, 2));
-
-        const result = await makePinterestRequest("/pins", pinData, accessToken, "POST");
-
-        await updateDoc(postRef, {
-            status: "published",
-            pinterestPinId: result.id,
-            publishedAt: serverTimestamp(),
+        // 2. Update Firestore for immediate processing
+        const updates = {
+            status: "scheduled",
+            scheduledAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            scheduledAt: serverTimestamp(), // Clears future schedule
-            delete: 0
-        });
+        };
+        await updateDoc(postRef, updates);
+
+        // 3. Sync with Queue
+        await syncPostJob("pinterest", postId, {
+            postId,
+            userId: user.id,
+            userEmail: user.email,
+            pageId: post.accountId
+        }, { delay: 0 });
 
         revalidatePath("/portal/social/pinterest/posts");
-        return { success: true, message: "Pin published successfully", pinId: result.id };
+        return { success: true, message: "Pin queued for immediate publication." };
     } catch (error) {
         console.error("Error publishing Pinterest Pin now:", error);
         return { success: false, message: error.message };
@@ -426,6 +362,10 @@ export async function deletePinterestPost(postId) {
         });
 
         revalidatePath("/portal/social/pinterest/posts");
+
+        // 5. Queue Cleanup
+        await removePostJob("pinterest", postId);
+
         return {
             success: true,
             message: apiDeleteSuccess || !postData.pinterestPinId
@@ -480,8 +420,19 @@ export async function updatePinterestPost({
         }
 
         await updateDoc(postRef, updates);
-        revalidatePath("/portal/social/pinterest/posts");
 
+        // 4. Sync with Queue
+        const effectiveScheduledAt = updates.scheduledAt || postData.scheduledAt;
+        const delay = effectiveScheduledAt ? Math.max(0, new Date(effectiveScheduledAt).getTime() - Date.now()) : 0;
+
+        await syncPostJob("pinterest", postId, {
+            postId,
+            userId: user.id,
+            userEmail: user.email,
+            pageId: updates.accountId || postData.accountId
+        }, { delay });
+
+        revalidatePath("/portal/social/pinterest/posts");
         return { success: true, message: "Post updated successfully" };
     } catch (error) {
         console.error("Error updating Pinterest post:", error);
