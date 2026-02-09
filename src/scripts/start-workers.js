@@ -4,7 +4,7 @@ const { QUEUE_NAMES } = require('../lib/queue/queues');
 console.log("Starting all background workers...");
 
 // Only Facebook is fully implemented for now
-const activePlatforms = ['FACEBOOK', 'INSTAGRAM', 'THREADS', 'PINTEREST', 'BLUESKY', 'LINKEDIN'];
+const activePlatforms = ['FACEBOOK', 'INSTAGRAM', 'THREADS', 'PINTEREST', 'BLUESKY', 'LINKEDIN', 'TIKTOK'];
 
 activePlatforms.forEach(platform => {
     const script = `node src/workers/platforms/${platform.toLowerCase()}-worker.js`;

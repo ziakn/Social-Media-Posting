@@ -16,7 +16,7 @@ import path from 'path';
 import { checkVideoMetadata, validatePlatformCompliance, convertVideoForPlatform } from "@/lib/media/videoProcessor";
 
 /**
- * Create TikTok Post (Direct Publish)
+ * Create TikTok Post (Queue-First)
  */
 export async function createTiktokPost({
     pageId,
@@ -34,51 +34,31 @@ export async function createTiktokPost({
             return { success: false, message: usageCheck.error };
         }
 
-        const { accountId, accessToken } = await getTiktokAccount(user.id, pageId);
+        const { accountId } = await getTiktokAccount(user.id, pageId);
 
         if (media.length === 0) throw new Error("No video provided for TikTok post");
 
         let finalMedia = [...media];
         const videoItem = finalMedia[0];
 
-        // --- Video Processing Logic ---
+        // --- Video Processing Logic (Keep in action for now to determine final URL) ---
         if (videoItem.storagePath) {
             try {
                 const absolutePath = path.join(process.cwd(), videoItem.storagePath);
-
-                // 1. Check Metadata
-                console.log(`Checking video metadata for: ${absolutePath}`);
                 const metadata = await checkVideoMetadata(absolutePath);
-                console.log("Video Metadata:", metadata);
-
-                // 2. Validate Compliance
                 const compliance = validatePlatformCompliance('tiktok', metadata);
 
                 if (!compliance.compliant) {
-                    console.log("Video not compliant for TikTok. Reasons:", compliance.reasons);
-                    console.log("Initiating auto-conversion...");
-
-                    // 3. Convert if needed
+                    console.log("Video not compliant for TikTok. Initiating auto-conversion...");
                     const dir = path.dirname(absolutePath);
                     const ext = path.extname(absolutePath);
                     const basename = path.basename(absolutePath, ext);
-                    const outputPath = path.join(dir, `${basename}_tiktok${ext}`); // Keep extension or force .mp4? Processor forces .mp4 format but output path extension matters for url.
-                    // Let's force .mp4 for output path if we entered conversion
-                    const finalOutputPath = outputPath.replace(ext, '.mp4');
+                    const outputPath = path.join(dir, `${basename}_tiktok.mp4`);
 
-                    await convertVideoForPlatform(absolutePath, finalOutputPath);
+                    await convertVideoForPlatform(absolutePath, outputPath);
 
-                    // 4. Update Media Item with new paths
-                    // Reconstruct public URL. Assuming storagePath starts with 'public/'
-                    // public/uploads/... -> /uploads/...
-                    const relativePath = finalOutputPath.replace(path.join(process.cwd(), 'public'), '');
-                    // Ensure forward slashes for URL
+                    const relativePath = outputPath.replace(path.join(process.cwd(), 'public'), '');
                     const urlPath = relativePath.split(path.sep).join('/');
-
-                    // We need a base URL. In server actions, this can be tricky.
-                    // However, we usually store absolute URLs or root-relative URLs in the DB?
-                    // The original item.url might be "https://.../uploads/..." or "/uploads/..."
-                    // If it was absolute, we need the origin.
 
                     const isAbsolute = videoItem.url.startsWith('http');
                     let newUrl = urlPath;
@@ -88,53 +68,56 @@ export async function createTiktokPost({
                         newUrl = `${urlObj.origin}${urlPath}`;
                     }
 
-                    console.log(`Video converted. New URL: ${newUrl}`);
-
                     finalMedia[0] = {
                         ...videoItem,
                         url: newUrl,
-                        storagePath: path.relative(process.cwd(), finalOutputPath), // Update storage path just in case
-                        originalStoragePath: videoItem.storagePath // Keep track
+                        storagePath: path.relative(process.cwd(), outputPath)
                     };
-                } else {
-                    console.log("Video is already TikTok compliant.");
                 }
-
             } catch (processError) {
                 console.error("Video processing failed, attempting to proceed with original file:", processError);
-                // We don't throw, we try with original. 
-                // Alternatively, we could update status to failed?
             }
         }
-        // ------------------------------
+
+        // 2. Prepare Firestore Document
+        const postRef = doc(collection(db, "tiktok_posts"));
+        const postId = postRef.id;
+
+        const scheduledAt = scheduling ? new Date(scheduling) : null;
+        const status = scheduledAt ? "scheduled" : "queued";
 
         const postData = {
             userId: user.id,
-            accountId: pageId,
-            internalAccountId: accountId,
+            accountId: pageId, // This is the platform account ID
+            internalAccountId: accountId, // This is the Firestore doc ID for the account
             platform: "tiktok",
-            content: { text, media: finalMedia }, // Use processed media
-            status: scheduling ? "scheduled" : "publishing",
-            scheduledAt: scheduling || null,
+            content: { text, media: finalMedia },
+            status,
+            scheduledAt: scheduledAt || null,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             delete: 0,
             metrics: { likes: 0, comments: 0, shares: 0, views: 0 }
         };
 
-        const postRef = await addDoc(collection(db, "tiktok_posts"), postData);
+        await setDoc(doc(db, "tiktok_posts", postId), postData);
 
-        // 2. If not scheduled, trigger Direct Post API
-        if (!scheduling) {
-            await triggerTiktokPublish(accessToken, postRef, text, finalMedia[0].url);
-        }
+        // 3. Sync to Queue
+        const { syncPostJob } = await import("@/lib/queue/queues");
+        const delay = scheduledAt ? Math.max(0, scheduledAt.getTime() - Date.now()) : 0;
+
+        await syncPostJob("tiktok", postId, {
+            postId,
+            userId: user.id,
+            pageId: accountId // Use the internal doc ID for easier lookup in worker
+        }, { delay });
 
         await incrementUsage(user.id);
 
         return {
             success: true,
-            message: scheduling ? "TikTok video scheduled" : "TikTok video published successfully!",
-            firestoreId: postRef.id
+            message: scheduledAt ? "TikTok video scheduled" : "TikTok video enqueued for publication",
+            firestoreId: postId
         };
     } catch (error) {
         console.error("Create TikTok Post Error:", error);

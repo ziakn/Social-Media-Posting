@@ -119,11 +119,11 @@ export async function deleteTiktokPost(postId) {
             return { success: false, message: "Unauthorized" };
         }
 
-        // Quota Restore (if scheduled)
-        if (postData.status === "scheduled") {
-            await decrementUsage(user.id);
-        }
+        // Queue Sync: Remove if scheduled
+        const { removePostJob } = await import("@/lib/queue/queues");
+        await removePostJob("tiktok", postId);
 
+        // Soft delete
         await updateDoc(postRef, {
             delete: 1,
             updatedAt: serverTimestamp()
@@ -199,25 +199,16 @@ export async function publishTiktokPostNow(postId) {
         const postData = postSnap.data();
         if (postData.userId !== user.id) return { success: false, message: "Unauthorized" };
 
-        // 1. Get account with fresh token
-        const { accessToken } = await getTiktokAccount(user.id, postData.accountId);
-
-        // 2. Trigger real TikTok API
-        const text = postData.content?.text || "";
-        const mediaUrl = postData.content?.media?.[0]?.url;
-
-        if (!mediaUrl) throw new Error("No video found for this post");
-
-        await triggerTiktokPublish(accessToken, postRef, text, mediaUrl);
-
-        // Ensure scheduledAt is also updated to reflect the manual 'now' publish
-        await updateDoc(postRef, {
-            scheduledAt: serverTimestamp(),
-            updatedAt: serverTimestamp()
-        });
+        // 2. Publish Now = Sync to queue with 0 delay (promotes job)
+        const { syncPostJob } = await import("@/lib/queue/queues");
+        await syncPostJob("tiktok", postId, {
+            postId: postId,
+            userId: user.id,
+            pageId: postData.internalAccountId // Internal doc ID
+        }, { delay: 0 });
 
         revalidatePath("/portal/social/tiktok/posts");
-        return { success: true, message: "Post published successfully" };
+        return { success: true, message: "Post promoted for immediate publication" };
     } catch (error) {
         console.error("Error publishing TikTok post:", error);
         return { success: false, message: error.message };
@@ -260,7 +251,21 @@ export async function updateTiktokPost({ postId, text, media, scheduling, accoun
         }
 
         await updateDoc(postRef, updates);
+
+        // 3. Queue Sync: Update job
+        const { syncPostJob } = await import("@/lib/queue/queues");
+        const delay = updates.scheduledAt instanceof Date
+            ? Math.max(0, updates.scheduledAt.getTime() - Date.now())
+            : (postData.scheduledAt ? Math.max(0, postData.scheduledAt.toDate().getTime() - Date.now()) : 0);
+
+        await syncPostJob("tiktok", postId, {
+            postId,
+            userId: user.id,
+            pageId: accountId // Use internalAccountId from call or postData
+        }, { delay });
+
         revalidatePath("/portal/social/tiktok/posts");
+        return { success: true, message: "Post updated and rescheduled in queue" };
 
         return { success: true, message: "Post updated successfully" };
     } catch (error) {
