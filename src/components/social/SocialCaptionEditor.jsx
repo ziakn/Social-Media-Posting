@@ -29,11 +29,12 @@ export default function SocialCaptionEditor({
     className = "",
     disabled = false,
     minHeight = "100px",
+    maxLimit = null, // New prop to override platform default
 }) {
     const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
     const textareaRef = useRef(null);
 
-    const maxCharacters = PLATFORM_LIMITS[platform] || PLATFORM_LIMITS.default;
+    const maxCharacters = maxLimit || PLATFORM_LIMITS[platform] || PLATFORM_LIMITS.default;
     const characterCount = value.length;
     const percentUsed = (characterCount / maxCharacters) * 100;
 
