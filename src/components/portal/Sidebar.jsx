@@ -20,6 +20,7 @@ import {
   Building2,
   LogOut,
   MessageSquare,
+  Sparkles,
 } from "lucide-react"
 
 import {
@@ -80,6 +81,12 @@ export function AppSidebar({ user, ...props }) {
       url: "/portal/composer",
       icon: PenSquare,
       permission: "view_composer",
+    },
+    {
+      title: "AI Social Hub",
+      url: ROUTES.PORTAL_AI_HUB,
+      icon: Sparkles,
+      permission: "view_dashboard",
     },
     {
       title: "Scheduled",

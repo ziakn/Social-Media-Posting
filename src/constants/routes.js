@@ -62,5 +62,6 @@ export const ROUTES = {
   PORTAL_TIKTOK_POSTS: prefix + "social/tiktok/posts",
   PORTAL_PINTEREST: prefix + "social/pinterest",
   PORTAL_PINTEREST_POSTS: prefix + "social/pinterest/posts",
+  PORTAL_AI_HUB: prefix + "ai-hub",
   PORTAL_CONTACT: prefix + "contact",
 };

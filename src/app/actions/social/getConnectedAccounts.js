@@ -99,3 +99,69 @@ export async function getConnectedAccounts() {
         return { success: false, error: error.message };
     }
 }
+/**
+ * 3. GET DETAILED ACCOUNTS
+ * 
+ * Returns all active social accounts with full details for UI selection.
+ */
+export async function getDetailedConnectedAccounts() {
+    try {
+        const user = await verifyToken();
+        if (!user) return { success: false, data: [] };
+
+        const q = query(
+            collection(db, "socialAccounts"),
+            where("userId", "==", user.id),
+            where("status", "==", "active")
+        );
+
+        const snapshot = await getDocs(q);
+        const accounts = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...JSON.parse(JSON.stringify(doc.data()))
+        }));
+
+        // Filter accounts to ensure they have usable posting targets AND are unique
+        const uniqueAccountsMap = new Map();
+
+        accounts.forEach(acc => {
+            // Robust unique key generation
+            let uniqueId = acc.platformUserId;
+
+            // Instagram specific fallback: platformUserId might be missing or generic
+            if (acc.platform?.toLowerCase() === 'instagram') {
+                uniqueId = acc.pageId || acc.platformUserId || acc.username;
+            }
+
+            // General fallback
+            if (!uniqueId) {
+                uniqueId = acc.email || acc.username || acc.id;
+            }
+
+            // Create a unique key based on platform and the best available ID
+            const uniqueKey = `${acc.platform?.toLowerCase()}-${uniqueId}`;
+
+            if (!uniqueAccountsMap.has(uniqueKey)) {
+                if (['facebook', 'youtube'].includes(acc.platform?.toLowerCase())) {
+                    // Start with basic check
+                    if (Array.isArray(acc.pages) && acc.pages.length > 0) {
+                        uniqueAccountsMap.set(uniqueKey, acc);
+                    }
+                } else {
+                    // For others (LinkedIn, Twitter, IG, etc.), just include them
+                    uniqueAccountsMap.set(uniqueKey, acc);
+                }
+            }
+        });
+
+        const filteredAccounts = Array.from(uniqueAccountsMap.values());
+
+        // Clean sensitive data before sending to client
+        const safeAccounts = filteredAccounts.map(({ accessToken, refreshToken, ...rest }) => rest);
+
+        return JSON.parse(JSON.stringify({ success: true, data: safeAccounts }));
+    } catch (error) {
+        console.error("Error fetching detailed accounts:", error);
+        return { success: false, error: error.message };
+    }
+}
