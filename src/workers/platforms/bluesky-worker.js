@@ -70,7 +70,8 @@ async function uploadMedia(agent, media) {
     if (!mimeType || mimeType === 'image' || mimeType === 'video') {
         mimeType = response.headers.get('content-type');
         if (!mimeType) {
-            if (url.endsWith('.mp4')) mimeType = 'video/mp4';
+            const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.m4v', '.3gp', '.mkv', '.qt'];
+            if (videoExtensions.some(ext => url.toLowerCase().endsWith(ext))) mimeType = 'video/mp4';
             else if (url.endsWith('.jpg') || url.endsWith('.jpeg')) mimeType = 'image/jpeg';
             else if (url.endsWith('.png')) mimeType = 'image/png';
         }

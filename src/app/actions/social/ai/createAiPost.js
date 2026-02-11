@@ -5,12 +5,13 @@ import { collection, query, getDocs, where } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
 import { format } from "date-fns";
 import { createFacebookPostBase } from "../facebook/createPost";
-import { createInstagramImagePost } from "../instagram/createPost";
+import { createInstagramImagePost, createInstagramVideoPost, createInstagramCarouselPost } from "../instagram/createPost";
 import { createTwitterPost } from "../twitter/createPost";
 import { createLinkedinPost } from "../linkedin/createPost";
 import { createThreadsPost } from "../threads/createPost";
 import { createTiktokPost } from "../tiktok/createPost";
 import { createPinterestPost } from "../pinterest/createPost";
+import { createBlueSkyPost } from "../bluesky/createPost";
 
 /**
  * AI Centralized Posting Action
@@ -44,31 +45,41 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls, 
         // 2. Filter to only the requested connections
         const selectedConnections = allUserAccounts.filter(acc => accountIds.includes(acc.id));
 
+        // Helper to detect if a URL is a video
+        const detectMediaType = (url) => {
+            if (!url) return "image";
+            const videoExtensions = ['.mp4', '.mov', '.webm', '.avi', '.m4v', '.3gp', '.mkv', '.qt'];
+            return videoExtensions.some(ext => url.toLowerCase().endsWith(ext)) ? "video" : "image";
+        };
+
         const results = [];
-        const text = content || ""; // AIComposerModal sends 'content' prop as text, or we can unify
+        const text = content || "";
 
         // 3. Process each connection
         for (const account of selectedConnections) {
             // Determine meaningful targets for this connection
             let targetsToPost = [];
 
-            if (['facebook', 'linkedin', 'youtube'].includes(account.platform?.toLowerCase())) {
+            if (account.platform?.toLowerCase() === 'facebook' || (account.platform?.toLowerCase() === 'linkedin' && Array.isArray(account.pages) && account.pages.length > 0)) {
                 // For platforms with pages, check which pages are in targetIds
                 if (Array.isArray(account.pages)) {
                     targetsToPost = account.pages.filter(page => targetIds.includes(page.id || page.pageId));
                 }
             } else {
-                // For profile-based platforms (Twitter, IG, etc.), check if the account ID is in targetIds
-                // OR if backward compatibility is needed, just post if connection is selected?
-                // The Smart Selector uses account.id as targetId for profiles.
-                if (targetIds.includes(account.id)) {
-                    targetsToPost = [{ id: account.id, name: account.displayName }];
+                // For profile-based platforms (Twitter, IG, BlueSky, etc.)
+                // Match either by Firestore Document ID or any of the platform user IDs
+                const isTargetSelected = targetIds.includes(account.id) ||
+                    (account.accountId && targetIds.includes(String(account.accountId))) ||
+                    (account.igUserId && targetIds.includes(String(account.igUserId))) ||
+                    (account.platformUserId && targetIds.includes(String(account.platformUserId)));
+
+                if (isTargetSelected) {
+                    targetsToPost = [{
+                        id: account.accountId || account.igUserId || account.platformUserId || account.id,
+                        name: account.displayName
+                    }];
                 }
             }
-
-            // If no specific targets matched but the connection was selected, 
-            // it might mean "post to default" or "post to all"? 
-            // But SmartSelector enforces picking targets. If targetsToPost is empty, we skip.
 
             for (const target of targetsToPost) {
                 let result;
@@ -80,46 +91,71 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls, 
                     switch (account.platform.toLowerCase()) {
                         case "facebook":
                             result = await createFacebookPostBase({
-                                accessToken: account.accessToken, // Use secure token from DB
                                 pageId: target.id || target.pageId,
                                 message: text,
-                                mediaUrls: mediaUrls && mediaUrls.length ? mediaUrls : [],
-                                postType: mediaUrls && mediaUrls.length ? "images" : "text",
+                                mediaUrls: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({
+                                    url,
+                                    type: detectMediaType(url)
+                                })) : [],
+                                postType: mediaUrls && mediaUrls.length ? (detectMediaType(mediaUrls[0]) === 'video' ? 'video' : 'images') : "text",
                                 scheduledTime: scheduledTime
                             });
                             break;
 
                         case "instagram":
                             if (mediaUrls && mediaUrls.length) {
-                                result = await createInstagramImagePost({
-                                    accessToken: account.accessToken,
-                                    pageId: target.id || target.pageId || account.pageId, // IG specific logic might vary
-                                    image: { url: mediaUrls[0] },
-                                    caption: text,
-                                    scheduling: scheduling?.schedule ? scheduling : null
-                                });
+                                const firstUrl = mediaUrls[0];
+                                const type = detectMediaType(firstUrl);
+
+                                // Construct normalized scheduling for IG actions
+                                const igScheduling = scheduling?.schedule ? {
+                                    schedule: true,
+                                    date: new Date(scheduling.date),
+                                    time: scheduling.time
+                                } : null;
+
+                                if (mediaUrls.length > 1) {
+                                    result = await createInstagramCarouselPost({
+                                        pageId: target.id || target.pageId || account.pageId,
+                                        media: mediaUrls.map(url => ({ url, type: detectMediaType(url) })),
+                                        caption: text,
+                                        scheduling: igScheduling
+                                    });
+                                } else if (type === 'video') {
+                                    result = await createInstagramVideoPost({
+                                        pageId: target.id || target.pageId || account.pageId,
+                                        video: { url: firstUrl },
+                                        caption: text,
+                                        scheduling: igScheduling
+                                    });
+                                } else {
+                                    result = await createInstagramImagePost({
+                                        pageId: target.id || target.pageId || account.pageId,
+                                        image: { url: firstUrl },
+                                        caption: text,
+                                        scheduling: igScheduling
+                                    });
+                                }
                             } else {
-                                result = { success: false, message: "Instagram requires an image" };
+                                result = { success: false, message: "Instagram requires an image or video" };
                             }
                             break;
 
                         case "twitter":
                             result = await createTwitterPost({
-                                accessToken: account.accessToken,
-                                accessSecret: account.accessSecret,
                                 message: text,
-                                mediaUrls: mediaUrls ? mediaUrls.map(url => ({ url, type: "image/jpeg" })) : [],
-                                postType: mediaUrls && mediaUrls.length ? "image" : "text",
+                                mediaUrls: mediaUrls ? mediaUrls.map(url => ({ url, type: detectMediaType(url) === 'video' ? "video/mp4" : "image/jpeg" })) : [],
+                                postType: mediaUrls && mediaUrls.length ? (detectMediaType(mediaUrls[0]) === 'video' ? 'video' : 'image') : "text",
                                 scheduledTime: scheduledTime
                             });
                             break;
 
                         case "linkedin":
                             result = await createLinkedinPost({
-                                accessToken: account.accessToken,
                                 text: text,
-                                imageUrl: mediaUrls && mediaUrls.length ? mediaUrls[0] : null,
-                                pageId: target.id, // user urn or org urn
+                                imageUrl: mediaUrls && mediaUrls.length && detectMediaType(mediaUrls[0]) !== 'video' ? mediaUrls[0] : null,
+                                videoUrl: mediaUrls && mediaUrls.length && detectMediaType(mediaUrls[0]) === 'video' ? mediaUrls[0] : null,
+                                accountId: account.id,
                                 scheduledTime: scheduledTime
                             });
                             break;
@@ -128,8 +164,8 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls, 
                             result = await createTiktokPost({
                                 pageId: target.id || target.pageId,
                                 text: text,
-                                mediaUrl: mediaUrls && mediaUrls.length ? mediaUrls[0] : null,
-                                scheduledTime: scheduledTime
+                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: detectMediaType(url) })) : [],
+                                scheduling: scheduledTime ? scheduledTime : null
                             });
                             break;
 
@@ -137,7 +173,8 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls, 
                             result = await createPinterestPost({
                                 pageId: target.id || target.pageId || account.accountId,
                                 message: text,
-                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: "image" })) : [],
+                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: detectMediaType(url) })) : [],
+                                postType: mediaUrls && mediaUrls.length && detectMediaType(mediaUrls[0]) === 'video' ? "video" : "image",
                                 boardId: pinterestBoards ? pinterestBoards[account.accountId] : null,
                                 scheduling: scheduledTime ? scheduledTime.toISOString() : null
                             });
@@ -147,8 +184,17 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls, 
                             result = await createThreadsPost({
                                 pageId: target.id || target.pageId,
                                 text: text,
-                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: "image", url })) : [],
+                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: detectMediaType(url) })) : [],
                                 scheduling: scheduledTime ? scheduledTime.toISOString() : null
+                            });
+                            break;
+
+                        case "bluesky":
+                            result = await createBlueSkyPost({
+                                pageId: target.id,
+                                text: text,
+                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: detectMediaType(url) })) : [],
+                                scheduling: scheduledTime ? scheduledTime : null
                             });
                             break;
 

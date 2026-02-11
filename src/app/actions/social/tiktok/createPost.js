@@ -109,6 +109,7 @@ export async function createTiktokPost({
         await syncPostJob("tiktok", postId, {
             postId,
             userId: user.id,
+            userEmail: user.email,
             pageId: accountId // Use the internal doc ID for easier lookup in worker
         }, { delay });
 

@@ -209,6 +209,7 @@ export async function createLinkedinPost({
         await syncPostJob("linkedin", postId, {
             postId,
             userId,
+            userEmail: user.email,
             pageId: accountId
         }, { delay });
 

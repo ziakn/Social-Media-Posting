@@ -17,16 +17,21 @@ async function handleImagePost(pageId, message, mediaUrls, accessToken, baseBody
         formData.append('published', 'false');
 
         let fileBuffer;
-        if (media.url.startsWith('http')) {
-            const response = await fetch(media.url);
+        const mediaUrl = typeof media === 'string' ? media : media.url;
+        const isVideo = (typeof media === 'object' && media.type === 'video') ||
+            ['.mp4', '.mov', '.webm', '.avi', '.m4v', '.3gp', '.mkv', '.qt'].some(ext => mediaUrl.toLowerCase().endsWith(ext));
+        const mediaType = isVideo ? (media.mimeType || 'video/mp4') : (media.type || 'image/jpeg');
+
+        if (mediaUrl.startsWith('http')) {
+            const response = await fetch(mediaUrl);
             fileBuffer = Buffer.from(await response.arrayBuffer());
         } else {
-            const filePath = path.join(process.cwd(), 'public', media.url.replace(/^\//, ''));
+            const filePath = path.join(process.cwd(), 'public', mediaUrl.replace(/^\//, ''));
             fileBuffer = fs.readFileSync(filePath);
         }
 
-        const blob = new Blob([fileBuffer], { type: media.type || 'image/jpeg' });
-        formData.append('source', blob, media.name || 'image.jpg');
+        const blob = new Blob([fileBuffer], { type: mediaType });
+        formData.append('source', blob, (media.name || 'image.jpg'));
 
         const uploadRes = await fetch(`https://graph.facebook.com/${pageId}/photos`, {
             method: "POST",
