@@ -17,8 +17,11 @@ import {
     MessageCircle,
     MessageSquare,
     Twitter,
-    Smile
+    Smile,
+    Clock,
+    Calendar as CalendarIcon
 } from "lucide-react";
+import { format } from "date-fns";
 import { XLogo } from "@/components/icons/XLogo";
 import { ThreadsLogo } from "@/components/icons/ThreadsLogo";
 import { TiktokLogo } from "@/components/icons/TiktokLogo";
@@ -29,11 +32,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { AlertTriangle, Info } from "lucide-react";
 import { createAiPost } from "@/app/actions/social/ai/createAiPost";
+import { getPinterestBoards } from "@/app/actions/social/pinterest/getAccounts";
 import { storage } from "@/lib/firebase";
 import GalleryModal from "@/components/gallery/GalleryModal";
 import SocialCaptionEditor from "@/components/social/SocialCaptionEditor";
@@ -59,6 +73,14 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
     const [mediaItems, setMediaItems] = useState([]); // [{ url, type }]
     const [isPosting, setIsPosting] = useState(false);
     const [galleryOpen, setGalleryOpen] = useState(false);
+    const [scheduling, setScheduling] = useState({
+        schedule: false,
+        date: new Date(),
+        time: "12:00"
+    });
+    const [pinterestBoardsMap, setPinterestBoardsMap] = useState({}); // { accountId: [boards] }
+    const [selectedBoards, setSelectedBoards] = useState({}); // { accountId: boardId }
+    const [loadingBoards, setLoadingBoards] = useState(false);
     const textareaRef = useRef(null);
 
     const [selectedTargets, setSelectedTargets] = useState({}); // { connectionId: [pageId1, pageId2] }
@@ -77,6 +99,38 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                 }
             });
             setSelectedTargets(initialTargets);
+        }
+    }, [open, selectedAccounts]);
+
+    // Fetch Pinterest boards when Pinterest accounts are selected
+    useEffect(() => {
+        const fetchBoards = async () => {
+            const pinterestAccounts = selectedAccounts.filter(acc => acc.platform?.toLowerCase() === 'pinterest');
+            if (pinterestAccounts.length === 0) return;
+
+            setLoadingBoards(true);
+            const newBoardsMap = { ...pinterestBoardsMap };
+            const newSelectedBoards = { ...selectedBoards };
+
+            for (const acc of pinterestAccounts) {
+                if (!newBoardsMap[acc.accountId]) {
+                    const res = await getPinterestBoards(acc.accountId);
+                    if (res.success) {
+                        newBoardsMap[acc.accountId] = res.boards;
+                        if (res.boards.length > 0 && !newSelectedBoards[acc.accountId]) {
+                            newSelectedBoards[acc.accountId] = res.boards[0].id;
+                        }
+                    }
+                }
+            }
+
+            setPinterestBoardsMap(newBoardsMap);
+            setSelectedBoards(newSelectedBoards);
+            setLoadingBoards(false);
+        };
+
+        if (open) {
+            fetchBoards();
         }
     }, [open, selectedAccounts]);
 
@@ -245,7 +299,9 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                 accountIds: selectedAccounts.map(acc => acc.id), // Parent connection IDs
                 targetIds: activeTargets, // Specific Page/Profile IDs
                 content: postContent,
-                mediaUrls: mediaItems.map(m => m.url)
+                mediaUrls: mediaItems.map(m => m.url),
+                scheduling: scheduling.schedule ? scheduling : null,
+                pinterestBoards: selectedBoards
             });
 
             if (res.success) {
@@ -387,10 +443,10 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                                             title={hasConflict ? status.reason : dest.name}
                                         >
                                             <div className={`
-                                                relative w-9 h-9 sm:w-12 sm:h-12 rounded-full p-0.5 transition-all duration-300
+                                                relative w-10 h-10 sm:w-14 sm:h-14 rounded-full p-0.5 transition-all duration-500 ease-out
                                                 ${isActive
-                                                    ? hasConflict ? 'bg-red-400 shadow-md ring-2 ring-red-100' : 'bg-gradient-to-tr from-primary to-blue-400 shadow-lg scale-105'
-                                                    : 'bg-slate-200 hover:bg-slate-300'
+                                                    ? hasConflict ? 'bg-red-400 shadow-lg ring-4 ring-red-100 scale-110' : 'bg-gradient-to-tr from-primary via-blue-500 to-indigo-400 shadow-xl scale-110 z-10'
+                                                    : 'bg-slate-200 hover:bg-slate-300 hover:scale-105'
                                                 }
                                             `}>
                                                 <div className={`
@@ -463,22 +519,127 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                         {/* Composer Area - Full Width */}
                         <div className="space-y-4 sm:space-y-6 md:space-y-8">
                             <div className="relative">
+                                {/* Platform Specific Settings (Pinterest Boards) */}
+                                {selectedAccounts.some(acc => acc.platform?.toLowerCase() === 'pinterest') && (
+                                    <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl p-4.5 sm:p-5 mb-5 space-y-4 shadow-sm backdrop-blur-sm transition-all">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 bg-[#E60023]/10 rounded-lg">
+                                                <PinterestLogo className="w-4 h-4 text-[#E60023]" />
+                                            </div>
+                                            <Label className="text-sm font-bold text-slate-800">Pinterest Settings</Label>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            {selectedAccounts
+                                                .filter(acc => acc.platform?.toLowerCase() === 'pinterest')
+                                                .map(acc => (
+                                                    <div key={acc.id} className="space-y-2.5">
+                                                        <Label className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                                            <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                                            Board for {acc.displayName || acc.username}
+                                                        </Label>
+                                                        <Select
+                                                            value={selectedBoards[acc.accountId]}
+                                                            onValueChange={(val) => setSelectedBoards(prev => ({ ...prev, [acc.accountId]: val }))}
+                                                            disabled={loadingBoards}
+                                                        >
+                                                            <SelectTrigger className="h-11 border-slate-200 bg-white hover:border-primary/30 transition-colors rounded-xl shadow-sm">
+                                                                <SelectValue placeholder={loadingBoards ? "Loading boards..." : "Select a board"} />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                                                                {pinterestBoardsMap[acc.accountId]?.map(board => (
+                                                                    <SelectItem key={board.id} value={board.id} className="rounded-lg py-2.5">
+                                                                        {board.name}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Scheduling Section */}
+                                <div className="bg-slate-50/50 border border-slate-200/60 rounded-2xl p-4.5 sm:p-5 mb-5 space-y-4 shadow-sm backdrop-blur-sm transition-all hover:border-primary/20">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="p-1.5 bg-primary/10 rounded-lg">
+                                                <Clock className="w-4 h-4 text-primary" />
+                                            </div>
+                                            <Label htmlFor="schedule-toggle" className="text-sm font-bold text-slate-800">
+                                                Schedule this post
+                                            </Label>
+                                        </div>
+                                        <Switch
+                                            id="schedule-toggle"
+                                            checked={scheduling.schedule}
+                                            onCheckedChange={(checked) => setScheduling(prev => ({ ...prev, schedule: checked }))}
+                                            className="data-[state=checked]:bg-primary"
+                                        />
+                                    </div>
+
+                                    {scheduling.schedule && (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2 duration-400 ease-out">
+                                            <div className="space-y-2.5">
+                                                <Label className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                                    <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                                    Date
+                                                </Label>
+                                                <Popover>
+                                                    <PopoverTrigger asChild>
+                                                        <Button variant="outline" className="w-full justify-start h-11 border-slate-200 bg-white hover:border-primary/30 transition-colors rounded-xl shadow-sm">
+                                                            <CalendarIcon className="h-4 w-4 mr-2 text-slate-400" />
+                                                            <span className="font-medium">{format(scheduling.date, "PPP")}</span>
+                                                        </Button>
+                                                    </PopoverTrigger>
+                                                    <PopoverContent className="w-auto p-0 rounded-2xl shadow-2xl border-slate-200 overflow-hidden" align="start">
+                                                        <Calendar
+                                                            mode="single"
+                                                            selected={scheduling.date}
+                                                            onSelect={(date) => date && setScheduling(prev => ({ ...prev, date }))}
+                                                            initialFocus
+                                                            className="rounded-2xl"
+                                                        />
+                                                    </PopoverContent>
+                                                </Popover>
+                                            </div>
+
+                                            <div className="space-y-2.5">
+                                                <Label className="text-xs font-semibold text-slate-500 flex items-center gap-2">
+                                                    <div className="w-1 h-1 rounded-full bg-slate-300" />
+                                                    Time
+                                                </Label>
+                                                <Input
+                                                    type="time"
+                                                    value={scheduling.time}
+                                                    onChange={(e) => setScheduling(prev => ({ ...prev, time: e.target.value }))}
+                                                    className="h-11 border-slate-200 bg-white hover:border-primary/30 transition-colors rounded-xl shadow-sm font-medium"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <SocialCaptionEditor
                                     value={postContent}
                                     onChange={(e) => setPostContent(e.target.value)}
                                     placeholder="What's on your mind? Share your thoughts with your audience..."
                                     platform={selectedAccounts[0]?.platform?.toLowerCase() || "default"}
                                     minHeight="clamp(180px, 40vh, 320px)"
-                                    className={isOverLimit ? 'border-red-300' : ''}
+                                    className={`rounded-2xl transition-all ${isOverLimit ? 'border-red-300 ring-2 ring-red-100' : 'hover:border-slate-300 focus-within:border-primary/50 focus-within:ring-4 focus-within:ring-primary/5'}`}
                                     maxLimit={maxAllowedCaption}
                                 />
                             </div>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <Label className="text-xs sm:text-sm font-semibold text-slate-700 uppercase tracking-wider">Media</Label>
-                                    <span className={`text-[10px] font-medium ${mediaItems.length > 10 ? 'text-orange-500' : 'text-slate-400'}`}>
-                                        {mediaItems.length} items
+                            <div className="space-y-5">
+                                <div className="flex items-center justify-between px-1">
+                                    <Label className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                                        <ImageIcon className="w-3.5 h-3.5" />
+                                        Media Assets
+                                    </Label>
+                                    <span className={`text-[10px] sm:text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200 transition-colors ${mediaItems.length > 10 ? 'text-orange-600 bg-orange-50 border-orange-100' : 'text-slate-500'}`}>
+                                        {mediaItems.length} Gallery Items
                                     </span>
                                 </div>
 
@@ -506,15 +667,16 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                                     <Button
                                         variant="outline"
                                         onClick={() => setGalleryOpen(true)}
-                                        className="w-full h-12 sm:h-14 border-dashed border-2 hover:border-primary hover:bg-primary/5 rounded-xl group transition-all"
+                                        className="w-full h-14 sm:h-16 border-dashed border-2 bg-slate-50/50 hover:border-primary hover:bg-primary/5 hover:shadow-md transition-all duration-300 rounded-2xl group relative overflow-hidden"
                                     >
-                                        <div className="flex items-center gap-2 sm:gap-3">
-                                            <div className="p-1.5 sm:p-2 bg-slate-100 rounded-lg group-hover:bg-primary/10 transition-colors">
-                                                <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 group-hover:text-primary" />
+                                        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        <div className="flex items-center gap-3.5 sm:gap-4 relative z-10">
+                                            <div className="p-2 sm:p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 group-hover:bg-primary group-hover:border-primary transition-all duration-300">
+                                                <ImageIcon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-600 group-hover:text-white" />
                                             </div>
                                             <div className="text-left">
-                                                <div className="text-xs sm:text-sm font-bold text-slate-900">Select Media</div>
-                                                <div className="text-[9px] sm:text-[10px] text-slate-500">Pick from your library</div>
+                                                <div className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-primary transition-colors">Select from Media Store</div>
+                                                <div className="text-[10px] sm:text-xs text-slate-500 font-medium">Browse and pick assets for your campaign</div>
                                             </div>
                                         </div>
                                     </Button>
@@ -522,7 +684,7 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
 
                                 {/* Media Previews Grid - Tiny Squares */}
                                 {mediaItems.length > 0 && (
-                                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1.5 sm:gap-2 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2.5 sm:gap-3 bg-slate-50/50 p-3 rounded-2xl border border-slate-200/60 backdrop-blur-sm shadow-inner">
                                         {mediaItems.map((item, idx) => (
                                             <div key={idx} className="relative aspect-square group rounded-lg overflow-hidden border border-slate-200 bg-white shadow-sm hover:border-primary/50 transition-colors">
                                                 {item.type === 'video' ? (
@@ -566,7 +728,7 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                             <Button
                                 variant="ghost"
                                 onClick={() => onOpenChange(false)}
-                                className="text-slate-600 hover:text-slate-900 rounded-lg font-semibold w-full sm:w-auto h-11 sm:h-12"
+                                className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl font-bold w-full sm:w-auto h-12 px-6 transition-all"
                                 disabled={isPosting}
                             >
                                 Discard Draft
@@ -579,27 +741,34 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                                     </span>
                                 )}
                                 <Button
-                                    className={`${compatibilityReport.hasConflicts ? 'bg-slate-200 text-slate-400 hover:bg-slate-200' : 'bg-primary hover:bg-blue-600'} rounded-lg px-6 sm:px-10 h-11 sm:h-12 text-sm sm:text-base font-bold shadow-md w-full sm:w-auto transition-all active:scale-95`}
+                                    className={`
+                                        ${compatibilityReport.hasConflicts ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-primary hover:bg-blue-600 shadow-blue-200/50'} 
+                                        rounded-xl px-8 sm:px-12 h-12 text-sm sm:text-base font-black shadow-lg w-full sm:w-auto transition-all active:scale-95 flex items-center gap-3
+                                    `}
                                     onClick={handlePost}
                                     disabled={isPosting || isOverLimit || compatibilityReport.hasConflicts}
-                                    aria-label="Launch multi-platform post"
+                                    aria-label={scheduling.schedule ? "Schedule multi-platform post" : "Launch multi-platform post"}
                                 >
                                     {isPosting ? (
                                         <>
-                                            <Spinner className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                                            <span>Processing...</span>
+                                            <Spinner className="w-5 h-5" />
+                                            <span>Launching...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <SendHorizontal className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                                            <span>Launch Post</span>
+                                            {scheduling.schedule ? (
+                                                <CalendarIcon className="w-5 h-5" />
+                                            ) : (
+                                                <SendHorizontal className="w-5 h-5" />
+                                            )}
+                                            <span className="uppercase tracking-wide">{scheduling.schedule ? "Schedule Post" : "Launch Post"}</span>
                                         </>
                                     )}
                                 </Button>
                             </div>
                         </div>
                     </div>
-                </div>
+                </div >
 
                 <GalleryModal
                     open={galleryOpen}
@@ -610,7 +779,7 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                     allowedTypes={getAllowedGalleryTypes()}
                     title="Select Media Store"
                 />
-            </DialogContent>
-        </Dialog>
+            </DialogContent >
+        </Dialog >
     );
 }

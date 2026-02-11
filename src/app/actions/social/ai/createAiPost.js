@@ -3,6 +3,7 @@
 import { db } from "@/lib/firebase";
 import { collection, query, getDocs, where } from "firebase/firestore";
 import { verifyToken } from "@/lib/auth";
+import { format } from "date-fns";
 import { createFacebookPostBase } from "../facebook/createPost";
 import { createInstagramImagePost } from "../instagram/createPost";
 import { createTwitterPost } from "../twitter/createPost";
@@ -19,8 +20,10 @@ import { createPinterestPost } from "../pinterest/createPost";
  * @param {string[]} params.accountIds - Array of parent Connection IDs
  * @param {string[]} params.targetIds - Array of specific Page/Profile IDs to post to
  * @param {Object} params.content - Post content { text, mediaUrls }
+ * @param {Object} [params.scheduling] - Optional scheduling data { schedule, date, time }
+ * @param {Object} [params.pinterestBoards] - Optional Pinterest board selection { accountId: boardId }
  */
-export async function createAiPost({ accountIds, targetIds, content, mediaUrls }) {
+export async function createAiPost({ accountIds, targetIds, content, mediaUrls, scheduling, pinterestBoards }) {
     try {
         const user = await verifyToken();
         if (!user) return { success: false, message: "Unauthorized" };
@@ -69,6 +72,10 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls }
 
             for (const target of targetsToPost) {
                 let result;
+                const scheduledTime = scheduling?.schedule
+                    ? new Date(`${format(new Date(scheduling.date), "yyyy-MM-dd")}T${scheduling.time}`)
+                    : null;
+
                 try {
                     switch (account.platform.toLowerCase()) {
                         case "facebook":
@@ -77,7 +84,8 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls }
                                 pageId: target.id || target.pageId,
                                 message: text,
                                 mediaUrls: mediaUrls && mediaUrls.length ? mediaUrls : [],
-                                postType: mediaUrls && mediaUrls.length ? "images" : "text"
+                                postType: mediaUrls && mediaUrls.length ? "images" : "text",
+                                scheduledTime: scheduledTime
                             });
                             break;
 
@@ -87,7 +95,8 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls }
                                     accessToken: account.accessToken,
                                     pageId: target.id || target.pageId || account.pageId, // IG specific logic might vary
                                     image: { url: mediaUrls[0] },
-                                    caption: text
+                                    caption: text,
+                                    scheduling: scheduling?.schedule ? scheduling : null
                                 });
                             } else {
                                 result = { success: false, message: "Instagram requires an image" };
@@ -100,7 +109,8 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls }
                                 accessSecret: account.accessSecret,
                                 message: text,
                                 mediaUrls: mediaUrls ? mediaUrls.map(url => ({ url, type: "image/jpeg" })) : [],
-                                postType: mediaUrls && mediaUrls.length ? "image" : "text"
+                                postType: mediaUrls && mediaUrls.length ? "image" : "text",
+                                scheduledTime: scheduledTime
                             });
                             break;
 
@@ -109,12 +119,38 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls }
                                 accessToken: account.accessToken,
                                 text: text,
                                 imageUrl: mediaUrls && mediaUrls.length ? mediaUrls[0] : null,
-                                accountId: target.id // user urn or org urn
+                                pageId: target.id, // user urn or org urn
+                                scheduledTime: scheduledTime
                             });
                             break;
 
-                        // ... Add other cases similarly (Threads, TikTok, Pinterest) ...
-                        // For brevity, mostly adapting the logic to use 'account' credentials and 'target' identifiers
+                        case "tiktok":
+                            result = await createTiktokPost({
+                                pageId: target.id || target.pageId,
+                                text: text,
+                                mediaUrl: mediaUrls && mediaUrls.length ? mediaUrls[0] : null,
+                                scheduledTime: scheduledTime
+                            });
+                            break;
+
+                        case "pinterest":
+                            result = await createPinterestPost({
+                                pageId: target.id || target.pageId || account.accountId,
+                                message: text,
+                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: "image" })) : [],
+                                boardId: pinterestBoards ? pinterestBoards[account.accountId] : null,
+                                scheduling: scheduledTime ? scheduledTime.toISOString() : null
+                            });
+                            break;
+
+                        case "threads":
+                            result = await createThreadsPost({
+                                pageId: target.id || target.pageId,
+                                text: text,
+                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: "image", url })) : [],
+                                scheduling: scheduledTime ? scheduledTime.toISOString() : null
+                            });
+                            break;
 
                         default:
                             result = { success: false, message: `Platform ${account.platform} implementation pending` };
