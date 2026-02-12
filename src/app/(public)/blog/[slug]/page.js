@@ -8,26 +8,26 @@ export async function generateMetadata({ params }) {
 
     if (!post) {
         return {
-            title: "Post Not Found | SocialHub Blog",
+            title: "Post Not Found | UNI.social Blog",
         };
     }
 
     return {
-        title: `${post.title} | SocialHub Blog`,
+        title: `${post.title} | UNI.social Blog`,
         description: post.excerpt || `Expert insights on ${post.title}. Read our comprehensive guide on social media strategy.`,
         alternates: {
             canonical: `/blog/${slug}`,
         },
         openGraph: {
-            title: `${post.title} | SocialHub Blog`,
+            title: `${post.title} | UNI.social Blog`,
             description: post.excerpt,
-            url: `https://social-hub-demo.vercel.app/blog/${slug}`,
+            url: `https://uni.social/blog/${slug}`,
             type: "article",
             images: post.image ? [{ url: post.image }] : [],
         },
         twitter: {
             card: "summary_large_image",
-            title: `${post.title} | SocialHub Blog`,
+            title: `${post.title} | UNI.social Blog`,
             description: post.excerpt,
             images: post.image ? [post.image] : [],
         },
@@ -49,11 +49,11 @@ export default async function BlogPostPage({ params }) {
         "description": post.excerpt,
         "author": {
             "@type": "Person",
-            "name": post.author || "SocialHub Team"
+            "name": post.author || "UNI.social Team"
         },
         "publisher": {
             "@type": "Organization",
-            "name": "SocialHub"
+            "name": "UNI.social"
         }
     };
 

@@ -7,14 +7,18 @@ import {
 
 export default function HelpFaqAccordion({ questions }) {
     return (
-        <div className="lg:col-span-8">
+        <div className="lg:col-span-8 relative z-10 font-sans">
             <Accordion type="single" collapsible className="w-full space-y-4">
                 {questions.map((item, index) => (
-                    <AccordionItem key={index} value={`item-${index}`} className="border border-gray-200 rounded-xl px-6 bg-white shadow-sm">
-                        <AccordionTrigger className="text-lg font-semibold text-gray-900 py-6 hover:no-underline hover:text-primary transition-colors font-display text-left">
+                    <AccordionItem
+                        key={index}
+                        value={`item-${index}`}
+                        className="border border-[rgba(255,255,255,0.6)] rounded-[24px] px-8 bg-[rgba(255,255,255,0.4)] backdrop-blur-[12px] shadow-sm overflow-hidden"
+                    >
+                        <AccordionTrigger className="text-xl font-bold text-[#2d253b] py-6 hover:no-underline hover:text-[#5e4a7a] transition-all text-left tracking-tight">
                             {item.q}
                         </AccordionTrigger>
-                        <AccordionContent className="text-gray-600 text-base leading-relaxed pb-6 font-inter">
+                        <AccordionContent className="text-[#4a3d58] text-[1.05rem] leading-relaxed pb-8 font-[420]">
                             {item.a}
                         </AccordionContent>
                     </AccordionItem>

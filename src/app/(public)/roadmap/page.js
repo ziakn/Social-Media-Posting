@@ -12,10 +12,12 @@ import {
     CheckCircle2,
     Clock,
     Plus,
-    ArrowRight
+    ArrowRight,
+    Sparkles
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import BackgroundCanvas from "@/components/home/BackgroundCanvas";
+import NewFooter from "@/components/home/NewFooter";
 
 export default function RoadmapPage() {
     const milestones = [
@@ -23,7 +25,7 @@ export default function RoadmapPage() {
             quarter: "Q1 2026",
             title: "The AI Expansion",
             status: "In Development",
-            statusColor: "text-emerald-500 bg-emerald-50",
+            statusColor: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20",
             features: [
                 {
                     title: "Advanced AI Generation",
@@ -41,7 +43,7 @@ export default function RoadmapPage() {
             quarter: "Q2 2026",
             title: "Deep Insights & Collaboration",
             status: "Upcoming",
-            statusColor: "text-[#3B82F6] bg-blue-50",
+            statusColor: "text-[#5e4a7a] bg-[#5e4a7a]/10 border-[#5e4a7a]/20",
             features: [
                 {
                     title: "Collaborative Workspaces",
@@ -59,7 +61,7 @@ export default function RoadmapPage() {
             quarter: "Q3 2026",
             title: "Global Distribution",
             status: "Researching",
-            statusColor: "text-amber-500 bg-amber-50",
+            statusColor: "text-amber-500 bg-amber-500/10 border-amber-500/20",
             features: [
                 {
                     title: "Multi-Region Scheduling",
@@ -76,94 +78,109 @@ export default function RoadmapPage() {
     ];
 
     return (
-        <main className="bg-white min-h-screen font-inter text-[#3E4652]">
-            {/* 🚀 Hero Section */}
-            <section className="pt-32 pb-24 bg-[#0C1B33] text-white relative overflow-hidden text-center">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
-                <div className="container mx-auto px-6 max-w-[1280px] relative z-10 space-y-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-4">
-                        <div className="w-2 h-2 rounded-full bg-[#F9C80E] animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-white font-inter">Product Roadmap 2026</span>
+        <main className="flex flex-col min-h-screen relative font-sans">
+            <BackgroundCanvas />
+
+            <div className="relative z-20 flex flex-col w-full">
+                {/* 🚀 Hero Section */}
+                <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden text-center">
+                    {/* Background Gradients */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                        <div className="absolute top-20 left-10 w-96 h-96 bg-[#5e4a7a]/10 rounded-full blur-[120px]" />
+                        <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#5e4a7a]/5 rounded-full blur-[120px]" />
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold font-plus-jakarta uppercase tracking-tighter leading-none mx-auto max-w-4xl">
-                        Building the Future, <br />
-                        <span className="text-[#3B82F6]">Together.</span>
-                    </h1>
-                    <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
-                        Transparency is at our core. Explore the upcoming features and milestones we're working on to help you grow your social presence.
-                    </p>
-                </div>
-            </section>
 
-            {/* 🛤️ Visual Timeline Section */}
-            <section className="py-32">
-                <div className="container mx-auto px-6 max-w-[1000px] relative">
-                    {/* Vertical Line */}
-                    <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-slate-100 -translate-x-1/2 z-0 hidden md:block" />
+                    <div className="container mx-auto px-6 max-w-[1280px] relative z-10 space-y-8">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] bg-[#5e4a7a]/5 border border-[#5e4a7a]/10 backdrop-blur-[4px] text-[0.8rem] font-bold uppercase tracking-widest text-[#5e4a7a]">
+                            <div className="w-2 h-2 rounded-full bg-[#5e4a7a] animate-pulse" />
+                            Product Roadmap 2026
+                        </span>
+                        <h1 className="text-5xl md:text-[5rem] font-[650] text-[#2d253b] tracking-[-0.03em] leading-[1.1] max-w-4xl mx-auto">
+                            Building the Future, <br />
+                            <span className="bg-gradient-to-br from-[#5e4a7a] to-[#3a2e4a] bg-clip-text text-transparent font-bold">Together.</span>
+                        </h1>
+                        <p className="text-xl text-[#4a3d58] font-[420] max-w-2xl mx-auto leading-relaxed">
+                            Transparency is at our core. Explore the upcoming features and milestones we&apos;re working on to help you grow your social presence with <span className="font-bold text-[#2d253b]">UNI.social</span>.
+                        </p>
+                    </div>
+                </section>
 
-                    <div className="space-y-24 relative z-10">
-                        {milestones.map((milestone, idx) => (
-                            <div key={idx} className={`flex flex-col md:flex-row items-start gap-8 md:gap-0 ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
-                                {/* Date/Quarter side */}
-                                <div className="md:w-1/2 flex flex-col md:px-12 items-start md:items-end text-left md:text-right">
-                                    <Badge className={`${milestone.statusColor} border-none uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black mb-4`}>
-                                        {milestone.status}
-                                    </Badge>
-                                    <h3 className="text-3xl font-black text-[#0C1B33] font-plus-jakarta uppercase tracking-tight mb-2">
-                                        {milestone.quarter}
-                                    </h3>
-                                    <p className="text-lg text-[#3B82F6] font-bold font-inter italic mb-6">
-                                        {milestone.title}
-                                    </p>
-                                </div>
+                {/* 🛤️ Visual Timeline Section */}
+                <section className="py-20 relative overflow-hidden">
+                    <div className="container mx-auto px-6 max-w-[1100px] relative">
+                        {/* Vertical Line */}
+                        <div className="absolute left-6 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[rgba(110,85,145,0.2)] to-transparent -translate-x-1/2 z-0 hidden md:block" />
 
-                                {/* Center Point */}
-                                <div className="absolute left-6 md:left-1/2 w-12 h-12 bg-white border border-slate-100 rounded-full -translate-x-1/2 flex items-center justify-center shadow-lg hidden md:flex">
-                                    <div className="w-3 h-3 bg-[#3B82F6] rounded-full" />
-                                </div>
+                        <div className="space-y-24 relative z-10">
+                            {milestones.map((milestone, idx) => (
+                                <div key={idx} className={`flex flex-col md:flex-row items-start gap-8 md:gap-0 ${idx % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}>
+                                    {/* Date/Quarter side */}
+                                    <div className={`md:w-1/2 flex flex-col md:px-12 items-start ${idx % 2 === 0 ? 'md:items-end md:text-right' : 'md:items-start md:text-left'}`}>
+                                        <div className={`inline-flex items-center px-4 py-1 rounded-full border text-[0.65rem] font-bold uppercase tracking-widest mb-6 ${milestone.statusColor} backdrop-blur-sm`}>
+                                            {milestone.status}
+                                        </div>
+                                        <h3 className="text-4xl font-[650] text-[#2d253b] tracking-tight mb-2 uppercase">
+                                            {milestone.quarter}
+                                        </h3>
+                                        <p className="text-xl text-[#5e4a7a] font-bold italic mb-6">
+                                            {milestone.title}
+                                        </p>
+                                    </div>
 
-                                {/* Content side */}
-                                <div className="md:w-1/2 md:px-12 space-y-6">
-                                    {milestone.features.map((feature, fIdx) => (
-                                        <div key={fIdx} className="bg-white p-6 rounded-[10px] border border-slate-100 shadow-sm hover:shadow-subtle hover:border-[#3B82F6] transition-all group">
-                                            <div className="flex items-start gap-4">
-                                                <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-[#3B82F6] group-hover:bg-[#0C1B33] group-hover:text-[#F9C80E] transition-colors flex-shrink-0">
-                                                    {feature.icon}
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <h4 className="font-extrabold text-[#0C1B33] uppercase tracking-tight text-sm">{feature.title}</h4>
-                                                    <p className="text-xs text-slate-500 font-medium leading-relaxed">{feature.desc}</p>
+                                    {/* Center Point */}
+                                    <div className="absolute left-6 md:left-1/2 w-14 h-14 bg-white border border-[rgba(110,85,145,0.2)] rounded-[20px] -translate-x-1/2 flex items-center justify-center shadow-xl hidden md:flex z-20">
+                                        <div className="w-4 h-4 bg-[#5e4a7a] rounded-full animate-pulse shadow-[0_0_15px_rgba(94,74,122,0.4)]" />
+                                    </div>
+
+                                    {/* Content side */}
+                                    <div className="md:w-1/2 md:px-12 space-y-6">
+                                        {milestone.features.map((feature, fIdx) => (
+                                            <div key={fIdx} className="bg-[rgba(255,255,255,0.4)] backdrop-blur-[12px] p-8 rounded-[32px] border border-[rgba(255,255,255,0.6)] shadow-lg hover:shadow-xl hover:border-[#5e4a7a]/30 transition-all duration-300 group hover:-translate-y-1">
+                                                <div className="flex items-start gap-6">
+                                                    <div className="w-12 h-12 rounded-[16px] bg-[#5e4a7a]/10 flex items-center justify-center text-[#5e4a7a] group-hover:bg-[#2d253b] group-hover:text-white transition-all duration-300 flex-shrink-0 shadow-sm border border-[#5e4a7a]/10">
+                                                        {feature.icon}
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h4 className="font-bold text-[#2d253b] uppercase tracking-tight text-base leading-tight">{feature.title}</h4>
+                                                        <p className="text-[0.9rem] text-[#4a3d58] font-[420] leading-relaxed line-clamp-2 md:line-clamp-none">{feature.desc}</p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* 🎯 Engagement Section */}
-            <section className="pb-32 container mx-auto px-6 max-w-[1280px]">
-                <div className="bg-[#0C1B33] rounded-[10px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-subtle group">
-                    <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
-                    <Plus className="h-16 w-16 text-[#F9C80E] mx-auto group-hover:scale-110 transition-transform duration-500" />
-                    <h2 className="text-4xl md:text-6xl font-extrabold font-inter tracking-tighter max-w-2xl mx-auto leading-tight uppercase">
-                        Shape our <span className="text-[#3B82F6]">Growth Journey.</span>
-                    </h2>
-                    <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto">
-                        Your insights drive our innovation. If there's a feature you'd love to see or an improvement we can make, let us know.
-                    </p>
-                    <div className="pt-4">
-                        <Link href="/contact">
-                            <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-lg px-12 h-20 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle hover:-translate-y-1 font-inter uppercase tracking-widest inline-flex items-center gap-2">
-                                Suggest a Feature <ArrowRight className="h-5 w-5" />
-                            </button>
-                        </Link>
+                {/* 🎯 Engagement Section */}
+                <section className="py-32 container mx-auto px-6 max-w-[1280px]">
+                    <div className="bg-gradient-to-br from-[#5e4a7a] to-[#2d253b] rounded-[40px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-2xl group">
+                        <div className="absolute top-0 right-0 w-1/3 h-full bg-white/5 blur-[120px] pointer-events-none" />
+
+                        <div className="relative z-10 w-20 h-20 bg-white/10 border border-white/20 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-float">
+                            <Sparkles className="h-10 w-10 text-white group-hover:scale-110 transition-transform duration-500 fill-current" />
+                        </div>
+
+                        <h2 className="text-4xl md:text-[4rem] font-[650] tracking-[-0.03em] max-w-3xl mx-auto leading-tight relative z-10">
+                            Shape our <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent italic px-2">Growth Journey.</span>
+                        </h2>
+                        <p className="text-xl text-white/80 font-[420] max-w-2xl mx-auto relative z-10 leading-relaxed">
+                            Your insights drive our innovation. If there&apos;s a feature you&apos;d love to see or an improvement we can make, let our team know.
+                        </p>
+                        <div className="pt-6 relative z-10">
+                            <Link href="/contact" className="inline-block">
+                                <button className="bg-white text-[#2d253b] font-bold text-[1rem] px-12 py-6 rounded-[20px] hover:bg-white/90 transition-all shadow-xl hover:-translate-y-1 active:scale-95 uppercase tracking-widest flex items-center gap-3">
+                                    Suggest a Feature <ArrowRight className="h-5 w-5" />
+                                </button>
+                            </Link>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+
+                <NewFooter />
+            </div>
         </main>
     );
 }

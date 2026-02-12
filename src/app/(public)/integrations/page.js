@@ -15,10 +15,12 @@ import {
     Chrome,
     Cloud,
     Layout,
-    CheckCircle2
+    CheckCircle2,
+    Sparkles
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import BackgroundCanvas from "@/components/home/BackgroundCanvas";
+import NewFooter from "@/components/home/NewFooter";
 
 export default function IntegrationsPage() {
     const categories = [
@@ -33,7 +35,7 @@ export default function IntegrationsPage() {
         {
             name: "Team Collaboration",
             integrations: [
-                { name: "Slack", desc: "Get real-time notifications for post approvals and comments.", icon: <Slack className="h-6 w-6 text-purple-600" /> },
+                { name: "Slack", desc: "Get real-time notifications for post approvals and comments.", icon: <Slack className="h-6 w-6 text-[#4A154B]" /> },
                 { name: "Microsoft Teams", desc: "Keep your entire team aligned with sync'd social updates.", icon: <MessageSquare className="h-6 w-6 text-indigo-600" /> }
             ]
         },
@@ -48,93 +50,108 @@ export default function IntegrationsPage() {
     ];
 
     return (
-        <main className="bg-white min-h-screen font-inter text-[#3E4652]">
-            {/* 🚀 Hero Section */}
-            <section className="pt-32 pb-24 bg-[#0C1B33] text-white relative overflow-hidden text-center">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
-                <div className="container mx-auto px-6 max-w-[1280px] relative z-10 space-y-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-4">
-                        <div className="w-2 h-2 rounded-full bg-[#F9C80E] animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-white font-inter">Platform Ecosystem</span>
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold font-plus-jakarta uppercase tracking-tighter leading-none mx-auto max-w-4xl">
-                        Connect Your <br />
-                        <span className="text-[#3B82F6]">Favorite Tools.</span>
-                    </h1>
-                    <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
-                        Supercharge your workflow by integrating SocialHub with the platforms you already use. Simplify your creation and distribution process.
-                    </p>
-                </div>
-            </section>
+        <main className="flex flex-col min-h-screen relative font-sans">
+            <BackgroundCanvas />
 
-            {/* 🔍 Search & Filter Bar */}
-            <section className="-mt-8 relative z-20">
-                <div className="container mx-auto px-6 max-w-[800px]">
-                    <div className="bg-white rounded-xl shadow-2xl border border-slate-100 p-4 flex items-center gap-4">
-                        <Search className="h-5 w-5 text-slate-400 ml-2" />
-                        <input
-                            placeholder="Search for an integration..."
-                            className="flex-1 h-12 outline-none font-medium text-[#0C1B33] placeholder:text-slate-300"
-                        />
+            <div className="relative z-20 flex flex-col w-full">
+                {/* 🚀 Hero Section */}
+                <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden text-center">
+                    {/* Background Gradients */}
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                        <div className="absolute top-20 left-10 w-96 h-96 bg-[#5e4a7a]/10 rounded-full blur-[120px]" />
+                        <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#5e4a7a]/5 rounded-full blur-[120px]" />
                     </div>
-                </div>
-            </section>
 
-            {/* 🧩 Integrations Grid */}
-            <section className="py-32">
-                <div className="container mx-auto px-6 max-w-[1280px] space-y-24">
-                    {categories.map((category, idx) => (
-                        <div key={idx} className="space-y-12">
-                            <div className="flex items-center gap-4">
-                                <h2 className="text-2xl font-black text-[#0C1B33] uppercase tracking-tight font-plus-jakarta">{category.name}</h2>
-                                <div className="h-px bg-slate-100 flex-1" />
-                            </div>
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                {category.integrations.map((item, i) => (
-                                    <div key={i} className="bg-white p-8 rounded-[10px] border border-slate-100 hover:border-[#3B82F6] transition-all group flex flex-col justify-between shadow-sm hover:shadow-subtle min-h-[220px]">
-                                        <div className="space-y-6">
-                                            <div className="w-14 h-14 rounded-lg bg-slate-50 flex items-center justify-center border border-slate-100 group-hover:bg-[#0C1B33] transition-colors">
-                                                {item.icon}
-                                            </div>
-                                            <div className="space-y-2">
-                                                <h3 className="text-xl font-bold text-[#0C1B33] font-plus-jakarta">{item.name}</h3>
-                                                <p className="text-sm text-slate-500 font-medium leading-relaxed">{item.desc}</p>
-                                            </div>
-                                        </div>
-                                        <div className="pt-6 border-t border-slate-50 flex items-center justify-between">
-                                            <Badge className="bg-emerald-50 text-emerald-600 border-none font-black text-[9px] uppercase tracking-widest px-3">Live Now</Badge>
-                                            <button className="text-[#3B82F6] font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:underline">
-                                                Learn More <ArrowRight className="h-3 w-3" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                    <div className="container mx-auto px-6 max-w-[1280px] relative z-10 space-y-8">
+                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-[50px] bg-[#5e4a7a]/5 border border-[#5e4a7a]/10 backdrop-blur-[4px] text-[0.8rem] font-bold uppercase tracking-widest text-[#5e4a7a]">
+                            <div className="w-2 h-2 rounded-full bg-[#5e4a7a] animate-pulse" />
+                            Platform Ecosystem
+                        </span>
+                        <h1 className="text-5xl md:text-[5rem] font-[650] text-[#2d253b] tracking-[-0.03em] leading-[1.1] max-w-4xl mx-auto">
+                            Connect Your <br />
+                            <span className="bg-gradient-to-br from-[#5e4a7a] to-[#3a2e4a] bg-clip-text text-transparent font-bold">Favorite Tools.</span>
+                        </h1>
+                        <p className="text-xl text-[#4a3d58] font-[420] max-w-2xl mx-auto leading-relaxed">
+                            Supercharge your workflow by integrating <span className="font-bold">UNI.social</span> with the platforms you already use. Simplify your creation and distribution process.
+                        </p>
+                    </div>
+                </section>
+
+                {/* 🔍 Search & Filter Bar */}
+                <section className="-mt-12 relative z-30">
+                    <div className="container mx-auto px-6 max-w-[800px]">
+                        <div className="bg-[rgba(255,255,255,0.6)] backdrop-blur-[20px] rounded-[24px] shadow-2xl border border-[rgba(255,255,255,0.8)] p-6 flex items-center gap-4 group transition-all focus-within:ring-2 focus-within:ring-[#5e4a7a]/20">
+                            <Search className="h-6 w-6 text-[#5e4a7a]/40 ml-2" />
+                            <input
+                                placeholder="Search for an integration..."
+                                className="flex-1 bg-transparent outline-none font-[420] text-[#2d253b] text-lg placeholder:text-[#4a3d58]/30"
+                            />
                         </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* 🎯 Request Integration Section */}
-            <section className="pb-32 container mx-auto px-6 max-w-[1280px]">
-                <div className="bg-[#0C1B33] rounded-[10px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-subtle group">
-                    <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
-                    <Plus className="h-16 w-16 text-[#F9C80E] mx-auto group-hover:scale-110 transition-transform duration-500" />
-                    <h2 className="text-4xl md:text-6xl font-extrabold font-inter tracking-tighter max-w-2xl mx-auto leading-tight uppercase">
-                        Missing an <span className="text-[#3B82F6]">Integration?</span>
-                    </h2>
-                    <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto">
-                        We are constantly expanding our ecosystem. If there's a tool you'd love to see connected, let our team know.
-                    </p>
-                    <div className="pt-4">
-                        <Link href="/contact">
-                            <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-lg px-12 h-20 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle hover:-translate-y-1 font-inter uppercase tracking-widest flex items-center gap-2 mx-auto justify-center">
-                                Request Access <ArrowRight className="h-5 w-5" />
-                            </button>
-                        </Link>
                     </div>
-                </div>
-            </section>
+                </section>
+
+                {/* 🧩 Integrations Grid */}
+                <section className="py-32">
+                    <div className="container mx-auto px-6 max-w-[1280px] space-y-24">
+                        {categories.map((category, idx) => (
+                            <div key={idx} className="space-y-12">
+                                <div className="flex items-center gap-6">
+                                    <h2 className="text-2xl font-[650] text-[#2d253b] uppercase tracking-tight">{category.name}</h2>
+                                    <div className="h-px bg-gradient-to-r from-[rgba(110,85,145,0.2)] to-transparent flex-1" />
+                                </div>
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                    {category.integrations.map((item, i) => (
+                                        <div key={i} className="bg-[rgba(255,255,255,0.4)] backdrop-blur-[12px] p-8 rounded-[32px] border border-[rgba(255,255,255,0.6)] hover:shadow-xl transition-all duration-300 group flex flex-col justify-between shadow-lg hover:-translate-y-1 min-h-[260px]">
+                                            <div className="space-y-6">
+                                                <div className="w-16 h-16 rounded-[20px] bg-white/60 flex items-center justify-center border border-[rgba(110,85,145,0.1)] group-hover:bg-[#2d253b] transition-all duration-300 shadow-sm">
+                                                    <div className="group-hover:text-white transition-colors duration-300">
+                                                        {item.icon}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <h3 className="text-xl font-bold text-[#2d253b]">{item.name}</h3>
+                                                    <p className="text-[0.95rem] text-[#4a3d58] font-[420] leading-relaxed line-clamp-2">{item.desc}</p>
+                                                </div>
+                                            </div>
+                                            <div className="pt-6 border-t border-[rgba(110,85,145,0.1)] flex items-center justify-between mt-auto">
+                                                <span className="bg-[#5e4a7a]/10 text-[#5e4a7a] text-[0.65rem] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-[#5e4a7a]/20">Live Now</span>
+                                                <button className="text-[#2d253b] font-bold text-[0.7rem] uppercase tracking-widest flex items-center gap-2 hover:text-[#5e4a7a] transition-colors group/link">
+                                                    Learn More <ArrowRight className="h-3.5 w-3.5 transform transition-transform group-hover/link:translate-x-1" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* 🎯 Request Integration Section */}
+                <section className="pb-32 container mx-auto px-6 max-w-[1280px]">
+                    <div className="bg-gradient-to-br from-[#5e4a7a] to-[#2d253b] rounded-[40px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-2xl group">
+                        <div className="absolute top-0 right-0 w-1/3 h-full bg-white/5 blur-[120px] pointer-events-none" />
+                        <div className="relative z-10 w-20 h-20 bg-white/10 border border-white/20 rounded-3xl flex items-center justify-center mx-auto mb-8 animate-float">
+                            <Plus className="h-10 w-10 text-white group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                        <h2 className="text-4xl md:text-[4rem] font-[650] tracking-[-0.03em] max-w-3xl mx-auto leading-tight relative z-10">
+                            Missing an <span className="bg-gradient-to-r from-white to-white/70 bg-clip-text text-transparent italic px-2">Integration?</span>
+                        </h2>
+                        <p className="text-xl text-white/80 font-[420] max-w-2xl mx-auto relative z-10">
+                            We are constantly expanding our ecosystem. If there's a tool you'd love to see connected, let our team know.
+                        </p>
+                        <div className="pt-6 relative z-10">
+                            <Link href="/contact">
+                                <button className="bg-white text-[#2d253b] font-bold text-[0.95rem] px-12 py-6 rounded-[20px] hover:bg-white/90 transition-all shadow-xl hover:-translate-y-1 active:scale-95 uppercase tracking-widest flex items-center gap-3 mx-auto justify-center">
+                                    Request Access <ArrowRight className="h-5 w-5" />
+                                </button>
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+
+                <NewFooter />
+            </div>
         </main>
     );
 }

@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { SearchX, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-// Sub-components
+// Components
+import BackgroundCanvas from "@/components/home/BackgroundCanvas";
 import BlogHero from "@/components/blog/BlogHero";
 import BlogCategories from "@/components/blog/BlogCategories";
 import BlogPostCard from "@/components/blog/BlogPostCard";
 import BlogSidebar from "@/components/blog/BlogSidebar";
+import NewFooter from "@/components/home/NewFooter";
 
 // Data
 import { categories } from "@/lib/constants/blog-data";
@@ -51,10 +53,6 @@ export default function BlogContent({ initialPosts = [] }) {
     try {
       setLoading(true);
       const lastPost = reset ? null : posts[posts.length - 1];
-
-      // If we're loading more, we need a cursor date. 
-      // Ensure your posts have a valid 'date' or 'createdAt' field used for sorting.
-      // The server action uses 'date' (desc).
       const lastDate = lastPost?.date || null;
 
       const res = await getPaginatedPosts({
@@ -70,8 +68,6 @@ export default function BlogContent({ initialPosts = [] }) {
           setPosts(prev => [...prev, ...res.posts]);
         }
 
-        // Determine if there are more posts. 
-        // Ideally the server should tell us, but checking if we got a full page is a decent proxy.
         if (res.posts.length < 6) {
           setHasMore(false);
         } else {
@@ -93,62 +89,67 @@ export default function BlogContent({ initialPosts = [] }) {
   };
 
   return (
-    <div className="min-h-screen bg-white font-inter text-gray-900">
-      <BlogHero />
+    <main className="flex flex-col min-h-screen relative font-sans">
+      <BackgroundCanvas />
 
-      <div className="container mx-auto px-6 py-16 max-w-[1280px]">
-        <BlogCategories
-          categories={categories}
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
-        />
+      <div className="relative z-20 flex flex-col w-full">
+        <BlogHero />
 
-        <div className="grid lg:grid-cols-12 gap-12">
-          {/* --- Main Content --- */}
-          <main className="lg:col-span-8">
-            {posts.length > 0 ? (
-              <div className="space-y-10">
-                {posts.map((post) => (
-                  <BlogPostCard key={post.id} post={post} />
-                ))}
-              </div>
-            ) : (
-              !loading && (
-                <div className="py-20 text-center border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-                  <SearchX className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-2xl font-bold text-gray-900 font-display">No articles found.</h3>
-                  <p className="text-gray-500 font-medium font-inter">Try selecting a different category.</p>
-                  <Button
-                    className="mt-8 bg-gray-900 text-white font-bold uppercase tracking-widest text-xs px-8 h-12 rounded-lg hover:bg-gray-800"
-                    onClick={() => setActiveCategory("All")}
-                  >
-                    View All Posts
-                  </Button>
+        <div className="container mx-auto px-6 py-16 max-w-[1280px]">
+          <BlogCategories
+            categories={categories}
+            activeCategory={activeCategory}
+            setActiveCategory={setActiveCategory}
+          />
+
+          <div className="grid lg:grid-cols-12 gap-12">
+            {/* --- Main Content --- */}
+            <main className="lg:col-span-8">
+              {posts.length > 0 ? (
+                <div className="space-y-6">
+                  {posts.map((post) => (
+                    <BlogPostCard key={post.id} post={post} />
+                  ))}
                 </div>
-              )
-            )}
-
-            {/* Pagination / Loading State */}
-            <div className="mt-16 flex justify-center">
-              {loading ? (
-                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
               ) : (
-                hasMore && posts.length > 0 && (
-                  <Button
-                    variant="outline"
-                    className="border-2 border-gray-200 text-gray-900 hover:bg-gray-50 px-10 h-14 rounded-xl font-bold text-base transition-all"
-                    onClick={handleLoadMore}
-                  >
-                    Load More Articles
-                  </Button>
+                !loading && (
+                  <div className="py-20 text-center border-2 border-dashed border-[rgba(110,85,145,0.2)] rounded-[32px] bg-[rgba(255,255,255,0.4)] backdrop-blur-[12px]">
+                    <SearchX className="h-12 w-12 text-[#5e4a7a]/40 mx-auto mb-4" />
+                    <h3 className="text-2xl font-bold text-[#2d253b] font-display">No articles found.</h3>
+                    <p className="text-[#4a3d58] font-[420] text-[0.95rem]">Try selecting a different category.</p>
+                    <button
+                      className="mt-8 bg-[#2d253b] text-white font-bold uppercase tracking-widest text-[0.7rem] px-10 py-5 rounded-[16px] hover:bg-[#3f3155] transition-all shadow-md active:scale-95"
+                      onClick={() => setActiveCategory("All")}
+                    >
+                      View All Posts
+                    </button>
+                  </div>
                 )
               )}
-            </div>
-          </main>
 
-          <BlogSidebar />
+              {/* Pagination / Loading State */}
+              <div className="mt-16 flex justify-center">
+                {loading ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-[#5e4a7a]/40" />
+                ) : (
+                  hasMore && posts.length > 0 && (
+                    <button
+                      className="bg-[rgba(255,255,255,0.4)] backdrop-blur-[12px] border border-[rgba(255,255,255,0.6)] text-[#2d253b] px-10 py-4 h-16 rounded-[16px] font-bold text-xs uppercase tracking-widest hover:bg-[rgba(255,255,255,0.6)] transition-all shadow-md active:scale-95"
+                      onClick={handleLoadMore}
+                    >
+                      Load More Articles
+                    </button>
+                  )
+                )}
+              </div>
+            </main>
+
+            <BlogSidebar />
+          </div>
         </div>
+
+        <NewFooter />
       </div>
-    </div>
+    </main>
   );
 }
