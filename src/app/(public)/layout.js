@@ -5,10 +5,10 @@ export default function PublicLayout({ children }) {
     return (
         <div className="flex min-h-screen flex-col">
             <Navbar />
-            <div className="flex-1">
+            <div className="flex-1 pt-20"> {/* Add padding for fixed navbar */}
                 {children}
             </div>
-            <Footer />
+            {/* <Footer /> */}
         </div>
     );
 }
