@@ -2,16 +2,16 @@ import PricingContent from "./PricingContent";
 import { getPublicPackages } from "@/app/actions/website/packages/packagesActions";
 
 export const metadata = {
-    title: "Pricing Plans for Social Media Management | SocialHub",
+    title: "Pricing Plans for Social Media Management | UNI.social",
     description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content. Start for free and upgrade when you need more power.",
     openGraph: {
-        title: "Pricing Plans for Social Media Management | SocialHub",
+        title: "Pricing Plans for Social Media Management | UNI.social",
         description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content.",
         images: ["/og-pricing.png"],
     },
     twitter: {
         card: "summary_large_image",
-        title: "Pricing Plans for Social Media Management | SocialHub",
+        title: "Pricing Plans for Social Media Management | UNI.social",
         description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content.",
     }
 };
@@ -24,11 +24,11 @@ export default async function PricingPage() {
     const jsonLd = {
         "@context": "https://schema.org",
         "@type": "Product",
-        "name": "SocialHub Social Media Management Tool",
+        "name": "UNI.social Social Media Management Tool",
         "description": "Multi-platform social media scheduling, analytics, and unified inbox.",
         "brand": {
             "@type": "Brand",
-            "name": "SocialHub"
+            "name": "UNI.social"
         },
         "offers": [
             {
