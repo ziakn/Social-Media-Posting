@@ -1,179 +1,171 @@
-"use client";
-
 import Link from "next/link";
 import {
-    Zap,
-    Users,
-    Globe,
-    Cpu,
-    Rocket,
-    ArrowRight,
-    CheckCircle2,
-    Heart,
-    Briefcase
+    Briefcase, Users, Star, Sparkles, MapPin, Clock,
+    ArrowRight, Heart, Brain, Zap, Shield, Globe
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export default function CareersPage() {
-    const roles = [
+    const jobs = [
         {
-            title: "Full Stack Engineer",
+            title: "Senior AI Engineer",
             dept: "Engineering",
-            location: "Remote / Hybrid",
-            tag: "Impact"
-        },
-        {
-            title: "Social Growth Lead",
-            dept: "Marketing",
-            location: "New York, NY",
-            tag: "Culture"
-        },
-        {
-            title: "AI Researcher",
-            dept: "Intelligence",
             location: "Remote",
-            tag: "Innovation"
+            type: "Full-time",
+            icon: <Brain className="h-5 w-5 text-purple-400" />
         },
         {
-            title: "Security Architect",
-            dept: "Security",
-            location: "London, UK",
-            tag: "Safety"
+            title: "Product Growth Expert",
+            dept: "Marketing",
+            location: "Remote / Hybrid",
+            type: "Full-time",
+            icon: <Zap className="h-5 w-5 text-amber-400" />
+        },
+        {
+            title: "Senior Product Designer",
+            dept: "Design",
+            location: "Remote",
+            type: "Full-time",
+            icon: <Star className="h-5 w-5 text-pink-400" />
+        },
+        {
+            title: "Full Stack Developer",
+            dept: "Engineering",
+            location: "Remote",
+            type: "Full-time",
+            icon: <Shield className="h-5 w-5 text-blue-400" />
         }
     ];
 
-    const benefits = [
-        { title: "Team Ownership", desc: "Generous equity packages for every team member and project leader.", icon: <Cpu className="h-6 w-6" /> },
-        { title: "Global Flexibility", desc: "Work from anywhere in the world with our remote-first culture.", icon: <Globe className="h-6 w-6" /> },
-        { title: "Health & Wellbeing", desc: "Comprehensive health and wellness programs to support your best work.", icon: <Heart className="h-6 w-6" /> }
-    ];
-
     return (
-        <main className="bg-white min-h-screen font-inter text-[#3E4652]">
+        <main className="bg-white min-h-screen font-[420] text-slate-600">
             {/* 🚀 Hero Section */}
-            <section className="pt-32 pb-24 bg-[#0C1B33] text-white relative overflow-hidden text-center">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
+            <section className="pt-32 pb-24 bg-slate-900 text-white relative overflow-hidden text-center">
+                <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
                 <div className="container mx-auto px-6 max-w-[1280px] relative z-10 space-y-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-4">
-                        <div className="w-2 h-2 rounded-full bg-[#F9C80E] animate-pulse" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-white font-inter">We're Scaling the Team</span>
+                    <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/20 mb-4 shadow-lg shadow-primary/5">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Join the Mission</span>
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-extrabold font-plus-jakarta uppercase tracking-tighter leading-none mx-auto max-w-4xl">
-                        Build the Future of <br />
-                        <span className="text-[#3B82F6]">Social Connection.</span>
+                    <h1 className="text-5xl md:text-7xl font-[650] uppercase tracking-tighter leading-none mx-auto max-w-4xl">
+                        Build the <br />
+                        <span className="text-primary italic">Future.</span>
                     </h1>
                     <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
-                        Join the passionate team behind SocialHub. We're building the next generation of social engagement and content sharing.
+                        We're on a mission to democratize social distribution through AI. Join a global team of thinkers, builders, and creators.
                     </p>
-                    <div className="pt-8">
-                        <a href="#open-roles">
-                            <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-lg px-12 h-20 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle hover:-translate-y-0.5 font-inter">
-                                View Open Roles
-                            </button>
-                        </a>
-                    </div>
                 </div>
             </section>
 
-            {/* 🧩 Culture Section */}
-            <section className="py-32">
+            {/* 📋 Job Listings */}
+            <section className="py-32 container mx-auto px-6 max-w-[1200px]">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-20 border-b border-slate-100 pb-12">
+                    <div className="space-y-4">
+                        <Badge className="bg-primary/5 text-primary border-primary/10 uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-bold">Open Roles</Badge>
+                        <h2 className="text-4xl font-[650] text-slate-900 uppercase tracking-tighter">Join Our Growing Team</h2>
+                    </div>
+                    <button className="text-sm font-bold text-slate-400 uppercase tracking-widest hover:text-primary transition-colors flex items-center gap-2">
+                        Filter by Department <ArrowRight className="h-4 w-4" />
+                    </button>
+                </div>
+
+                <div className="grid gap-6">
+                    {jobs.map((job, i) => (
+                        <div key={i} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 group flex flex-col md:flex-row md:items-center justify-between gap-8">
+                            <div className="flex items-center gap-6">
+                                <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-200/60 shadow-sm group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                                    {job.icon}
+                                </div>
+                                <div className="space-y-1">
+                                    <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors">{job.title}</h3>
+                                    <div className="flex items-center gap-4 text-sm font-medium text-slate-400">
+                                        <span className="flex items-center gap-1.5"><Briefcase className="h-3.5 w-3.5" /> {job.dept}</span>
+                                        <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {job.location}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <Badge className="bg-slate-50 text-slate-500 border-slate-200 uppercase text-[9px] font-black tracking-widest px-3 py-1.5">
+                                    {job.type}
+                                </Badge>
+                                <button className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white group-hover:border-primary transition-all duration-500">
+                                    <ArrowRight className="h-5 w-5" />
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+
+            {/* 🌈 Culture Section */}
+            <section className="py-32 bg-slate-50/50 border-y border-slate-100 overflow-hidden">
                 <div className="container mx-auto px-6 max-w-[1280px]">
                     <div className="grid lg:grid-cols-2 gap-20 items-center">
                         <div className="space-y-8">
-                            <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-black font-inter">Our Mandate</Badge>
-                            <h2 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] font-inter tracking-tight uppercase leading-none">
-                                Building <br /> Connection.
+                            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-bold">Life at UNI.social</Badge>
+                            <h2 className="text-4xl md:text-5xl font-[650] text-slate-900 uppercase tracking-tighter leading-none">
+                                A Culture of <br />
+                                <span className="text-emerald-500 italic">Autonomy.</span>
                             </h2>
-                            <p className="text-lg text-slate-500 font-medium leading-relaxed">
-                                At SocialHub, we don't just ship code; we create meaningful experiences. Our team operates at the heart of community, creativity, and high-impact social sharing.
+                            <p className="text-xl text-slate-500 font-medium leading-relaxed">
+                                We believe in high-performance teams that operate with trust and radical transparency. Our work is remote-first, AI-native, and focused on outcome over output.
                             </p>
-                            <div className="grid sm:grid-cols-2 gap-6 pt-4">
-                                {["Remote First", "Team Ownership", "Open Communication", "Consistent Growth"].map((item, i) => (
-                                    <div key={i} className="flex items-center gap-3">
-                                        <CheckCircle2 className="h-5 w-5 text-[#3B82F6]" />
-                                        <span className="text-sm font-black text-[#0C1B33] uppercase tracking-widest font-inter">{item}</span>
+                            <div className="grid sm:grid-cols-2 gap-8 pt-8">
+                                {[
+                                    { title: "Remote-First", icon: <Globe className="h-5 w-5 text-emerald-500" /> },
+                                    { title: "Health & Wellness", icon: <Heart className="h-5 w-5 text-pink-500" /> },
+                                    { title: "Unlimited Learning", icon: <Sparkles className="h-5 w-5 text-amber-500" /> },
+                                    { title: "Equity & Ownership", icon: <Shield className="h-5 w-5 text-indigo-500" /> }
+                                ].map((benefit, b) => (
+                                    <div key={b} className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">{benefit.icon}</div>
+                                        <span className="font-bold text-slate-900 uppercase tracking-tight text-sm">{benefit.title}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
                         <div className="relative">
-                            <div className="aspect-square bg-slate-50 rounded-[10px] border border-slate-100 flex items-center justify-center p-20 overflow-hidden group">
-                                <Zap className="h-48 w-48 text-[#F9C80E] group-hover:scale-110 transition-transform duration-700" />
-                                <div className="absolute inset-0 bg-gradient-to-br from-transparent via-[#3B82F6]/5 to-transparent" />
-                            </div>
-                            <div className="absolute -bottom-10 -left-10 bg-white p-8 rounded-xl shadow-2xl border border-slate-100 max-w-[240px] space-y-4">
-                                <div className="flex gap-1">
-                                    {[1, 2, 3, 4, 5].map(i => <div key={i} className="w-1.5 h-6 bg-[#3B82F6] rounded-full animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />)}
+                            <div className="absolute inset-0 bg-primary/10 blur-[100px] rounded-full translate-x-1/2" />
+                            <div className="relative grid grid-cols-2 gap-4">
+                                <div className="space-y-4 pt-12">
+                                    <div className="h-64 bg-slate-200 rounded-[32px] animate-pulse" />
+                                    <div className="h-48 bg-slate-300 rounded-[32px] animate-pulse" />
                                 </div>
-                                <p className="text-[10px] font-black text-[#0C1B33] uppercase tracking-widest font-inter">Active Talent Pull: 1,250+</p>
+                                <div className="space-y-4">
+                                    <div className="h-48 bg-slate-300 rounded-[32px] animate-pulse" />
+                                    <div className="h-64 bg-slate-200 rounded-[32px] animate-pulse" />
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* 📋 Open Roles Grid */}
-            <section id="open-roles" className="py-32 bg-slate-50 border-y border-slate-100">
-                <div className="container mx-auto px-6 max-w-[1280px]">
-                    <div className="text-center mb-24 space-y-4">
-                        <h2 className="text-4xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight">Open Roles</h2>
-                        <p className="text-lg text-slate-400 font-medium max-w-2xl mx-auto">Find your place in our growing team and start your journey with us.</p>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {roles.map((role, i) => (
-                            <div key={i} className="bg-white p-8 rounded-[10px] border border-slate-200 hover:border-[#3B82F6] transition-all group flex flex-col md:flex-row justify-between items-center gap-8 shadow-sm hover:shadow-subtle">
-                                <div className="space-y-3 text-center md:text-left">
-                                    <div className="flex items-center justify-center md:justify-start gap-4">
-                                        <h3 className="text-2xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight group-hover:text-[#3B82F6] transition-colors">{role.title}</h3>
-                                        <Badge className="bg-slate-50 text-[#3B82F6] border-[#E1E7EF] font-black text-[9px] uppercase tracking-widest font-inter">{role.tag}</Badge>
-                                    </div>
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest font-inter">{role.dept} • {role.location}</p>
-                                </div>
-                                <button className="w-full md:w-auto bg-[#0C1B33] text-white font-black text-[10px] uppercase tracking-[0.2em] h-12 px-8 rounded-[6px] hover:bg-[#3B82F6] transition-all font-inter">
-                                    Join the Team
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* 💎 Benefits */}
-            <section className="py-32">
-                <div className="container mx-auto px-6 max-w-[1280px]">
-                    <div className="grid md:grid-cols-3 gap-12">
-                        {benefits.map((b, i) => (
-                            <div key={i} className="space-y-6 group">
-                                <div className="w-16 h-16 rounded-[10px] bg-slate-50 flex items-center justify-center text-[#3B82F6] border border-slate-100 group-hover:bg-[#0C1B33] group-hover:text-[#F9C80E] transition-all">
-                                    {b.icon}
-                                </div>
-                                <h4 className="text-xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight leading-none">{b.title}</h4>
-                                <p className="text-base text-slate-500 font-medium leading-relaxed">{b.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
             {/* 🎯 Final CTA */}
-            <section className="py-32 container mx-auto px-6 max-w-[1280px]">
-                <div className="bg-[#0C1B33] rounded-[10px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-subtle group">
-                    <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-[100px] pointer-events-none" />
-                    <Briefcase className="h-16 w-16 text-[#F9C80E] mx-auto group-hover:scale-110 transition-transform duration-500" />
-                    <h2 className="text-4xl md:text-6xl font-extrabold font-inter tracking-tighter max-w-2xl mx-auto leading-tight uppercase">
-                        Don't see your <span className="text-[#3B82F6]">ideal role?</span>
+            <section className="py-40 container mx-auto px-6 max-w-[1280px]">
+                <div className="bg-slate-900 rounded-[40px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-2xl group">
+                    <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
+                    <Star className="h-16 w-16 text-primary mx-auto group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" />
+                    <h2 className="text-4xl md:text-6xl font-[650] tracking-tighter max-w-2xl mx-auto leading-tight uppercase">
+                        Ready to <span className="text-primary italic">Lead?</span>
                     </h2>
                     <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto">
-                        We are always looking for passionate talent to join our growing team.
+                        We're always looking for exceptional talent. If you don't see a role that fits but believe you can add value, reach out.
                     </p>
                     <div className="pt-4">
-                        <button className="bg-[#F9C80E] text-[#0C1B33] font-black text-lg px-12 h-20 rounded-[6px] hover:bg-[#eac00d] transition-all shadow-subtle hover:-translate-y-1 font-inter uppercase tracking-widest">
-                            General Application
-                        </button>
+                        <Link href="mailto:careers@uni.social">
+                            <button className="bg-white text-slate-900 font-bold text-lg px-12 h-20 rounded-full hover:bg-primary hover:text-white transition-all shadow-xl hover:-translate-y-1 uppercase tracking-widest flex items-center gap-2 mx-auto justify-center active:scale-95">
+                                Send Open Application
+                            </button>
+                        </Link>
                     </div>
                 </div>
             </section>
         </main>
     );
 }
+
+export const metadata = {
+    title: "Careers | UNI.social - Join the Future of Social Media Automation",
+    description: "Explore remote career opportunities at UNI.social. We're looking for AI engineers, designers, and growth experts.",
+};

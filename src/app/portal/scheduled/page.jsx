@@ -251,6 +251,28 @@ export default function ScheduledPage() {
         );
     };
 
+    const formatSafeDate = (dateStr, formatStr) => {
+        if (!dateStr) return "Invalid Date";
+        try {
+            const dateObj = new Date(dateStr);
+            if (isNaN(dateObj.getTime())) return "Invalid Date";
+            return format(dateObj, formatStr);
+        } catch (e) {
+            return "Invalid Date";
+        }
+    };
+
+    const formatSafeDistance = (dateStr) => {
+        if (!dateStr) return "N/A";
+        try {
+            const dateObj = new Date(dateStr);
+            if (isNaN(dateObj.getTime())) return "N/A";
+            return formatDistanceToNow(dateObj, { addSuffix: true });
+        } catch (e) {
+            return "N/A";
+        }
+    };
+
     if (loading) return <Spinner />;
 
     return (
@@ -351,8 +373,8 @@ export default function ScheduledPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-medium">{format(new Date(post.scheduledAt), "MMM d, h:mm a")}</span>
-                                                    <span className="text-[10px] text-gray-400">{formatDistanceToNow(new Date(post.scheduledAt), { addSuffix: true })}</span>
+                                                    <span className="text-sm font-medium">{formatSafeDate(post.scheduledAt, "MMM d, h:mm a")}</span>
+                                                    <span className="text-[10px] text-gray-400">{formatSafeDistance(post.scheduledAt)}</span>
                                                 </div>
                                             </TableCell>
                                             {currentUser?.role === 'Administrator' && (
@@ -369,12 +391,13 @@ export default function ScheduledPage() {
                                                     size="sm"
                                                     variant="outline"
                                                     onClick={() => {
-                                                        const postDate = new Date(post.scheduledAt);
+                                                        const postDate = post.scheduledAt ? new Date(post.scheduledAt) : new Date();
+                                                        const isValid = post.scheduledAt && !isNaN(postDate.getTime());
                                                         setRescheduleDialog({
                                                             open: true,
                                                             post,
-                                                            date: postDate,
-                                                            time: format(postDate, "HH:mm")
+                                                            date: isValid ? postDate : new Date(),
+                                                            time: isValid ? format(postDate, "HH:mm") : "12:00"
                                                         });
                                                     }}
                                                 >
@@ -492,7 +515,7 @@ export default function ScheduledPage() {
                                     {previewDialog.post.platform} Post
                                 </DialogTitle>
                                 <DialogDescription>
-                                    Scheduled for {format(new Date(previewDialog.post.scheduledAt), "MMMM d, yyyy 'at' h:mm a")}
+                                    Scheduled for {formatSafeDate(previewDialog.post.scheduledAt, "MMMM d, yyyy 'at' h:mm a")}
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="py-4 space-y-4">

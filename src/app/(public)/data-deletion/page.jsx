@@ -1,155 +1,88 @@
-"use client";
-
-import React, { useState } from "react";
 import Link from "next/link";
-import {
-  ShieldAlert,
-  Trash2,
-  ArrowRight,
-  Lock,
-  ShieldCheck,
-  RefreshCcw,
-  AlertCircle,
-  CheckCircle2
-} from "lucide-react";
+import { Trash2, ShieldAlert, Database, Info, ArrowLeft, ArrowRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+export const metadata = {
+  title: "Data Deletion | UNI.social",
+  description: "Information on how to request the deletion of your data from the UNI.social platform.",
+};
 
 export default function DataDeletionPage() {
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Simulate API call
-    setSubmitted(true);
-  };
-
   return (
-    <main className="bg-white min-h-screen font-inter text-[#3E4652]">
-      {/* Minimal Header */}
-      <section className="pt-32 pb-16 border-b border-slate-100">
-        <div className="container mx-auto px-6 max-w-[1280px]">
-          <div className="max-w-3xl space-y-6">
-            <Link href="/help" className="inline-flex items-center gap-2 text-[10px] font-black text-[#3B82F6] uppercase tracking-widest hover:-translate-x-1 transition-transform">
-              <ArrowRight className="h-4 w-4 rotate-180" /> Intelligence Hub
-            </Link>
-            <h1 className="text-4xl md:text-5xl font-extrabold text-[#0C1B33] leading-none tracking-tighter font-plus-jakarta uppercase">
-              Privacy Control: <br />
-              <span className="text-slate-400">Request Data Deletion</span>
-            </h1>
-            <p className="text-lg text-[#3E4652] font-medium leading-relaxed">
-              Protecting your digital identity is our primary mandate. Submit a formal request to purge your account and platform tokens from our encrypted nodes.
-            </p>
+    <main className="bg-white min-h-screen font-[420] text-slate-600 leading-relaxed">
+      {/* 🚀 Simple Header */}
+      <section className="pt-32 pb-16 bg-slate-50 border-b border-slate-100">
+        <div className="container mx-auto px-6 max-w-[800px]">
+          <Link href="/" className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-widest mb-8 hover:gap-4 transition-all">
+            <ArrowLeft className="h-4 w-4" /> Back to Home
+          </Link>
+          <div className="space-y-4">
+            <Badge className="bg-primary/5 text-primary border-primary/10 uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-bold">Privacy Center</Badge>
+            <h1 className="text-4xl md:text-5xl font-[650] text-slate-900 uppercase tracking-tighter">Data Deletion</h1>
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Last Updated: February 12, 2026</p>
           </div>
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="container mx-auto px-6 max-w-[1280px]">
-          <div className="grid lg:grid-cols-12 gap-16">
-
-            {/* Information Area */}
-            <div className="lg:col-span-7 space-y-12">
-              <div className="space-y-8">
-                <h2 className="text-2xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight">The Deletion Protocol</h2>
-                <p className="text-lg leading-relaxed font-medium">
-                  When you submit a deletion request, SocialHub executes a multi-stage purging process across all global distribution nodes:
-                </p>
-                <ul className="space-y-6">
-                  {[
-                    { title: "Token Revocation", desc: "Every Instagram, TikTok, and Pinterest node token is immediately revoked and deleted from our hardware-isolated vault.", icon: <Lock className="h-5 w-5" /> },
-                    { title: "Media Metadata Purging", desc: "All cached media assets and associated metadata are overwritten using AES-256 standard protocols.", icon: <Trash2 className="h-5 w-5" /> },
-                    { title: "Analytic Node Wipe", desc: "Custom resonance weights and historical engagement data are permanently decoupled from your identity.", icon: <RefreshCcw className="h-5 w-5" /> }
-                  ].map((item, i) => (
-                    <li key={i} className="flex gap-6 items-start group">
-                      <div className="w-12 h-12 rounded-[10px] bg-slate-50 flex items-center justify-center text-[#3B82F6] border border-slate-100 group-hover:border-[#3B82F6]/20 transition-all shrink-0">
-                        {item.icon}
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="font-bold text-[#0C1B33] uppercase text-base">{item.title}</h4>
-                        <p className="text-sm font-medium text-slate-500 leading-relaxed">{item.desc}</p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="p-10 bg-slate-50 border border-slate-100 rounded-[10px] space-y-6 relative overflow-hidden">
-                <ShieldCheck className="h-8 w-8 text-emerald-500 relative z-10" />
-                <div className="space-y-2 relative z-10">
-                  <h5 className="text-lg font-bold text-[#0C1B33] uppercase">GDPR & CCPA Compliant</h5>
-                  <p className="text-sm font-medium text-slate-500 leading-relaxed">
-                    Our deletion architecture complies with the highest international privacy standards, ensuring your "Right to be Forgotten" is respected across all territories.
-                  </p>
-                </div>
-              </div>
+      {/* 📄 Content */}
+      <section className="py-24 container mx-auto px-6 max-w-[800px] prose prose-slate">
+        <div className="space-y-16">
+          {/* Introduction */}
+          <div className="bg-slate-900 rounded-3xl p-8 text-white relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-3xl pointer-events-none" />
+            <div className="relative z-10 space-y-4">
+              <h2 className="text-xl font-bold uppercase tracking-tight text-white m-0">Respecting Your Privacy</h2>
+              <p className="text-slate-400 font-medium m-0">
+                At UNI.social, we believe you should have full control over your data. If you wish to delete your account or any specific data associated with it,
+                we provide a straightforward process to do so.
+              </p>
             </div>
+          </div>
 
-            {/* Form Area */}
-            <aside className="lg:col-span-5">
-              <div className="p-10 bg-white border border-slate-100 rounded-[10px] shadow-subtle space-y-8 sticky top-32">
-                {submitted ? (
-                  <div className="text-center space-y-6 py-8">
-                    <div className="w-20 h-20 rounded-full bg-emerald-50 text-emerald-500 mx-auto flex items-center justify-center">
-                      <CheckCircle2 className="h-10 w-10" />
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-2xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight">Request Received</h3>
-                      <p className="text-sm font-medium text-slate-500">
-                        A confirmation link has been sent to your registered email. You must click the link to authorize the deletion protocol.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => setSubmitted(false)}
-                      className="text-[10px] font-black text-[#3B82F6] uppercase tracking-widest hover:underline"
-                    >
-                      Submit another request
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-4">
-                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authentication Required</h4>
-                      <h3 className="text-2xl font-extrabold text-[#0C1B33] font-inter uppercase tracking-tight">Initialize Purge</h3>
-                    </div>
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Account Email Address</label>
-                        <input
-                          type="email"
-                          required
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="e.g., commander@agency.com"
-                          className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[6px] px-4 text-sm font-medium focus:outline-none focus:border-[#3B82F6] transition-all font-dm-sans"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Deletion Reason (Optional)</label>
-                        <select className="w-full h-14 bg-slate-50 border border-slate-100 rounded-[6px] px-4 text-sm font-medium focus:outline-none focus:border-[#3B82F6] transition-all">
-                          <option>Closing Business</option>
-                          <option>Switching Platforms</option>
-                          <option>Privacy Concerns</option>
-                          <option>Other</option>
-                        </select>
-                      </div>
-                      <div className="p-4 bg-amber-50 rounded-[6px] border border-amber-100 flex gap-4 items-start">
-                        <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
-                        <p className="text-[11px] font-bold text-amber-800 leading-relaxed uppercase tracking-tight">
-                          CAUTION: This action is permanent. All historical analytics and nodes will be destroyed.
-                        </p>
-                      </div>
-                      <button
-                        type="submit"
-                        className="w-full bg-[#EA5455] text-white font-black text-[10px] uppercase tracking-[0.2em] h-16 rounded-[6px] hover:scale-105 transition-all shadow-subtle shadow-[#EA5455]/20 font-inter"
-                      >
-                        Purge My Data
-                      </button>
-                    </form>
-                  </>
-                )}
-              </div>
-            </aside>
+          <div className="space-y-6">
+            <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+              <Trash2 className="h-6 w-6 text-primary" /> 1. How to Delete Your Account
+            </h2>
+            <p>
+              The easiest way to delete your data is to delete your account directly through the portal. This will trigger the permanent deletion of your
+              profile, connected platform credentials, and scheduled posts.
+            </p>
+            <div className="pt-4">
+              <Link href="/portal/settings" className="inline-flex items-center gap-3 bg-slate-100 px-6 py-4 rounded-2xl font-bold text-slate-900 hover:bg-primary hover:text-white transition-all group">
+                Go to Settings <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </div>
+          </div>
 
+          <div className="space-y-6">
+            <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+              <Database className="h-6 w-6 text-primary" /> 2. Manual Deletion Request
+            </h2>
+            <p>
+              If you cannot access your account or wish to request the deletion of specific data points, you can contact our privacy team.
+              Please include your account email and a description of the data you wish to be removed.
+            </p>
+            <a href="mailto:privacy@uni.social" className="text-primary font-bold hover:underline">privacy@uni.social</a>
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+              <ShieldAlert className="h-6 w-6 text-primary" /> 3. Data Retention
+            </h2>
+            <p>
+              Upon receiving a deletion request, we will remove your data from our active databases within 30 days. Please note that some
+              anonymized data may persist in our logs for security and analytical purposes, as permitted by law.
+            </p>
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+              <Info className="h-6 w-6 text-primary" /> 4. Platform-Specific Data
+            </h2>
+            <p>
+              Data that has already been published to third-party social media platforms (like TikTok, Instagram, or Pinterest)
+              through UNI.social must be deleted directly on those platforms.
+            </p>
           </div>
         </div>
       </section>

@@ -1,96 +1,83 @@
 import Link from "next/link";
-import { ShieldCheck, FileText, Globe, Scale, ArrowLeft, Handshake, Database, Lock, Zap } from "lucide-react";
+import { Shield, FileCheck, Users, Globe, Lock, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
-    title: "Data Processing Agreement (DPA) | SocialHub",
-    description: "Our Data Processing Agreement outlines our commitment to data security and GDPR compliance.",
+    title: "Data Processing Agreement (DPA) | UNI.social",
+    description: "Our Data Processing Agreement (DPA) outlines how we handle personal data on behalf of our customers.",
 };
 
-export default function DPA() {
-    const principles = [
-        {
-            title: "Data Protection Role",
-            desc: "SocialHub acts as the 'Data Processor' for the content and metadata you distribute. You remain the 'Data Controller'. We only process data upon your explicit instruction via the dashboard or API."
-        },
-        {
-            title: "Security Measures",
-            desc: "Our technical stack includes AES-256 GCM encryption at rest, TLS 1.3 in transit, and continuous DDoS mitigation via our edge network. System access is restricted by granular internal RBAC."
-        },
-        {
-            title: "Sub-processors",
-            desc: "We utilize authorized sub-processors like AWS (S3/CloudFront) and Stripe for infrastructure and billing. Every partner is audited for SOC 2 Type II or equivalent security standards."
-        }
-    ];
-
+export default function DPAPage() {
     return (
-        <div className="bg-white pt-32 pb-24 font-plus-jakarta text-[#3E4652]">
-            <div className="container mx-auto px-6 max-w-[1200px]">
-
-                {/* --- Header --- */}
-                <div className="max-w-4xl mb-20 space-y-8">
-                    <Link href="/" className="inline-flex items-center gap-2 text-xs font-black text-[#3B82F6] uppercase tracking-widest hover:-translate-x-1 transition-transform">
-                        <ArrowLeft className="h-4 w-4" /> Return to Dashboard
+        <main className="bg-white min-h-screen font-[420] text-slate-600 leading-relaxed">
+            {/* 🚀 Simple Header */}
+            <section className="pt-32 pb-16 bg-slate-50 border-b border-slate-100">
+                <div className="container mx-auto px-6 max-w-[800px]">
+                    <Link href="/" className="flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-widest mb-8 hover:gap-4 transition-all">
+                        <ArrowLeft className="h-4 w-4" /> Back to Home
                     </Link>
                     <div className="space-y-4">
-                        <Badge className="bg-[#0C1B33] text-white uppercase text-[9px] px-3 font-black tracking-widest">Enterprise Compliance</Badge>
-                        <h1 className="text-4xl md:text-7xl font-extrabold text-[#0C1B33] tracking-tighter leading-[0.9] font-plus-jakarta uppercase">
-                            Data <br /> <span className="text-[#3B82F6]">Agreement.</span>
-                        </h1>
-                    </div>
-                    <p className="text-xl font-medium text-slate-500 max-w-2xl leading-relaxed">
-                        Updated: January 18, 2026. This DPA serves as an addendum to our Terms of Service, detailing how we process 'Authorized Content' across our global node network.
-                    </p>
-                </div>
-
-                {/* --- Content --- */}
-                <div className="grid lg:grid-cols-12 gap-20">
-                    <div className="lg:col-span-8 space-y-16">
-                        {principles.map((p, i) => (
-                            <section key={i} className="space-y-6">
-                                <h2 className="text-2xl font-extrabold text-[#0C1B33] font-plus-jakarta uppercase tracking-tight">{p.title}</h2>
-                                <p className="text-lg font-medium leading-relaxed text-[#505d72]">
-                                    {p.desc}
-                                </p>
-                            </section>
-                        ))}
-
-                        <div className="p-10 bg-[#F5F8FB] border border-[#E1E7EF] rounded-[10px] space-y-8">
-                            <h4 className="font-extrabold text-[#0C1B33] font-plus-jakarta uppercase">Audit & Transparency</h4>
-                            <p className="text-sm font-medium leading-relaxed text-slate-500">
-                                Enterprise clients can request our latest SOC 2 security summary or perform independent API security reviews upon entering a Master Service Agreement (MSA).
-                            </p>
-                            <Link href="mailto:compliance@socialhub.com">
-                                <button className="bg-[#0C1B33] text-white px-8 py-4 rounded-[8px] text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all">
-                                    Request Full Audit Pack
-                                </button>
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Sidebar */}
-                    <div className="lg:col-span-4 space-y-8">
-                        <div className="p-8 bg-[#0C1B33] rounded-[10px] text-white space-y-8 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-1/3 h-full bg-[#3B82F6]/10 blur-3xl" />
-                            <h4 className="text-xl font-extrabold font-plus-jakarta uppercase italic flex items-center gap-3">
-                                <Database className="h-5 w-5 text-[#F9C80E]" /> Security Deck
-                            </h4>
-                            <ul className="space-y-4">
-                                {[
-                                    { icon: <Lock className="h-4 w-4" />, text: "End-to-End Encryption" },
-                                    { icon: <ShieldCheck className="h-4 w-4" />, text: "GDPR/CCPA Aligned" },
-                                    { icon: <Zap className="h-4 w-4" />, text: "Official Partner APIs Only" }
-                                ].map((item, i) => (
-                                    <li key={i} className="flex gap-4 items-center text-xs font-bold text-slate-300">
-                                        <span className="text-[#3B82F6]">{item.icon}</span> {item.text}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                        <Badge className="bg-primary/5 text-primary border-primary/10 uppercase tracking-[0.2em] text-[10px] px-4 py-1.5 font-bold">Privacy Center</Badge>
+                        <h1 className="text-4xl md:text-5xl font-[650] text-slate-900 uppercase tracking-tighter">Data Processing Agreement</h1>
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Last Updated: February 12, 2026</p>
                     </div>
                 </div>
+            </section>
 
-            </div>
-        </div>
+            {/* 📄 Content */}
+            <section className="py-24 container mx-auto px-6 max-w-[800px] prose prose-slate">
+                <div className="space-y-16">
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                            <Shield className="h-6 w-6 text-primary" /> 1. Overview
+                        </h2>
+                        <p>
+                            This Data Processing Agreement ("DPA") forms part of the Terms of Service between UNI.social and the Customer.
+                            It reflects the parties' agreement with regard to the processing of Personal Data.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                            <FileCheck className="h-6 w-6 text-primary" /> 2. Roles and Responsibilities
+                        </h2>
+                        <ul className="list-disc pl-6 space-y-4">
+                            <li><strong>Customer as Controller:</strong> The Customer determines the purposes and means of processing Personal Data.</li>
+                            <li><strong>UNI.social as Processor:</strong> UNI.social processes Personal Data only on behalf of and in accordance with the Customer’s instructions.</li>
+                        </ul>
+                    </div>
+
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                            <Users className="h-6 w-6 text-primary" /> 3. Sub-processors
+                        </h2>
+                        <p>
+                            UNI.social may engage sub-processors to provide aspects of the Service. A current list of sub-processors (including AWS, Firebase, Stripe)
+                            is available upon request or via our Security Portal.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                            <Globe className="h-6 w-6 text-primary" /> 4. Data Transfers
+                        </h2>
+                        <p>
+                            Personal Data may be processed in the United States or any other country in which UNI.social or its sub-processors maintain facilities.
+                            We ensure all transfers comply with applicable data protection laws.
+                        </p>
+                    </div>
+
+                    <div className="space-y-6">
+                        <h2 className="text-2xl font-[650] text-slate-900 uppercase tracking-tight flex items-center gap-3">
+                            <Lock className="h-6 w-6 text-primary" /> 5. Security Measures
+                        </h2>
+                        <p>
+                            UNI.social maintains appropriate technical and organizational measures to protect Personal Data against unauthorized or unlawful processing,
+                            as detailed in our Security Policy.
+                        </p>
+                    </div>
+                </div>
+            </section>
+        </main>
     );
 }

@@ -99,14 +99,25 @@ export async function getUnifiedScheduledPosts({
                         detectedPostType = data.videoUrl ? 'video' : 'image';
                     }
 
+                    // Normalize critical fields with validation
+                    const normalizeDate = (val) => {
+                        if (!val) return null;
+                        try {
+                            const date = val.toDate ? val.toDate() : new Date(val);
+                            return isNaN(date.getTime()) ? null : date.toISOString();
+                        } catch (e) {
+                            return null;
+                        }
+                    };
+
                     return {
                         id: docSnap.id,
                         platform: p,
                         ...data,
                         // Normalize critical fields
-                        scheduledAt: data.scheduledAt?.toDate ? data.scheduledAt.toDate().toISOString() : data.scheduledAt,
-                        createdAt: data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : data.createdAt,
-                        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : data.updatedAt,
+                        scheduledAt: normalizeDate(data.scheduledAt),
+                        createdAt: normalizeDate(data.createdAt),
+                        updatedAt: normalizeDate(data.updatedAt),
                         // Content normalization
                         caption: data.message || data.caption || data.text || data.description || data.content?.text || "",
                         media: mediaUrls.length > 0 ? mediaUrls : (data.imageUrl ? [{ url: data.imageUrl, type: 'image' }] : []),
