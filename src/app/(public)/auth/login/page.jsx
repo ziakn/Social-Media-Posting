@@ -55,44 +55,46 @@ function LoginForm() {
   return (
     <div className="space-y-6">
       {alert && (
-        <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-lg">
-          <AlertDescription className="font-bold text-xs uppercase tracking-tight">{alert}</AlertDescription>
+        <Alert variant="destructive" className="bg-[rgba(255,100,100,0.1)] border-[rgba(255,100,100,0.2)] text-[#e5484d] rounded-2xl backdrop-blur-[4px]">
+          <AlertDescription className="font-semibold text-xs tracking-tight">{alert}</AlertDescription>
         </Alert>
       )}
 
       {success && (
-        <Alert variant="default" className="bg-emerald-50 border-emerald-100 text-emerald-600 rounded-lg">
-          <AlertDescription className="font-bold text-xs uppercase tracking-tight">Access Granted. Synchronizing...</AlertDescription>
+        <Alert variant="default" className="bg-[rgba(50,200,150,0.1)] border-[rgba(50,200,150,0.2)] text-[#30a46c] rounded-2xl backdrop-blur-[4px]">
+          <AlertDescription className="font-semibold text-xs tracking-tight">Access Granted. Synchronizing...</AlertDescription>
         </Alert>
       )}
 
-      <form onSubmit={handleLogin} className="space-y-6">
+      <form onSubmit={handleLogin} className="space-y-5">
         <div className="space-y-2">
-          <label htmlFor="email" className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-            <Mail className="h-3 w-3 text-[#3B82F6]" /> Email Identity
+          <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
+            <Mail className="h-3.5 w-3.5 text-[#5e4a7a]" /> Email Identity
           </label>
-          <Input
-            id="email"
-            type="email"
-            autoComplete="email"
-            placeholder="zia@gmail.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300 transition-all"
-          />
+          <div className="relative group">
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="zia@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-[54px] rounded-[20px] border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] focus:bg-[rgba(255,255,255,0.6)] focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] font-medium text-sm placeholder:text-[#a08cbc] transition-all backdrop-blur-[2px]"
+            />
+          </div>
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between items-center">
-            <label htmlFor="password" className="text-[10px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Lock className="h-3 w-3 text-[#3B82F6]" /> Access Key
+          <div className="flex justify-between items-center ml-1">
+            <label htmlFor="password" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans">
+              <Lock className="h-3.5 w-3.5 text-[#5e4a7a]" /> Access Key
             </label>
-            <Link href="/auth/reset" className="text-[10px] font-black uppercase tracking-widest text-[#3B82F6] hover:text-[#0081cc] transition-colors">
+            <Link href="/auth/reset" className="text-[11px] font-bold text-[#5e4a7a] hover:text-[#4a3c60] transition-colors underline decoration-[#5e4a7a]/20 underline-offset-4">
               Recovery?
             </Link>
           </div>
-          <div className="relative">
+          <div className="relative group">
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -101,15 +103,15 @@ function LoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="h-14 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 placeholder:text-slate-300 pr-12 transition-all"
+              className="h-[54px] rounded-[20px] border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] focus:bg-[rgba(255,255,255,0.6)] focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] font-medium text-sm placeholder:text-[#a08cbc] pr-12 transition-all backdrop-blur-[2px]"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#a08cbc] hover:text-[#5e4a7a] transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
             </button>
           </div>
         </div>
@@ -117,7 +119,7 @@ function LoginForm() {
         <Button
           type="submit"
           disabled={loading || success}
-          className="w-full h-14 bg-[#F9C80E] hover:bg-[#eac00d] text-[#0C1B33] rounded-[6px] font-black text-sm uppercase tracking-[0.15em] transition-all active:scale-[0.98] shadow-subtle font-plus-jakarta"
+          className="w-full h-[54px] bg-[#2d253b] hover:bg-[#3e3152] text-white rounded-[60px] font-bold text-sm uppercase tracking-[0.1em] transition-all active:scale-[0.98] shadow-lg shadow-[#2d253b]/10 mt-2 cursor-pointer border-none"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -127,12 +129,10 @@ function LoginForm() {
         </Button>
       </form>
 
-
-
-      <div className="pt-6 text-center">
-        <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
+      <div className="pt-6 text-center border-t border-[rgba(160,140,190,0.1)]">
+        <p className="text-sm font-medium text-[#4a3c60] font-sans">
           New to the network?{" "}
-          <Link href="/auth/register" className="text-[#3B82F6] font-black hover:underline ml-1 transition-all">
+          <Link href="/auth/register" className="text-[#5e4a7a] font-bold hover:underline ml-1 transition-all decoration-[#5e4a7a]/30 underline-offset-4">
             Join Today
           </Link>
         </p>
@@ -149,7 +149,7 @@ export default function Login() {
     >
       <Suspense fallback={
         <div className="flex justify-center p-8">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#5e4a7a]" />
         </div>
       }>
         <LoginForm />

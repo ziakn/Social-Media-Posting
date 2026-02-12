@@ -5,6 +5,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import JsonLdSchema from "@/components/seo/JsonLdSchema";
+import BackgroundCanvas from "@/components/home/BackgroundCanvas";
+import NewFooter from "@/components/home/NewFooter";
 
 export default function RoadmapPage() {
     const milestones = [
@@ -41,56 +43,57 @@ export default function RoadmapPage() {
     ];
 
     return (
-        <main className="bg-white min-h-screen font-[420] text-slate-600">
+        <main className="min-h-screen relative overflow-hidden bg-white selection:bg-[#5e4a7a]/20 font-sans text-[#1e1a2b]">
+            <BackgroundCanvas />
             <JsonLdSchema type="WebSite" data={{ "@type": "CreativeWork", "name": "UNI.social Roadmap" }} />
+
             {/* 🚀 Hero Section */}
-            <section className="pt-32 pb-24 bg-slate-900 text-white relative overflow-hidden text-center">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
-                <div className="container mx-auto px-6 max-w-[1280px] relative z-10 space-y-8">
-                    <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/20 mb-4 shadow-lg shadow-primary/5">
+            <section className="pt-40 pb-20 relative z-10 text-center px-4">
+                <div className="container mx-auto max-w-[1200px]">
+                    <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-[rgba(94,74,122,0.05)] border border-[rgba(94,74,122,0.15)] mb-10 backdrop-blur-[4px]">
                         <div className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#5e4a7a] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#5e4a7a]"></span>
                         </div>
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Product Roadmap 2026</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#5e4a7a]">Product Protocol 2026</span>
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-[650] uppercase tracking-tighter leading-none mx-auto max-w-4xl">
+
+                    <h1 className="text-5xl md:text-8xl font-bold tracking-[-0.04em] leading-[0.9] mb-8 uppercase italic">
                         Future <br />
-                        <span className="text-primary italic">Distribution.</span>
+                        <span className="bg-gradient-to-br from-[#5e4a7a] to-[#3a2e4a] bg-clip-text text-transparent">Distribution.</span>
                     </h1>
-                    <p className="text-xl text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">
-                        Our journey towards an AI-native social ecosystem. Transparent, ambitious, and focused on your growth.
+
+                    <p className="text-xl text-[#4a3d58]/70 font-medium max-w-2xl mx-auto leading-relaxed">
+                        Our journey towards an AI-native social ecosystem. <br />
+                        <span className="text-[#5e4a7a]">Transparent, ambitious, and focused on your scale.</span>
                     </p>
                 </div>
             </section>
 
             {/* 📍 Timeline Section */}
-            <section className="py-32 relative">
-                {/* Vertical Timeline Line */}
-                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-slate-200 to-transparent hidden lg:block" />
-
-                <div className="container mx-auto px-6 max-w-[1000px] relative">
+            <section className="py-24 relative z-10">
+                <div className="container mx-auto px-6 max-w-[1200px] relative">
                     {milestones.map((m, i) => (
-                        <div key={i} className="mb-32 last:mb-0 relative group">
-                            {/* Milestone Marker */}
-                            <div className="absolute left-1/2 -top-10 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-4 border-primary shadow-lg z-20 hidden lg:block group-hover:scale-125 transition-transform duration-500" />
-
-                            <div className="text-center mb-12">
-                                <Badge className="bg-primary/5 text-primary border-primary/10 uppercase tracking-[0.2em] text-[10px] px-6 py-2 font-bold mb-4">{m.quarter}</Badge>
-                                <h2 className="text-3xl font-[650] text-slate-900 uppercase tracking-tighter">{m.title}</h2>
-                                <p className="text-sm font-bold text-slate-400 mt-2 uppercase tracking-widest">{m.status}</p>
+                        <div key={i} className="mb-24 last:mb-0 relative py-12 px-8 glass-panel rounded-[40px] border border-[rgba(255,255,255,0.6)]">
+                            <div className="flex flex-col lg:flex-row gap-8 lg:items-center justify-between mb-12">
+                                <div>
+                                    <Badge className="bg-[rgba(94,74,122,0.05)] text-[#5e4a7a] border-[rgba(94,74,122,0.1)] uppercase tracking-[0.2em] text-[10px] px-6 py-2 font-bold mb-4 rounded-full">{m.quarter}</Badge>
+                                    <h2 className="text-4xl md:text-5xl font-bold text-[#1e1a2b] uppercase tracking-tighter italic">{m.title}</h2>
+                                </div>
+                                <div className="text-left lg:text-right">
+                                    <p className="text-[10px] font-black text-[#5e4a7a] uppercase tracking-[0.3em] opacity-50 mb-1">Sector Status</p>
+                                    <p className="text-lg font-bold text-[#3a2e4a] uppercase tracking-tight">{m.status}</p>
+                                </div>
                             </div>
 
-                            <div className="grid md:grid-cols-3 gap-8">
+                            <div className="grid md:grid-cols-3 gap-6">
                                 {m.items.map((item, idx) => (
-                                    <div key={idx} className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-primary/5 hover:border-primary/20 transition-all duration-500 group flex flex-col justify-between h-full">
-                                        <div>
-                                            <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-500 border border-slate-200/60 shadow-sm italic">
-                                                {item.icon}
-                                            </div>
-                                            <h3 className="text-lg font-bold text-slate-900 uppercase tracking-tight mb-2">{item.title}</h3>
-                                            <p className="text-sm text-slate-500 font-medium leading-relaxed">{item.desc}</p>
+                                    <div key={idx} className="bg-[rgba(255,255,255,0.4)] p-8 rounded-[32px] border border-[rgba(160,140,190,0.15)] backdrop-blur-[2px] hover:bg-[rgba(255,255,255,0.6)] hover:border-[#5e4a7a]/30 transition-all duration-500 group flex flex-col h-full">
+                                        <div className="w-14 h-14 bg-white/60 rounded-2xl flex items-center justify-center mb-6 border border-[rgba(160,140,190,0.2)] shadow-sm group-hover:scale-110 transition-transform duration-500">
+                                            {item.icon}
                                         </div>
+                                        <h3 className="text-lg font-bold text-[#1e1a2b] uppercase tracking-tight mb-3">{item.title}</h3>
+                                        <p className="text-[13px] text-[#4a3d58]/80 font-medium leading-[1.6]">{item.desc}</p>
                                     </div>
                                 ))}
                             </div>
@@ -100,42 +103,48 @@ export default function RoadmapPage() {
             </section>
 
             {/* 🎯 Journey CTA */}
-            <section className="py-40 container mx-auto px-6 max-w-[1280px]">
-                <div className="bg-slate-900 rounded-[40px] p-12 md:p-24 text-center text-white space-y-12 relative overflow-hidden shadow-2xl group">
-                    <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
-                    <Sparkles className="h-16 w-16 text-primary mx-auto group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700" />
-                    <h2 className="text-4xl md:text-6xl font-[650] tracking-tighter max-w-2xl mx-auto leading-tight uppercase">
-                        Grow with <span className="text-primary italic">Us.</span>
+            <section className="py-32 container mx-auto px-6 max-w-[1200px] relative z-10">
+                <div className="glass-panel rounded-[40px] p-12 md:p-24 text-center border border-[rgba(255,255,255,0.6)] relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-1/3 h-full bg-[#5e4a7a]/5 blur-[100px] pointer-events-none" />
+                    <Sparkles className="h-20 w-20 text-[#5e4a7a] mx-auto mb-10 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-700 opacity-80" />
+
+                    <h2 className="text-4xl md:text-7xl font-bold tracking-tight max-w-3xl mx-auto leading-[0.9] uppercase italic mb-8">
+                        Grow with <br />
+                        <span className="bg-gradient-to-br from-[#5e4a7a] to-[#3a2e4a] bg-clip-text text-transparent">The Network.</span>
                     </h2>
-                    <p className="text-xl text-slate-400 font-medium max-w-xl mx-auto">
-                        Your feedback drives our roadmap. Join thousands of creators shaping the future of social media distribution.
+
+                    <p className="text-xl text-[#4a3d58]/70 font-medium max-w-xl mx-auto mb-12 leading-relaxed">
+                        Your feedback drives our roadmap. Join thousands of creators shaping the future of social media intelligence.
                     </p>
-                    <div className="pt-4 flex flex-wrap justify-center gap-6">
+
+                    <div className="flex flex-wrap justify-center gap-6">
                         <Link href="/auth/register">
-                            <button className="bg-white text-slate-900 font-bold text-lg px-12 h-20 rounded-full hover:bg-primary hover:text-white transition-all shadow-xl hover:-translate-y-1 uppercase tracking-widest flex items-center gap-2 mx-auto justify-center active:scale-95">
+                            <button className="h-[72px] px-14 bg-[#2d253b] text-white rounded-[60px] font-bold text-base uppercase tracking-[0.1em] transition-all hover:bg-[#3e3152] active:scale-[0.98] shadow-xl shadow-[#2d253b]/10 cursor-pointer border-none">
                                 Get Started Free
                             </button>
                         </Link>
                         <Link href="/help">
-                            <button className="bg-slate-800 text-white font-bold text-lg px-12 h-20 rounded-full border border-white/10 hover:bg-slate-700 transition-all hover:-translate-y-1 uppercase tracking-widest flex items-center gap-2 mx-auto justify-center active:scale-95">
+                            <button className="h-[72px] px-14 bg-white/40 text-[#1e1a2b] rounded-[60px] font-bold text-base border border-[rgba(160,140,190,0.3)] uppercase tracking-[0.1em] transition-all hover:bg-white/60 active:scale-[0.98] backdrop-blur-[4px] cursor-pointer">
                                 Suggest Feature
                             </button>
                         </Link>
                     </div>
                 </div>
             </section>
+
+            <NewFooter />
         </main>
     );
 }
 
 export const metadata = {
-    title: "Product Roadmap | UNI.social - The Future of Social Distribution",
-    description: "Explore the upcoming features and milestones for UNI.social. See our plans for AI expansion and global distribution.",
+    title: "Product Roadmap | SocialHub - Future of Distribution",
+    description: "Explore the upcoming features and milestones for SocialHub. See our plans for AI expansion and global distribution.",
     keywords: [
         "social media roadmap 2026",
         "AI posting features roadmap",
         "future social media tools",
-        "UNI.social development plans",
+        "SocialHub development plans",
         "social media analytics roadmap"
     ]
 };

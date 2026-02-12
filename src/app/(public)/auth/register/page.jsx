@@ -139,26 +139,7 @@ function RegisterForm() {
       } else {
         router.push(ROUTES.PORTAL_DASHBOARD || "/portal");
       }
-    } catch (error) {
-      console.error("Critical Registration Error:", error);
-      setAlert(error.message);
     } finally {
-      // Only stop loading if we are NOT redirecting (on failure)
-      if (loading) {
-        // If we are here, it means we caught an error or we fell through to finally block without redirecting
-        // But since redirect is async, we can't be sure easily. 
-        // However, react state update on unmounted component (due to redirect) is harmless warning usually.
-        // For UX, if error alert is set, stop loading.
-        // If successfully redirecting, we want loading spin to stay until page unload.
-        // We can check if alert is set. But alert is set in catch.
-        // So we check if we have error.
-        // Actually, 'loading' state inside handleSubmit closure is stale.
-        // We will rely on setAlert to determine failure.
-      }
-      // Simple logic: if error occurred, stop loading. If success, let it spin until nav.
-      // But we can't access 'error' here easily.
-      // So we will setLoading(false) only in catch block? No, standard is finally.
-      // Let's just setLoading(false) here. If nav happens fast, it doesn't matter.
       setLoading(false);
     }
   };
@@ -188,15 +169,15 @@ function RegisterForm() {
   return (
     <div className="space-y-5">
       {selectedPlan && (
-        <div className="bg-slate-50 border border-slate-100 rounded-lg p-3.5 mb-2">
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 font-plus-jakarta">Protocol Selection</span>
-            <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border font-plus-jakarta ${selectedPlan.name.toLowerCase() === 'free' ? 'bg-slate-200 border-slate-300 text-slate-600' : 'bg-blue-100 border-blue-200 text-blue-600'}`}>
+        <div className="bg-[rgba(255,255,255,0.4)] border border-[rgba(160,140,190,0.2)] rounded-3xl p-5 mb-2 backdrop-blur-[2px]">
+          <div className="flex justify-between items-center mb-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#a08cbc] font-sans">Protocol Selection</span>
+            <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border font-sans ${selectedPlan.name.toLowerCase() === 'free' ? 'bg-[#f5f1fc] border-[rgba(160,140,190,0.3)] text-[#5e4a7a]' : 'bg-[#e1d7f5] border-[rgba(94,74,122,0.3)] text-[#3a2e4a]'}`}>
               {selectedPlan.name}
             </span>
           </div>
           <select
-            className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-[11px] font-bold outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-plus-jakarta h-10"
+            className="w-full bg-white/50 border border-[rgba(160,140,190,0.2)] rounded-2xl px-4 py-2 text-xs font-semibold outline-none focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] transition-all font-sans h-[48px] cursor-pointer"
             value={selectedPlan.id}
             onChange={(e) => {
               const pkg = packages.find(p => p.id === e.target.value);
@@ -234,15 +215,15 @@ function RegisterForm() {
       )}
 
       {alert && (
-        <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-lg py-3">
-          <AlertDescription className="font-bold text-[10px] uppercase tracking-tight font-plus-jakarta">{alert}</AlertDescription>
+        <Alert variant="destructive" className="bg-[rgba(255,100,100,0.1)] border-[rgba(255,100,100,0.2)] text-[#e5484d] rounded-2xl backdrop-blur-[4px] py-4">
+          <AlertDescription className="font-semibold text-xs tracking-tight">{alert}</AlertDescription>
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3.5">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="name" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-            <User className="h-3 w-3 text-[#3B82F6]" /> Creator Name
+          <label htmlFor="name" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
+            <User className="h-3.5 w-3.5 text-[#5e4a7a]" /> Creator Name
           </label>
           <Input
             id="name"
@@ -250,15 +231,15 @@ function RegisterForm() {
             autoComplete="name"
             placeholder="Zia Muhammad"
             required
-            className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
+            className="h-[50px] rounded-[20px] border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] focus:bg-[rgba(255,255,255,0.6)] focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] font-medium text-sm placeholder:text-[#a08cbc] transition-all backdrop-blur-[2px] text-[#201c2b]"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-            <Mail className="h-3 w-3 text-[#3B82F6]" /> Communications
+          <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
+            <Mail className="h-3.5 w-3.5 text-[#5e4a7a]" /> Communications
           </label>
           <Input
             id="email"
@@ -266,16 +247,16 @@ function RegisterForm() {
             autoComplete="email"
             placeholder="zia@example.com"
             required
-            className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
+            className="h-[50px] rounded-[20px] border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] focus:bg-[rgba(255,255,255,0.6)] focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] font-medium text-sm placeholder:text-[#a08cbc] transition-all backdrop-blur-[2px] text-[#201c2b]"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label htmlFor="password" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Lock className="h-3 w-3 text-[#3B82F6]" /> Secure Key
+            <label htmlFor="password" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
+              <Lock className="h-3.5 w-3.5 text-[#5e4a7a]" /> Secure Key
             </label>
             <Input
               id="password"
@@ -283,14 +264,14 @@ function RegisterForm() {
               autoComplete="new-password"
               placeholder="••••"
               required
-              className="h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33]"
+              className="h-[50px] rounded-[20px] border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] focus:bg-[rgba(255,255,255,0.6)] focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] font-medium text-sm placeholder:text-[#a08cbc] transition-all backdrop-blur-[2px] text-[#201c2b]"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
           <div className="space-y-1.5">
-            <label htmlFor="confirmPassword" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Lock className="h-3 w-3 text-[#3B82F6]" /> Confirm Key
+            <label htmlFor="confirmPassword" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
+              <Lock className="h-3.5 w-3.5 text-[#5e4a7a]" /> Confirm Key
             </label>
             <Input
               id="confirmPassword"
@@ -298,21 +279,21 @@ function RegisterForm() {
               autoComplete="new-password"
               placeholder="••••"
               required
-              className={`h-11 rounded-[6px] border-slate-200 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] font-bold text-sm bg-slate-50/50 transition-all text-[#0C1B33] ${form.password && form.confirmPassword && form.password !== form.confirmPassword ? 'border-red-300 ring-red-100' : ''}`}
+              className={`h-[50px] rounded-[20px] border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] focus:bg-[rgba(255,255,255,0.6)] focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] font-medium text-sm placeholder:text-[#a08cbc] transition-all backdrop-blur-[2px] text-[#201c2b] ${form.password && form.confirmPassword && form.password !== form.confirmPassword ? 'border-red-300 ring-red-100' : ''}`}
               value={form.confirmPassword}
               onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3.5">
+        <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label htmlFor="creatorType" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Building2 className="h-3 w-3 text-[#3B82F6]" /> Identity
+            <label htmlFor="creatorType" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
+              <Building2 className="h-3.5 w-3.5 text-[#5e4a7a]" /> Identity
             </label>
             <select
               id="creatorType"
-              className="flex h-11 w-full rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20 focus:border-[#3B82F6] disabled:cursor-not-allowed disabled:opacity-50 font-plus-jakarta transition-all text-[#0C1B33]"
+              className="flex h-[50px] w-full rounded-[20px] border border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] px-4 py-2 text-xs font-bold uppercase tracking-widest focus:outline-none focus:ring-[rgba(94,74,122,0.1)] focus:border-[#5e4a7a] disabled:cursor-not-allowed disabled:opacity-50 font-sans transition-all text-[#201c2b] cursor-pointer"
               value={form.creatorType}
               onChange={(e) => setForm({ ...form, creatorType: e.target.value })}
             >
@@ -320,8 +301,8 @@ function RegisterForm() {
             </select>
           </div>
           <div className="space-y-1.5 flex flex-col">
-            <label htmlFor="country" className="text-[9px] font-black uppercase tracking-[0.2em] text-[#0C1B33] flex items-center gap-2 font-plus-jakarta">
-              <Globe className="h-3 w-3 text-[#3B82F6]" /> Origin
+            <label htmlFor="country" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
+              <Globe className="h-3.5 w-3.5 text-[#5e4a7a]" /> Origin
             </label>
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
@@ -329,22 +310,22 @@ function RegisterForm() {
                   variant="outline"
                   role="combobox"
                   className={cn(
-                    "h-11 w-full justify-between rounded-[6px] border border-slate-200 bg-slate-50/50 px-3 py-2 text-[10px] font-black uppercase tracking-widest font-plus-jakarta transition-all hover:bg-slate-50 text-[#0C1B33]",
+                    "h-[50px] w-full justify-between rounded-[20px] border border-[rgba(160,140,190,0.25)] bg-[rgba(255,255,255,0.4)] px-4 py-2 text-xs font-bold uppercase tracking-widest font-sans transition-all hover:bg-[rgba(255,255,255,0.5)] text-[#201c2b]",
                     !form.country && "text-muted-foreground"
                   )}
                 >
                   {form.country
                     ? allCountries.find((c) => c === form.country)
                     : "Search..."}
-                  <ChevronDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command className="font-plus-jakarta">
-                  <CommandInput placeholder="Search Country..." className="h-9 text-[10px] font-bold uppercase tracking-widest" />
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 rounded-[20px] overflow-hidden border-[rgba(160,140,190,0.2)]" align="start">
+                <Command className="font-sans">
+                  <CommandInput placeholder="Search Country..." className="h-10 text-xs font-bold uppercase tracking-widest border-none focus:ring-0" />
                   <CommandList className="max-h-[200px]">
-                    <CommandEmpty className="text-[10px] font-bold uppercase py-4">Unknown Sector.</CommandEmpty>
-                    <CommandGroup heading="Priorities" className="text-[9px] font-black uppercase opacity-60">
+                    <CommandEmpty className="text-xs font-bold uppercase py-4 text-center">Unknown Sector.</CommandEmpty>
+                    <CommandGroup heading="Priorities" className="text-[10px] font-black uppercase opacity-40 px-3 py-2">
                       {priorities.map((c) => (
                         <CommandItem
                           key={c}
@@ -353,11 +334,11 @@ function RegisterForm() {
                             setForm({ ...form, country: c });
                             setOpen(false);
                           }}
-                          className="text-[10px] font-bold uppercase cursor-pointer"
+                          className="text-xs font-bold uppercase cursor-pointer py-2 px-3 hover:bg-[#f5f1fc] transition-colors"
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-3 w-3",
+                              "mr-2 h-4 w-4 text-[#5e4a7a]",
                               form.country === c ? "opacity-100" : "opacity-0"
                             )}
                           />
@@ -365,7 +346,7 @@ function RegisterForm() {
                         </CommandItem>
                       ))}
                     </CommandGroup>
-                    <CommandGroup heading="Global Registry" className="text-[9px] font-black uppercase opacity-60">
+                    <CommandGroup heading="Global Registry" className="text-[10px] font-black uppercase opacity-40 px-3 py-2">
                       {allCountries.map((c) => (
                         <CommandItem
                           key={c}
@@ -374,11 +355,11 @@ function RegisterForm() {
                             setForm({ ...form, country: c });
                             setOpen(false);
                           }}
-                          className="text-[10px] font-bold uppercase cursor-pointer"
+                          className="text-xs font-bold uppercase cursor-pointer py-2 px-3 hover:bg-[#f5f1fc] transition-colors"
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-3 w-3",
+                              "mr-2 h-4 w-4 text-[#5e4a7a]",
                               form.country === c ? "opacity-100" : "opacity-0"
                             )}
                           />
@@ -393,27 +374,27 @@ function RegisterForm() {
           </div>
         </div>
 
-        <div className="space-y-2 pt-1">
-          <div className="flex items-start space-x-3">
+        <div className="space-y-3 pt-2">
+          <div className="flex items-start space-x-3 ml-1">
             <Checkbox
               id="terms"
               checked={agreeToTerms}
               onCheckedChange={setAgreeToTerms}
-              className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6] transition-all"
+              className="mt-1 border-[rgba(160,140,190,0.4)] data-[state=checked]:bg-[#5e4a7a] data-[state=checked]:border-[#5e4a7a] rounded-md transition-all h-5 w-5"
             />
-            <label htmlFor="terms" className="text-[9px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta cursor-pointer">
-              Agree to <Link href="/terms" className="text-[#3B82F6] font-black hover:underline transition-all">Terms</Link> & <Link href="/privacy" className="text-[#3B82F6] font-black hover:underline transition-all">Privacy</Link>.
+            <label htmlFor="terms" className="text-[11px] font-bold text-[#4a3c60] leading-normal uppercase tracking-widest font-sans cursor-pointer">
+              Agree to <Link href="/terms" className="text-[#5e4a7a] font-bold hover:underline transition-all">Terms</Link> & <Link href="/privacy" className="text-[#5e4a7a] font-bold hover:underline transition-all">Privacy</Link>.
             </label>
           </div>
 
-          <div className="flex items-start space-x-3">
+          <div className="flex items-start space-x-3 ml-1">
             <Checkbox
               id="updates"
               checked={receiveUpdates}
               onCheckedChange={setReceiveUpdates}
-              className="mt-1 border-slate-300 data-[state=checked]:bg-[#3B82F6] data-[state=checked]:border-[#3B82F6] transition-all"
+              className="mt-1 border-[rgba(160,140,190,0.4)] data-[state=checked]:bg-[#5e4a7a] data-[state=checked]:border-[#5e4a7a] rounded-md transition-all h-5 w-5"
             />
-            <label htmlFor="updates" className="text-[9px] font-bold text-[#3E4652] leading-normal uppercase tracking-widest font-plus-jakarta cursor-pointer">
+            <label htmlFor="updates" className="text-[11px] font-bold text-[#4a3c60] leading-normal uppercase tracking-widest font-sans cursor-pointer">
               Receive release node protocols.
             </label>
           </div>
@@ -421,19 +402,19 @@ function RegisterForm() {
 
         <Button
           type="submit"
-          className="w-full h-12 bg-[#F9C80E] hover:bg-[#eac00d] text-[#0C1B33] rounded-[6px] font-black text-xs uppercase tracking-[0.15em] transition-all active:scale-[0.98] shadow-subtle mt-2 font-plus-jakarta"
+          className="w-full h-[54px] bg-[#2d253b] hover:bg-[#3e3152] text-white rounded-[60px] font-bold text-sm uppercase tracking-[0.1em] transition-all active:scale-[0.98] shadow-lg shadow-[#2d253b]/10 mt-4 cursor-pointer border-none"
           disabled={loading}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Deploy Account"}
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Deploy Account"}
         </Button>
       </form>
 
 
 
-      <div className="pt-6 text-center">
-        <p className="text-xs font-bold text-[#3E4652] uppercase tracking-widest font-plus-jakarta">
+      <div className="pt-6 text-center border-t border-[rgba(160,140,190,0.1)]">
+        <p className="text-sm font-medium text-[#4a3c60] font-sans">
           Already registered?{" "}
-          <Link href="/auth/login" className="text-[#3B82F6] font-black hover:underline ml-1">
+          <Link href="/auth/login" className="text-[#5e4a7a] font-bold hover:underline ml-1 transition-all decoration-[#5e4a7a]/30 underline-offset-4">
             Log in instead
           </Link>
         </p>
@@ -447,7 +428,7 @@ export default function Register() {
     <AuthLayout
       title="Join the Network"
       subtitle="Start your zero-friction content scale today."
-      visualTitle={<>Deploy your <br /><span className='text-[#3B82F6]'>Social Influence</span> <br />with Intelligence.</>}
+      visualTitle={<>Deploy your <br /><span className="bg-gradient-to-br from-[#5e4a7a] to-[#3a2e4a] bg-clip-text text-transparent font-bold">Social Influence</span> <br />with Intelligence.</>}
       visualFeatures={[
         "Multi-platform scheduling across every major node.",
         "AI-powered resonance optimization for peak window triggers.",
@@ -456,7 +437,7 @@ export default function Register() {
     >
       <Suspense fallback={
         <div className="flex justify-center p-8">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <Loader2 className="w-8 h-8 animate-spin text-[#5e4a7a]" />
         </div>
       }>
         <RegisterForm />
