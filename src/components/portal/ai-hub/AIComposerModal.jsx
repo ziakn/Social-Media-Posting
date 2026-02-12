@@ -244,24 +244,51 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
     // Determine what types are allowed when opening gallery based on selected platforms
     // Determined to always allow both types to prevent "video-only" lock-ins
     // We handle compatibility via the visual warnings instead of hard filtering
-    const getAllowedGalleryTypes = () => ['image', 'video'];
+    const getAllowedGalleryTypes = () => {
+        if (mediaItems.length === 0) return ['image', 'video'];
+        const types = new Set(mediaItems.map(m => m.type));
+        if (types.has('video')) return ['video']; // Only show video if video is selected (though we block selection of > 1)
+        if (types.has('image')) return ['image'];
+        return ['image', 'video'];
+    };
 
     const handleGallerySelect = (selectedItems) => {
         const items = Array.isArray(selectedItems) ? selectedItems : [selectedItems];
 
+        // 1. Check total count
         if (items.length + mediaItems.length > 20) {
-            toast.error("Maximum 20 files allowed (Instagram Limit)");
+            toast.error("Maximum 20 files allowed");
             return;
         }
 
-        const newItems = items.map(item => ({
+        const incomingItems = items.map(item => ({
             url: item.fileUrl,
             type: item.mediaType || (item.fileType?.startsWith('image/') ? 'image' : 'video')
         }));
 
-        setMediaItems(prev => [...prev, ...newItems]);
+        const existingTypes = new Set(mediaItems.map(m => m.type));
+        const incomingTypes = new Set(incomingItems.map(m => m.type));
+        const hasExistingVideo = existingTypes.has('video');
+        const hasExistingImage = existingTypes.has('image');
+        const hasIncomingVideo = incomingTypes.has('video');
+        const hasIncomingImage = incomingTypes.has('image');
+
+        // 2. Prevent mixing image and video
+        if ((hasExistingVideo && hasIncomingImage) || (hasExistingImage && hasIncomingVideo) || (hasIncomingImage && hasIncomingVideo)) {
+            toast.error("Cannot mix balance images and videos. Please select only one type.");
+            return;
+        }
+
+        // 3. Prevent multiple videos
+        const totalVideos = mediaItems.filter(m => m.type === 'video').length + incomingItems.filter(m => m.type === 'video').length;
+        if (totalVideos > 1) {
+            toast.error("Only one video is allowed per post.");
+            return;
+        }
+
+        setMediaItems(prev => [...prev, ...incomingItems]);
         setGalleryOpen(false);
-        toast.success(`Added ${items.length} file(s) from gallery`);
+        toast.success(`Added ${items.length} file(s)`);
     };
 
     const handlePost = async () => {
@@ -676,7 +703,14 @@ export default function AIComposerModal({ open, onOpenChange, selectedAccounts =
                                             </div>
                                             <div className="text-left">
                                                 <div className="text-sm sm:text-base font-bold text-slate-900 group-hover:text-primary transition-colors">Select from Media Store</div>
-                                                <div className="text-[10px] sm:text-xs text-slate-500 font-medium">Browse and pick assets for your campaign</div>
+                                                <div className="text-[10px] sm:text-xs text-slate-500 font-medium">
+                                                    {mediaItems.some(m => m.type === 'video')
+                                                        ? "Video limit reached (1 video max)"
+                                                        : mediaItems.length > 0 && mediaItems[0].type === 'image'
+                                                            ? "Add more images (Mixing types disabled)"
+                                                            : "Browse and pick assets for your campaign"
+                                                    }
+                                                </div>
                                             </div>
                                         </div>
                                     </Button>

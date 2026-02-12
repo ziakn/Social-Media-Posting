@@ -222,6 +222,9 @@ async function pinterestProcessor(job) {
         }
 
         console.log(`[Pinterest Worker] Creating Pin for ${postId}...`);
+        console.log(`[Pinterest Worker] Source Type: ${pinData.media_source?.source_type}`);
+        console.log(`[Pinterest Worker] Item Count: ${pinData.media_source?.items?.length}`);
+
         const result = await makePinterestRequest("/pins", pinData, accessToken);
 
         // 5. Update Firestore

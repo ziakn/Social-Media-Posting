@@ -162,13 +162,36 @@ async function linkedinProcessor(job) {
             }
         };
 
-        // Handle Media
-        if (post.videoUrl || post.imageUrl) {
-            // Prioritize video if present, otherwise image
+        // Handle Media (Revised for Multi-Asset)
+        const mediaItems = post.content?.media || [];
+        if (mediaItems.length > 0) {
+            console.log(`[LinkedIn Worker] Processing ${mediaItems.length} media items for post ${postId}`);
+
+            const uploadedAssets = [];
+            for (const item of mediaItems) {
+                const asset = await uploadMedia(accessToken, authorUrn, item.url, item.type);
+                uploadedAssets.push({
+                    status: "READY",
+                    description: {
+                        text: post.text || "Post Media"
+                    },
+                    media: asset,
+                    title: {
+                        text: post.text?.substring(0, 30) || "Post Media"
+                    }
+                });
+            }
+
+            // Determine Group Category (Mixes not allowed by UI, so we pick first)
+            const overallCategory = mediaItems[0].type.toUpperCase();
+            postBody.specificContent["com.linkedin.ugc.ShareContent"].shareMediaCategory = overallCategory === 'VIDEO' ? 'VIDEO' : 'IMAGE';
+            postBody.specificContent["com.linkedin.ugc.ShareContent"].media = uploadedAssets;
+        } else if (post.videoUrl || post.imageUrl) {
+            // Legacy/Fallback for single assets
             const mediaType = post.videoUrl ? "video" : "image";
             const mediaUrl = post.videoUrl || post.imageUrl;
 
-            console.log(`[LinkedIn Worker] Processing ${mediaType} for post ${postId}`);
+            console.log(`[LinkedIn Worker] Processing legacy ${mediaType} for post ${postId}`);
             const asset = await uploadMedia(accessToken, authorUrn, mediaUrl, mediaType);
 
             postBody.specificContent["com.linkedin.ugc.ShareContent"].shareMediaCategory = mediaType.toUpperCase();
@@ -186,6 +209,9 @@ async function linkedinProcessor(job) {
 
         // Post to LinkedIn
         console.log(`[LinkedIn Worker] Creating UGC Post on LinkedIn...`);
+        console.log(`[LinkedIn Worker] Payload Media Count: ${postBody.specificContent["com.linkedin.ugc.ShareContent"].media?.length}`);
+        // console.log(JSON.stringify(postBody, null, 2)); // Uncomment for full debug
+
         const postRes = await fetch("https://api.linkedin.com/v2/ugcPosts", {
             method: "POST",
             headers: {

@@ -50,7 +50,7 @@ export const PLATFORM_CAPABILITIES = {
     },
     pinterest: {
         allowedTypes: ['image', 'video'],
-        maxItems: 1,
+        maxItems: 5, // Carousel limit
         allowMixed: false,
         maxCaption: 500,
         label: 'Pinterest'

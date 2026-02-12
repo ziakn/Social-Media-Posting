@@ -153,8 +153,10 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls, 
                         case "linkedin":
                             result = await createLinkedinPost({
                                 text: text,
-                                imageUrl: mediaUrls && mediaUrls.length && detectMediaType(mediaUrls[0]) !== 'video' ? mediaUrls[0] : null,
-                                videoUrl: mediaUrls && mediaUrls.length && detectMediaType(mediaUrls[0]) === 'video' ? mediaUrls[0] : null,
+                                media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({
+                                    url,
+                                    type: detectMediaType(url)
+                                })) : [],
                                 accountId: account.id,
                                 scheduledTime: scheduledTime
                             });
@@ -174,7 +176,7 @@ export async function createAiPost({ accountIds, targetIds, content, mediaUrls, 
                                 pageId: target.id || target.pageId || account.accountId,
                                 message: text,
                                 media: mediaUrls && mediaUrls.length ? mediaUrls.map(url => ({ url, type: detectMediaType(url) })) : [],
-                                postType: mediaUrls && mediaUrls.length && detectMediaType(mediaUrls[0]) === 'video' ? "video" : "image",
+                                postType: mediaUrls && mediaUrls.length > 1 ? "carousel" : (mediaUrls && mediaUrls.length && detectMediaType(mediaUrls[0]) === 'video' ? "video" : "image"),
                                 boardId: pinterestBoards ? pinterestBoards[account.accountId] : null,
                                 scheduling: scheduledTime ? scheduledTime.toISOString() : null
                             });

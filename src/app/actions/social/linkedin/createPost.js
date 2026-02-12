@@ -141,6 +141,7 @@ export async function createLinkedinPost({
     text,
     imageUrl,
     videoUrl,
+    media,
     scheduledTime,
     accountId: customAccountId,
 }) {
@@ -190,13 +191,17 @@ export async function createLinkedinPost({
             delete: 0
         };
 
-        if (imageUrl) postData.content.media.push({ type: "image", url: imageUrl });
-        if (videoUrl) postData.content.media.push({ type: "video", url: videoUrl });
+        if (media && media.length) {
+            postData.content.media = media;
+        } else {
+            if (imageUrl) postData.content.media.push({ type: "image", url: imageUrl });
+            if (videoUrl) postData.content.media.push({ type: "video", url: videoUrl });
+        }
 
         // Backward compatibility for existing UI
         postData.text = text || "";
-        postData.imageUrl = imageUrl || null;
-        postData.videoUrl = videoUrl || null;
+        postData.imageUrl = (media && media.length && media[0].type === 'image') ? media[0].url : (imageUrl || null);
+        postData.videoUrl = (media && media.length && media[0].type === 'video') ? media[0].url : (videoUrl || null);
 
         if (scheduledAt) postData.scheduledAt = scheduledAt;
 
