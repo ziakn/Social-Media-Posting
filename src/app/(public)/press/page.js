@@ -15,6 +15,7 @@ import {
     Mic2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export default function PressPage() {
     const pressKits = [
@@ -58,6 +59,7 @@ export default function PressPage() {
 
     return (
         <main className="bg-white min-h-screen font-[420] text-slate-600">
+            <JsonLdSchema type="WebSite" data={{ "@type": "NewsMediaOrganization", "name": "UNI.social Newsroom" }} />
             {/* 🚀 Hero Section */}
             <section className="pt-32 pb-24 bg-slate-900 text-white relative overflow-hidden text-center">
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
@@ -151,6 +153,13 @@ export default function PressPage() {
 }
 
 export const metadata = {
-    title: "Press & Media | UNI.social - Latest News & Brand Assets",
-    description: "Access official UNI.social press releases, brand kits, and media assets. Contact our PR team for inquiries.",
+    title: "Press & Media Hub | UNI.social News & Assets",
+    description: "Official press releases, high-resolution brand assets, and media contact information for UNI.social.",
+    keywords: [
+        "UNI.social press releases",
+        "social hub brand assets",
+        "media relations UNI.social",
+        "social media automation news",
+        "press kit download"
+    ]
 };

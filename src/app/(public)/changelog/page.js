@@ -4,6 +4,19 @@ import {
     Share2, Globe, Shield, ArrowRight, Layers, Layout
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
+
+export const metadata = {
+    title: "Product Changelog | UNI.social - Latest AI Social Features",
+    description: "Stay informed about our latest features, optimizations, and technical milestones. We're building the future of social automation.",
+    keywords: [
+        "product updates",
+        "UNI.social changelog",
+        "AI synchronizer release",
+        "social media tool updates",
+        "new social integrations 2026"
+    ]
+};
 
 export default function ChangelogPage() {
     const logs = [
@@ -66,6 +79,7 @@ export default function ChangelogPage() {
 
     return (
         <main className="bg-white min-h-screen font-[420] text-slate-600">
+            <JsonLdSchema type="WebSite" data={{ "@type": "CreativeWorkSeries", "name": "UNI.social Release Notes" }} />
             {/* 🚀 Hero Section */}
             <section className="pt-32 pb-24 bg-slate-900 text-white relative overflow-hidden text-center">
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
@@ -165,8 +179,3 @@ export default function ChangelogPage() {
         </main>
     );
 }
-
-export const metadata = {
-    title: "Changelog | UNI.social - Latest Features & Updates",
-    description: "Stay up to date with the latest features, improvements, and fixes we've implemented at UNI.social.",
-};

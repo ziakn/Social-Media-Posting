@@ -15,10 +15,18 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export const metadata = {
-    title: "Social Media Solutions for Agencies, Creators, and Businesses | UNI.social",
-    description: "Automate social media growth for creators, SMBs, and agencies across TikTok, Pinterest, Instagram, and more.",
+    title: "Social Media Solutions for Agencies & Creators | UNI.social",
+    description: "Tailored social media automation for high-growth agencies, creators, and e-commerce brands. Scale your presence on TikTok, Instagram, and Pinterest.",
+    keywords: [
+        "social media for agencies",
+        "creator growth tools",
+        "e-commerce social automation",
+        "multi-account social management",
+        "automated social scaling"
+    ]
 };
 
 const solutions = [
@@ -59,6 +67,7 @@ const solutions = [
 export default function SolutionsPage() {
     return (
         <div className="bg-white pt-32 pb-24 font-[420] text-slate-600">
+            <JsonLdSchema type="WebSite" data={{ "@type": "Service", "name": "UNI.social Managed Solutions" }} />
             <div className="container mx-auto px-6 max-w-[1280px]">
                 {/* --- Header --- */}
                 <div className="max-w-4xl mx-auto text-center mb-32 space-y-6">

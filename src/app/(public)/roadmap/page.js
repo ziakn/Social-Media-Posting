@@ -4,6 +4,7 @@ import {
     Sparkles, Globe, ArrowRight, Star, Shield, Cpu
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export default function RoadmapPage() {
     const milestones = [
@@ -41,6 +42,7 @@ export default function RoadmapPage() {
 
     return (
         <main className="bg-white min-h-screen font-[420] text-slate-600">
+            <JsonLdSchema type="WebSite" data={{ "@type": "CreativeWork", "name": "UNI.social Roadmap" }} />
             {/* 🚀 Hero Section */}
             <section className="pt-32 pb-24 bg-slate-900 text-white relative overflow-hidden text-center">
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
@@ -129,4 +131,11 @@ export default function RoadmapPage() {
 export const metadata = {
     title: "Product Roadmap | UNI.social - The Future of Social Distribution",
     description: "Explore the upcoming features and milestones for UNI.social. See our plans for AI expansion and global distribution.",
+    keywords: [
+        "social media roadmap 2026",
+        "AI posting features roadmap",
+        "future social media tools",
+        "UNI.social development plans",
+        "social media analytics roadmap"
+    ]
 };

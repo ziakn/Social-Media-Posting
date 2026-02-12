@@ -15,10 +15,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import BackgroundCanvas from "@/components/home/BackgroundCanvas";
 import NewFooter from "@/components/home/NewFooter";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export const metadata = {
-  title: "About Us | The Mission Behind UNI.social",
+  title: "About UNI.social | Designing the Future of Social Distribution",
   description: "Learn about UNI.social's mission to simplify social media management for creators and agencies with AI-powered tools.",
+  keywords: [
+    "social media mission",
+    "UNI.social team",
+    "AI social distribution history",
+    "digital creator tools",
+    "about socialhub"
+  ]
 };
 
 const stats = [
@@ -31,6 +39,7 @@ const stats = [
 export default function AboutPage() {
   return (
     <main className="flex flex-col min-h-screen relative font-sans">
+      <JsonLdSchema type="Organization" />
       <BackgroundCanvas />
 
       <div className="relative z-20 flex flex-col w-full">

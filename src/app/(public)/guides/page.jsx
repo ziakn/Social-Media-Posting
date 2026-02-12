@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import BackgroundCanvas from "@/components/home/BackgroundCanvas";
 import NewFooter from "@/components/home/NewFooter";
 import { cn } from "@/lib/utils";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export default function GuidePage() {
     const categories = [

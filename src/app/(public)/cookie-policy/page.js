@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { Cookie, ShieldCheck, Lock, Eye, Bell, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export const metadata = {
-    title: "Cookie Policy | UNI.social",
-    description: "Learn how UNI.social uses cookies and similar technologies to provide, customize, and improve our services.",
+    title: "Cookie Policy | UNI.social - Technical Disclosure",
+    description: "Learn how UNI.social uses cookies and similar technologies to provide, customize, and improve our social media distribution services.",
+    keywords: [
+        "cookie policy",
+        "tracking technologies",
+        "UNI.social privacy",
+        "social media tool cookies",
+        "data transparency"
+    ]
 };
 
 export default function CookiePolicyPage() {
     return (
         <main className="bg-white min-h-screen font-[420] text-slate-600 leading-relaxed">
+            <JsonLdSchema type="WebSite" data={{ "@type": "WebPage", "name": "UNI.social Cookie Policy" }} />
             {/* 🚀 Simple Header */}
             <section className="pt-32 pb-16 bg-slate-50 border-b border-slate-100">
                 <div className="container mx-auto px-6 max-w-[800px]">

@@ -4,9 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import BackgroundCanvas from "@/components/home/BackgroundCanvas";
 import NewFooter from "@/components/home/NewFooter";
 
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
+
 export const metadata = {
-  title: "Terms of Service | UNI.social Social Media Tool",
-  description: "Read our terms of service to understand your rights and responsibilities when using UNI.social.",
+  title: "Master Service Agreement | UNI.social Terms of Service",
+  description: "Read our terms of service to understand your rights, responsibilities, and the legal framework for using the UNI.social distribution engine.",
+  keywords: [
+    "terms of service",
+    "social media agreement",
+    "MSA socialhb",
+    "platform usage terms",
+    "legal social management"
+  ]
 };
 
 export default function TermsOfService() {
@@ -31,6 +40,7 @@ export default function TermsOfService() {
 
   return (
     <main className="flex flex-col min-h-screen relative font-sans">
+      <JsonLdSchema type="WebSite" data={{ "@type": "WebPage", "name": "UNI.social Terms of Service" }} />
       <BackgroundCanvas />
 
       <div className="relative z-20 flex flex-col w-full">

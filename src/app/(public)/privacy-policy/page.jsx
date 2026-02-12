@@ -4,9 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import BackgroundCanvas from "@/components/home/BackgroundCanvas";
 import NewFooter from "@/components/home/NewFooter";
 
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
+
 export const metadata = {
-  title: "Privacy Policy | UNI.social Social Media Tool",
-  description: "Our privacy policy explains how we protect your data and stay compliant with global standards.",
+  title: "Privacy Protocol | UNI.social Data Security & Compliance",
+  description: "Our privacy policy outlines the technical and legal frameworks we use to protect your digital presence and authorization tokens.",
+  keywords: [
+    "data privacy policy",
+    "GDPR compliance social media",
+    "secure OAuth tokens",
+    "AES-256 encryption",
+    "UNI.social legal"
+  ]
 };
 
 export default function PrivacyPolicy() {
@@ -31,6 +40,7 @@ export default function PrivacyPolicy() {
 
   return (
     <main className="flex flex-col min-h-screen relative font-sans">
+      <JsonLdSchema type="WebSite" data={{ "@type": "WebPage", "name": "UNI.social Privacy Policy" }} />
       <BackgroundCanvas />
 
       <div className="relative z-20 flex flex-col w-full">

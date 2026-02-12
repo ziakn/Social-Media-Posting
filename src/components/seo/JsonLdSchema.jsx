@@ -1,33 +1,36 @@
-export default function JsonLdSchema() {
+export default function JsonLdSchema({ type = "Organization", data = {} }) {
+    const baseUrl = "https://social-hub-demo.vercel.app";
+
     const organizationSchema = {
         "@context": "https://schema.org",
         "@type": "Organization",
-        "name": "SocialHub",
-        "url": "https://social-hub-demo.vercel.app",
-        "logo": "https://social-hub-demo.vercel.app/logo.png",
+        "name": "UNI.social",
+        "url": baseUrl,
+        "logo": `${baseUrl}/logo.png`,
+        "description": "Enterprise-grade social media management and AI-driven distribution hub.",
         "sameAs": [
-            "https://twitter.com/socialhub",
-            "https://instagram.com/socialhub",
-            "https://linkedin.com/company/socialhub"
+            "https://twitter.com/unisocial",
+            "https://instagram.com/unisocial",
+            "https://linkedin.com/company/unisocial"
         ],
         "contactPoint": {
             "@type": "ContactPoint",
-            "telephone": "+1-555-SOCIAL-HUB",
+            "telephone": "+1-555-UNI-SOCIAL",
             "contactType": "customer service",
-            "email": "support@socialhub.com"
+            "email": "support@uni.social"
         }
     };
 
     const websiteSchema = {
         "@context": "https://schema.org",
         "@type": "WebSite",
-        "name": "SocialHub",
-        "url": "https://social-hub-demo.vercel.app",
+        "name": "UNI.social",
+        "url": baseUrl,
         "potentialAction": {
             "@type": "SearchAction",
             "target": {
                 "@type": "EntryPoint",
-                "urlTemplate": "https://social-hub-demo.vercel.app/search?q={search_term_string}"
+                "urlTemplate": `${baseUrl}/search?q={search_term_string}`
             },
             "query-input": "required name=search_term_string"
         }
@@ -36,7 +39,7 @@ export default function JsonLdSchema() {
     const softwareAppSchema = {
         "@context": "https://schema.org",
         "@type": "SoftwareApplication",
-        "name": "SocialHub",
+        "name": "UNI.social",
         "operatingSystem": "Web",
         "applicationCategory": "Social Media Management",
         "aggregateRating": {
@@ -51,20 +54,28 @@ export default function JsonLdSchema() {
         }
     };
 
+    const schemas = [];
+    if (type === "Organization") schemas.push(organizationSchema);
+    if (type === "WebSite" || type === "All") schemas.push(websiteSchema);
+    if (type === "SoftwareApplication" || type === "All") schemas.push(softwareAppSchema);
+
+    // Add custom data if provided
+    if (Object.keys(data).length > 0) {
+        schemas.push({
+            "@context": "https://schema.org",
+            ...data
+        });
+    }
+
     return (
         <>
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
-            />
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-            />
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema) }}
-            />
+            {schemas.map((s, idx) => (
+                <script
+                    key={idx}
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }}
+                />
+            ))}
         </>
     );
 }

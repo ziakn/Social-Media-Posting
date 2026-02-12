@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { Shield, FileCheck, Users, Globe, Lock, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export const metadata = {
-    title: "Data Processing Agreement (DPA) | UNI.social",
-    description: "Our Data Processing Agreement (DPA) outlines how we handle personal data on behalf of our customers.",
+    title: "Data Processing Agreement (DPA) | UNI.social Legal",
+    description: "Our Data Processing Agreement (DPA) outlines how we handle personal data on behalf of our enterprise customers.",
+    keywords: [
+        "data processing agreement",
+        "social media DPA",
+        "enterprise data compliance",
+        "UNI.social legal frameworks",
+        "sub-processor disclosure"
+    ]
 };
 
 export default function DPAPage() {
     return (
         <main className="bg-white min-h-screen font-[420] text-slate-600 leading-relaxed">
+            <JsonLdSchema type="WebSite" data={{ "@type": "WebPage", "name": "UNI.social Data Processing Agreement" }} />
             {/* 🚀 Simple Header */}
             <section className="pt-32 pb-16 bg-slate-50 border-b border-slate-100">
                 <div className="container mx-auto px-6 max-w-[800px]">

@@ -2,17 +2,24 @@ import PricingContent from "./PricingContent";
 import { getPublicPackages } from "@/app/actions/website/packages/packagesActions";
 
 export const metadata = {
-    title: "Pricing Plans for Social Media Management | UNI.social",
-    description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content. Start for free and upgrade when you need more power.",
+    title: "Professional Social Media Management Pricing | UNI.social",
+    description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, and LinkedIn. Start for free and scale with enterprise-grade distribution tools.",
+    keywords: [
+        "social media tool pricing",
+        "affordable social media scheduler",
+        "enterprise social management cost",
+        "multi-account social posting prices",
+        "UNI.social plans"
+    ],
     openGraph: {
         title: "Pricing Plans for Social Media Management | UNI.social",
-        description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content.",
+        description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, and LinkedIn content.",
         images: ["/og-pricing.png"],
     },
     twitter: {
         card: "summary_large_image",
         title: "Pricing Plans for Social Media Management | UNI.social",
-        description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, Bluesky and YouTube content.",
+        description: "Compare plans for scheduling, posting, and analyzing TikTok, Instagram, Pinterest, and LinkedIn content.",
     }
 };
 
@@ -33,7 +40,7 @@ export default async function PricingPage() {
         "offers": [
             {
                 "@type": "Offer",
-                "url": "https://socialhub.ai/pricing",
+                "url": "https://social-hub-demo.vercel.app/pricing",
                 "priceCurrency": "USD",
                 "price": "0.00",
                 "name": "Free / Starter",
@@ -41,7 +48,7 @@ export default async function PricingPage() {
             },
             {
                 "@type": "Offer",
-                "url": "https://socialhub.ai/pricing",
+                "url": "https://social-hub-demo.vercel.app/pricing",
                 "priceCurrency": "USD",
                 "price": "39.00",
                 "name": "Professional",

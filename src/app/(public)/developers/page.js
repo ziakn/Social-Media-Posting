@@ -18,6 +18,7 @@ import {
     Cloud
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export default function DevelopersPage() {
     const resources = [
@@ -58,6 +59,7 @@ console.log('Post synchronized:', post.id);`;
 
     return (
         <main className="bg-white min-h-screen font-[420] text-slate-600">
+            <JsonLdSchema type="SoftwareApplication" data={{ "@type": "WebAPI", "name": "UNI.social Distribution API" }} />
             {/* 🚀 Hero Section */}
             <section className="pt-32 pb-24 bg-slate-900 text-white relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
@@ -166,6 +168,13 @@ console.log('Post synchronized:', post.id);`;
 }
 
 export const metadata = {
-    title: "Developer Portal | UNI.social - APIs & SDKs for Social Automation",
-    description: "Access UNI.social APIs, SDKs, and webhooks. Build integrated cross-platform social media distribution engines.",
+    title: "Developer Portal | UNI.social APIs, SDKs & Webhooks",
+    description: "Build on the UNI.social distribution engine. Documentation for REST APIs, SDKs, and real-time webhooks for developers.",
+    keywords: [
+        "social media API",
+        "automated posting SDK",
+        "TikTok developer tools",
+        "Instagram API integration",
+        "webhook distribution engine"
+    ]
 };

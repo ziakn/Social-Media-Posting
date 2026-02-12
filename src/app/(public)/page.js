@@ -13,9 +13,20 @@ import FinalCTA from "@/components/home/FinalCTA";
 import NewFooter from "@/components/home/NewFooter";
 import { getPublicPackages } from "@/app/actions/website/packages/packagesActions";
 
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
+
 export const metadata = {
-  title: "UNI.social · enterprise social management",
-  description: "Unified social media management for modern teams. Connect, publish, and analyze — all from a single interface.",
+  title: "UNI.social · Enterprise Social Media Distribution & AI Lab",
+  description: "The professional command center for multi-platform social media distribution. Schedule, synchronize, and analyze performance across TikTok, Instagram, Pinterest, and LinkedIn with AI precision.",
+  keywords: [
+    "enterprise social media management",
+    "multi-platform social distribution",
+    "AI social media scheduler",
+    "TikTok marketing automation",
+    "Pinterest growth engine",
+    "Instagram content planner",
+    "unified social dashboard"
+  ]
 };
 
 export default async function Home() {
@@ -24,6 +35,7 @@ export default async function Home() {
 
   return (
     <main className="flex flex-col min-h-screen relative font-sans text-[#1e1a2b]">
+      <JsonLdSchema type="All" />
       <BackgroundCanvas />
 
       <div className="relative z-20 flex flex-col w-full max-w-[1440px] mx-auto px-4 md:px-8">

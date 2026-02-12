@@ -13,10 +13,10 @@ const inter = Inter({
 
 export const metadata = {
   title: {
-    default: "SocialHub | #1 AI Social Media Scheduler & Analytics",
-    template: "%s | SocialHub"
+    default: "UNI.social | AI-Powered Social Media Management & Distribution",
+    template: "%s | UNI.social"
   },
-  description: "SocialHub is the ultimate AI-powered social media command center. Schedule, publish, and analyze performance across TikTok, Instagram, Pinterest, and Twitter from one dashboard.",
+  description: "UNI.social is the enterprise command center for automated social media distribution. Schedule, synchronize, and analyze performance across TikTok, Instagram, Pinterest, and LinkedIn.",
   keywords: [
     "social media scheduler",
     "AI social media management",

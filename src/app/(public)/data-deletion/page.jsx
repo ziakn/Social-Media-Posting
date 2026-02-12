@@ -1,15 +1,24 @@
 import Link from "next/link";
 import { Trash2, ShieldAlert, Database, Info, ArrowLeft, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export const metadata = {
-  title: "Data Deletion | UNI.social",
-  description: "Information on how to request the deletion of your data from the UNI.social platform.",
+  title: "Data Deletion Protocol | UNI.social - Right to be Forgotten",
+  description: "Official procedures for requesting the permanent deletion of your data and account from the UNI.social distribution engine.",
+  keywords: [
+    "data deletion request",
+    "remove UNI.social account",
+    "GDPR data rights",
+    "delete social media tokens",
+    "privacy control"
+  ]
 };
 
 export default function DataDeletionPage() {
   return (
     <main className="bg-white min-h-screen font-[420] text-slate-600 leading-relaxed">
+      <JsonLdSchema type="WebSite" data={{ "@type": "WebPage", "name": "UNI.social Data Deletion Instructions" }} />
       {/* 🚀 Simple Header */}
       <section className="pt-32 pb-16 bg-slate-50 border-b border-slate-100">
         <div className="container mx-auto px-6 max-w-[800px]">

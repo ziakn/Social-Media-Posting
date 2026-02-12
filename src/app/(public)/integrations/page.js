@@ -15,6 +15,7 @@ import { XLogo } from "@/components/icons/XLogo";
 import { LinkedinLogo } from "@/components/icons/LinkedinLogo";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import JsonLdSchema from "@/components/seo/JsonLdSchema";
 
 export default function IntegrationsPage() {
     const [search, setSearch] = useState("");
@@ -60,6 +61,7 @@ export default function IntegrationsPage() {
 
     return (
         <main className="bg-white min-h-screen font-[420] text-slate-600">
+            <JsonLdSchema type="WebSite" data={{ "@type": "CollectionPage", "name": "UNI.social Integrations Catalogue" }} />
             {/* 🚀 Hero Section */}
             <section className="pt-32 pb-24 bg-slate-900 text-white relative overflow-hidden text-center">
                 <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[100px] pointer-events-none" />
