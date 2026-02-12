@@ -40,7 +40,6 @@ const Footer = () => {
         ],
         Product: [
             { name: "Platform Overview", href: "/features" },
-            { name: "Integrations", href: "/integrations" },
             { name: "Pricing", href: "/pricing" },
             { name: "Roadmap", href: "/roadmap" },
         ],

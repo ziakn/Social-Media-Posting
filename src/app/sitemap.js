@@ -12,7 +12,6 @@ export default function sitemap() {
         "/press",
         "/developers",
         "/changelog",
-        "/integrations",
         "/roadmap",
         "/guides",
         "/terms-of-service",

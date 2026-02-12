@@ -253,7 +253,7 @@ function RegisterForm() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label htmlFor="password" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
               <Lock className="h-3.5 w-3.5 text-[#5e4a7a]" /> Secure Key
@@ -286,7 +286,7 @@ function RegisterForm() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <label htmlFor="creatorType" className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#4a3c60] flex items-center gap-2 font-sans ml-1">
               <Building2 className="h-3.5 w-3.5 text-[#5e4a7a]" /> Identity

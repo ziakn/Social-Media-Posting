@@ -30,7 +30,6 @@ export default function NewFooter() {
                     <h4 className="text-[1rem] font-semibold mb-6 text-[#332b41] uppercase tracking-[0.04em]">Product</h4>
                     <ul className="list-none m-0 p-0">
                         <li className="mb-3"><Link href="/features" className="no-underline text-[#4e3f5c] font-[420] text-[0.95rem] transition-all border-b border-transparent pb-1 hover:text-[#1e142b] hover:border-[#7a66a0]">Overview</Link></li>
-                        <li className="mb-3"><Link href="/integrations" className="no-underline text-[#4e3f5c] font-[420] text-[0.95rem] transition-all border-b border-transparent pb-1 hover:text-[#1e142b] hover:border-[#7a66a0]">Integrations</Link></li>
                         <li className="mb-3"><Link href="/pricing" className="no-underline text-[#4e3f5c] font-[420] text-[0.95rem] transition-all border-b border-transparent pb-1 hover:text-[#1e142b] hover:border-[#7a66a0]">Pricing</Link></li>
                         <li className="mb-3"><Link href="/roadmap" className="no-underline text-[#4e3f5c] font-[420] text-[0.95rem] transition-all border-b border-transparent pb-1 hover:text-[#1e142b] hover:border-[#7a66a0]">Roadmap</Link></li>
                     </ul>
