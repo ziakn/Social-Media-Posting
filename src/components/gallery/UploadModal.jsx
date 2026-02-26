@@ -34,7 +34,6 @@ export function UploadModal({ isOpen, onClose, onUpload }) {
     // Form state
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
-    const [category, setCategory] = useState("general");
 
     const fileInputRef = useRef(null);
 
@@ -113,8 +112,7 @@ export function UploadModal({ isOpen, onClose, onUpload }) {
             await onUpload({
                 file,
                 title,
-                description,
-                category
+                description
             });
 
             clearInterval(progressInterval);
@@ -138,7 +136,6 @@ export function UploadModal({ isOpen, onClose, onUpload }) {
         setPreview(null);
         setTitle("");
         setDescription("");
-        setCategory("general");
         setUploadProgress(0);
         onClose();
     };
@@ -224,21 +221,6 @@ export function UploadModal({ isOpen, onClose, onUpload }) {
                             placeholder="Image title"
                             disabled={isUploading}
                         />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="category">Category</Label>
-                        <Select value={category} onValueChange={setCategory} disabled={isUploading}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="general">General</SelectItem>
-                                <SelectItem value="news">News</SelectItem>
-                                <SelectItem value="events">Events</SelectItem>
-                                <SelectItem value="social">Social</SelectItem>
-                            </SelectContent>
-                        </Select>
                     </div>
 
                     <div className="grid gap-2">

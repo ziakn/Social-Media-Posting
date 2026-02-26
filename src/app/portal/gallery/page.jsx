@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   createGalleryItem,
   getUserGallery,
@@ -10,13 +10,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import {
   Search,
@@ -42,24 +36,20 @@ export default function GalleryPage() {
   // Filter State
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
-  const [filterCategory, setFilterCategory] = useState("all");
 
   // UI State
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
-  useEffect(() => {
-    loadGallery(true);
-  }, [filterType, filterCategory]);
+  const observerTarget = useRef(null);
 
-  const loadGallery = async (isInitial = false) => {
+  const loadGallery = useCallback(async (isInitial = false) => {
     try {
       if (!isInitial && !hasMore) return;
 
       setLoading(true);
       const result = await getUserGallery({
         mediaType: filterType === "all" ? "" : filterType,
-        category: filterCategory === "all" ? "" : filterCategory,
         limit: 10,
         cursor: isInitial ? null : nextCursor,
       });
@@ -80,7 +70,28 @@ export default function GalleryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterType, hasMore, nextCursor]);
+
+  useEffect(() => {
+    loadGallery(true);
+  }, [filterType]); // Note: only filterType triggers a full reload now
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadGallery(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadGallery]);
 
   const handleUpload = async (uploadData) => {
     try {
@@ -111,7 +122,6 @@ export default function GalleryPage() {
         storagePath: data.storagePath,
         title: title || file.name.replace(/\.[^/.]+$/, ""),
         description,
-        category,
       });
 
       toast.success("File uploaded successfully");
@@ -175,41 +185,24 @@ export default function GalleryPage() {
       <main className="container flex-1 py-6 space-y-6">
         {/* Filters & Search */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1 md:max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex-1 md:max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search media..."
-              className="pl-9"
+              className="pl-9 bg-muted/40 border-muted-foreground/20 focus-visible:ring-primary/30 rounded-full h-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[140px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="image">Images</SelectItem>
-                <SelectItem value="video">Videos</SelectItem>
-              </SelectContent>
-            </Select>
 
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-[140px]">
-                <Filter className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="general">General</SelectItem>
-                <SelectItem value="news">News</SelectItem>
-                <SelectItem value="events">Events</SelectItem>
-                <SelectItem value="social">Social</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center">
+            <Tabs value={filterType} onValueChange={setFilterType} className="w-full md:w-auto">
+              <TabsList className="grid w-full grid-cols-3 md:w-auto h-10 rounded-full bg-muted/50 p-1">
+                <TabsTrigger value="all" className="rounded-full px-6 text-sm">All Types</TabsTrigger>
+                <TabsTrigger value="image" className="rounded-full px-6 text-sm">Images</TabsTrigger>
+                <TabsTrigger value="video" className="rounded-full px-6 text-sm">Videos</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
 
@@ -228,16 +221,13 @@ export default function GalleryPage() {
               onDelete={handleDelete}
             />
 
-            {hasMore && (
-              <div className="mt-8 flex justify-center">
-                <Button
-                  variant="outline"
-                  onClick={() => loadGallery(false)}
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Load More
-                </Button>
+            {hasMore ? (
+              <div ref={observerTarget} className="mt-8 flex justify-center py-4">
+                {loading && <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />}
+              </div>
+            ) : (
+              <div className="mt-8 text-center text-sm text-muted-foreground py-4">
+                No more media to load
               </div>
             )}
           </>

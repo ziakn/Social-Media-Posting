@@ -5,16 +5,16 @@ import { GalleryItem } from "./GalleryItem";
 export function GalleryGrid({ items, onView, onDelete }) {
     if (!items || items.length === 0) {
         return (
-            <div className="flex h-[400px] w-full flex-col items-center justify-center rounded-lg border border-dashed bg-muted/30 p-8 text-center animate-in fade-in-50">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <div className="flex min-h-[400px] w-full flex-col items-center justify-center rounded-2xl border border-dashed border-border/60 bg-muted/10 p-12 text-center animate-in fade-in-50">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                     <svg
-                        className="h-6 w-6 text-muted-foreground"
+                        className="h-8 w-8 text-primary/80"
                         fill="none"
                         height="24"
                         stroke="currentColor"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth="2"
+                        strokeWidth="1.5"
                         viewBox="0 0 24 24"
                         width="24"
                         xmlns="http://www.w3.org/2000/svg"
@@ -24,16 +24,16 @@ export function GalleryGrid({ items, onView, onDelete }) {
                         <polyline points="21 15 16 10 5 21" />
                     </svg>
                 </div>
-                <h3 className="mt-4 text-lg font-semibold">No media found</h3>
-                <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                    Upload some images or videos to get started.
+                <h3 className="mt-6 text-xl font-semibold tracking-tight">No media found</h3>
+                <p className="mb-4 mt-2 max-w-sm text-sm text-muted-foreground">
+                    Your gallery is empty. Upload images or videos to start building your media library.
                 </p>
             </div>
         );
     }
 
     return (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        <div className="grid grid-cols-3 gap-1 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
             {items.map((item) => (
                 <GalleryItem
                     key={item.id}

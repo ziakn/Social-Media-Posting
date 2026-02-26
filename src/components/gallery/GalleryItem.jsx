@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Play, MoreVertical, Eye, Trash2, FileText } from "lucide-react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Play, MoreVertical, Eye, Trash2, FileText, Calendar } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -11,7 +11,6 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export function GalleryItem({ item, onView, onDelete }) {
@@ -20,37 +19,52 @@ export function GalleryItem({ item, onView, onDelete }) {
 
     return (
         <Card
-            className="group relative overflow-hidden border-0 bg-muted/20 transition-all hover:shadow-md"
+            className="group relative overflow-hidden rounded-md border-0 bg-muted/20 transition-all hover:shadow-lg"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             <CardContent className="p-0">
                 <div className="relative aspect-square w-full overflow-hidden bg-muted">
                     {item.mediaType === "image" ? (
-                        <Image
-                            src={item.thumbnailUrl || item.fileUrl}
-                            alt={item.title || "Gallery Item"}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                        />
+                        <div className="relative h-full w-full">
+                            <img
+                                src={item.thumbnailUrl || item.fileUrl || "/placeholder-image.jpg"}
+                                alt={item.title || "Gallery Item"}
+                                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                onError={(e) => {
+                                    // Fallback if image fails to load
+                                    e.currentTarget.style.display = 'none';
+                                }}
+                            />
+                        </div>
                     ) : isVideo ? (
-                        <div className="flex h-full w-full items-center justify-center bg-black/5">
-                            {/* If we had a real thumbnail for video, we'd use it here. 
-                    For now, showing a placeholder or the video element itself if needed, 
-                    but video elements are heavy. Let's use a nice icon placeholder if no thumb. */}
-                            {item.thumbnailUrl && item.thumbnailUrl !== item.fileUrl ? (
-                                <Image
-                                    src={item.thumbnailUrl}
-                                    alt={item.title}
-                                    fill
-                                    className="object-cover opacity-80 transition-transform duration-300 group-hover:scale-105"
-                                />
-                            ) : (
-                                <div className="flex h-full w-full items-center justify-center bg-slate-900/10">
-                                    <Play className="h-12 w-12 text-slate-900/50" />
+                        <div className="relative flex h-full w-full items-center justify-center bg-black/5">
+                            {item.thumbnailUrl ? (
+                                <div className="relative h-full w-full">
+                                    <img
+                                        src={item.thumbnailUrl}
+                                        alt={item.title || "Video Thumbnail"}
+                                        className="h-full w-full object-cover opacity-90 transition-transform duration-300 group-hover:scale-105"
+                                    />
                                 </div>
+                            ) : item.fileUrl ? (
+                                <div className="relative h-full w-full bg-black">
+                                    <video
+                                        src={`${item.fileUrl}#t=0.1`}
+                                        className="h-full w-full object-cover opacity-80 transition-transform duration-300 group-hover:scale-105"
+                                        muted
+                                        playsInline
+                                        preload="metadata"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="absolute inset-0 bg-slate-900/10 transition-transform duration-300 group-hover:scale-105" />
                             )}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-white shadow-lg backdrop-blur-sm transition-transform duration-300 group-hover:scale-110">
+                                    <Play className="h-5 w-5 fill-current ml-1" />
+                                </div>
+                            </div>
                         </div>
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-muted">
@@ -58,9 +72,9 @@ export function GalleryItem({ item, onView, onDelete }) {
                         </div>
                     )}
 
-                    {/* Overlay Actions */}
+                    {/* Overlay Actions & Info */}
                     <div className={cn(
-                        "absolute inset-0 flex flex-col justify-between bg-gradient-to-b from-black/60 via-transparent to-black/60 p-3 opacity-0 transition-opacity duration-200",
+                        "absolute inset-0 flex flex-col justify-between bg-black/60 p-3 opacity-0 transition-opacity duration-300",
                         isHovered ? "opacity-100" : "opacity-0"
                     )}>
                         <div className="flex justify-end">
@@ -81,28 +95,30 @@ export function GalleryItem({ item, onView, onDelete }) {
                             </DropdownMenu>
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-3">
+                            <div className="text-white">
+                                <h3 className="line-clamp-1 text-sm font-semibold tracking-tight" title={item.title}>
+                                    {item.title}
+                                </h3>
+                                <p className="mt-1 flex items-center text-[11px] text-white/80">
+                                    <Calendar className="mr-1 h-3 w-3" />
+                                    {new Date(item.createdAt).toLocaleDateString(undefined, {
+                                        month: 'short', day: 'numeric', year: 'numeric'
+                                    })}
+                                </p>
+                            </div>
                             <Button
                                 variant="secondary"
                                 size="sm"
                                 className="w-full bg-white/90 text-xs font-medium text-black hover:bg-white"
                                 onClick={() => onView(item)}
                             >
-                                View
+                                View Details
                             </Button>
                         </div>
                     </div>
                 </div>
             </CardContent>
-            <CardFooter className="flex flex-col items-start gap-1 p-3">
-                <div className="flex w-full items-center justify-between">
-                    <h3 className="truncate text-sm font-medium leading-none" title={item.title}>{item.title}</h3>
-                    {item.mediaType === 'video' && <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">Video</Badge>}
-                </div>
-                <p className="line-clamp-1 text-xs text-muted-foreground">
-                    {new Date(item.createdAt).toLocaleDateString()}
-                </p>
-            </CardFooter>
         </Card>
     );
 }

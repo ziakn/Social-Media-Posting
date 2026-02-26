@@ -51,9 +51,6 @@ export function MediaDetailDialog({ item, isOpen, onClose }) {
                             </div>
 
                             <div className="flex flex-wrap gap-2 mt-3">
-                                <Badge variant="secondary" className="capitalize">
-                                    {item.category}
-                                </Badge>
                                 <Badge variant="outline" className="capitalize">
                                     {item.mediaType}
                                 </Badge>

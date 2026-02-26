@@ -230,7 +230,7 @@ export default function GallerySelector({
                 className="flex-1 flex flex-col min-h-0"
             >
                 <div className="px-4 pt-4 border-b flex items-center justify-between shrink-0">
-                    <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="library">Library</TabsTrigger>
                         <TabsTrigger value="upload">Upload</TabsTrigger>
                     </TabsList>
@@ -241,36 +241,42 @@ export default function GallerySelector({
                     className="flex-1 flex flex-col min-h-0 m-0 data-[state=active]:flex"
                 >
                     {/* Search Bar */}
-                    <div className="p-4 border-b shrink-0">
+                    <div className="p-4 border-b shrink-0 bg-muted/5">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                             <Input
-                                placeholder="Search files..."
+                                placeholder="Search media..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-10"
+                                className="pl-10 rounded-full bg-muted/50 border-transparent focus-visible:ring-1 focus-visible:bg-background focus-visible:border-border transition-colors h-10"
                             />
                         </div>
                     </div>
 
                     {/* Grid */}
-                    <ScrollArea className="flex-1 p-4">
+                    <ScrollArea className="flex-1 p-0">
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center h-40">
-                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                <p className="mt-2 text-sm text-muted-foreground">
+                            <div className="flex flex-col items-center justify-center h-64">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary/50" />
+                                <p className="mt-4 text-sm text-muted-foreground">
                                     Loading library...
                                 </p>
                             </div>
                         ) : filteredItems.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-40 text-center">
-                                <p className="text-muted-foreground mb-2">No items found</p>
-                                <Button variant="outline" onClick={() => setActiveTab("upload")}>
-                                    Upload New File
+                            <div className="flex flex-col items-center justify-center h-64 text-center px-4 animate-in fade-in-50">
+                                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-4">
+                                    <File className="h-6 w-6 text-primary/80" />
+                                </div>
+                                <h3 className="text-lg font-semibold tracking-tight">No media found</h3>
+                                <p className="text-muted-foreground mt-1 mb-4 text-sm max-w-[250px]">
+                                    Upload images or videos to start building your media library.
+                                </p>
+                                <Button variant="outline" size="sm" onClick={() => setActiveTab("upload")}>
+                                    Upload Media
                                 </Button>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-1 p-1">
                                 {filteredItems.map((item) => {
                                     const isSelected = selectedItems.some((i) => i.id === item.id);
                                     return (
@@ -278,54 +284,65 @@ export default function GallerySelector({
                                             key={item.id}
                                             onClick={() => handleSelect(item)}
                                             className={cn(
-                                                "group relative aspect-square rounded-lg border overflow-hidden cursor-pointer transition-all",
+                                                "group relative aspect-square rounded-md overflow-hidden cursor-pointer transition-all border-0 bg-muted/20",
                                                 isSelected
-                                                    ? "border-primary ring-2 ring-primary ring-offset-0"
-                                                    : "border-gray-100 hover:border-primary/50"
+                                                    ? "ring-4 ring-primary ring-inset z-10"
+                                                    : "hover:ring-2 hover:ring-primary/50 hover:ring-inset"
                                             )}
                                         >
                                             {item.mediaType === MEDIA_TYPES.IMAGE ? (
                                                 <img
-                                                    src={item.thumbnailUrl || item.fileUrl}
+                                                    src={item.thumbnailUrl || item.fileUrl || "/placeholder-image.jpg"}
                                                     alt={item.fileName}
-                                                    className="w-full h-full object-cover"
+                                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                                 />
                                             ) : item.mediaType === MEDIA_TYPES.VIDEO ? (
-                                                <div className="relative w-full h-full">
-                                                    <video
-                                                        src={item.fileUrl}
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                                <div className="relative w-full h-full bg-black/5">
+                                                    {item.thumbnailUrl ? (
+                                                        <img
+                                                            src={item.thumbnailUrl}
+                                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                        />
+                                                    ) : (
+                                                        <video
+                                                            src={`${item.fileUrl}#t=0.1`}
+                                                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                                                            muted playsInline preload="metadata"
+                                                        />
+                                                    )}
                                                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                                        <div className="bg-black/30 rounded-full p-1.5 backdrop-blur-sm">
-                                                            <Play className="h-6 w-6 text-white fill-white" />
+                                                        <div className="bg-black/40 rounded-full h-8 w-8 flex items-center justify-center backdrop-blur-sm">
+                                                            <Play className="h-4 w-4 text-white fill-white ml-0.5" />
                                                         </div>
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center bg-muted">
-                                                    <File className="h-8 w-8 text-muted-foreground" />
+                                                    <File className="h-6 w-6 text-muted-foreground" />
                                                 </div>
                                             )}
 
                                             {/* Selection Indicator */}
                                             {isSelected && (
-                                                <div className="absolute top-1 right-1 bg-primary text-primary-foreground rounded-full p-0.5 shadow-sm">
-                                                    <Check className="h-3 w-3" />
+                                                <div className="absolute top-2 right-2 bg-primary text-primary-foreground rounded-full p-0.5 shadow-md z-20">
+                                                    <Check className="h-3 w-3" strokeWidth={3} />
                                                 </div>
                                             )}
 
                                             {/* Hover Info */}
-                                            <div className="absolute inset-x-0 bottom-0 bg-black/60 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-between">
-                                                <span className="text-xs text-white truncate max-w-[80%]">
+                                            <div className="absolute inset-0 bg-black/60 p-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center z-10">
+                                                {!isSelected && (
+                                                    <button
+                                                        onClick={(e) => handleDelete(e, item.id)}
+                                                        className="absolute top-2 right-2 text-white/80 hover:text-destructive bg-black/20 hover:bg-black/50 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                )}
+                                                <span className="text-xs font-medium text-white text-center line-clamp-2 px-2 pb-4 pt-6">
                                                     {item.title || item.fileName}
                                                 </span>
-                                                <button
-                                                    onClick={(e) => handleDelete(e, item.id)}
-                                                    className="text-white/80 hover:text-red-400"
-                                                >
-                                                    <Trash2 className="h-3 w-3" />
-                                                </button>
                                             </div>
                                         </div>
                                     );
@@ -356,10 +373,14 @@ export default function GallerySelector({
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (
-                                                <div className="relative w-full h-full">
-                                                    <video src={item.fileUrl} className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 flex items-center justify-center">
-                                                        <Play className="h-3 w-3 text-white fill-white shadow-lg" />
+                                                <div className="relative w-full h-full bg-black">
+                                                    {item.thumbnailUrl ? (
+                                                        <img src={item.thumbnailUrl} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <video src={`${item.fileUrl}#t=0.1`} className="w-full h-full object-cover" muted playsInline preload="metadata" />
+                                                    )}
+                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                        <Play className="h-4 w-4 text-white fill-white drop-shadow-md" />
                                                     </div>
                                                 </div>
                                             )}
