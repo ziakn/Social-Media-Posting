@@ -26,6 +26,7 @@ export async function GET() {
       userDoc = directDocSnap.data();
       userDocId = userId;
     } else {
+
       // 2. Fallback to query by 'id' field
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("id", "==", userId));
