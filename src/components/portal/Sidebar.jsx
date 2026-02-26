@@ -76,12 +76,12 @@ export function AppSidebar({ user, ...props }) {
       icon: LayoutDashboard,
       permission: "view_dashboard",
     },
-    {
-      title: "Composer",
-      url: "/portal/composer",
-      icon: PenSquare,
-      permission: "view_composer",
-    },
+    // {
+    //   title: "Composer",
+    //   url: "/portal/composer",
+    //   icon: PenSquare,
+    //   permission: "view_composer",
+    // },
     {
       title: "AI Social Hub",
       url: ROUTES.PORTAL_AI_HUB,
