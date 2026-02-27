@@ -5,6 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, User, CreditCard, LogOut, Lock, LayoutGrid, Facebook, Instagram, Linkedin, MessageCircle, Twitter, Send, MessageSquare, Youtube } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ROUTES } from '@/constants/routes';
 import { API_ROUTES } from '@/constants/api';
 import { cn } from '@/lib/utils';
@@ -66,6 +67,9 @@ export default function Navbar({ user: initialUser }) {
   // State to hold the total count (e.g., 5 connected accounts)
   const [totalConnected, setTotalConnected] = useState(0);
 
+  // State for the user's avatar URL (fetched from profile, not JWT)
+  const [avatarUrl, setAvatarUrl] = useState(null);
+
   // 4. LOAD DATA ON STARTUP
   // When the requested page loads, we go get the list of accounts
   useEffect(() => {
@@ -83,6 +87,18 @@ export default function Navbar({ user: initialUser }) {
       }
     };
     fetchAccounts();
+
+    // Fetch avatar from the user profile (not in JWT)
+    const fetchAvatar = async () => {
+      try {
+        const res = await fetch('/api/user/me');
+        if (res.ok) {
+          const data = await res.json();
+          setAvatarUrl(data.user?.avatar || null);
+        }
+      } catch (e) { /* silent */ }
+    };
+    fetchAvatar();
   }, []);
 
   // 5. HANDLE LOGOUT
@@ -215,16 +231,13 @@ export default function Navbar({ user: initialUser }) {
             className="flex items-center gap-2 cursor-pointer group"
             onClick={() => setShowMenu(!showMenu)}
           >
-            {/* User Initials Circle */}
-            <div className="w-9 h-9 rounded-md bg-primary flex items-center justify-center text-white shadow-sm hover:shadow transition-all">
-              {initialUser?.name ? (
-                <span className="text-sm font-bold">
-                  {initialUser.name.charAt(0).toUpperCase()}
-                </span>
-              ) : (
-                <User className="h-4 w-4" />
-              )}
-            </div>
+            {/* User Avatar / Initials */}
+            <Avatar className="w-9 h-9 rounded-md shadow-sm hover:shadow transition-all">
+              <AvatarImage src={avatarUrl} className="rounded-md object-cover" />
+              <AvatarFallback className="rounded-md bg-primary text-white text-sm font-bold">
+                {initialUser?.name ? initialUser.name.charAt(0).toUpperCase() : <User className="h-4 w-4" />}
+              </AvatarFallback>
+            </Avatar>
 
             {/* Name and Role */}
             <div className="hidden sm:flex flex-col">
